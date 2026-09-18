@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+.octopusStudio/
+
+# Dependencies (any depth — root, browserbridge-extension, its packages, testing fixtures, scaffold)
+node_modules/
+
+# Build output
+dist/
+out/
+.vite/
+*.tsbuildinfo
+
+# Turbo/pnpm build cache
+.turbo/
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/
+
+# Electron userData — local runtime app state, never source
+userData/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
