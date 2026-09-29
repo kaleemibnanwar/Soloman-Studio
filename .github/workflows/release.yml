@@ -1,0 +1,60 @@
+name: Build & Publish Release Installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Windows Installer (.exe Setup)
+        if: matrix.os == 'windows-latest'
+        run: |
+          npx electron-forge make --platform=win32 --arch=x64
+          mkdir -p dist-release
+          cp out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-${{ github.ref_name }}.exe 2>$null || cp out/make/*/*/*.exe dist-release/ 2>$null || true
+          cp out/make/zip/win32/x64/*.zip dist-release/ 2>$null || true
+
+      - name: Build Linux Installers (.deb / .AppImage)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          npx electron-forge make --platform=linux --arch=x64
+          mkdir -p dist-release
+          cp out/make/deb/x64/*.deb dist-release/ 2>/dev/null || true
+          cp out/make/zip/linux/x64/*.zip dist-release/ 2>/dev/null || true
+
+      - name: Upload Binaries to Public GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: kaleemibnanwar/OctopusStudio
+          token: ${{ secrets.PUBLIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          files: |
+            dist-release/*
+            out/make/**/*.exe
+            out/make/**/*.deb
+            out/make/**/*.zip
+            out/make/**/*.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
