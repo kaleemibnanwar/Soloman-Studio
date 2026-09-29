@@ -30,7 +30,9 @@ jobs:
         shell: bash
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          npm ci
+          node scripts/patch-node-gyp.js
         shell: bash
 
       # --- Windows Build (Setup .exe & Portable .zip) ---
@@ -40,18 +42,13 @@ jobs:
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           if (Test-Path $vswhere) {
-            $vsPath = & $vswhere -version "[17.0,18.0)" -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-            if (!$vsPath) {
-              $vsPath = & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1
-            }
+            $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
             if ($vsPath -and (Test-Path "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll")) {
-              Write-Host "Activating Visual Studio 2022 environment from $vsPath"
+              Write-Host "Activating Visual Studio environment from $vsPath"
               Import-Module "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
               Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments "-arch=x64"
             }
           }
-          $env:GYP_MSVS_VERSION = "2022"
-          $env:npm_config_msvs_version = "2022"
           npx electron-forge make --platform=win32 --arch=x64
           if (!(Test-Path dist-release)) { New-Item -ItemType Directory -Path dist-release }
           Copy-Item out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-1.10.0.exe -ErrorAction SilentlyContinue
