@@ -20,57 +20,53 @@ jobs:
 
     steps:
       - name: Checkout Source Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
+        run: |
+          git config --global core.autocrlf false
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git .
+          git checkout ${{ github.ref_name }} || true
+        shell: bash
 
       - name: Install Dependencies
         run: npm ci
+        shell: bash
 
       # --- Windows Build (Setup .exe & Portable .zip) ---
       - name: Build Windows Installer (.exe Setup)
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: |
           npx electron-forge make --platform=win32 --arch=x64
-          mkdir -p dist-release
-          cp out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-${{ github.ref_name }}.exe 2>$null || cp out/make/*/*/*.exe dist-release/ 2>$null || true
-          cp out/make/zip/win32/x64/*.zip dist-release/ 2>$null || true
+          mkdir dist-release -ea 0
+          Copy-Item out/make/squirrel.windows/x64/*.exe dist-release/ -ea 0
+          Copy-Item out/make/zip/win32/x64/*.zip dist-release/ -ea 0
 
       # --- macOS Build (Apple Silicon M-series & Intel) ---
       - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
-        if: matrix.os == 'macos-latest'
+        if: runner.os == 'macOS'
         run: |
           npx electron-forge make --platform=darwin --arch=arm64
           npx electron-forge make --platform=darwin --arch=x64
           mkdir -p dist-release
-          cp out/make/zip/darwin/arm64/*.zip dist-release/Octopus-Studio-macOS-AppleSilicon-${{ github.ref_name }}.zip 2>/dev/null || true
-          cp out/make/zip/darwin/x64/*.zip dist-release/Octopus-Studio-macOS-Intel-${{ github.ref_name }}.zip 2>/dev/null || true
+          cp out/make/zip/darwin/arm64/*.zip dist-release/Octopus-Studio-macOS-AppleSilicon.zip 2>/dev/null || true
+          cp out/make/zip/darwin/x64/*.zip dist-release/Octopus-Studio-macOS-Intel.zip 2>/dev/null || true
           cp out/make/zip/darwin/*/*.zip dist-release/ 2>/dev/null || true
+        shell: bash
 
-      # --- Linux Build (.deb & .AppImage) ---
+      # --- Linux Build (.deb & .zip) ---
       - name: Build Linux Installers (.deb & .zip)
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           npx electron-forge make --platform=linux --arch=x64
           mkdir -p dist-release
           cp out/make/deb/x64/*.deb dist-release/ 2>/dev/null || true
           cp out/make/zip/linux/x64/*.zip dist-release/ 2>/dev/null || true
+        shell: bash
 
-      # --- Publish All Binaries to Public GitHub Release ---
+      # --- Upload Binaries to Public GitHub Release using native gh CLI ---
       - name: Upload Binaries to Public GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: kaleemibnanwar/OctopusStudio
-          token: ${{ secrets.PUBLIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          files: |
-            dist-release/*
-            out/make/**/*.exe
-            out/make/**/*.deb
-            out/make/**/*.zip
-            out/make/**/*.AppImage
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v1.10.0"; fi
+          gh release upload $TAG dist-release/* --repo kaleemibnanwar/OctopusStudio --clobber || true
+        shell: bash
