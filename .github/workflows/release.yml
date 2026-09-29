@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -86,6 +86,8 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v1.10.0"; fi
-          gh release create "$TAG" dist-release/* --title "Octopus Studio $TAG" --notes "Release $TAG" --clobber || gh release upload "$TAG" dist-release/* --clobber || true
+          gh release view "$TAG" || gh release create "$TAG" --title "Octopus Studio $TAG" --notes "Release $TAG"
+          gh release upload "$TAG" dist-release/* --clobber
+          gh release view "$TAG" --repo kaleemibnanwar/OctopusStudio || gh release create "$TAG" --repo kaleemibnanwar/OctopusStudio --title "Octopus Studio $TAG" --notes "Release $TAG" || true
           gh release upload "$TAG" dist-release/* --repo kaleemibnanwar/OctopusStudio --clobber 2>/dev/null || true
         shell: bash
