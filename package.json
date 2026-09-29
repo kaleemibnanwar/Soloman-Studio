@@ -61,7 +61,8 @@
     "benchmark:code-explorer": "node benchmarks/code-explorer/run.mjs",
     "benchmark:code-explorer:suite": "node benchmarks/code-explorer/suite.mjs",
     "benchmark:code-explorer:smoke": "node benchmarks/code-explorer/suite.mjs --mode smoke",
-    "benchmark:code-explorer:full": "node benchmarks/code-explorer/suite.mjs --mode full"
+    "benchmark:code-explorer:full": "node benchmarks/code-explorer/suite.mjs --mode full",
+    "postinstall": "node scripts/patch-node-gyp.js"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^4.0.46",

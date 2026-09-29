@@ -7,9 +7,9 @@ function patchFile(filePath) {
   let modified = false;
 
   // 1. Add versionMajor >= 18 -> 2026
-  if (content.includes("ret.versionMajor === 17") && !content.includes("ret.versionMajor >= 18")) {
+  if (content.includes("versionMajor === 17") && !content.includes("versionMajor >= 18")) {
     content = content.replace(
-      /if \(ret\.versionMajor === 17\) \{\s*ret\.versionYear = 2022\s*return ret\s*\}/,
+      /if\s*\(\s*ret\.versionMajor\s*===\s*17\s*\)\s*\{[\s\r\n]*ret\.versionYear\s*=\s*2022;?[\s\r\n]*return\s+ret;?[\s\r\n]*\}/g,
       `if (ret.versionMajor === 17) {\n      ret.versionYear = 2022\n      return ret\n    }\n    if (ret.versionMajor >= 18) {\n      ret.versionYear = 2026\n      return ret\n    }`,
     );
     modified = true;
@@ -23,11 +23,10 @@ function patchFile(filePath) {
 
   if (modified) {
     fs.writeFileSync(filePath, content, "utf8");
-    console.log(`Successfully patched ${filePath} for VS 2026/18 compatibility.`);
+    console.log(`Successfully patched ${filePath}`);
   }
 }
 
-// Find all find-visualstudio.js files under node_modules
 function findAndPatch(dir) {
   if (!fs.existsSync(dir)) return;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
