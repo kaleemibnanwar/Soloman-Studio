@@ -13,6 +13,7 @@ env:
   NODE_OPTIONS: "--max-old-space-size=8192"
   GYP_MSVS_VERSION: "2022"
   npm_config_msvs_version: "2022"
+  VCINSTALLDIR: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\"
 
 jobs:
   build-release:
@@ -41,6 +42,7 @@ jobs:
         env:
           GYP_MSVS_VERSION: "2022"
           npm_config_msvs_version: "2022"
+          VCINSTALLDIR: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\"
         run: |
           npx electron-forge make --platform=win32 --arch=x64
           mkdir -p dist-release
