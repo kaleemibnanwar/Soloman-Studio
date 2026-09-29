@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-function patchFile(filePath) {
+function patchVisualStudioFinder(filePath) {
   if (!fs.existsSync(filePath)) return;
   let content = fs.readFileSync(filePath, "utf8");
   let modified = false;
@@ -36,6 +36,37 @@ function patchFile(filePath) {
   }
 }
 
+function patchGypSpectre(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  let content = fs.readFileSync(filePath, "utf8");
+  if (
+    content.includes("'SpectreMitigation': 'Spectre'") ||
+    content.includes('"SpectreMitigation": "Spectre"')
+  ) {
+    content = content
+      .replaceAll("'SpectreMitigation': 'Spectre'", "'SpectreMitigation': 'false'")
+      .replaceAll('"SpectreMitigation": "Spectre"', '"SpectreMitigation": "false"');
+    fs.writeFileSync(filePath, content, "utf8");
+    console.log(`Successfully patched ${filePath} to disable Spectre mitigation.`);
+  }
+}
+
+function patchMsvsGenerator(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  let content = fs.readFileSync(filePath, "utf8");
+  if (
+    content.includes("spectre_mitigation = msbuild_attributes.get('SpectreMitigation')") &&
+    !content.includes("spectre_mitigation = 'false'")
+  ) {
+    content = content.replace(
+      "spectre_mitigation = msbuild_attributes.get('SpectreMitigation')",
+      "spectre_mitigation = 'false' # disabled by patch-node-gyp",
+    );
+    fs.writeFileSync(filePath, content, "utf8");
+    console.log(`Successfully patched ${filePath} to disable Spectre in MSVS generator.`);
+  }
+}
+
 function findAndPatch(dir) {
   if (!fs.existsSync(dir)) return;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -44,7 +75,11 @@ function findAndPatch(dir) {
     if (entry.isDirectory()) {
       findAndPatch(fullPath);
     } else if (entry.name === "find-visualstudio.js") {
-      patchFile(fullPath);
+      patchVisualStudioFinder(fullPath);
+    } else if (entry.name.endsWith(".gyp") || entry.name.endsWith(".gypi")) {
+      patchGypSpectre(fullPath);
+    } else if (entry.name === "msvs.py") {
+      patchMsvsGenerator(fullPath);
     }
   }
 }

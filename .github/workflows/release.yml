@@ -40,6 +40,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          $env:SpectreMitigation = "false"
+          $env:VCPKG_DISABLE_SPECTRE_MITIGATION = "1"
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           if (Test-Path $vswhere) {
             $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
