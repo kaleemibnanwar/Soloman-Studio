@@ -11,6 +11,8 @@ permissions:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=8192"
+  GYP_MSVS_VERSION: "2022"
+  npm_config_msvs_version: "2022"
 
 jobs:
   build-release:
@@ -36,15 +38,18 @@ jobs:
       # --- Windows Build (Setup .exe & Portable .zip) ---
       - name: Build Windows Installer (.exe Setup)
         if: runner.os == 'Windows'
+        env:
+          GYP_MSVS_VERSION: "2022"
+          npm_config_msvs_version: "2022"
         run: |
           npx electron-forge make --platform=win32 --arch=x64
           mkdir -p dist-release
-          cp out/make/squirrel.windows/x64/*.exe dist-release/ 2>/dev/null || true
+          cp out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-1.10.0.exe 2>/dev/null || cp out/make/squirrel.windows/x64/*.exe dist-release/ 2>/dev/null || true
           cp out/make/squirrel.windows/x64/*.nupkg dist-release/ 2>/dev/null || true
-          cp out/make/zip/win32/x64/*.zip dist-release/ 2>/dev/null || true
+          cp out/make/zip/win32/x64/*.zip dist-release/Octopus-Studio-Windows-Portable.zip 2>/dev/null || cp out/make/zip/win32/x64/*.zip dist-release/ 2>/dev/null || true
         shell: bash
 
-      # --- macOS Build (Apple Silicon M-series & Intel) ---
+      # --- macOS Build (Apple Silicon arm64 & Intel x64) ---
       - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
         if: runner.os == 'macOS'
         run: |
@@ -66,12 +71,13 @@ jobs:
           cp out/make/zip/linux/x64/*.zip dist-release/ 2>/dev/null || true
         shell: bash
 
-      # --- Upload Binaries to Public GitHub Release ---
-      - name: Upload Binaries to Public GitHub Release
+      # --- Upload Binaries to GitHub Releases ---
+      - name: Upload Binaries to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v1.10.0"; fi
-          gh release upload $TAG dist-release/* --repo kaleemibnanwar/OctopusStudio --clobber || true
+          gh release create "$TAG" dist-release/* --title "Octopus Studio $TAG" --notes "Release $TAG" --clobber || gh release upload "$TAG" dist-release/* --clobber || true
+          gh release upload "$TAG" dist-release/* --repo kaleemibnanwar/OctopusStudio --clobber 2>/dev/null || true
         shell: bash
