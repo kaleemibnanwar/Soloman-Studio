@@ -6,11 +6,11 @@ function patchFile(filePath) {
   let content = fs.readFileSync(filePath, "utf8");
   let modified = false;
 
-  // 1. Add versionMajor >= 18 -> 2026
+  // 1. Add versionMajor >= 18 -> 2026 in getVersionInfo
   if (content.includes("versionMajor === 17") && !content.includes("versionMajor >= 18")) {
     content = content.replace(
       /if\s*\(\s*ret\.versionMajor\s*===\s*17\s*\)\s*\{[\s\r\n]*ret\.versionYear\s*=\s*2022;?[\s\r\n]*return\s+ret;?[\s\r\n]*\}/g,
-      `if (ret.versionMajor === 17) {\n      ret.versionYear = 2022\n      return ret\n    }\n    if (ret.versionMajor >= 18) {\n      ret.versionYear = 2026\n      return ret\n    }`,
+      `if (ret.versionMajor === 17) {\n      ret.versionYear = 2022\n      return ret\n    }\n    if (ret.versionMajor >= 18) {\n      ret.versionYear = 2026\n      return ret\n    }`
     );
     modified = true;
   }
@@ -21,9 +21,18 @@ function patchFile(filePath) {
     modified = true;
   }
 
+  // 3. Add versionYear >= 2026 -> 'v144' in getToolset
+  if (content.includes("versionYear === 2022") && !content.includes("versionYear >= 2026")) {
+    content = content.replace(
+      /else\s+if\s*\(\s*versionYear\s*===\s*2022\s*\)\s*\{[\s\r\n]*return\s+['"]v143['"];?[\s\r\n]*\}/g,
+      `else if (versionYear === 2022) {\n      return 'v143'\n    } else if (versionYear >= 2026) {\n      return 'v144'\n    }`
+    );
+    modified = true;
+  }
+
   if (modified) {
     fs.writeFileSync(filePath, content, "utf8");
-    console.log(`Successfully patched ${filePath}`);
+    console.log(`Successfully patched ${filePath} for VS 2026/18 toolset.`);
   }
 }
 
