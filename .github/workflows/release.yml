@@ -3,11 +3,14 @@ name: Build & Publish Multi-Platform Release Installers
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=8192"
 
 jobs:
   build-release:
@@ -35,9 +38,11 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           npx electron-forge make --platform=win32 --arch=x64
-          mkdir dist-release -ea 0
-          Copy-Item out/make/squirrel.windows/x64/*.exe dist-release/ -ea 0
-          Copy-Item out/make/zip/win32/x64/*.zip dist-release/ -ea 0
+          mkdir -p dist-release
+          cp out/make/squirrel.windows/x64/*.exe dist-release/ 2>/dev/null || true
+          cp out/make/squirrel.windows/x64/*.nupkg dist-release/ 2>/dev/null || true
+          cp out/make/zip/win32/x64/*.zip dist-release/ 2>/dev/null || true
+        shell: bash
 
       # --- macOS Build (Apple Silicon M-series & Intel) ---
       - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
@@ -61,7 +66,7 @@ jobs:
           cp out/make/zip/linux/x64/*.zip dist-release/ 2>/dev/null || true
         shell: bash
 
-      # --- Upload Binaries to Public GitHub Release using native gh CLI ---
+      # --- Upload Binaries to Public GitHub Release ---
       - name: Upload Binaries to Public GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
