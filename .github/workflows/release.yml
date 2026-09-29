@@ -36,14 +36,22 @@ jobs:
       # --- Windows Build (Setup .exe & Portable .zip) ---
       - name: Build Windows Installer (.exe Setup)
         if: runner.os == 'Windows'
-        shell: cmd
+        shell: pwsh
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vswhere) {
+            $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+            if ($vsPath -and (Test-Path "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll")) {
+              Write-Host "Activating Visual Studio environment from $vsPath"
+              Import-Module "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+              Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments "-arch=x64"
+            }
+          }
           npx electron-forge make --platform=win32 --arch=x64
-          if not exist dist-release mkdir dist-release
-          copy /Y out\make\squirrel.windows\x64\*.exe dist-release\Octopus-Studio-Setup-1.10.0.exe || copy /Y out\make\squirrel.windows\x64\*.exe dist-release\
-          copy /Y out\make\squirrel.windows\x64\*.nupkg dist-release\
-          copy /Y out\make\zip\win32\x64\*.zip dist-release\Octopus-Studio-Windows-Portable.zip || copy /Y out\make\zip\win32\x64\*.zip dist-release\
+          if (!(Test-Path dist-release)) { New-Item -ItemType Directory -Path dist-release }
+          Copy-Item out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-1.10.0.exe -ErrorAction SilentlyContinue
+          Copy-Item out/make/squirrel.windows/x64/*.nupkg dist-release/ -ErrorAction SilentlyContinue
+          Copy-Item out/make/zip/win32/x64/*.zip dist-release/Octopus-Studio-Windows-Portable.zip -ErrorAction SilentlyContinue
 
       # --- macOS Build (Apple Silicon arm64 & Intel x64) ---
       - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
