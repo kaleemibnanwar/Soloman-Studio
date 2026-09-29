@@ -11,9 +11,6 @@ permissions:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=8192"
-  GYP_MSVS_VERSION: "2022"
-  npm_config_msvs_version: "2022"
-  VCINSTALLDIR: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\"
 
 jobs:
   build-release:
@@ -39,17 +36,14 @@ jobs:
       # --- Windows Build (Setup .exe & Portable .zip) ---
       - name: Build Windows Installer (.exe Setup)
         if: runner.os == 'Windows'
-        env:
-          GYP_MSVS_VERSION: "2022"
-          npm_config_msvs_version: "2022"
-          VCINSTALLDIR: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\"
+        shell: cmd
         run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           npx electron-forge make --platform=win32 --arch=x64
-          mkdir -p dist-release
-          cp out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-1.10.0.exe 2>/dev/null || cp out/make/squirrel.windows/x64/*.exe dist-release/ 2>/dev/null || true
-          cp out/make/squirrel.windows/x64/*.nupkg dist-release/ 2>/dev/null || true
-          cp out/make/zip/win32/x64/*.zip dist-release/Octopus-Studio-Windows-Portable.zip 2>/dev/null || cp out/make/zip/win32/x64/*.zip dist-release/ 2>/dev/null || true
-        shell: bash
+          if not exist dist-release mkdir dist-release
+          copy /Y out\make\squirrel.windows\x64\*.exe dist-release\Octopus-Studio-Setup-1.10.0.exe || copy /Y out\make\squirrel.windows\x64\*.exe dist-release\
+          copy /Y out\make\squirrel.windows\x64\*.nupkg dist-release\
+          copy /Y out\make\zip\win32\x64\*.zip dist-release\Octopus-Studio-Windows-Portable.zip || copy /Y out\make\zip\win32\x64\*.zip dist-release\
 
       # --- macOS Build (Apple Silicon arm64 & Intel x64) ---
       - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
