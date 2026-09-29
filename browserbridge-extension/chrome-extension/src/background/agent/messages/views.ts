@@ -1,4 +1,4 @@
-import { type BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 export class MessageMetadata {
   tokens: number;
@@ -50,7 +50,10 @@ export class MessageHistory {
    * This is used to remove the state message from the history.
    */
   removeLastStateMessage(): void {
-    if (this.messages.length > 2 && this.messages[this.messages.length - 1].message instanceof HumanMessage) {
+    if (
+      this.messages.length > 2 &&
+      this.messages[this.messages.length - 1].message instanceof HumanMessage
+    ) {
       const msg = this.messages.pop();
       if (msg) {
         this.totalTokens -= msg.metadata.tokens;
@@ -62,7 +65,7 @@ export class MessageHistory {
    * Get all messages
    */
   getMessages(): BaseMessage[] {
-    return this.messages.map(m => m.message);
+    return this.messages.map((m) => m.message);
   }
 
   /**

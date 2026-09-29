@@ -23,12 +23,7 @@
   function applyStyles(element, styles) {
     if (!element || !styles) return;
 
-    console.debug(
-      `[OctopusStudio Visual Editor] Applying styles:`,
-      styles,
-      "to element:",
-      element,
-    );
+    console.debug(`[OctopusStudio Visual Editor] Applying styles:`, styles, "to element:", element);
 
     const applySpacing = (type, values) => {
       if (!values) return;

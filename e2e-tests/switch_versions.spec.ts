@@ -32,16 +32,12 @@ const runSwitchVersionTest = async (po: PageObject) => {
   await po.previewPanel.snapshotPreview({ name: `v2` });
   await amendRuntimeWorkspaceIntoCurrentCommit(po);
 
-  expect(
-    await po.page.getByRole("button", { name: "Version" }).textContent(),
-  ).toBe("Version 2");
+  expect(await po.page.getByRole("button", { name: "Version" }).textContent()).toBe("Version 2");
   await po.page.getByRole("button", { name: "Version" }).click();
   await po.page.getByTestId("version-row-1").click();
   await po.previewPanel.snapshotPreview({ name: `v1` });
 
-  await po.page
-    .getByRole("button", { name: "Restore to this version" })
-    .click();
+  await po.page.getByRole("button", { name: "Restore to this version" }).click();
   // Should be same as the previous snapshot, but just to be sure.
   await po.previewPanel.snapshotPreview({ name: `v1` });
 

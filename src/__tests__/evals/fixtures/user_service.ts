@@ -42,10 +42,7 @@ export function fetchUser(id: string): Promise<User | null> {
 
 export function createUser(email: string, name: string): Promise<User> {
   return db
-    .query("INSERT INTO users (email, name) VALUES (?, ?) RETURNING *", [
-      email,
-      name,
-    ])
+    .query("INSERT INTO users (email, name) VALUES (?, ?) RETURNING *", [email, name])
     .then((rows) => {
       const user = rows[0] as User;
       logger.info(`created user ${user.id}`);
@@ -73,10 +70,7 @@ export function updateEmail(id: string, email: string): Promise<User> {
   return fetchUser(id)
     .then((user) => {
       if (!user) throw new Error(`user ${id} not found`);
-      return db.query("UPDATE users SET email = ? WHERE id = ? RETURNING *", [
-        email,
-        id,
-      ]);
+      return db.query("UPDATE users SET email = ? WHERE id = ? RETURNING *", [email, id]);
     })
     .then((rows) => rows[0] as User)
     .catch((err) => {
@@ -89,10 +83,7 @@ export function updateName(id: string, name: string): Promise<User> {
   return fetchUser(id)
     .then((user) => {
       if (!user) throw new Error(`user ${id} not found`);
-      return db.query("UPDATE users SET name = ? WHERE id = ? RETURNING *", [
-        name,
-        id,
-      ]);
+      return db.query("UPDATE users SET name = ? WHERE id = ? RETURNING *", [name, id]);
     })
     .then((rows) => rows[0] as User)
     .catch((err) => {
@@ -107,10 +98,7 @@ export function updateRole(id: string, role: string): Promise<User> {
       if (!user) throw new Error(`user ${id} not found`);
       const validRoles = ["admin", "member", "guest"];
       if (!validRoles.includes(role)) throw new Error(`invalid role: ${role}`);
-      return db.query("UPDATE users SET role = ? WHERE id = ? RETURNING *", [
-        role,
-        id,
-      ]);
+      return db.query("UPDATE users SET role = ? WHERE id = ? RETURNING *", [role, id]);
     })
     .then((rows) => rows[0] as User)
     .catch((err) => {
@@ -124,10 +112,10 @@ export function deactivateUser(id: string): Promise<User> {
     .then((user) => {
       if (!user) throw new Error(`user ${id} not found`);
       if (!user.isActive) throw new Error(`user ${id} is already inactive`);
-      return db.query(
-        "UPDATE users SET is_active = 0, updated_at = ? WHERE id = ? RETURNING *",
-        [new Date().toISOString(), id],
-      );
+      return db.query("UPDATE users SET is_active = 0, updated_at = ? WHERE id = ? RETURNING *", [
+        new Date().toISOString(),
+        id,
+      ]);
     })
     .then((rows) => {
       logger.info(`deactivated user ${id}`);
@@ -144,10 +132,10 @@ export function reactivateUser(id: string): Promise<User> {
     .then((user) => {
       if (!user) throw new Error(`user ${id} not found`);
       if (user.isActive) throw new Error(`user ${id} is already active`);
-      return db.query(
-        "UPDATE users SET is_active = 1, updated_at = ? WHERE id = ? RETURNING *",
-        [new Date().toISOString(), id],
-      );
+      return db.query("UPDATE users SET is_active = 1, updated_at = ? WHERE id = ? RETURNING *", [
+        new Date().toISOString(),
+        id,
+      ]);
     })
     .then((rows) => {
       logger.info(`reactivated user ${id}`);
@@ -161,24 +149,16 @@ export function reactivateUser(id: string): Promise<User> {
 
 // ── Listing ────────────────────────────────────────────────────────────────
 
-export function listUsers(
-  page: number,
-  limit: number,
-): Promise<PaginatedUsers> {
+export function listUsers(page: number, limit: number): Promise<PaginatedUsers> {
   const offset = (page - 1) * limit;
   return db
-    .query("SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?", [
-      limit,
-      offset,
-    ])
+    .query("SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?", [limit, offset])
     .then((rows) => {
-      return db
-        .query("SELECT COUNT(*) AS total FROM users", [])
-        .then((countRows) => ({
-          items: rows as User[],
-          total: (countRows[0] as { total: number }).total,
-          page,
-        }));
+      return db.query("SELECT COUNT(*) AS total FROM users", []).then((countRows) => ({
+        items: rows as User[],
+        total: (countRows[0] as { total: number }).total,
+        page,
+      }));
     })
     .catch((err) => {
       logger.error(`listUsers failed page=${page}`, err);
@@ -199,10 +179,10 @@ export function fetchUsersByRole(role: string): Promise<User[]> {
 export function searchUsers(query: string): Promise<User[]> {
   const pattern = `%${query}%`;
   return db
-    .query(
-      "SELECT * FROM users WHERE (name LIKE ? OR email LIKE ?) AND is_active = 1 LIMIT 50",
-      [pattern, pattern],
-    )
+    .query("SELECT * FROM users WHERE (name LIKE ? OR email LIKE ?) AND is_active = 1 LIMIT 50", [
+      pattern,
+      pattern,
+    ])
     .then((rows) => rows as User[])
     .catch((err) => {
       logger.error(`searchUsers failed for query=${query}`, err);
@@ -225,9 +205,7 @@ export function logAuditEntry(entry: UserAuditEntry): Promise<void> {
       ],
     )
     .then(() => {
-      logger.info(
-        `audit: ${entry.action} on user ${entry.userId} by ${entry.performedBy}`,
-      );
+      logger.info(`audit: ${entry.action} on user ${entry.userId} by ${entry.performedBy}`);
     })
     .catch((err) => {
       logger.error(`logAuditEntry failed for userId=${entry.userId}`, err);
@@ -237,10 +215,7 @@ export function logAuditEntry(entry: UserAuditEntry): Promise<void> {
 
 export function fetchAuditLog(userId: string): Promise<UserAuditEntry[]> {
   return db
-    .query(
-      "SELECT * FROM user_audit WHERE user_id = ? ORDER BY timestamp DESC LIMIT 100",
-      [userId],
-    )
+    .query("SELECT * FROM user_audit WHERE user_id = ? ORDER BY timestamp DESC LIMIT 100", [userId])
     .then((rows) => rows as UserAuditEntry[])
     .catch((err) => {
       logger.error(`fetchAuditLog failed for userId=${userId}`, err);
@@ -274,17 +249,14 @@ export function requestEmailVerification(id: string): Promise<void> {
 
 export function verifyEmail(id: string, token: string): Promise<User> {
   return db
-    .query(
-      "SELECT * FROM email_verifications WHERE user_id = ? AND token = ? AND expires_at > ?",
-      [id, token, new Date().toISOString()],
-    )
+    .query("SELECT * FROM email_verifications WHERE user_id = ? AND token = ? AND expires_at > ?", [
+      id,
+      token,
+      new Date().toISOString(),
+    ])
     .then((rows) => {
-      if (rows.length === 0)
-        throw new Error("invalid or expired verification token");
-      return db.query(
-        "UPDATE users SET email_verified = 1 WHERE id = ? RETURNING *",
-        [id],
-      );
+      if (rows.length === 0) throw new Error("invalid or expired verification token");
+      return db.query("UPDATE users SET email_verified = 1 WHERE id = ? RETURNING *", [id]);
     })
     .then((rows) => {
       logger.info(`verified email for user ${id}`);
@@ -309,14 +281,11 @@ export function requestPasswordReset(email: string): Promise<void> {
       }
       const userId = (rows[0] as { id: string }).id;
       return db
-        .query(
-          "INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)",
-          [
-            userId,
-            Math.random().toString(36).slice(2),
-            new Date(Date.now() + 3600 * 1000).toISOString(),
-          ],
-        )
+        .query("INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)", [
+          userId,
+          Math.random().toString(36).slice(2),
+          new Date(Date.now() + 3600 * 1000).toISOString(),
+        ])
         .then(() => {
           logger.info(`password reset token created for user ${userId}`);
         });
@@ -327,28 +296,22 @@ export function requestPasswordReset(email: string): Promise<void> {
     });
 }
 
-export function resetPassword(
-  token: string,
-  newPasswordHash: string,
-): Promise<void> {
+export function resetPassword(token: string, newPasswordHash: string): Promise<void> {
   return db
-    .query(
-      "SELECT user_id FROM password_resets WHERE token = ? AND expires_at > ? AND used = 0",
-      [token, new Date().toISOString()],
-    )
+    .query("SELECT user_id FROM password_resets WHERE token = ? AND expires_at > ? AND used = 0", [
+      token,
+      new Date().toISOString(),
+    ])
     .then((rows) => {
       if (rows.length === 0) throw new Error("invalid or expired reset token");
       const userId = (rows[0] as { user_id: string }).user_id;
       return db
-        .query(
-          "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
-          [newPasswordHash, new Date().toISOString(), userId],
-        )
-        .then(() =>
-          db.query("UPDATE password_resets SET used = 1 WHERE token = ?", [
-            token,
-          ]),
-        )
+        .query("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [
+          newPasswordHash,
+          new Date().toISOString(),
+          userId,
+        ])
+        .then(() => db.query("UPDATE password_resets SET used = 1 WHERE token = ?", [token]))
         .then(() => {
           logger.info(`password reset completed for user ${userId}`);
         });

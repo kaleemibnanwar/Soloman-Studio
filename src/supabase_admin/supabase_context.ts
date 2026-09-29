@@ -11,10 +11,7 @@ import {
   getSupabaseClient,
   type SupabaseApiKey,
 } from "./supabase_management_client";
-import {
-  SUPABASE_SCHEMA_QUERY,
-  SUPABASE_FUNCTIONS_QUERY,
-} from "./supabase_schema_query";
+import { SUPABASE_SCHEMA_QUERY, SUPABASE_FUNCTIONS_QUERY } from "./supabase_schema_query";
 import {
   buildSchemaSnapshotSql,
   filterSchemaForTable,
@@ -37,14 +34,10 @@ const PUBLISHABLE_KEY_PREFIX = "sb_publishable_";
  * are disabled" on every request it makes, including sign-in. The legacy tier
  * stays last so projects that never migrated keep working.
  */
-function pickPublishableKey(
-  keys: readonly SupabaseApiKey[],
-): SupabaseApiKey | undefined {
+function pickPublishableKey(keys: readonly SupabaseApiKey[]): SupabaseApiKey | undefined {
   return (
     keys.find(
-      (key) =>
-        key.type === "publishable" &&
-        key.api_key?.startsWith(PUBLISHABLE_KEY_PREFIX),
+      (key) => key.type === "publishable" && key.api_key?.startsWith(PUBLISHABLE_KEY_PREFIX),
     ) ??
     keys.find((key) => key.type === "publishable") ??
     keys.find((key) => key.name === "anon")
@@ -181,9 +174,7 @@ const TABLE_NAMES_QUERY = `
   ORDER BY table_name;
 `;
 
-function normalizeRunQueryRows(
-  result: unknown,
-): readonly Record<string, unknown>[] {
+function normalizeRunQueryRows(result: unknown): readonly Record<string, unknown>[] {
   if (Array.isArray(result)) {
     return result as readonly Record<string, unknown>[];
   }
@@ -328,17 +319,13 @@ export async function getSupabaseTableSchema({
     }
     const snapshot = snapshotRows[0]?.schema_snapshot;
     if (snapshot === undefined) {
-      throw new Error(
-        "Supabase schema snapshot response is missing schema_snapshot",
-      );
+      throw new Error("Supabase schema snapshot response is missing schema_snapshot");
     }
     const schema = await getSchemaFromSnapshot(snapshot);
     if (!tableName && schema.tables.length === 0) {
       return "-- No public tables found.";
     }
-    const filteredSchema = tableName
-      ? filterSchemaForTable(schema, { tableName })
-      : schema;
+    const filteredSchema = tableName ? filterSchemaForTable(schema, { tableName }) : schema;
     return renderSchemaSql(filteredSchema, {
       emptySchemaComment: tableName
         ? missingPublicTableComment(tableName)

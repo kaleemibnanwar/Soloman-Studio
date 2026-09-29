@@ -53,10 +53,7 @@ export class TaskScope<Key = PropertyKey> {
           try {
             lateCleanup();
           } catch (cleanupError) {
-            throw new AggregateError(
-              [error, cleanupError],
-              "Tracked task and late cleanup failed",
-            );
+            throw new AggregateError([error, cleanupError], "Tracked task and late cleanup failed");
           }
         }
         throw error;
@@ -83,10 +80,7 @@ export class TaskScope<Key = PropertyKey> {
   }
 }
 
-export function collectDisposalError(
-  errors: unknown[],
-  operation: () => void,
-): void {
+export function collectDisposalError(errors: unknown[], operation: () => void): void {
   try {
     operation();
   } catch (error) {

@@ -3,11 +3,8 @@ import log from "electron-log";
 
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { apps } from "../../db/schema";
-import {
-  createTempTestBranch,
-  markAndDeleteTempTestBranch,
-} from "../utils/neon_test_branch";
-import { createNeonTestAccount } from "../utils/neon_test_account";
+import { createTempTestBranch, markAndDeleteTempTestBranch } from "../neon/neon_test_branch";
+import { createNeonTestAccount } from "../neon/neon_test_account";
 import {
   checkRls,
   createTempTestUser,
@@ -16,13 +13,9 @@ import {
 } from "../utils/supabase_test_user";
 import { detectLegacyAppKey } from "../../supabase_admin/supabase_app_key";
 import { getPublishableKey } from "../../supabase_admin/supabase_context";
-import {
-  getEnvFilePath,
-  readEnvFileIfExists,
-  updateNeonEnvVars,
-} from "../utils/app_env_var_utils";
+import { getEnvFilePath, readEnvFileIfExists, updateNeonEnvVars } from "../utils/app_env_var_utils";
 import { detectFrameworkType } from "../utils/framework_utils";
-import { runningApps, stopAppByInfo } from "../utils/process_manager";
+import { runningApps, stopAppByInfo } from "../process/process_manager";
 import { cleanUpPort, executeApp } from "./app_runtime_service";
 import { appRunActorService } from "./app_run_actor_service";
 import { getAppPort } from "../../../shared/ports";
@@ -157,9 +150,7 @@ export async function prepareIsolatedTestDatabase({
 
   // Build a teardown that restores whatever we changed. Captured branchId/env
   // are read at call time so a partial failure still restores correctly.
-  const teardown = async (
-    options: TeardownOptions = {},
-  ): Promise<TeardownResult> => {
+  const teardown = async (options: TeardownOptions = {}): Promise<TeardownResult> => {
     let envRestored = true;
     // Only touch the env file / restart the dev server if we actually swapped
     // the env. If setup failed before the env swap (e.g. during branch
@@ -170,9 +161,7 @@ export async function prepareIsolatedTestDatabase({
         await restoreEnvFile(appPath, envSnapshot);
       } catch (error) {
         envRestored = false;
-        logger.error(
-          `Failed to restore .env.local for app ${app.id}: ${error}`,
-        );
+        logger.error(`Failed to restore .env.local for app ${app.id}: ${error}`);
         emit(
           "Warning: Octopus Studio couldn't restore your real database settings, so the temporary Neon branch was kept tracked for retry. Restore .env.local before running more tests.\n",
           "setup",
@@ -182,9 +171,7 @@ export async function prepareIsolatedTestDatabase({
         try {
           await restartAppInPlace({ app, appPath });
         } catch (error) {
-          logger.error(
-            `Failed to restart app ${app.id} back onto its real branch: ${error}`,
-          );
+          logger.error(`Failed to restart app ${app.id} back onto its real branch: ${error}`);
           emit(
             "Warning: Octopus Studio restored your real database settings, but couldn't restart the preview. Restart the app manually before continuing.\n",
             "setup",
@@ -301,9 +288,7 @@ export async function prepareIsolatedTestDatabase({
     try {
       envRestored = (await teardown()).envRestored;
     } catch (teardownError) {
-      logger.error(
-        `Teardown failed during error recovery for app ${app.id}: ${teardownError}`,
-      );
+      logger.error(`Teardown failed during error recovery for app ${app.id}: ${teardownError}`);
     }
     // Already torn down; this only carries the verdict to whoever asks later.
     const settledTeardown = async (): Promise<TeardownResult> => ({
@@ -320,9 +305,7 @@ export async function prepareIsolatedTestDatabase({
       };
     }
     const message = error instanceof Error ? error.message : String(error);
-    logger.error(
-      `Failed to set up isolated test database for app ${app.id}: ${message}`,
-    );
+    logger.error(`Failed to set up isolated test database for app ${app.id}: ${message}`);
     return {
       isolation: {
         mode: "none",
@@ -483,9 +466,7 @@ async function prepareSupabaseTestUserIsolation({
       };
     }
     const message = error instanceof Error ? error.message : String(error);
-    logger.error(
-      `Failed to set up isolated test user for app ${app.id}: ${message}`,
-    );
+    logger.error(`Failed to set up isolated test user for app ${app.id}: ${message}`);
     return {
       isolation: {
         mode: "none",
@@ -512,17 +493,12 @@ function buildRlsWarning(rls: {
   }
   const shown = rls.tablesWithoutRls.slice(0, 5).join(", ");
   const more =
-    rls.tablesWithoutRls.length > 5
-      ? `, and ${rls.tablesWithoutRls.length - 5} more`
-      : "";
+    rls.tablesWithoutRls.length > 5 ? `, and ${rls.tablesWithoutRls.length - 5} more` : "";
   return `Tests ran as an isolated test user, but these tables don't have Row-Level Security, so the test could affect real data in them: ${shown}${more}. Enable RLS for full isolation.`;
 }
 
 /** Restore `.env.local` to a previous snapshot (or remove it if there was none). */
-async function restoreEnvFile(
-  appPath: string,
-  snapshot: string | null,
-): Promise<void> {
+async function restoreEnvFile(appPath: string, snapshot: string | null): Promise<void> {
   const envPath = getEnvFilePath({ appPath });
   if (snapshot === null) {
     await fs.promises.rm(envPath, { force: true });
@@ -605,10 +581,7 @@ async function waitForServerReady(
       await delay(SERVER_READY_POLL_MS, signal);
       continue;
     }
-    if (
-      expectedProcessId !== undefined &&
-      appInfo.processId !== expectedProcessId
-    ) {
+    if (expectedProcessId !== undefined && appInfo.processId !== expectedProcessId) {
       // A different process is registered than the one we just started —
       // usually the dev server crashed and is mid-restart.
       lastReason = "the dev server restarted unexpectedly while starting up";
@@ -618,8 +591,7 @@ async function waitForServerReady(
     const baseUrl = appInfo.proxyUrl;
     if (!baseUrl) {
       // Process is up but hasn't printed its address yet.
-      lastReason =
-        "the dev server started but never reported a URL to connect to";
+      lastReason = "the dev server started but never reported a URL to connect to";
       await delay(SERVER_READY_POLL_MS, signal);
       continue;
     }
@@ -636,10 +608,7 @@ async function waitForServerReady(
   );
 }
 
-async function isResponding(
-  url: string,
-  signal?: AbortSignal,
-): Promise<boolean> {
+async function isResponding(url: string, signal?: AbortSignal): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 3000);
   // Forward an outer Stop to the in-flight fetch so pressing Stop cancels the

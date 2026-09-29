@@ -20,9 +20,7 @@ export interface PreviewIframeCommandAdapter extends PreviewIframeCommandRunner 
   ): void;
 }
 
-export function createPreviewIframeCommandAdapter(
-  store: JotaiStore,
-): PreviewIframeCommandAdapter {
+export function createPreviewIframeCommandAdapter(store: JotaiStore): PreviewIframeCommandAdapter {
   const targets = new Map<number, () => PreviewIframeTarget | null>();
 
   const post = (
@@ -78,10 +76,7 @@ export type PreviewIframeMachineMessageType =
   | "octopus-studio-document-loaded";
 
 export const PREVIEW_IFRAME_MESSAGE_ROUTES: Readonly<
-  Record<
-    PreviewIframeMachineMessageType,
-    "machine" | "shared-and-component" | "component"
-  >
+  Record<PreviewIframeMachineMessageType, "machine" | "shared-and-component" | "component">
 > = {
   "octopus-studio-component-selector-initialized": "shared-and-component",
   // The screenshot machine and annotator share this response. Correlation by
@@ -123,14 +118,7 @@ export function routePreviewIframeMessage(input: {
   onSharedMachineEvent: (event: PreviewSharedMachineEvent) => void;
   onComponentMessage: (event: MessageEvent) => void;
 }): void {
-  const {
-    event,
-    contentWindow,
-    appUrl,
-    send,
-    onSharedMachineEvent,
-    onComponentMessage,
-  } = input;
+  const { event, contentWindow, appUrl, send, onSharedMachineEvent, onComponentMessage } = input;
   if (event.source !== contentWindow) return;
   const type = event.data?.type as string | undefined;
   const route =
@@ -148,9 +136,7 @@ export function routePreviewIframeMessage(input: {
         type: "RESPONSE",
         requestId,
         ok: event.data?.success === true,
-        ...(typeof event.data?.dataUrl === "string"
-          ? { dataUrl: event.data.dataUrl }
-          : {}),
+        ...(typeof event.data?.dataUrl === "string" ? { dataUrl: event.data.dataUrl } : {}),
       });
     }
   } else if (
@@ -177,9 +163,7 @@ export function routePreviewIframeMessage(input: {
                 // Only the shim knows what the browser did to its history;
                 // anything else (an older shim still in the page) keeps the
                 // previous reading, which never invents an entry.
-                historyEffect: readHistoryEffect(
-                  event.data?.payload?.historyEffect,
-                ),
+                historyEffect: readHistoryEffect(event.data?.payload?.historyEffect),
               }
             : { type: "NAVIGATED_IN_APP", kind: type, url: url.href },
         );

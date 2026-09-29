@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 import type {
   ImageGenerationOperationOutcome,
   ImageGenerationResultView,
@@ -42,85 +37,72 @@ export const ImageGenerationResultViewSchema = z
   })
   .strict();
 
-export const ImageGenerationPresentationEventSchema = z.discriminatedUnion(
-  "type",
-  [
-    z
-      .object({
-        type: z.literal("progress"),
-        pendingCount: z.number().int().nonnegative(),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal("succeeded"),
-        result: ImageGenerationResultViewSchema,
-        pendingCount: z.number().int().nonnegative(),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal("failed"),
-        message: z.string(),
-        pendingCount: z.number().int().nonnegative(),
-      })
-      .strict(),
-  ],
-);
+export const ImageGenerationPresentationEventSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("progress"),
+      pendingCount: z.number().int().nonnegative(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("succeeded"),
+      result: ImageGenerationResultViewSchema,
+      pendingCount: z.number().int().nonnegative(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("failed"),
+      message: z.string(),
+      pendingCount: z.number().int().nonnegative(),
+    })
+    .strict(),
+]);
 export type ImageGenerationPresentationEvent = z.infer<
   typeof ImageGenerationPresentationEventSchema
 >;
 
-const ImageGenerationOperationOutcomeObjectSchema = z.discriminatedUnion(
-  "kind",
-  [
-    z
-      .object({
-        kind: z.literal("succeeded"),
-        jobId: z.string(),
-        result: ImageGenerationResultViewSchema,
-      })
-      .strict(),
-    z
-      .object({
-        kind: z.literal("failed"),
-        jobId: z.string(),
-        message: z.string(),
-        failureKind: z.enum(["provider", "unexpected"]),
-      })
-      .strict(),
-    z.object({ kind: z.literal("cancelled"), jobId: z.string() }).strict(),
-    z
-      .object({
-        kind: z.literal("disposed"),
-        jobId: z.string(),
-        cause: z.enum([
-          "actor",
-          "key",
-          "machine",
-          "host",
-          "window-session",
-          "app-deletion",
-        ]),
-      })
-      .strict(),
-    z
-      .object({
-        kind: z.literal("rejected"),
-        jobId: z.string(),
-        reason: z.enum([
-          "already-cancelling",
-          "already-terminal",
-          "duplicate-job",
-          "job-id-conflict",
-          "operation-id-conflict",
-          "job-not-found",
-          "stale-operation",
-        ]),
-      })
-      .strict(),
-  ],
-);
+const ImageGenerationOperationOutcomeObjectSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("succeeded"),
+      jobId: z.string(),
+      result: ImageGenerationResultViewSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("failed"),
+      jobId: z.string(),
+      message: z.string(),
+      failureKind: z.enum(["provider", "unexpected"]),
+    })
+    .strict(),
+  z.object({ kind: z.literal("cancelled"), jobId: z.string() }).strict(),
+  z
+    .object({
+      kind: z.literal("disposed"),
+      jobId: z.string(),
+      cause: z.enum(["actor", "key", "machine", "host", "window-session", "app-deletion"]),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("rejected"),
+      jobId: z.string(),
+      reason: z.enum([
+        "already-cancelling",
+        "already-terminal",
+        "duplicate-job",
+        "job-id-conflict",
+        "operation-id-conflict",
+        "job-not-found",
+        "stale-operation",
+      ]),
+    })
+    .strict(),
+]);
 
 export const ImageGenerationOperationOutcomeSchema = z
   .custom<unknown>((value) => !(value instanceof Error), {
@@ -147,14 +129,9 @@ type AssertTrue<Value extends true> = Value;
 
 const imageGenerationSchemaTypeAssertions: [
   AssertTrue<
-    MutuallyAssignable<
-      z.infer<typeof ImageGenerationResultViewSchema>,
-      ImageGenerationResultView
-    >
+    MutuallyAssignable<z.infer<typeof ImageGenerationResultViewSchema>, ImageGenerationResultView>
   >,
-  AssertTrue<
-    MutuallyAssignable<z.infer<typeof ImageThemeModeSchema>, ImageThemeMode>
-  >,
+  AssertTrue<MutuallyAssignable<z.infer<typeof ImageThemeModeSchema>, ImageThemeMode>>,
   AssertTrue<
     MutuallyAssignable<
       z.infer<typeof ImageGenerationOperationOutcomeSchema>,
@@ -171,7 +148,5 @@ export const imageGenerationEvents = {
   }),
 } as const;
 
-export const imageGenerationEventClient = createEventClient(
-  imageGenerationEvents,
-);
+export const imageGenerationEventClient = createEventClient(imageGenerationEvents);
 export const imageGenerationClient = createClient(imageGenerationContracts);

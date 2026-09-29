@@ -24,20 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadApp } from "@/hooks/useLoadApp";
-import {
-  useLegacySupabaseKey,
-  useSwitchToPublishableKey,
-} from "@/hooks/useLegacySupabaseKey";
+import { useLegacySupabaseKey, useSwitchToPublishableKey } from "@/hooks/useLegacySupabaseKey";
 
 // @ts-ignore
 import supabaseLogoLight from "../../assets/supabase/supabase-logo-wordmark--light.svg";
@@ -51,11 +42,7 @@ import connectSupabaseLight from "../../assets/supabase/connect-supabase-light.s
 import { ExternalLink, Info, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getErrorMessage } from "@/lib/errors";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTheme } from "@/contexts/ThemeContext";
 import { isSupabaseConnected } from "@/lib/schemas";
 
@@ -79,8 +66,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
   const hasLegacyKey = legacyKeyQuery.data?.hasLegacyKey ?? false;
   const switchKey = useSwitchToPublishableKey();
 
-  const branchesProjectId =
-    app?.supabaseParentProjectId || app?.supabaseProjectId;
+  const branchesProjectId = app?.supabaseParentProjectId || app?.supabaseProjectId;
 
   const {
     organizations,
@@ -177,13 +163,9 @@ export function SupabaseConnector({ appId }: { appId: number }) {
       const orgKey = project.organizationSlug;
       if (!acc[orgKey]) {
         // Find the organization info to get the name
-        const orgInfo = organizations.find(
-          (o) => o.organizationSlug === project.organizationSlug,
-        );
+        const orgInfo = organizations.find((o) => o.organizationSlug === project.organizationSlug);
         acc[orgKey] = {
-          orgLabel:
-            orgInfo?.name ||
-            `Organization ${project.organizationSlug.slice(0, 8)}`,
+          orgLabel: orgInfo?.name || `Organization ${project.organizationSlug.slice(0, 8)}`,
           projects: [],
         };
       }
@@ -288,10 +270,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
           </CardTitle>
           <CardDescription className="flex flex-col gap-1.5 text-sm">
             {t("integrations.supabase.connectedToProject")}{" "}
-            <Badge
-              variant="secondary"
-              className="ml-2 text-base font-bold px-3 py-1"
-            >
+            <Badge variant="secondary" className="ml-2 text-base font-bold px-3 py-1">
               {app.supabaseProjectName}
             </Badge>
           </CardDescription>
@@ -305,22 +284,16 @@ export function SupabaseConnector({ appId }: { appId: number }) {
               {branchesError ? (
                 <Alert>
                   <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    {getErrorMessage(branchesError)}
-                  </AlertDescription>
+                  <AlertDescription>{getErrorMessage(branchesError)}</AlertDescription>
                 </Alert>
               ) : (
                 <Select
                   value={app.supabaseProjectId || ""}
                   onValueChange={async (supabaseBranchProjectId) => {
                     try {
-                      const branch = branches.find(
-                        (b) => b.projectRef === supabaseBranchProjectId,
-                      );
+                      const branch = branches.find((b) => b.projectRef === supabaseBranchProjectId);
                       if (!branch) {
-                        throw new Error(
-                          t("integrations.supabase.branchNotFound"),
-                        );
+                        throw new Error(t("integrations.supabase.branchNotFound"));
                       }
                       // Keep the same organizationSlug from the app
                       await setAppProject({
@@ -341,20 +314,12 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                   }}
                   disabled={isLoadingBranches || isSettingAppProject}
                 >
-                  <SelectTrigger
-                    id="supabase-branch-select"
-                    data-testid="supabase-branch-select"
-                  >
-                    <SelectValue
-                      placeholder={t("integrations.supabase.selectBranch")}
-                    />
+                  <SelectTrigger id="supabase-branch-select" data-testid="supabase-branch-select">
+                    <SelectValue placeholder={t("integrations.supabase.selectBranch")} />
                   </SelectTrigger>
                   <SelectContent>
                     {branches.map((branch) => (
-                      <SelectItem
-                        key={branch.projectRef}
-                        value={branch.projectRef}
-                      >
+                      <SelectItem key={branch.projectRef} value={branch.projectRef}>
                         {branch.name}
                         {branch.isDefault && " (Default)"}
                       </SelectItem>
@@ -424,13 +389,9 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                     />
                   }
                 >
-                  <RefreshCw
-                    className={`h-4 w-4 ${isFetchingProjects ? "animate-spin" : ""}`}
-                  />
+                  <RefreshCw className={`h-4 w-4 ${isFetchingProjects ? "animate-spin" : ""}`} />
                 </TooltipTrigger>
-                <TooltipContent>
-                  {t("integrations.supabase.refreshProjects")}
-                </TooltipContent>
+                <TooltipContent>{t("integrations.supabase.refreshProjects")}</TooltipContent>
               </Tooltip>
               <Button
                 variant="outline"
@@ -448,10 +409,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                   size="sm"
                   onClick={() => {
                     if ("invocationRef" in flowState) {
-                      void cancelConnectionFlow(
-                        "supabase",
-                        flowState.invocationRef,
-                      );
+                      void cancelConnectionFlow("supabase", flowState.invocationRef);
                     }
                   }}
                   data-testid="cancel-supabase-flow-button"
@@ -461,9 +419,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
               )}
             </div>
           </CardTitle>
-          <CardDescription>
-            {t("integrations.supabase.selectProjectDescription")}
-          </CardDescription>
+          <CardDescription>{t("integrations.supabase.selectProjectDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoadingProjects || isFetchingProjects ? (
@@ -476,11 +432,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
               {t("integrations.supabase.errorLoadingProjects", {
                 message: projectsError.message,
               })}
-              <Button
-                variant="outline"
-                className="mt-2"
-                onClick={() => refetchProjects()}
-              >
+              <Button variant="outline" className="mt-2" onClick={() => refetchProjects()}>
                 {t("common:retry")}
               </Button>
             </div>
@@ -488,9 +440,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
             <div className="space-y-4">
               {/* Connected organizations list */}
               <div className="space-y-2">
-                <Label>
-                  {t("integrations.supabase.connectedOrganizations")}
-                </Label>
+                <Label>{t("integrations.supabase.connectedOrganizations")}</Label>
                 <div className="space-y-1">
                   {organizations.map((org) => (
                     <div
@@ -499,8 +449,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                     >
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="font-medium truncate">
-                          {org.name ||
-                            `Organization ${org.organizationSlug.slice(0, 8)}`}
+                          {org.name || `Organization ${org.organizationSlug.slice(0, 8)}`}
                         </span>
                         {org.ownerEmail && (
                           <span className="text-xs text-muted-foreground truncate">
@@ -515,9 +464,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                               variant="ghost"
                               size="sm"
                               className="h-7 px-2 text-muted-foreground hover:text-destructive shrink-0"
-                              onClick={() =>
-                                handleDeleteOrganization(org.organizationSlug)
-                              }
+                              onClick={() => handleDeleteOrganization(org.organizationSlug)}
                             />
                           }
                         >
@@ -545,9 +492,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                     onValueChange={(v) => v && handleProjectSelect(v)}
                   >
                     <SelectTrigger id="project-select">
-                      <SelectValue
-                        placeholder={t("integrations.supabase.selectAProject")}
-                      />
+                      <SelectValue placeholder={t("integrations.supabase.selectAProject")} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(groupedProjects).map(

@@ -11,8 +11,6 @@ interface OctopusStudioSupabaseProjectInfoProps {
   children: React.ReactNode;
 }
 
-export function OctopusStudioSupabaseProjectInfo(
-  props: OctopusStudioSupabaseProjectInfoProps,
-) {
+export function OctopusStudioSupabaseProjectInfo(props: OctopusStudioSupabaseProjectInfoProps) {
   return <OctopusStudioDbProjectInfo provider="Supabase" {...props} />;
 }

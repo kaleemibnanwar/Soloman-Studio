@@ -9,10 +9,7 @@ import {
   type DeployedFunctionResponse,
 } from "./supabase_management_client";
 import { SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY } from "./supabase_deploy_queue";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { runSupabaseDependencyAnalysis } from "@/ipc/processors/supabase_dependency_analysis";
 import type { SupabaseFunctionImpact } from "../../shared/supabase_dependency_analysis_types";
 
@@ -129,9 +126,7 @@ export function extractFunctionNameFromPath(filePath: string): string {
   return functionName;
 }
 
-async function getValidSupabaseFunctionNames(
-  functionsDir: string,
-): Promise<string[]> {
+async function getValidSupabaseFunctionNames(functionsDir: string): Promise<string[]> {
   const entries = await fs.readdir(functionsDir, { withFileTypes: true });
   const validFunctions: string[] = [];
 
@@ -165,10 +160,7 @@ export async function getSupabaseFunctionsAffectedBySharedModules({
       changedSharedModulePaths,
     });
   } catch (error) {
-    logger.warn(
-      "Supabase dependency analysis failed; deploying all functions",
-      error,
-    );
+    logger.warn("Supabase dependency analysis failed; deploying all functions", error);
     return { kind: "all", reason: "dependency_analysis_failed" };
   }
 }
@@ -231,16 +223,12 @@ export async function deployAffectedSupabaseFunctions({
       });
     }
 
-    logger.info(
-      `Shared module dependency analysis fell back to all functions: ${impact.reason}`,
-    );
+    logger.info(`Shared module dependency analysis fell back to all functions: ${impact.reason}`);
     return deployAllSupabaseFunctions(deployArgs);
   }
 
   const functionNames = Array.from(new Set(pendingFunctionDeploys));
-  logger.info(
-    `Redeploying pending Supabase functions: ${functionNames.join(", ")}`,
-  );
+  logger.info(`Redeploying pending Supabase functions: ${functionNames.join(", ")}`);
   return deploySupabaseFunctions({
     ...deployArgs,
     functionNames,
@@ -285,9 +273,7 @@ export async function deploySupabaseFunctions({
   try {
     const allValidFunctions = await getValidSupabaseFunctionNames(functionsDir);
     const allValidFunctionNames = new Set(allValidFunctions);
-    const requestedFunctionNames = functionNames
-      ? Array.from(new Set(functionNames))
-      : undefined;
+    const requestedFunctionNames = functionNames ? Array.from(new Set(functionNames)) : undefined;
     const missingRequestedFunctionNames: string[] = [];
     const validFunctions = requestedFunctionNames
       ? requestedFunctionNames.filter((functionName) => {
@@ -295,9 +281,7 @@ export async function deploySupabaseFunctions({
             return true;
           }
           missingRequestedFunctionNames.push(functionName);
-          logger.warn(
-            `Skipping ${functionName}: index.ts not found in local functions directory`,
-          );
+          logger.warn(`Skipping ${functionName}: index.ts not found in local functions directory`);
           return false;
         })
       : allValidFunctions;
@@ -307,9 +291,7 @@ export async function deploySupabaseFunctions({
       errors.push(errorMessage);
     }
 
-    logger.info(
-      `Found ${validFunctions.length} functions to deploy in ${functionsDir}`,
-    );
+    logger.info(`Found ${validFunctions.length} functions to deploy in ${functionsDir}`);
 
     if (validFunctions.length === 0) {
       logger.info("No valid functions to deploy");
@@ -331,10 +313,7 @@ export async function deploySupabaseFunctions({
     let succeededFunctions = 0;
     let failedFunctions = 0;
 
-    function emitProgress(
-      phase: SupabaseDeployProgress["phase"],
-      functionName?: string,
-    ) {
+    function emitProgress(phase: SupabaseDeployProgress["phase"], functionName?: string) {
       onProgress?.({
         phase,
         total: totalFunctions,
@@ -399,18 +378,14 @@ export async function deploySupabaseFunctions({
 
     // Bulk update all successfully bundled functions to activate them
     if (successfulDeploys.length > 0) {
-      logger.info(
-        `Activating ${successfulDeploys.length} functions via bulk update...`,
-      );
+      logger.info(`Activating ${successfulDeploys.length} functions via bulk update...`);
       try {
         await bulkUpdateFunctions({
           supabaseProjectId,
           functions: successfulDeploys,
           organizationSlug: supabaseOrganizationSlug,
         });
-        logger.info(
-          `Successfully activated ${successfulDeploys.length} functions`,
-        );
+        logger.info(`Successfully activated ${successfulDeploys.length} functions`);
       } catch (error: any) {
         const errorMessage = `Failed to bulk update functions: ${error.message}`;
         logger.error(errorMessage, error);
@@ -462,9 +437,7 @@ export async function deploySupabaseFunctions({
     }
 
     if (validFunctions.length > 0) {
-      emitProgress(
-        errors.length === 0 && activationSucceeded ? "finished" : "failed",
-      );
+      emitProgress(errors.length === 0 && activationSucceeded ? "finished" : "failed");
     }
   } catch (error: any) {
     const errorMessage = `Error reading functions directory: ${error.message}`;

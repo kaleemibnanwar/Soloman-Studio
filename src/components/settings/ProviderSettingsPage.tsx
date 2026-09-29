@@ -56,28 +56,18 @@ type ApiKeyValidationDialogState = {
   errorKind?: OctopusStudioErrorKind;
 };
 
-const VALIDATED_API_KEY_PROVIDERS = new Set<string>([
-  "google",
-  "openrouter",
-  "auto",
-]);
+const VALIDATED_API_KEY_PROVIDERS = new Set<string>(["google", "openrouter", "auto"]);
 
 function getErrorKind(error: unknown): OctopusStudioErrorKind | undefined {
   const kind =
-    typeof error === "object" && error !== null
-      ? (error as { kind?: unknown }).kind
-      : undefined;
+    typeof error === "object" && error !== null ? (error as { kind?: unknown }).kind : undefined;
   return typeof kind === "string" &&
-    Object.values(OctopusStudioErrorKind).includes(
-      kind as OctopusStudioErrorKind,
-    )
+    Object.values(OctopusStudioErrorKind).includes(kind as OctopusStudioErrorKind)
     ? (kind as OctopusStudioErrorKind)
     : undefined;
 }
 
-function getApiKeyValidationDialogTitle(
-  dialog: ApiKeyValidationDialogState | null,
-) {
+function getApiKeyValidationDialogTitle(dialog: ApiKeyValidationDialogState | null) {
   return dialog?.errorKind === OctopusStudioErrorKind.Auth
     ? "API key rejected"
     : "Could not verify API key";
@@ -104,16 +94,13 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
   // Find the specific provider data from the fetched list
   const providerData = allProviders?.find((p) => p.id === provider);
   useEffect(() => {
-    const layoutMainContentContainer = document.getElementById(
-      "layout-main-content-container",
-    );
+    const layoutMainContentContainer = document.getElementById("layout-main-content-container");
     if (layoutMainContentContainer) {
       layoutMainContentContainer.scrollTo(0, 0);
     }
   }, [providerData?.id]);
 
-  const supportsCustomModels =
-    providerData?.type === "custom" || providerData?.type === "cloud";
+  const supportsCustomModels = providerData?.type === "custom" || providerData?.type === "cloud";
 
   const isOctopusStudio = provider === "auto";
 
@@ -121,9 +108,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [testSuccessMessage, setTestSuccessMessage] = useState<string | null>(
-    null,
-  );
+  const [testSuccessMessage, setTestSuccessMessage] = useState<string | null>(null);
   const [apiKeyValidationDialog, setApiKeyValidationDialog] =
     useState<ApiKeyValidationDialogState | null>(null);
   const [showStartBuildingBanner, setShowStartBuildingBanner] = useState(false);
@@ -148,28 +133,18 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
 
   // --- Configuration Logic --- Updated Priority ---
   const isValidUserKey =
-    !!userApiKey &&
-    !userApiKey.startsWith("Invalid Key") &&
-    userApiKey !== "Not Set";
+    !!userApiKey && !userApiKey.startsWith("Invalid Key") && userApiKey !== "Not Set";
   const hasEnvKey = !!(envVarName && envVars[envVarName]);
 
-  const azureSettings = settings?.providerSettings?.azure as
-    | AzureProviderSetting
-    | undefined;
+  const azureSettings = settings?.providerSettings?.azure as AzureProviderSetting | undefined;
   const azureApiKeyFromSettings = (azureSettings?.apiKey?.value ?? "").trim();
-  const azureResourceNameFromSettings = (
-    azureSettings?.resourceName ?? ""
-  ).trim();
-  const azureHasSavedSettings = Boolean(
-    azureApiKeyFromSettings && azureResourceNameFromSettings,
-  );
+  const azureResourceNameFromSettings = (azureSettings?.resourceName ?? "").trim();
+  const azureHasSavedSettings = Boolean(azureApiKeyFromSettings && azureResourceNameFromSettings);
   const azureHasEnvConfiguration = Boolean(
     envVars["AZURE_API_KEY"] && envVars["AZURE_RESOURCE_NAME"],
   );
 
-  const vertexSettings = settings?.providerSettings?.vertex as
-    | VertexProviderSetting
-    | undefined;
+  const vertexSettings = settings?.providerSettings?.vertex as VertexProviderSetting | undefined;
   const isVertexConfigured = Boolean(
     vertexSettings?.projectId &&
     vertexSettings?.location &&
@@ -177,9 +152,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
   );
 
   const isAzureConfigured =
-    provider === "azure"
-      ? azureHasSavedSettings || azureHasEnvConfiguration
-      : false;
+    provider === "azure" ? azureHasSavedSettings || azureHasEnvConfiguration : false;
 
   const isConfigured =
     provider === "azure"
@@ -196,25 +169,16 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
       setSaveError("API Key cannot be empty.");
       return null;
     }
-    const invalidCharacter =
-      findInvalidProviderApiKeyCharacter(normalizedValue);
+    const invalidCharacter = findInvalidProviderApiKeyCharacter(normalizedValue);
     if (invalidCharacter) {
-      setSaveError(
-        formatInvalidProviderApiKeyMessage(
-          providerDisplayName,
-          invalidCharacter,
-        ),
-      );
+      setSaveError(formatInvalidProviderApiKeyMessage(providerDisplayName, invalidCharacter));
       return null;
     }
     return normalizedValue;
   };
 
   // --- Save Handler ---
-  const handleSaveKey = async (
-    value: string,
-    options: { skipValidation?: boolean } = {},
-  ) => {
+  const handleSaveKey = async (value: string, options: { skipValidation?: boolean } = {}) => {
     setHighlightPasteButton(false);
     const normalizedValue = normalizeAndValidateKeyInput(value);
     if (!normalizedValue) {
@@ -311,8 +275,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
     } catch (error: any) {
       setApiKeyValidationDialog({
         message:
-          error?.message ||
-          `Octopus Studio could not verify this ${providerDisplayName} API key.`,
+          error?.message || `Octopus Studio could not verify this ${providerDisplayName} API key.`,
         apiKey: normalizedValue,
         allowKeepInvalidKey: false,
         errorKind: getErrorKind(error),
@@ -461,9 +424,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
             <AlertDialogTitle>
               {getApiKeyValidationDialogTitle(apiKeyValidationDialog)}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {apiKeyValidationDialog?.message}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{apiKeyValidationDialog?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             {apiKeyValidationDialog?.allowKeepInvalidKey && (
@@ -585,9 +546,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
           )}
 
           {/* Conditionally render CustomModelsSection */}
-          {supportsCustomModels && providerData && (
-            <ModelsSection providerId={providerData.id} />
-          )}
+          {supportsCustomModels && providerData && <ModelsSection providerId={providerData.id} />}
           <div className="h-24"></div>
         </div>
       </div>

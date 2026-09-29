@@ -1,11 +1,7 @@
 import React from "react";
 import { toast } from "sonner";
 import { X, Copy, Check, ExternalLink } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface CustomErrorToastProps {
   message: string;
@@ -47,9 +43,7 @@ export function CustomErrorToast({
                   <X className="w-3 h-3 text-white" />
                 </div>
               </div>
-              <h3 className="ml-3 text-sm font-medium text-red-900 dark:text-red-100">
-                Error
-              </h3>
+              <h3 className="ml-3 text-sm font-medium text-red-900 dark:text-red-100">Error</h3>
 
               {/* Action buttons */}
               <div className="flex items-center space-x-1.5 ml-auto">
@@ -73,9 +67,7 @@ export function CustomErrorToast({
                       </button>
                     }
                   />
-                  <TooltipContent>
-                    {copied ? "Copied" : "Copy error details"}
-                  </TooltipContent>
+                  <TooltipContent>{copied ? "Copied" : "Copy error details"}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger

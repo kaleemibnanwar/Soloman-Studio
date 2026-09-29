@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 import { AgentToolConsentSchema } from "../../lib/schemas";
 
 // =============================================================================
@@ -66,9 +61,7 @@ export const AgentProblemsUpdateSchema = z.object({
   problems: ProblemReportSchema,
 });
 
-export type AgentProblemsUpdatePayload = z.infer<
-  typeof AgentProblemsUpdateSchema
->;
+export type AgentProblemsUpdatePayload = z.infer<typeof AgentProblemsUpdateSchema>;
 
 /**
  * Schema for agent tool info.
@@ -90,9 +83,7 @@ export const SetAgentToolConsentParamsSchema = z.object({
   consent: AgentToolConsentSchema,
 });
 
-export type SetAgentToolConsentParams = z.infer<
-  typeof SetAgentToolConsentParamsSchema
->;
+export type SetAgentToolConsentParams = z.infer<typeof SetAgentToolConsentParamsSchema>;
 
 // =============================================================================
 // Agent Contracts (Invoke/Response)

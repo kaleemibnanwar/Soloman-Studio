@@ -3,10 +3,7 @@ export type LateBindingMode = "one-shot" | "replaceable";
 export interface LateBinding<T> {
   get(): T;
   configure(value: T): void;
-  onConfigured(
-    callback: (value: T) => void,
-    onFailure?: (error: unknown) => void,
-  ): () => void;
+  onConfigured(callback: (value: T) => void, onFailure?: (error: unknown) => void): () => void;
   fail(error: unknown): void;
   dispose(): void;
 }
@@ -20,9 +17,7 @@ type Listener<T> = {
  * Explicit escape hatch for a dependency whose composition lifecycle cannot
  * make it available when its consumer is first constructed.
  */
-export function createLateBinding<T>(
-  mode: LateBindingMode = "one-shot",
-): LateBinding<T> {
+export function createLateBinding<T>(mode: LateBindingMode = "one-shot"): LateBinding<T> {
   let state:
     | { type: "pending" }
     | { type: "configured"; value: T }
@@ -99,10 +94,7 @@ export function createLateBinding<T>(
         }
       }
       if (errors.length > 0) {
-        throw new AggregateError(
-          errors,
-          "Late-binding failure callbacks failed",
-        );
+        throw new AggregateError(errors, "Late-binding failure callbacks failed");
       }
     },
     dispose() {

@@ -2,10 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { cleanup, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { writeSettings } from "@/main/settings";
 import type { UserSettings } from "@/lib/schemas";
@@ -50,9 +47,7 @@ describe("default chat mode selector (integration)", () => {
     harness.mount({ chatId });
 
     const selector = await screen.findByTestId("chat-mode-selector");
-    await waitFor(() =>
-      expect(selector.getAttribute("aria-label")).toBe("Chat mode: Agent"),
-    );
+    await waitFor(() => expect(selector.getAttribute("aria-label")).toBe("Chat mode: Agent"));
     expect(selector.textContent).toContain("Agent");
   });
 
@@ -68,9 +63,7 @@ describe("default chat mode selector (integration)", () => {
     harness.mount({ chatId });
 
     const selector = await screen.findByTestId("chat-mode-selector");
-    await waitFor(() =>
-      expect(selector.getAttribute("aria-label")).toBe("Chat mode: Build"),
-    );
+    await waitFor(() => expect(selector.getAttribute("aria-label")).toBe("Chat mode: Build"));
     expect(selector.textContent).toContain("Build");
   });
 
@@ -86,11 +79,7 @@ describe("default chat mode selector (integration)", () => {
     harness.mount({ chatId });
 
     const selector = await screen.findByTestId("chat-mode-selector");
-    await waitFor(() =>
-      expect(selector.getAttribute("aria-label")).toBe(
-        "Chat mode: Basic Agent",
-      ),
-    );
+    await waitFor(() => expect(selector.getAttribute("aria-label")).toBe("Chat mode: Basic Agent"));
   });
 
   it("shows Build for the implicit Google-only baseline", async () => {
@@ -107,9 +96,7 @@ describe("default chat mode selector (integration)", () => {
     harness.mount({ chatId });
 
     const selector = await screen.findByTestId("chat-mode-selector");
-    await waitFor(() =>
-      expect(selector.getAttribute("aria-label")).toBe("Chat mode: Build"),
-    );
+    await waitFor(() => expect(selector.getAttribute("aria-label")).toBe("Chat mode: Build"));
   });
 
   it("honors an explicit Agent default for Google-only users", async () => {
@@ -126,11 +113,7 @@ describe("default chat mode selector (integration)", () => {
     harness.mount({ chatId });
 
     const selector = await screen.findByTestId("chat-mode-selector");
-    await waitFor(() =>
-      expect(selector.getAttribute("aria-label")).toBe(
-        "Chat mode: Basic Agent",
-      ),
-    );
+    await waitFor(() => expect(selector.getAttribute("aria-label")).toBe("Chat mode: Basic Agent"));
   });
 
   it("stores automatic chats as implicit and explicit overrides as latched", async () => {

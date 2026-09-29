@@ -2,14 +2,9 @@ import * as os from "os";
 import { expect } from "@playwright/test";
 import { test } from "./helpers/test_helper";
 
-test.skip(
-  os.platform() !== "darwin",
-  "macOS notification guide is platform-specific",
-);
+test.skip(os.platform() !== "darwin", "macOS notification guide is platform-specific");
 
-test("notification banner - Enable shows macOS notification guide", async ({
-  po,
-}) => {
+test("notification banner - Enable shows macOS notification guide", async ({ po }) => {
   await po.setUp({ autoApprove: true });
   await po.importApp("minimal");
 

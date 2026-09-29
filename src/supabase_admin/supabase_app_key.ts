@@ -2,14 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import log from "electron-log";
 
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { IS_TEST_BUILD } from "@/ipc/utils/test_utils";
 import { getFileWriteKey, withLock } from "@/ipc/utils/lock_utils";
 import { assertMutationPathAllowed, safeJoin } from "@/ipc/utils/path_utils";
-import { gitAdd, gitCommit, isGitPathClean } from "@/ipc/utils/git_utils";
+import { gitAdd, gitCommit, isGitPathClean } from "@/ipc/git/git_utils";
 import { getProjectApiKeys } from "./supabase_management_client";
 
 const logger = log.scope("supabase_app_key");
@@ -20,12 +17,7 @@ const logger = log.scope("supabase_app_key");
  * path for the project structure", so a miss here is expected and stays silent
  * rather than guessing at other locations.
  */
-const CLIENT_FILE_RELATIVE_PATH = path.join(
-  "src",
-  "integrations",
-  "supabase",
-  "client.ts",
-);
+const CLIENT_FILE_RELATIVE_PATH = path.join("src", "integrations", "supabase", "client.ts");
 
 const PUBLISHABLE_KEY_PREFIX = "sb_publishable_";
 /** `{"alg":…` base64url-encoded — the opening of every JWS header. */
@@ -43,14 +35,10 @@ function decodeJwtClaims(key: string): LegacyKeyClaims | undefined {
     return undefined;
   }
   try {
-    const claims: unknown = JSON.parse(
-      Buffer.from(segments[1], "base64url").toString("utf8"),
-    );
+    const claims: unknown = JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8"));
     // A JSON payload that isn't an object tells us nothing; treat it as
     // undecodable rather than reading properties off a string or number.
-    return claims && typeof claims === "object"
-      ? (claims as LegacyKeyClaims)
-      : undefined;
+    return claims && typeof claims === "object" ? (claims as LegacyKeyClaims) : undefined;
   } catch {
     // Not a decodable JWT — that alone disqualifies it below.
     return undefined;
@@ -222,9 +210,7 @@ function maskComments(source: string): string {
  * must not be reported as having a legacy key either — otherwise the UI offers
  * an "Update key" button whose only possible outcome is a refusal.
  */
-async function resolveClientFilePath(
-  appPath: string,
-): Promise<string | undefined> {
+async function resolveClientFilePath(appPath: string): Promise<string | undefined> {
   try {
     const relativePath = await assertMutationPathAllowed({
       appPath,
@@ -322,9 +308,7 @@ async function resolveLegacyAppKey({
     return NOT_APPLICABLE;
   }
   const publishable = keys.find(
-    (key) =>
-      key.type === "publishable" &&
-      key.api_key?.startsWith(PUBLISHABLE_KEY_PREFIX),
+    (key) => key.type === "publishable" && key.api_key?.startsWith(PUBLISHABLE_KEY_PREFIX),
   );
   if (!publishable?.api_key) {
     // The project has no publishable key yet, so there's nothing to switch
@@ -387,10 +371,7 @@ async function readClientFile(clientFilePath: string): Promise<string> {
   }
 }
 
-async function writeClientFile(
-  clientFilePath: string,
-  contents: string,
-): Promise<void> {
+async function writeClientFile(clientFilePath: string, contents: string): Promise<void> {
   try {
     await fs.promises.writeFile(clientFilePath, contents);
   } catch (error) {
@@ -421,9 +402,7 @@ async function wasClientFileClean({
   try {
     return await isGitPathClean({ path: appPath, filepath: relativePath });
   } catch (error) {
-    logger.info(
-      `Not auto-committing ${relativePath}: could not check its git status (${error})`,
-    );
+    logger.info(`Not auto-committing ${relativePath}: could not check its git status (${error})`);
     return false;
   }
 }
@@ -536,9 +515,7 @@ export async function switchAppToPublishableKey({
     }
 
     await writeClientFile(clientFilePath, updated);
-    logger.info(
-      `Switched app at ${appPath} to the publishable key for project ${projectId}`,
-    );
+    logger.info(`Switched app at ${appPath} to the publishable key for project ${projectId}`);
     if (wasClean) {
       // Inside the file lock: the commit has to capture the key we just wrote,
       // not whatever a concurrent writer might put there next.

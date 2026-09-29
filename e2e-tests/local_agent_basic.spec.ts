@@ -17,13 +17,9 @@ testSkipIfWindows(
     await po.importApp("minimal");
     await po.appManagement.getTitleBarAppNameButton().click();
     await po.appManagement.clickAppDetailsRenameAppButton();
-    await po.page
-      .getByRole("textbox", { name: "Enter new app name" })
-      .fill("Lumen Notes");
+    await po.page.getByRole("textbox", { name: "Enter new app name" }).fill("Lumen Notes");
     await po.page.getByRole("button", { name: "Continue" }).click();
-    await po.page
-      .getByRole("button", { name: "Recommended Rename app and" })
-      .click();
+    await po.page.getByRole("button", { name: "Recommended Rename app and" }).click();
     await expect(async () => {
       expect(await po.appManagement.getCurrentAppName()).toBe("Lumen Notes");
     }).toPass({ timeout: Timeout.MEDIUM });
@@ -50,9 +46,7 @@ testSkipIfWindows(
     await expect(async () => {
       expect(await po.appManagement.getCurrentAppName()).toBe("Lumen Notes 2");
       const appPath = await po.appManagement.getCurrentAppPath();
-      expect(appPath.endsWith("lumen-notes-2"), `appPath=${appPath}`).toBe(
-        true,
-      );
+      expect(appPath.endsWith("lumen-notes-2"), `appPath=${appPath}`).toBe(true);
     }).toPass({ timeout: Timeout.MEDIUM });
   },
 );
@@ -75,9 +69,7 @@ testSkipIfWindows(
     // The display name keeps its expressive characters; the folder is a
     // filesystem-safe lowercase slug with accents transliterated.
     await expect(async () => {
-      expect(await po.appManagement.getCurrentAppName()).toBe(
-        "Food/Drink Planner: Café Edition",
-      );
+      expect(await po.appManagement.getCurrentAppName()).toBe("Food/Drink Planner: Café Edition");
       const appPath = await po.appManagement.getCurrentAppPath();
       expect(appPath.endsWith("food-drink-planner-cafe-edition")).toBe(true);
       expect(fs.existsSync(appPath)).toBe(true);

@@ -26,8 +26,7 @@ export const fixture: LocalAgentFixture = {
           },
         },
       ],
-      textAfterTools:
-        "The app isn't running, so I couldn't execute the test yet.",
+      textAfterTools: "The app isn't running, so I couldn't execute the test yet.",
     },
   ],
 };

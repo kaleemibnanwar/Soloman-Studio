@@ -73,22 +73,24 @@ const MAX_RECIPES_PER_DOMAIN = 20;
  */
 export function listRecipesForDomain(domain: string): RecipeSummary[] {
   const normalizedDomain = normalizeDomain(domain);
-  return getDb()
-    .select({
-      fingerprint: octolimbTaskRecipes.fingerprint,
-      instruction: octolimbTaskRecipes.instruction,
-      successCount: octolimbTaskRecipes.successCount,
-      failureCount: octolimbTaskRecipes.failureCount,
-      lastUsedAt: octolimbTaskRecipes.lastUsedAt,
-    })
-    .from(octolimbTaskRecipes)
-    // `domain` is stored as given by the model (see upsertRecipe), not
-    // normalized, so compare case/whitespace-insensitively via a SQL
-    // expression rather than an exact-column match.
-    .where(sql`lower(trim(${octolimbTaskRecipes.domain})) = ${normalizedDomain}`)
-    .orderBy(desc(octolimbTaskRecipes.successCount), desc(octolimbTaskRecipes.lastUsedAt))
-    .limit(MAX_RECIPES_PER_DOMAIN)
-    .all();
+  return (
+    getDb()
+      .select({
+        fingerprint: octolimbTaskRecipes.fingerprint,
+        instruction: octolimbTaskRecipes.instruction,
+        successCount: octolimbTaskRecipes.successCount,
+        failureCount: octolimbTaskRecipes.failureCount,
+        lastUsedAt: octolimbTaskRecipes.lastUsedAt,
+      })
+      .from(octolimbTaskRecipes)
+      // `domain` is stored as given by the model (see upsertRecipe), not
+      // normalized, so compare case/whitespace-insensitively via a SQL
+      // expression rather than an exact-column match.
+      .where(sql`lower(trim(${octolimbTaskRecipes.domain})) = ${normalizedDomain}`)
+      .orderBy(desc(octolimbTaskRecipes.successCount), desc(octolimbTaskRecipes.lastUsedAt))
+      .limit(MAX_RECIPES_PER_DOMAIN)
+      .all()
+  );
 }
 
 /** Insert a new recipe, or overwrite an existing one's steps (a fresh successful run supersedes a stale trajectory). */

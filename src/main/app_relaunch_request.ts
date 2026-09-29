@@ -33,9 +33,7 @@ export function createAppRelaunchRequest() {
         if (request) {
           relaunch({
             args: [
-              ...currentArgs.filter(
-                (arg) => !arg.startsWith("octopusStudio://"),
-              ),
+              ...currentArgs.filter((arg) => !arg.startsWith("octopusStudio://")),
               ...(request.deepLinkUrl ? [request.deepLinkUrl] : []),
             ],
           });

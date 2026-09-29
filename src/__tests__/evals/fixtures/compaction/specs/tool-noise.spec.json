@@ -52,9 +52,7 @@
         "app/locales/en.json"
       ],
       "factIds": ["F2", "F10", "F11"],
-      "bulk": [
-        { "asset": "locale-json", "path": "app/locales/en.json", "count": 380 }
-      ]
+      "bulk": [{ "asset": "locale-json", "path": "app/locales/en.json", "count": 380 }]
     },
     {
       "id": "p4",

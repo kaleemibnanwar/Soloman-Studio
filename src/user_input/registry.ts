@@ -7,16 +7,10 @@
  * the state-machine event enumeration. `request` also accepts an optional
  * requestId solely to preserve/test duplicate-correlation supersession.
  */
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "../errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "../errors/octopus_studio_error";
 import type { Clock, ClockHandle, IdSource } from "../state_machines/clock";
 import { createTraceObserver } from "../state_machines/trace";
-import {
-  observeTransition,
-  type TransitionObserver,
-} from "../state_machines/types";
+import { observeTransition, type TransitionObserver } from "../state_machines/types";
 import {
   createUserInputCommandRunner,
   type UserInputCommand,
@@ -64,16 +58,9 @@ interface ParkEntry {
 
 export interface UserInputRegistry {
   request(descriptor: NewUserInputDescriptor, requestId?: string): string;
-  park(
-    requestId: string,
-    abortSignal?: AbortSignal,
-  ): Promise<UserInputParkValue | null>;
+  park(requestId: string, abortSignal?: AbortSignal): Promise<UserInputParkValue | null>;
   respond(requestId: string, response: UserInputResponse): Promise<void>;
-  classifierDecided(
-    requestId: string,
-    approved: boolean,
-    reason?: string,
-  ): Promise<boolean>;
+  classifierDecided(requestId: string, approved: boolean, reason?: string): Promise<boolean>;
   sweepChat(chatId: number, exceptRequestId?: string): void;
   settleChat(chatId: number): Promise<void>;
   settleAll(): Promise<void>;
@@ -133,10 +120,7 @@ export function createUserInputRegistry(deps: {
     if (requests?.size === 0) chatIndex.delete(descriptor.chatId);
   }
 
-  function resolvePark(
-    requestId: string,
-    value: UserInputParkValue | null,
-  ): void {
+  function resolvePark(requestId: string, value: UserInputParkValue | null): void {
     const entry = parks.get(requestId);
     if (!entry || entry.settled) return;
     entry.settled = true;
@@ -192,10 +176,7 @@ export function createUserInputRegistry(deps: {
     if (effect instanceof Promise) return effect;
   }
 
-  function dispatch(
-    requestId: string,
-    event: UserInputEvent,
-  ): Promise<boolean> {
+  function dispatch(requestId: string, event: UserInputEvent): Promise<boolean> {
     const previous = states.get(requestId) ?? ({ status: "idle" } as const);
     const result = transition(previous, event);
     observeTransition(observer, previous, event, result);
@@ -203,8 +184,7 @@ export function createUserInputRegistry(deps: {
 
     states.set(requestId, result.state);
     if (isLiveUserInputState(result.state)) addToChat(result.state.descriptor);
-    else if (isLiveUserInputState(previous))
-      removeFromChat(previous.descriptor);
+    else if (isLiveUserInputState(previous)) removeFromChat(previous.descriptor);
 
     if (result.state.status === "settled") {
       settledOrder.push(requestId);
@@ -256,10 +236,7 @@ export function createUserInputRegistry(deps: {
     return pending ? pending.then(finish) : Promise.resolve(finish());
   }
 
-  function dispatchWithoutWaiting(
-    requestId: string,
-    event: UserInputEvent,
-  ): void {
+  function dispatchWithoutWaiting(requestId: string, event: UserInputEvent): void {
     void dispatch(requestId, event).catch(() => {
       // Command runner failures are programming errors, but must not wedge the
       // registry. Production runners log at their own adapter boundary.
@@ -339,8 +316,7 @@ export function createUserInputRegistry(deps: {
           }
         };
         abortSignal.addEventListener("abort", onAbort, { once: true });
-        entry.abortCleanup = () =>
-          abortSignal.removeEventListener("abort", onAbort);
+        entry.abortCleanup = () => abortSignal.removeEventListener("abort", onAbort);
       }
       return entry.promise;
     },
@@ -441,14 +417,10 @@ export function createUserInputRegistry(deps: {
           status: state.status,
           descriptor: state.descriptor,
           deadlineAt: state.descriptor.deadlineAt,
-          classifier:
-            state.status === "awaiting" ? state.classifier : undefined,
-          classifierReason:
-            state.status === "awaiting" ? state.classifierReason : undefined,
+          classifier: state.status === "awaiting" ? state.classifier : undefined,
+          classifierReason: state.status === "awaiting" ? state.classifierReason : undefined,
           followUpPrompt:
-            state.status === "armed" || state.status === "due"
-              ? state.followUpPrompt
-              : undefined,
+            state.status === "armed" || state.status === "due" ? state.followUpPrompt : undefined,
         });
       }
       return result;

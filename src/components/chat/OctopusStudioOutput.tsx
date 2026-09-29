@@ -71,17 +71,13 @@ export const OctopusStudioOutput: React.FC<OctopusStudioOutputProps> = ({
 
       {/* Content area */}
       <OctopusStudioCardContent isExpanded={isContentVisible}>
-        {children && (
-          <div className="text-sm text-muted-foreground mb-3">{children}</div>
-        )}
+        {children && <div className="text-sm text-muted-foreground mb-3">{children}</div>}
       </OctopusStudioCardContent>
 
       {/* Action buttons at the bottom - always visible for errors */}
       {isError && message && (
         <div className="px-3 pb-2 flex justify-end gap-2">
-          <CopyErrorMessage
-            errorMessage={children ? `${message}\n${children}` : message}
-          />
+          <CopyErrorMessage errorMessage={children ? `${message}\n${children}` : message} />
           {!isStreaming && (
             <button
               onClick={handleAIFix}

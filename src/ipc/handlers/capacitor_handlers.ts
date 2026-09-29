@@ -5,14 +5,11 @@ import { eq } from "drizzle-orm";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import fs from "node:fs";
 import path from "node:path";
-import { simpleSpawn } from "../utils/simpleSpawn";
+import { simpleSpawn } from "../process/simpleSpawn";
 import { IS_TEST_BUILD } from "../utils/test_utils";
 import { createTypedHandler } from "./base";
 import { capacitorContracts } from "../types/capacitor";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { getPackageManagerCommandEnv } from "../utils/socket_firewall";
 
 const logger = log.scope("capacitor_handlers");
@@ -22,10 +19,7 @@ async function getApp(appId: number) {
     where: eq(apps.id, appId),
   });
   if (!app) {
-    throw new OctopusStudioError(
-      `App with id ${appId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`App with id ${appId} not found`, OctopusStudioErrorKind.NotFound);
   }
   return app;
 }
@@ -49,10 +43,7 @@ export function registerCapacitorHandlers() {
 
     // check for the required Node.js version before running any commands
     const currentNodeVersion = process.version;
-    const majorVersion = parseInt(
-      currentNodeVersion.slice(1).split(".")[0],
-      10,
-    );
+    const majorVersion = parseInt(currentNodeVersion.slice(1).split(".")[0], 10);
 
     if (majorVersion < 20) {
       // version is too old? stop and throw a clear error
@@ -131,9 +122,7 @@ export function registerCapacitorHandlers() {
 
     if (IS_TEST_BUILD) {
       // In test mode, just log the action instead of actually opening Android Studio
-      logger.info(
-        "Test mode: Simulating opening Android project in Android Studio",
-      );
+      logger.info("Test mode: Simulating opening Android project in Android Studio");
       return;
     }
 

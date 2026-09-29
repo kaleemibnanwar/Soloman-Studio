@@ -14,9 +14,7 @@ export function useAddAppToFavorite() {
     },
     onSuccess: (newIsFavorite, appId) => {
       queryClient.setQueryData<ListedApp[]>(queryKeys.apps.all, (oldApps) =>
-        oldApps?.map((app) =>
-          app.id === appId ? { ...app, isFavorite: newIsFavorite } : app,
-        ),
+        oldApps?.map((app) => (app.id === appId ? { ...app, isFavorite: newIsFavorite } : app)),
       );
       showSuccess("App favorite status updated");
     },

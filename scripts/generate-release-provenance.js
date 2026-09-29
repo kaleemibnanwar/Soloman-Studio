@@ -17,10 +17,7 @@ const RELEASE_ARTIFACT_EXTENSIONS = new Set([
 
 function isReleaseArtifact(filePath) {
   const basename = path.basename(filePath);
-  return (
-    basename === "RELEASES" ||
-    RELEASE_ARTIFACT_EXTENSIONS.has(path.extname(basename))
-  );
+  return basename === "RELEASES" || RELEASE_ARTIFACT_EXTENSIONS.has(path.extname(basename));
 }
 
 function listFilesRecursively(directory) {
@@ -36,15 +33,7 @@ function hashFile(filePath) {
   const buffer = Buffer.alloc(1024 * 1024);
   try {
     let bytesRead;
-    while (
-      (bytesRead = fs.readSync(
-        fileDescriptor,
-        buffer,
-        0,
-        buffer.length,
-        null,
-      )) > 0
-    ) {
+    while ((bytesRead = fs.readSync(fileDescriptor, buffer, 0, buffer.length, null)) > 0) {
       hash.update(buffer.subarray(0, bytesRead));
     }
   } finally {
@@ -80,8 +69,7 @@ function collectReleaseArtifacts(outputDirectory) {
   const duplicateNames = artifacts
     .filter((artifact, index) =>
       artifacts.some(
-        (candidate, candidateIndex) =>
-          candidateIndex !== index && candidate.name === artifact.name,
+        (candidate, candidateIndex) => candidateIndex !== index && candidate.name === artifact.name,
       ),
     )
     .map((artifact) => artifact.name);
@@ -106,11 +94,7 @@ function requireEnvironment(name, environment = process.env) {
   return value;
 }
 
-function createReleaseProvenance({
-  environment = process.env,
-  outputDirectory,
-  platform,
-}) {
+function createReleaseProvenance({ environment = process.env, outputDirectory, platform }) {
   const repository = requireEnvironment("GITHUB_REPOSITORY", environment);
   const [owner, name] = repository.split("/");
   if (!owner || !name) {
@@ -143,8 +127,7 @@ function createReleaseProvenance({
 }
 
 function main() {
-  const [outputPath, platform, outputDirectory = "out/make"] =
-    process.argv.slice(2);
+  const [outputPath, platform, outputDirectory = "out/make"] = process.argv.slice(2);
   if (!outputPath || !platform) {
     throw new Error(
       "Usage: generate-release-provenance.js <output-path> <platform> [artifact-directory]",

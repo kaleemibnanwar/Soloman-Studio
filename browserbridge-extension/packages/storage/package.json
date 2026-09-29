@@ -1,12 +1,12 @@
 {
   "name": "@extension/storage",
   "version": "0.1.13",
-  "description": "chrome extension - storage",
   "private": true,
-  "sideEffects": false,
+  "description": "chrome extension - storage",
   "files": [
     "dist/**"
   ],
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "index.ts",
   "scripts": {

@@ -27,9 +27,7 @@ export const PlanDocumentSchema = z
   })
   .strict();
 
-export function serializePlanDocument(
-  input: z.input<typeof PlanDocumentSchema>,
-): string {
+export function serializePlanDocument(input: z.input<typeof PlanDocumentSchema>): string {
   const plan = PlanDocumentSchema.parse(input);
   return JSON.stringify({
     title: plan.title,
@@ -62,9 +60,7 @@ export const PlanHandoffIntentEventSchema = z.discriminatedUnion("type", [
     })
     .strict(),
 ]);
-export type PlanHandoffIntentEvent = z.infer<
-  typeof PlanHandoffIntentEventSchema
->;
+export type PlanHandoffIntentEvent = z.infer<typeof PlanHandoffIntentEventSchema>;
 
 const PlanHandoffPhaseSchema = z.enum([
   "idle",
@@ -91,13 +87,9 @@ export const PlanHandoffRemoteSnapshotSchema = z
     failure: z.string().nullable(),
   })
   .strict();
-export type PlanHandoffRemoteSnapshot = z.infer<
-  typeof PlanHandoffRemoteSnapshotSchema
->;
+export type PlanHandoffRemoteSnapshot = z.infer<typeof PlanHandoffRemoteSnapshotSchema>;
 
-export function unavailablePlanHandoffSnapshot(
-  sourceChatId: number,
-): PlanHandoffRemoteSnapshot {
+export function unavailablePlanHandoffSnapshot(sourceChatId: number): PlanHandoffRemoteSnapshot {
   return {
     schemaVersion: 1,
     sourceChatId,
@@ -120,8 +112,7 @@ export const planHandoffClientDefinition = {
     eventCodec: PlanHandoffIntentEventSchema,
     snapshotCodec: PlanHandoffRemoteSnapshotSchema,
     keyToString: (key) => String(key.sourceChatId),
-    unavailableSnapshot: (key) =>
-      unavailablePlanHandoffSnapshot(key.sourceChatId),
+    unavailableSnapshot: (key) => unavailablePlanHandoffSnapshot(key.sourceChatId),
   },
 } satisfies RemoteClientDefinition<
   PlanHandoffKey,

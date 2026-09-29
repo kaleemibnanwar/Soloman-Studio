@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-type LogLevel = 'debug' | 'info' | 'warning' | 'error';
+type LogLevel = "debug" | "info" | "warning" | "error";
 
 interface Logger {
   debug: (...args: unknown[]) => void;
@@ -33,7 +33,7 @@ const createLogger = (namespace: string): Logger => {
 };
 
 // Create default logger
-const logger = createLogger('Agent');
+const logger = createLogger("Agent");
 
 export type { Logger, LogLevel };
 export { createLogger, logger };

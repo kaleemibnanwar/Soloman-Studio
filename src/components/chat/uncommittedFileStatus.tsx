@@ -35,14 +35,11 @@ export function getStatusLabel(status: UncommittedFile["status"]) {
 export function getStatusBadgeClassName(status: UncommittedFile["status"]) {
   return cn(
     "text-xs px-1.5 py-0.5 rounded",
-    status === "added" &&
-      "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+    status === "added" && "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
     status === "modified" &&
       "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-    status === "deleted" &&
-      "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-    status === "renamed" &&
-      "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+    status === "deleted" && "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+    status === "renamed" && "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   );
 }
 
@@ -55,14 +52,10 @@ export function LineStats({ file }: { file: UncommittedFile }) {
   return (
     <span className="flex items-center gap-1.5 font-mono text-xs tabular-nums">
       {file.additions > 0 && (
-        <span className="text-green-600 dark:text-green-400">
-          +{file.additions}
-        </span>
+        <span className="text-green-600 dark:text-green-400">+{file.additions}</span>
       )}
       {file.deletions > 0 && (
-        <span className="text-red-600 dark:text-red-400">
-          −{file.deletions}
-        </span>
+        <span className="text-red-600 dark:text-red-400">−{file.deletions}</span>
       )}
     </span>
   );
@@ -78,12 +71,9 @@ export function generateDefaultCommitMessage(files: UncommittedFile[]): string {
 
   const parts: string[] = [];
   if (added > 0) parts.push(`add ${added} file${added > 1 ? "s" : ""}`);
-  if (modified > 0)
-    parts.push(`update ${modified} file${modified > 1 ? "s" : ""}`);
-  if (deleted > 0)
-    parts.push(`remove ${deleted} file${deleted > 1 ? "s" : ""}`);
-  if (renamed > 0)
-    parts.push(`rename ${renamed} file${renamed > 1 ? "s" : ""}`);
+  if (modified > 0) parts.push(`update ${modified} file${modified > 1 ? "s" : ""}`);
+  if (deleted > 0) parts.push(`remove ${deleted} file${deleted > 1 ? "s" : ""}`);
+  if (renamed > 0) parts.push(`rename ${renamed} file${renamed > 1 ? "s" : ""}`);
 
   if (parts.length === 0) return "Update files";
 

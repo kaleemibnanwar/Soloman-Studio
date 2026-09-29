@@ -135,14 +135,10 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
   const detailText = typeof children === "string" ? children.trim() : "";
   const statusDetails = useMemo(
     () =>
-      properties.detail_format === "status" && detailText
-        ? parseStatusDetails(detailText)
-        : null,
+      properties.detail_format === "status" && detailText ? parseStatusDetails(detailText) : null,
     [detailText, properties.detail_format],
   );
-  const hasDetails = Boolean(
-    detailText && (statusDetails || operation !== "status"),
-  );
+  const hasDetails = Boolean(detailText && (statusDetails || operation !== "status"));
   const isRestore = operation === "restore_file";
   const Icon = OPERATION_ICONS[operation] ?? GitBranch;
 
@@ -191,8 +187,7 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
       } else {
         if (changed > 0) parts.push(t("git.changed", { count: changed }));
         if (untracked > 0) parts.push(t("git.newFiles", { count: untracked }));
-        if (conflicted > 0)
-          parts.push(t("git.conflicts", { count: conflicted }));
+        if (conflicted > 0) parts.push(t("git.conflicts", { count: conflicted }));
       }
     } else if (operation === "diff" || operation === "show_commit") {
       if (operation === "show_commit" && properties.subject) {
@@ -207,9 +202,7 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
       if (additions > 0) parts.push(`+${additions}`);
       if (deletions > 0) parts.push(`−${deletions}`);
     } else if (operation === "log") {
-      parts.push(
-        t("git.versions", { count: readCount(properties.result_count) }),
-      );
+      parts.push(t("git.versions", { count: readCount(properties.result_count) }));
     } else if (operation === "show_file") {
       parts.push(t("git.lines", { count: readCount(properties.line_count) }));
       parts.push(t("git.fromRevision", { revision: shortRevision(revision) }));
@@ -225,16 +218,12 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
     <>
       <span
         className={`flex size-5 shrink-0 items-center justify-center ${
-          isRestore
-            ? "text-amber-700 dark:text-amber-400"
-            : "text-muted-foreground"
+          isRestore ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
         }`}
       >
         <Icon size={15} strokeWidth={1.8} />
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-        {action}
-      </span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{action}</span>
       {summary && (
         <span
           className={`max-w-[45%] shrink truncate text-xs ${
@@ -258,10 +247,7 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
         <CircleX size={14} className="shrink-0 text-red-500" />
       )}
       {isRestore && state === "finished" && (
-        <CheckCircle2
-          size={14}
-          className="shrink-0 text-green-600 dark:text-green-500"
-        />
+        <CheckCircle2 size={14} className="shrink-0 text-green-600 dark:text-green-500" />
       )}
       {hasDetails && (
         <ChevronRight
@@ -277,9 +263,7 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
   return (
     <div
       className={`my-1 overflow-hidden rounded-lg transition-colors duration-150 motion-reduce:transition-none ${
-        isRestore
-          ? "bg-amber-500/7 hover:bg-amber-500/11"
-          : "hover:bg-(--background-lightest)"
+        isRestore ? "bg-amber-500/7 hover:bg-amber-500/11" : "hover:bg-(--background-lightest)"
       }`}
       data-testid="octopus-studio-git"
     >
@@ -309,9 +293,7 @@ export const OctopusStudioGit = ({ children, node }: OctopusStudioGitProps) => {
             <StatusDetails details={statusDetails} />
           ) : (
             <div onClick={(event) => event.stopPropagation()}>
-              <CodeHighlight
-                className={detailLanguage(path, properties.detail_format)}
-              >
+              <CodeHighlight className={detailLanguage(path, properties.detail_format)}>
                 {detailText}
               </CodeHighlight>
             </div>

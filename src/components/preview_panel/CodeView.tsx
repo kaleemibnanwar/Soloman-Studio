@@ -1,24 +1,9 @@
-import { FileEditor } from "./FileEditor";
-import { CsvEditor } from "./CsvEditor";
-import { XlsxEditor } from "./XlsxEditor";
-import { DocxEditor } from "./DocxEditor";
-import { PptxPreview } from "./PptxPreview";
+import { FilePreview } from "./FilePreview";
+import { UniversalPreviewToolbar } from "./UniversalPreviewToolbar";
 import { FileTree } from "./FileTree";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLoadApp } from "@/hooks/useLoadApp";
-import {
-  RefreshCw,
-  Maximize2,
-  Minimize2,
-  ArrowLeft,
-  Pencil,
-  Loader2,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useQueryClient } from "@tanstack/react-query";
 import { selectedFileAtom, stagedDiffFileAtom } from "@/atoms/viewAtoms";
@@ -28,7 +13,6 @@ import { useTranslation } from "react-i18next";
 import { VersionDiffView } from "./VersionDiffView";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { StagedDiffView } from "./StagedDiffView";
-import { CommitMenu } from "./CommitMenu";
 import { useUncommittedFiles } from "@/hooks/useUncommittedFiles";
 import { useVersionPreview } from "@/hooks/useVersionPreview";
 import {
@@ -38,15 +22,14 @@ import {
   selectedDiffFileForState,
 } from "@/version_preview/state";
 import { useVersionChanges } from "@/hooks/useVersionChanges";
-import {
-  getDisplayedStagedDiffPath,
-  getDisplayedVersionDiffPath,
-} from "./diffSelection";
+import { getDisplayedStagedDiffPath, getDisplayedVersionDiffPath } from "./diffSelection";
 import { showWarning } from "@/lib/toast";
 
 interface App {
   id?: number;
   files?: string[];
+  path?: string;
+  resolvedPath?: string;
 }
 
 export interface CodeViewProps {
@@ -71,20 +54,14 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
   const exitStagedDiff = useSetAtom(exitStagedDiffAtom);
   const clearStagedDiff = useSetAtom(clearStagedDiffAtom);
   const { refreshApp } = useLoadApp(app?.id ?? null);
-  const { uncommittedFiles, hasUncommittedFiles } = useUncommittedFiles(
-    app?.id ?? null,
-  );
-  const { changes: versionChanges } = useVersionChanges(
-    app?.id ?? null,
-    selectedVersionId,
-  );
+  const { uncommittedFiles, hasUncommittedFiles } = useUncommittedFiles(app?.id ?? null);
+  const { changes: versionChanges } = useVersionChanges(app?.id ?? null, selectedVersionId);
 
   const closeVersionDiff = () => {
     sendPreviewEvent({ type: "CLOSE_VERSION_DIFF" });
   };
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isLeavingHistoricalCheckout, setIsLeavingHistoricalCheckout] =
-    useState(false);
+  const [isLeavingHistoricalCheckout, setIsLeavingHistoricalCheckout] = useState(false);
   // An edit attempt gave up while the app was still on the previewed commit -
   // the return failed, or another window kept the checkout alive. The working
   // tree stays historical until that is resolved, so the file tree must stay
@@ -97,9 +74,7 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
   // Whether the app owned a historical checkout as of the last settled render,
   // so the effect below can tell "the checkout was released" apart from "the
   // flag was just raised against a checkout React has not rendered yet".
-  const ownedHistoricalCheckoutRef = useRef(
-    ownsHistoricalCheckout(previewState),
-  );
+  const ownedHistoricalCheckoutRef = useRef(ownsHistoricalCheckout(previewState));
   // Leaving Code mode tears the panel down without running the app-id effect,
   // so displayedAppIdRef would keep answering for an app that is no longer
   // displayed. The file selection it writes is global, so an unmounted panel
@@ -174,16 +149,11 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
   }
 
   if (!app) {
-    return (
-      <div className="text-center py-4 text-gray-500">
-        {t("preview.noAppSelected")}
-      </div>
-    );
+    return <div className="text-center py-4 text-gray-500">{t("preview.noAppSelected")}</div>;
   }
 
   const isVersionDiffMode = selectedVersionId != null && app.id != null;
-  const isStagedDiffMode =
-    stagedDiffFile != null && app.id != null && !isVersionDiffMode;
+  const isStagedDiffMode = stagedDiffFile != null && app.id != null && !isVersionDiffMode;
   const selectedVersionDiffFile = selectedDiffFileForState(previewState);
   const displayedDiffPath = isVersionDiffMode
     ? getDisplayedVersionDiffPath(
@@ -231,11 +201,9 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
   // window kept the checkout stays detached until that window releases it.
   // Only the first has a retry to point the user at.
   const isAwaitingCheckoutRecovery =
-    previewState.type === "recovery-required" ||
-    previewState.type === "restore-recovery-required";
+    previewState.type === "recovery-required" || previewState.type === "restore-recovery-required";
   const isStuckOnHistoricalCheckout =
-    (isAwaitingCheckoutRecovery || editLeftAppDetached) &&
-    ownsHistoricalCheckout(previewState);
+    (isAwaitingCheckoutRecovery || editLeftAppDetached) && ownsHistoricalCheckout(previewState);
 
   // An edit that outlived the view that started it must not touch state that
   // belongs to whatever is displayed now - another app, or nothing at all.
@@ -365,99 +333,28 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
         className={`flex flex-col bg-background ${isFullscreen ? "fixed inset-0 z-50 h-screen w-screen shadow-2xl" : "h-full"}`}
       >
         {/* Toolbar */}
-        <div className="flex items-center p-2 border-b space-x-2">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  onClick={() => refreshApp()}
-                  className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading || !app.id}
-                />
-              }
-            >
-              <RefreshCw size={16} />
-            </TooltipTrigger>
-            <TooltipContent>{t("preview.refreshFiles")}</TooltipContent>
-          </Tooltip>
-          {isStagedDiffMode && (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    onClick={() => exitStagedDiff()}
-                    aria-label={t("preview.backToEditor")}
-                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                    data-testid="staged-diff-back-button"
-                  />
-                }
-              >
-                <ArrowLeft size={16} />
-              </TooltipTrigger>
-              <TooltipContent>{t("preview.backToEditor")}</TooltipContent>
-            </Tooltip>
-          )}
-          {!isVersionDiffMode && (
-            <div className="text-sm text-gray-500">
-              {isStagedDiffMode
+        <UniversalPreviewToolbar
+          showBackButton={isVersionDiffMode || isStagedDiffMode}
+          onBack={isVersionDiffMode ? closeVersionDiff : () => exitStagedDiff()}
+          showRefreshButton={true}
+          onRefresh={() => refreshApp()}
+          contextText={
+            !isVersionDiffMode
+              ? isStagedDiffMode
                 ? t("preview.viewingStagedChanges")
-                : `${app.files?.length ?? 0} ${t("preview.files")}`}
-            </div>
-          )}
-          <div className="flex-1" />
-          {(isVersionDiffMode || isStagedDiffMode) && (
-            <Tooltip>
-              {/* A disabled <button> swallows pointer events, so the tooltip
-                  that explains why editing is unavailable would never open if
-                  the button were the trigger itself. */}
-              <TooltipTrigger
-                render={
-                  <span
-                    className={`inline-flex ${canEditDisplayedDiff ? "" : "cursor-not-allowed"}`}
-                  />
-                }
-              >
-                <button
-                  type="button"
-                  onClick={editDisplayedDiff}
-                  disabled={!canEditDisplayedDiff}
-                  aria-label={t("preview.editLatestVersion")}
-                  data-testid="edit-latest-version-button"
-                  data-disabled-reason={editDisabledReason ?? undefined}
-                  aria-busy={isLeavingHistoricalCheckout}
-                  className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  {isLeavingHistoricalCheckout ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Pencil size={16} />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {editDisabledReason ?? t("preview.editLatestVersion")}
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {app.id != null && <CommitMenu appId={app.id} />}
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  onClick={() => setIsFullscreen((value) => !value)}
-                  className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                />
-              }
-            >
-              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </TooltipTrigger>
-            <TooltipContent>
-              {isFullscreen
-                ? t("preview.exitFullScreen")
-                : t("preview.enterFullScreen")}
-            </TooltipContent>
-          </Tooltip>
-        </div>
+                : `${app.files?.length ?? 0} ${t("preview.files")}`
+              : undefined
+          }
+          selectedFilePath={selectedFile?.path}
+          showEditButton={isVersionDiffMode || isStagedDiffMode}
+          canEdit={canEditDisplayedDiff}
+          onEdit={editDisplayedDiff}
+          editDisabledReason={editDisabledReason ?? undefined}
+          isSaving={isLeavingHistoricalCheckout}
+          appId={app.id ?? null}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+        />
 
         {/* Content */}
         {isVersionDiffMode ? (
@@ -489,7 +386,12 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
           >
             <Panel defaultSize={33} minSize={15}>
               <div className="h-full overflow-hidden flex flex-col min-h-0">
-                <FileTree appId={app.id ?? null} files={app.files ?? []} />
+                <FileTree
+                  appId={app.id ?? null}
+                  files={app.files ?? []}
+                  refresh={() => refreshApp()}
+                  appRootPath={app.resolvedPath ?? app.path}
+                />
               </div>
             </Panel>
             <PanelResizeHandle
@@ -498,39 +400,13 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
             />
             <Panel defaultSize={67} minSize={30}>
               {selectedFile ? (
-                selectedFile.path.toLowerCase().endsWith(".csv") ? (
-                  <CsvEditor
-                    key={`${app.id ?? "unknown"}:${selectedFile.path}`}
-                    appId={app.id ?? null}
-                    filePath={selectedFile.path}
-                  />
-                ) : selectedFile.path.toLowerCase().endsWith(".xlsx") ? (
-                  <XlsxEditor
-                    key={`${app.id ?? "unknown"}:${selectedFile.path}`}
-                    appId={app.id ?? null}
-                    filePath={selectedFile.path}
-                  />
-                ) : selectedFile.path.toLowerCase().endsWith(".docx") ? (
-                  <DocxEditor
-                    key={`${app.id ?? "unknown"}:${selectedFile.path}`}
-                    appId={app.id ?? null}
-                    filePath={selectedFile.path}
-                  />
-                ) : selectedFile.path.toLowerCase().endsWith(".pptx") ? (
-                  <PptxPreview
-                    key={`${app.id ?? "unknown"}:${selectedFile.path}`}
-                    appId={app.id ?? null}
-                    filePath={selectedFile.path}
-                  />
-                ) : (
-                  <FileEditor
-                    key={`${app.id ?? "unknown"}:${selectedFile.path}`}
-                    appId={app.id ?? null}
-                    filePath={selectedFile.path}
-                    initialLine={selectedFile.line ?? null}
-                    persistCursor
-                  />
-                )
+                <FilePreview
+                  key={`${app.id ?? "unknown"}:${selectedFile.path}`}
+                  appId={app.id ?? null}
+                  filePath={selectedFile.path}
+                  initialLine={selectedFile.line ?? null}
+                  appRootPath={app.resolvedPath ?? app.path}
+                />
               ) : (
                 <div className="text-center py-4 text-gray-500">
                   {t("preview.selectFileToView")}
@@ -543,9 +419,5 @@ export const CodeView = ({ loading, app }: CodeViewProps) => {
     );
   }
 
-  return (
-    <div className="text-center py-4 text-gray-500">
-      {t("preview.noFilesFound")}
-    </div>
-  );
+  return <div className="text-center py-4 text-gray-500">{t("preview.noFilesFound")}</div>;
 };

@@ -95,10 +95,7 @@ states.
 In OctopusStudio, a machine is a plain TypeScript function. No library:
 
 ```ts
-function transition(
-  state: State,
-  event: Event,
-): { state: State; commands: Command[] };
+function transition(state: State, event: Event): { state: State; commands: Command[] };
 ```
 
 It takes the current state and an event, and returns the next state plus a
@@ -286,9 +283,7 @@ useEffect(() => {
 
 const handleConnect = async () => {
   setIsOpeningOauth(true);
-  await ipc.system.openExternalUrl(
-    "https://oauth.octopus-studio.sh/.../neon/login",
-  );
+  await ipc.system.openExternalUrl("https://oauth.octopus-studio.sh/.../neon/login");
   // Reset after 20s if the OAuth return never arrives
   oauthTimeoutRef.current = setTimeout(() => {
     setIsOpeningOauth(false);

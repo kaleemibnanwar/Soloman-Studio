@@ -1,10 +1,7 @@
 import { test, testWithConfig } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 
-test("add prompt via deep link with base64-encoded data", async ({
-  po,
-  electronApp,
-}) => {
+test("add prompt via deep link with base64-encoded data", async ({ po, electronApp }) => {
   await po.setUp();
   await po.navigation.goToLibraryTab();
 
@@ -30,27 +27,19 @@ test("add prompt via deep link with base64-encoded data", async ({
   }, deepLinkUrl);
 
   // Wait for the dialog to open and verify prefilled data
-  await expect(
-    po.page.getByRole("dialog").getByText("Create New Prompt"),
-  ).toBeVisible();
+  await expect(po.page.getByRole("dialog").getByText("Create New Prompt")).toBeVisible();
 
   // Verify the form is prefilled with the correct data
-  await expect(po.page.getByRole("textbox", { name: "Title" })).toHaveValue(
-    promptData.title,
+  await expect(po.page.getByRole("textbox", { name: "Title" })).toHaveValue(promptData.title);
+  await expect(po.page.getByRole("textbox", { name: "Description (optional)" })).toHaveValue(
+    promptData.description,
   );
-  await expect(
-    po.page.getByRole("textbox", { name: "Description (optional)" }),
-  ).toHaveValue(promptData.description);
-  await expect(po.page.getByRole("textbox", { name: "Content" })).toHaveValue(
-    promptData.content,
-  );
+  await expect(po.page.getByRole("textbox", { name: "Content" })).toHaveValue(promptData.content);
 
   // Save the prompt
   await po.page.getByRole("button", { name: "Save" }).click();
 
-  await expect(
-    po.page.getByTestId("library-prompt-card"),
-  ).toMatchAriaSnapshot();
+  await expect(po.page.getByTestId("library-prompt-card")).toMatchAriaSnapshot();
 });
 
 const coldStartPrompt = {
@@ -58,13 +47,9 @@ const coldStartPrompt = {
   description: "Delivered after the renderer loads",
   content: "Verify that a queued startup deep link is not dropped.",
 };
-const coldStartPayload = Buffer.from(JSON.stringify(coldStartPrompt)).toString(
-  "base64",
-);
+const coldStartPayload = Buffer.from(JSON.stringify(coldStartPrompt)).toString("base64");
 const coldStartTest = testWithConfig({
-  launchArgs: [
-    `octopusStudio://add-prompt?data=${encodeURIComponent(coldStartPayload)}`,
-  ],
+  launchArgs: [`octopusStudio://add-prompt?data=${encodeURIComponent(coldStartPayload)}`],
 });
 
 coldStartTest(
@@ -72,12 +57,10 @@ coldStartTest(
   async ({ po }) => {
     const dialog = po.page.getByRole("dialog");
     await expect(dialog.getByText("Create New Prompt")).toBeVisible();
-    await expect(dialog.getByRole("textbox", { name: "Title" })).toHaveValue(
-      coldStartPrompt.title,
+    await expect(dialog.getByRole("textbox", { name: "Title" })).toHaveValue(coldStartPrompt.title);
+    await expect(dialog.getByRole("textbox", { name: "Description (optional)" })).toHaveValue(
+      coldStartPrompt.description,
     );
-    await expect(
-      dialog.getByRole("textbox", { name: "Description (optional)" }),
-    ).toHaveValue(coldStartPrompt.description);
     await expect(dialog.getByRole("textbox", { name: "Content" })).toHaveValue(
       coldStartPrompt.content,
     );

@@ -17,10 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local-agent read_logs (integration)", () => {
@@ -84,9 +81,7 @@ describe("local-agent read_logs (integration)", () => {
     // Gate main-side (db) assertions on the real end-of-stream event.
     await harness.waitForStreamEnd(harness.chatId);
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const messages = await harness.db.query.messages.findMany();
@@ -98,12 +93,8 @@ describe("local-agent read_logs (integration)", () => {
     expect(content).toContain(
       "Let me check the recent console logs to see what's happening in the application.",
     );
-    expect(content).toContain(
-      "Now let me filter for only error logs to identify any issues.",
-    );
-    expect(content).toContain(
-      "Let me also check client-side logs specifically.",
-    );
+    expect(content).toContain("Now let me filter for only error logs to identify any issues.");
+    expect(content).toContain("Let me also check client-side logs specifically.");
     expect(content).toContain(
       "I've reviewed the console logs. The application appears to be running normally with no critical errors detected.",
     );
@@ -112,17 +103,11 @@ describe("local-agent read_logs (integration)", () => {
     // running, so the store is empty (count="0"), matching the e2e which only
     // asserted "Reading \d+ logs".
     expect(content).toMatch(/<octopus-studio-read-logs {2}count="0">/); // type=all, level=all
-    expect(content).toMatch(
-      /<octopus-studio-read-logs level="error" count="0">/,
-    );
-    expect(content).toMatch(
-      /<octopus-studio-read-logs type="client" count="0">/,
-    );
+    expect(content).toMatch(/<octopus-studio-read-logs level="error" count="0">/);
+    expect(content).toMatch(/<octopus-studio-read-logs type="client" count="0">/);
 
     // Filter summaries rendered inside the tags.
-    expect(content).toContain(
-      "Time: last 5 minutes | Level: error | Limit: 10",
-    );
+    expect(content).toContain("Time: last 5 minutes | Level: error | Limit: 10");
     expect(content).toContain("Time: last 5 minutes | Type: client");
     expect(content).toContain("No logs found matching the specified filters.");
 

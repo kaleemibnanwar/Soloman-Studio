@@ -5,11 +5,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useSettings } from "@/hooks/useSettings";
 import { useChatMode } from "@/hooks/useChatMode";
 import { useFreeAgentQuota } from "@/hooks/useFreeAgentQuota";
@@ -51,14 +47,11 @@ export function ChatModeSelector() {
     setChatMode,
     settings,
   } = useChatMode(isChatRoute ? chatId : null);
-  const setHasManuallySelectedChatMode = useSetAtom(
-    hasManuallySelectedChatModeAtom,
-  );
+  const setHasManuallySelectedChatMode = useSetAtom(hasManuallySelectedChatModeAtom);
   const fallbackToastKeyRef = useRef<string | null>(null);
 
   const isProEnabled = settings ? isOctopusStudioProEnabled(settings) : false;
-  const { messagesRemaining, messagesLimit, isQuotaExceeded } =
-    useFreeAgentQuota();
+  const { messagesRemaining, messagesLimit, isQuotaExceeded } = useFreeAgentQuota();
   const isOctopusStudioFreeSelected = isFreeProModel(selectedModel);
   const buildUnavailableForOctopusStudioFree = isOctopusStudioFreeSelected;
 
@@ -98,11 +91,7 @@ export function ChatModeSelector() {
 
   const handleModeChange = (value: string) => {
     const newMode = value as ChatMode;
-    if (
-      settings &&
-      selectedModel &&
-      isFreeProBuildModeCombination(selectedModel, newMode)
-    ) {
+    if (settings && selectedModel && isFreeProBuildModeCombination(selectedModel, newMode)) {
       toast.error("OctopusStudio Free is not available in Build mode.");
       return;
     }
@@ -163,10 +152,7 @@ export function ChatModeSelector() {
 
   return (
     <div className="flex items-center gap-1.5">
-      <Select
-        value={selectedMode}
-        onValueChange={(v) => v && handleModeChange(v)}
-      >
+      <Select value={selectedMode} onValueChange={(v) => v && handleModeChange(v)}>
         <Tooltip>
           <TooltipTrigger
             render={
@@ -234,17 +220,12 @@ export function ChatModeSelector() {
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground ml-[22px]">
-                  {isQuotaExceeded
-                    ? "Daily limit reached"
-                    : "Try our AI agent for free"}
+                  {isQuotaExceeded ? "Daily limit reached" : "Try our AI agent for free"}
                 </span>
               </div>
             </SelectItem>
           )}
-          <SelectItem
-            value="build"
-            disabled={buildUnavailableForOctopusStudioFree}
-          >
+          <SelectItem value="build" disabled={buildUnavailableForOctopusStudioFree}>
             <div className="flex flex-col items-start">
               <div className="flex items-center gap-1.5">
                 <Hammer size={14} className="text-muted-foreground" />

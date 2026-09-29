@@ -66,9 +66,6 @@ export function useAppMediaFiles() {
     renameMediaFile: renameMutation.mutateAsync,
     deleteMediaFile: deleteMutation.mutateAsync,
     moveMediaFile: moveMutation.mutateAsync,
-    isMutatingMedia:
-      renameMutation.isPending ||
-      deleteMutation.isPending ||
-      moveMutation.isPending,
+    isMutatingMedia: renameMutation.isPending || deleteMutation.isPending || moveMutation.isPending,
   };
 }

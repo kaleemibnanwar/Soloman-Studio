@@ -1,10 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, type Version } from "@/ipc/types";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export function useVersions(appId: number | null) {
   const queryClient = useQueryClient();
@@ -17,9 +14,7 @@ export function useVersions(appId: number | null) {
     queryClient.setQueryData<Version[]>(
       queryKeys.versions.list({ appId: targetAppId }),
       (oldVersions) =>
-        oldVersions?.map((version) =>
-          version.oid === oid ? { ...version, ...updates } : version,
-        ),
+        oldVersions?.map((version) => (version.oid === oid ? { ...version, ...updates } : version)),
     );
   };
 
@@ -30,8 +25,7 @@ export function useVersions(appId: number | null) {
     refetch: refreshVersions,
   } = useQuery<Version[], Error>({
     queryKey: queryKeys.versions.list({ appId }),
-    queryFn: async () =>
-      appId === null ? [] : ipc.version.listVersions({ appId }),
+    queryFn: async () => (appId === null ? [] : ipc.version.listVersions({ appId })),
     enabled: appId !== null,
     placeholderData: [],
     meta: { showErrorToast: true },
@@ -45,10 +39,7 @@ export function useVersions(appId: number | null) {
     mutationFn: async ({ appId: mutationAppId, versionId, isFavorite }) => {
       const targetAppId = mutationAppId === undefined ? appId : mutationAppId;
       if (targetAppId === null) {
-        throw new OctopusStudioError(
-          "App ID is null",
-          OctopusStudioErrorKind.External,
-        );
+        throw new OctopusStudioError("App ID is null", OctopusStudioErrorKind.External);
       }
       return ipc.version.setVersionFavorite({
         appId: targetAppId,
@@ -74,10 +65,7 @@ export function useVersions(appId: number | null) {
     mutationFn: async ({ appId: mutationAppId, versionId, note }) => {
       const targetAppId = mutationAppId === undefined ? appId : mutationAppId;
       if (targetAppId === null) {
-        throw new OctopusStudioError(
-          "App ID is null",
-          OctopusStudioErrorKind.External,
-        );
+        throw new OctopusStudioError("App ID is null", OctopusStudioErrorKind.External);
       }
       return ipc.version.setVersionNote({
         appId: targetAppId,

@@ -1,12 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  AlertTriangle,
-  ChevronDown,
-  Loader2,
-  XCircle,
-  CheckCircle2,
-} from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2, XCircle, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,10 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type {
-  DestructiveStatement,
-  MigrationPreviewResponse,
-} from "@/ipc/types/migration";
+import type { DestructiveStatement, MigrationPreviewResponse } from "@/ipc/types/migration";
 
 interface Props {
   open: boolean;
@@ -150,9 +141,7 @@ export const MigrationSqlPreviewDialog = ({
 
               <div
                 role="region"
-                aria-label={t(
-                  "integrations.migration.preview.sqlStatementsRegionLabel",
-                )}
+                aria-label={t("integrations.migration.preview.sqlStatementsRegionLabel")}
                 tabIndex={0}
                 className={
                   hasDataLoss
@@ -174,15 +163,10 @@ export const MigrationSqlPreviewDialog = ({
                       {destructive ? (
                         <AlertTriangle
                           className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-600 dark:text-red-300"
-                          aria-label={t(
-                            "integrations.migration.preview.destructiveStatementLabel",
-                          )}
+                          aria-label={t("integrations.migration.preview.destructiveStatementLabel")}
                         />
                       ) : (
-                        <span
-                          className="w-4 flex-shrink-0"
-                          aria-hidden="true"
-                        />
+                        <span className="w-4 flex-shrink-0" aria-hidden="true" />
                       )}
                       <span className="flex-1">{stmt}</span>
                     </div>
@@ -209,10 +193,9 @@ export const MigrationSqlPreviewDialog = ({
                     )}
                     {destructiveCount > 0 && (
                       <div className="text-xs opacity-80">
-                        {t(
-                          "integrations.migration.preview.destructive.subtitle",
-                          { count: destructiveCount },
-                        )}
+                        {t("integrations.migration.preview.destructive.subtitle", {
+                          count: destructiveCount,
+                        })}
                       </div>
                     )}
                   </div>

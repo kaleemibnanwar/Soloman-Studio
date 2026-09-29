@@ -54,8 +54,7 @@ export const fixture: LocalAgentFixture = {
               name: "write_file",
               args: {
                 path: "src/utils/helper.ts",
-                content:
-                  "export function helper(x: number): number {\n  return x * 2;\n}\n",
+                content: "export function helper(x: number): number {\n  return x * 2;\n}\n",
                 description: "Create helper utility function",
               },
             },
@@ -126,8 +125,7 @@ export const fixture: LocalAgentFixture = {
               name: "write_file",
               args: {
                 path: "src/utils/README.md",
-                content:
-                  "# Utils\n\n## helper(x)\n\nDoubles the input number.\n",
+                content: "# Utils\n\n## helper(x)\n\nDoubles the input number.\n",
                 description: "Update documentation",
               },
             },

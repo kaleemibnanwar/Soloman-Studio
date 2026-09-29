@@ -6,22 +6,19 @@ import log from "electron-log";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { apps, chats } from "@/db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { getAllTemplates } from "../utils/template_utils";
 import { localTemplatesData } from "../../shared/templates";
 import { createTypedHandler } from "./base";
 import { templateContracts } from "../types/templates";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { appOperationCoordinator } from "../services/app_operation_coordinator";
-import { runningApps, stopAppByInfo } from "../utils/process_manager";
+import { runningApps, stopAppByInfo } from "../process/process_manager";
 import { createFromTemplate } from "./createFromTemplate";
 import { ensureOctopusStudioGitignored } from "./gitignoreUtils";
 import { slugifyAppFolderName } from "@/shared/app_names";
 import { resolveUniqueFolderName } from "../utils/app_name_resolution";
-import { getGitUncommittedFiles } from "../utils/git_utils";
+import { getGitUncommittedFiles } from "../git/git_utils";
 import { gitService } from "../services/git_service";
 
 const logger = log.scope("template_handlers");
@@ -33,9 +30,7 @@ function shouldPreservePath(name: string): boolean {
 }
 
 function pathsEqualCaseInsensitive(left: string, right: string): boolean {
-  return (
-    path.normalize(left).toLowerCase() === path.normalize(right).toLowerCase()
-  );
+  return path.normalize(left).toLowerCase() === path.normalize(right).toLowerCase();
 }
 
 async function clearAppDirectoryForTemplateSwap(appPath: string) {
@@ -70,13 +65,7 @@ async function allocateNewAppPath({
   return { newSlug, newAbsPath: getOctopusStudioAppPath(newSlug) };
 }
 
-async function copyPreservedEntries({
-  fromPath,
-  toPath,
-}: {
-  fromPath: string;
-  toPath: string;
-}) {
+async function copyPreservedEntries({ fromPath, toPath }: { fromPath: string; toPath: string }) {
   const entries = await fsPromises.readdir(fromPath, { withFileTypes: true });
   for (const entry of entries) {
     if (!shouldPreservePath(entry.name)) continue;
@@ -99,9 +88,7 @@ async function applyTemplateInPlace({
   appPath: string;
   templateId: string;
 }): Promise<{ appWasStopped: boolean }> {
-  const tempRoot = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "octopus-studio-template-"),
-  );
+  const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "octopus-studio-template-"));
   const stagedTemplatePath = path.join(tempRoot, "app");
 
   let appWasStopped = false;
@@ -121,10 +108,7 @@ async function applyTemplateInPlace({
       await clearAppDirectoryForTemplateSwap(appPath);
       await fsPromises.cp(stagedTemplatePath, appPath, { recursive: true });
     } catch (error) {
-      logger.error(
-        `Failed to stage template ${templateId} for app ${appId} at ${appPath}:`,
-        error,
-      );
+      logger.error(`Failed to stage template ${templateId} for app ${appId} at ${appPath}:`, error);
       if (appWasStopped) {
         throw new OctopusStudioError(
           `Failed to apply template "${templateId}". The dev server was stopped before the failure and will need to be started manually. (${
@@ -174,10 +158,7 @@ export function registerTemplateHandlers() {
         });
 
         if (!appRecord) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
 
         const oldAbsPath = getOctopusStudioAppPath(appRecord.path);
@@ -276,10 +257,7 @@ export function registerTemplateHandlers() {
               return { applied: false, needsRestart: appWasStopped };
             }
 
-            await db
-              .update(apps)
-              .set({ path: newSlug })
-              .where(eq(apps.id, appId));
+            await db.update(apps).set({ path: newSlug }).where(eq(apps.id, appId));
             dbUpdated = true;
 
             if (chatId) {
@@ -335,10 +313,7 @@ export function registerTemplateHandlers() {
           try {
             await fsPromises.rm(oldAbsPath, { recursive: true, force: true });
           } catch (error) {
-            logger.warn(
-              `Error deleting old app directory ${oldAbsPath}:`,
-              error,
-            );
+            logger.warn(`Error deleting old app directory ${oldAbsPath}:`, error);
           }
 
           return { applied: true, needsRestart: true };
@@ -365,9 +340,7 @@ export function registerTemplateHandlers() {
           message: `Apply ${templateId} template`,
         });
         if (commitHash === null) {
-          logger.info(
-            `Template ${templateId} already applied to app ${appId}, skipping commit`,
-          );
+          logger.info(`Template ${templateId} already applied to app ${appId}, skipping commit`);
           return { applied: false, needsRestart: appWasStopped };
         }
 

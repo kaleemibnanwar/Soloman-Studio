@@ -47,8 +47,7 @@ export default function octopusStudioTaggerLoader(this: any, code: string) {
             // Skip if already tagged
             const alreadyTagged = node.attributes?.some(
               (attr: any) =>
-                attr.type === "JSXAttribute" &&
-                attr.name?.name === "data-octopusStudio-id",
+                attr.type === "JSXAttribute" && attr.name?.name === "data-octopusStudio-id",
             );
             if (alreadyTagged) return;
 
@@ -102,10 +101,7 @@ export default function octopusStudioTaggerLoader(this: any, code: string) {
       }
     })
     .catch((err) => {
-      console.error(
-        `[octopusStudio-tagger] ERROR in ${this.resourcePath}:`,
-        err,
-      );
+      console.error(`[octopusStudio-tagger] ERROR in ${this.resourcePath}:`, err);
       // Return original code instead of throwing
       callback(null, code);
     });

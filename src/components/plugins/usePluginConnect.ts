@@ -30,14 +30,9 @@ const disconnectingServerIdAtom = atom<number | null>(null);
 // Shared OAuth connect/probe handling for the plugins list and the
 // plugin detail page.
 export function usePluginConnect() {
-  const { servers, statusByServer, updateServer, startOAuth, disconnectOAuth } =
-    useMcp();
-  const [connectingServerId, setConnectingServerId] = useAtom(
-    connectingServerIdAtom,
-  );
-  const [disconnectingServerId, setDisconnectingServerId] = useAtom(
-    disconnectingServerIdAtom,
-  );
+  const { servers, statusByServer, updateServer, startOAuth, disconnectOAuth } = useMcp();
+  const [connectingServerId, setConnectingServerId] = useAtom(connectingServerIdAtom);
+  const [disconnectingServerId, setDisconnectingServerId] = useAtom(disconnectingServerIdAtom);
   const [connectFeedback, setConnectFeedback] = useAtom(connectFeedbackAtom);
 
   const callbackPort = useOauthCallbackPort();
@@ -50,11 +45,7 @@ export function usePluginConnect() {
     () =>
       new Set(
         (catalogQuery.data?.entries ?? [])
-          .filter((e) =>
-            (e.inputs ?? []).some(
-              (i) => i.kind === "header" || i.kind === "env",
-            ),
-          )
+          .filter((e) => (e.inputs ?? []).some((i) => i.kind === "header" || i.kind === "env"))
           .map((e) => e.slug),
       ),
     [catalogQuery.data],
@@ -108,9 +99,7 @@ export function usePluginConnect() {
       // failure is visible even when the new row is scrolled out of
       // view. Manual retries show the inline panel in place.
       if (opts?.showToast) {
-        showError(
-          "OAuth connection failed. This server doesn't support OAuth.",
-        );
+        showError("OAuth connection failed. This server doesn't support OAuth.");
       }
     } else {
       showError(message);
@@ -137,10 +126,7 @@ export function usePluginConnect() {
     }
   };
 
-  const onServerCreated = async (
-    created: McpServer,
-    opts: { wantsOAuth: boolean },
-  ) => {
+  const onServerCreated = async (created: McpServer, opts: { wantsOAuth: boolean }) => {
     if (opts.wantsOAuth) {
       // Bridge the gap until the new row arrives in `serversQuery`
       // and shows its own "Connecting…" state. A freshly created row
@@ -148,8 +134,7 @@ export function usePluginConnect() {
       showInfo(`Connecting OAuth for "${created.name}"…`);
       await runAutoConnect(created.id, {
         showToast: true,
-        callbackPort:
-          typeof callbackPort === "number" ? callbackPort : undefined,
+        callbackPort: typeof callbackPort === "number" ? callbackPort : undefined,
       });
     } else {
       await runProbe(created.id);
@@ -164,9 +149,7 @@ export function usePluginConnect() {
     // saved; rows with a saved port keep it so it matches their
     // registered redirect URI.
     const usesProbedPort =
-      server != null &&
-      server.oauthCallbackPort == null &&
-      typeof callbackPort === "number";
+      server != null && server.oauthCallbackPort == null && typeof callbackPort === "number";
     await runAutoConnect(serverId, {
       callbackPort: usesProbedPort ? callbackPort : undefined,
     });
@@ -183,8 +166,7 @@ export function usePluginConnect() {
       setConnectFeedback(null);
       // Just enabled, so no saved port yet -- use the probed one.
       await autoConnect(serverId, {
-        callbackPort:
-          typeof callbackPort === "number" ? callbackPort : undefined,
+        callbackPort: typeof callbackPort === "number" ? callbackPort : undefined,
       });
     });
 
@@ -201,9 +183,7 @@ export function usePluginConnect() {
       await disconnectOAuth(serverId);
       showSuccess("Disconnected OAuth");
     } catch (err) {
-      showError(
-        err instanceof Error ? err.message : "Failed to disconnect OAuth",
-      );
+      showError(err instanceof Error ? err.message : "Failed to disconnect OAuth");
     } finally {
       setDisconnectingServerId(null);
     }
@@ -219,8 +199,7 @@ export function usePluginConnect() {
     if (!server.oauthEnabled && statusByServer[server.id] === "unauthorized") {
       // If the catalog says this server needs an API key, treat a 401 as
       // a bad key rather than a sign that OAuth is required.
-      const wantsKey =
-        server.catalogSlug != null && slugsNeedingKey.has(server.catalogSlug);
+      const wantsKey = server.catalogSlug != null && slugsNeedingKey.has(server.catalogSlug);
       if (wantsKey) {
         return {
           serverId: server.id,
@@ -232,8 +211,7 @@ export function usePluginConnect() {
       return {
         serverId: server.id,
         kind: "unauthorized",
-        message:
-          "This server requires authentication. Enable OAuth and try again.",
+        message: "This server requires authentication. Enable OAuth and try again.",
       };
     }
     return null;

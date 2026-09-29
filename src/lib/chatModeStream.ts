@@ -1,10 +1,7 @@
 import type { ChatMode, UserSettings } from "./schemas";
 import { isOctopusStudioProEnabled } from "./schemas";
 import type { ChatModeFallbackReason } from "./chatMode";
-import {
-  getChatModeFallbackToastId,
-  showChatModeFallbackToast,
-} from "./chatModeToast";
+import { getChatModeFallbackToastId, showChatModeFallbackToast } from "./chatModeToast";
 
 export function handleEffectiveChatModeChunk(
   chunk: {

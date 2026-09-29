@@ -1,10 +1,7 @@
 import { ipc, type BranchResult } from "@/ipc/types";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export function useCurrentBranch(appId: number | null) {
   const {

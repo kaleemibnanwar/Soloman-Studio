@@ -1,7 +1,4 @@
-import {
-  TransactionalDispatcher,
-  type DispatcherError,
-} from "@/state_machines/dispatcher";
+import { TransactionalDispatcher, type DispatcherError } from "@/state_machines/dispatcher";
 import type { TransitionObserver } from "@/state_machines/types";
 import {
   INITIAL_SCREENSHOT_STATE,
@@ -18,11 +15,7 @@ export interface ScreenshotCommandRunner {
     command: ScreenshotCommand,
     emit: (event: ScreenshotEvent) => void,
   ): void | Promise<void>;
-  beforeStateCommit?(
-    appId: number,
-    previous: ScreenshotState,
-    next: ScreenshotState,
-  ): void;
+  beforeStateCommit?(appId: number, previous: ScreenshotState, next: ScreenshotState): void;
   disposeKey(appId: number): void;
 }
 
@@ -56,26 +49,21 @@ export class ScreenshotController {
       initialState: INITIAL_SCREENSHOT_STATE,
       transition,
       runCommand: (command, emit) =>
-        runner.execute(this.appId, command, (event) =>
-          emit(this.withSettleToken(event)),
-        ),
+        runner.execute(this.appId, command, (event) => emit(this.withSettleToken(event))),
       scheduler: {
         schedule(batch, execute) {
           for (const command of batch.commands) void execute(command);
         },
       },
-      beforeCommit: (previous, next) =>
-        runner.beforeStateCommit?.(this.appId, previous, next),
+      beforeCommit: (previous, next) => runner.beforeStateCommit?.(this.appId, previous, next),
       observer,
-      mapUnexpectedCommandError: () =>
-        this.withSettleToken({ type: "SAVE_FAILED" }),
+      mapUnexpectedCommandError: () => this.withSettleToken({ type: "SAVE_FAILED" }),
       reportError,
     });
   }
 
   getSnapshot = (): ScreenshotState => this.dispatcher.getSnapshot();
-  subscribe = (listener: () => void): (() => void) =>
-    this.dispatcher.subscribe(listener);
+  subscribe = (listener: () => void): (() => void) => this.dispatcher.subscribe(listener);
 
   send = (event: ScreenshotEvent): void => {
     this.dispatcher.send(this.withSettleToken(event));

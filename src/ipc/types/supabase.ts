@@ -11,9 +11,7 @@ export const SupabaseOrganizationInfoSchema = z.object({
   ownerEmail: z.string().optional(),
 });
 
-export type SupabaseOrganizationInfo = z.infer<
-  typeof SupabaseOrganizationInfoSchema
->;
+export type SupabaseOrganizationInfo = z.infer<typeof SupabaseOrganizationInfoSchema>;
 
 export const SupabaseProjectSchema = z.object({
   id: z.string(),
@@ -72,9 +70,7 @@ export const SetSupabaseAppProjectParamsSchema = z.object({
   organizationSlug: z.string().nullable().optional(),
 });
 
-export type SetSupabaseAppProjectParams = z.infer<
-  typeof SetSupabaseAppProjectParamsSchema
->;
+export type SetSupabaseAppProjectParams = z.infer<typeof SetSupabaseAppProjectParamsSchema>;
 
 // =============================================================================
 // Supabase Contracts

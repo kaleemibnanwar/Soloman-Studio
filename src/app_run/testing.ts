@@ -9,15 +9,9 @@ import {
 import type { AppRunRemoteConnection } from "./remote_manager";
 
 type MachineAddress = Parameters<AppRunRemoteConnection["subscribe"]>[0];
-type MachineDispatchEnvelope = Parameters<
-  AppRunRemoteConnection["dispatch"]
->[0];
-type MachineDispatchReceipt = Awaited<
-  ReturnType<AppRunRemoteConnection["dispatch"]>
->;
-type MachineSnapshotEnvelope = Awaited<
-  ReturnType<AppRunRemoteConnection["subscribe"]>
->;
+type MachineDispatchEnvelope = Parameters<AppRunRemoteConnection["dispatch"]>[0];
+type MachineDispatchReceipt = Awaited<ReturnType<AppRunRemoteConnection["dispatch"]>>;
+type MachineSnapshotEnvelope = Awaited<ReturnType<AppRunRemoteConnection["subscribe"]>>;
 
 /**
  * Renderer-test transport for the main-owned app-run read model.
@@ -56,9 +50,7 @@ export class TestAppRunRemoteConnection implements AppRunRemoteConnection {
 
   async unsubscribe(): Promise<void> {}
 
-  async dispatch(
-    envelope: MachineDispatchEnvelope,
-  ): Promise<MachineDispatchReceipt> {
+  async dispatch(envelope: MachineDispatchEnvelope): Promise<MachineDispatchReceipt> {
     const appId = AppRunKeySchema.parse(envelope.encodedKey).appId;
     const event = AppRunIntentEventSchema.parse(envelope.encodedEvent);
     const requestId = envelope.correlationId ?? event.operationId;
@@ -69,11 +61,7 @@ export class TestAppRunRemoteConnection implements AppRunRemoteConnection {
       case "START":
       case "RESTART": {
         const operation =
-          event.type === "START"
-            ? "run"
-            : event.operation === "rebuild"
-              ? "rebuild"
-              : "restart";
+          event.type === "START" ? "run" : event.operation === "rebuild" ? "rebuild" : "restart";
         const invocationRef = this.invocation(appId, event.operationId);
         this.publishState(appId, {
           type: "starting",

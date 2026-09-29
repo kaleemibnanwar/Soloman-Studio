@@ -1,21 +1,10 @@
 import { cleanup } from "@testing-library/react";
 import { and, eq } from "drizzle-orm";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { messages } from "@/db/schema";
 import { ipc } from "@/ipc/types";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { userInputRegistry } from "@/user_input/main";
 
@@ -46,8 +35,7 @@ describe("main-owned user-input follow-up recovery (integration)", () => {
   });
 
   async function createDueFollowUp(chatId: number, suffix: string) {
-    const followUpPrompt =
-      "Continue. I have completed the supabase integration.";
+    const followUpPrompt = "Continue. I have completed the supabase integration.";
     const requestId = userInputRegistry.request({
       kind: "integration",
       chatId,
@@ -79,25 +67,18 @@ describe("main-owned user-input follow-up recovery (integration)", () => {
       acceptedMessages = await harness.db
         .select()
         .from(messages)
-        .where(
-          and(
-            eq(messages.chatId, chatId),
-            eq(messages.userInputRequestId, requestId),
-          ),
-        );
+        .where(and(eq(messages.chatId, chatId), eq(messages.userInputRequestId, requestId)));
       expect(acceptedMessages).toHaveLength(1);
     });
     const starts = harness.bridge.invokeLog.filter(
       (entry) =>
         entry.channel === "chat:stream" &&
-        (entry.args[0] as { userInputRequestId?: string } | undefined)
-          ?.userInputRequestId === requestId,
+        (entry.args[0] as { userInputRequestId?: string } | undefined)?.userInputRequestId ===
+          requestId,
     );
     expect(starts).toHaveLength(0);
     expect(
-      userInputRegistry
-        .getPending()
-        .some((entry) => entry.descriptor.requestId === requestId),
+      userInputRegistry.getPending().some((entry) => entry.descriptor.requestId === requestId),
     ).toBe(false);
   }, 30_000);
 
@@ -109,9 +90,7 @@ describe("main-owned user-input follow-up recovery (integration)", () => {
     await ipc.chat.deleteChat(chatId);
 
     expect(
-      userInputRegistry
-        .getPending()
-        .some((entry) => entry.descriptor.requestId === requestId),
+      userInputRegistry.getPending().some((entry) => entry.descriptor.requestId === requestId),
     ).toBe(false);
     expect(
       harness.bridge.sentEvents
@@ -119,11 +98,8 @@ describe("main-owned user-input follow-up recovery (integration)", () => {
         .some(
           (event) =>
             event.channel === "user-input:settled" &&
-            (
-              event.args[0] as
-                | { requestId?: string; outcome?: string }
-                | undefined
-            )?.requestId === requestId &&
+            (event.args[0] as { requestId?: string; outcome?: string } | undefined)?.requestId ===
+              requestId &&
             (event.args[0] as { outcome?: string }).outcome === "swept",
         ),
     ).toBe(true);
@@ -131,17 +107,12 @@ describe("main-owned user-input follow-up recovery (integration)", () => {
 
   it("settles a due owner before app deletion cascades its chat", async () => {
     const chatId = await harness.createChat();
-    const { requestId } = await createDueFollowUp(
-      chatId,
-      "before app deletion",
-    );
+    const { requestId } = await createDueFollowUp(chatId, "before app deletion");
 
     await ipc.app.deleteApp({ appId: harness.appId });
 
     expect(
-      userInputRegistry
-        .getPending()
-        .some((entry) => entry.descriptor.requestId === requestId),
+      userInputRegistry.getPending().some((entry) => entry.descriptor.requestId === requestId),
     ).toBe(false);
   }, 30_000);
 });

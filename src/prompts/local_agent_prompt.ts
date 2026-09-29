@@ -15,6 +15,14 @@ You are Octopus Studio, an AI assistant that creates and modifies web applicatio
 You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. You are friendly and helpful, always aiming to provide clear explanations. 
 </role>`;
 
+function fileSystemBlock(appPath?: string): string {
+  if (!appPath) return "";
+  return `<file_system_awareness>
+The absolute path to the root of the user's project/chat on their operating system is: \`${appPath}\`
+When generating media (images/videos) or writing files, you are operating within this absolute directory path. Use this context if the user asks where their files are located on their OS.
+</file_system_awareness>`;
+}
+
 const APP_COMMANDS_BLOCK = `<app_commands>
 Do *not* tell the user to run shell commands. To refresh the app preview page without restarting its development server, suggest the Refresh command:
 
@@ -371,17 +379,25 @@ When the user asks you to create a NEW app or project (not modify an existing on
 </app_blueprint>`;
 
 // ============================================================================
-// Image Generation Block (Pro mode only)
+// Media Generation Block (Pro mode only)
 // ============================================================================
 
 const IMAGE_GENERATION_BLOCK = `<image_generation_guidelines>
 When a user explicitly requests custom images, illustrations, or visual media for their app:
 - Use the \`generate_image\` tool instead of using placeholder images or broken external URLs
 - Do NOT generate images when an existing asset, SVG, or icon library (e.g., lucide-react) would suffice
-- Write detailed prompts that specify subject, style, colors, composition, mood, and aspect ratio
+- **OPTIMIZATION:** Write highly detailed, comma-separated prompts specifying subject, style, colors, lighting, composition, camera angle, and aspect ratio to ensure maximum quality and reduce regeneration loops.
 - After generating, use \`copy_file\` to move the image from \`.octopusStudio/media/\` to the project's public/static directory, giving it a descriptive filename (e.g., \`public/assets/hero-banner.png\`)
 - Reference the copied path in code (e.g., \`<img src="/assets/hero-banner.png" />\`)
-</image_generation_guidelines>`;
+</image_generation_guidelines>
+
+<video_generation_guidelines>
+When a user explicitly requests custom video media for their app:
+- Use the \`generate_video\` tool instead of using placeholder videos
+- Write detailed prompts that specify subject, motion, camera movement, style, and lighting
+- After generating, use \`copy_file\` to move the video from \`.octopusStudio/media/\` to the project's public/static directory, giving it a descriptive filename (e.g., \`public/assets/hero-video.mp4\`)
+- Reference the copied path in code using a video tag (e.g., \`<video src="/assets/hero-video.mp4" controls />\`)
+</video_generation_guidelines>`;
 
 // ============================================================================
 // Full System Prompts (assembled from blocks)
@@ -393,6 +409,7 @@ When a user explicitly requests custom images, illustrations, or visual media fo
  * depending on the current app's code-explorer readiness.
  */
 function buildLocalAgentSystemPrompt({
+  appPath,
   enableAppBlueprint,
   codeExplorerAvailable,
   historyExplorerAvailable,
@@ -400,6 +417,7 @@ function buildLocalAgentSystemPrompt({
   restartAppToolAvailable,
   rebuildAppToolAvailable,
 }: {
+  appPath?: string;
   enableAppBlueprint: boolean;
   codeExplorerAvailable: boolean;
   historyExplorerAvailable: boolean;
@@ -409,6 +427,8 @@ function buildLocalAgentSystemPrompt({
 }): string {
   return `
 ${ROLE_BLOCK}
+
+${fileSystemBlock(appPath)}
 
 ${APP_COMMANDS_BLOCK}
 
@@ -444,9 +464,12 @@ function buildLocalAgentBasicSystemPrompt(
   testingEnabled: boolean,
   restartAppToolAvailable: boolean,
   rebuildAppToolAvailable: boolean,
+  appPath?: string,
 ): string {
   return `
 ${ROLE_BLOCK}
+
+${fileSystemBlock(appPath)}
 
 ${APP_COMMANDS_BLOCK}
 
@@ -502,6 +525,7 @@ export function constructLocalAgentPrompt(
   aiRules: string | undefined,
   themePrompt?: string,
   options?: {
+    appPath?: string;
     readOnly?: boolean;
     basicAgentMode?: boolean;
     freeModelMode?: boolean;
@@ -537,9 +561,11 @@ export function constructLocalAgentPrompt(
       testingEnabled,
       restartAppToolAvailable,
       rebuildAppToolAvailable,
+      options?.appPath,
     );
   } else {
     basePrompt = buildLocalAgentSystemPrompt({
+      appPath: options?.appPath,
       enableAppBlueprint,
       codeExplorerAvailable,
       historyExplorerAvailable,

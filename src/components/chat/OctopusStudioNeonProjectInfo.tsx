@@ -11,8 +11,6 @@ interface OctopusStudioNeonProjectInfoProps {
   children: React.ReactNode;
 }
 
-export function OctopusStudioNeonProjectInfo(
-  props: OctopusStudioNeonProjectInfoProps,
-) {
+export function OctopusStudioNeonProjectInfo(props: OctopusStudioNeonProjectInfoProps) {
   return <OctopusStudioDbProjectInfo provider="Neon" {...props} />;
 }

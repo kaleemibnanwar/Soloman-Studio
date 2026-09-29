@@ -1,16 +1,7 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CommentCard } from "./CommentCard";
 import type { PlanAnnotation } from "@/atoms/planAtoms";
-import {
-  ANNOTATION_ID_ATTRIBUTE,
-  ANNOTATION_MARK_SELECTOR,
-} from "./planAnnotationDom";
+import { ANNOTATION_ID_ATTRIBUTE, ANNOTATION_MARK_SELECTOR } from "./planAnnotationDom";
 
 interface PopoverState {
   annotationId: string;
@@ -35,21 +26,18 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  const dismiss = useCallback(
-    ({ restoreFocus = false }: { restoreFocus?: boolean } = {}) => {
-      setPopover(null);
+  const dismiss = useCallback(({ restoreFocus = false }: { restoreFocus?: boolean } = {}) => {
+    setPopover(null);
 
-      if (restoreFocus) {
-        const trigger = triggerRef.current;
-        if (trigger?.isConnected) {
-          requestAnimationFrame(() => {
-            trigger.focus();
-          });
-        }
+    if (restoreFocus) {
+      const trigger = triggerRef.current;
+      if (trigger?.isConnected) {
+        requestAnimationFrame(() => {
+          trigger.focus();
+        });
       }
-    },
-    [],
-  );
+    }
+  }, []);
 
   const openPopoverForMark = useCallback((mark: HTMLElement) => {
     const annotationId = mark.getAttribute(ANNOTATION_ID_ATTRIBUTE);
@@ -147,8 +135,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       }
 
       setPopover((current) => {
-        if (!current || current.annotationId !== popover.annotationId)
-          return current;
+        if (!current || current.annotationId !== popover.annotationId) return current;
         return {
           ...current,
           anchorX: rect.right + 8,

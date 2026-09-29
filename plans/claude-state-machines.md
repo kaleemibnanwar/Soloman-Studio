@@ -246,10 +246,7 @@ Two pieces:
 `transition` is pure and total, so acceptance is computable by probing:
 
 ```ts
-const caps = deriveCapabilities(transition, state, [
-  "SYNC_REQUESTED",
-  "SWITCH_BRANCH",
-]);
+const caps = deriveCapabilities(transition, state, ["SYNC_REQUESTED", "SWITCH_BRANCH"]);
 // caps.SYNC_REQUESTED === false when the matrix would ignore() it
 ```
 

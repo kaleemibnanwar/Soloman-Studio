@@ -1,11 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { ipc, type FreeAgentQuotaStatus } from "@/ipc/types";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  hasOctopusStudioProKey,
-  type ChatMode,
-  type UserSettings,
-} from "@/lib/schemas";
+import { hasOctopusStudioProKey, type ChatMode, type UserSettings } from "@/lib/schemas";
 import { getHomeDefaultChatMode } from "@/lib/homeChatMode";
 
 export async function resolveFirstPromptDefaultChatMode({

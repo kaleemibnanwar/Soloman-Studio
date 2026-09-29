@@ -5,7 +5,5 @@ import { serializeImmutableChatTurnPayload } from "@/chat_stream/intent_payload"
 export function computeChatTurnPayloadHash(
   intent: Omit<SerializableChatTurnIntent, "payloadHash">,
 ): string {
-  return createHash("sha256")
-    .update(serializeImmutableChatTurnPayload(intent))
-    .digest("hex");
+  return createHash("sha256").update(serializeImmutableChatTurnPayload(intent)).digest("hex");
 }

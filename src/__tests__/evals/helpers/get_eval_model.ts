@@ -37,9 +37,7 @@ let _provider: OctopusStudioEngineProvider | null = null;
  * The OctopusStudio Engine only supports `stream: true`, but the AI SDK sends
  * non-streaming requests for `generateText`. This adapter bridges the gap.
  */
-async function sseToNonStreamingResponse(
-  response: Response,
-): Promise<Response> {
+async function sseToNonStreamingResponse(response: Response): Promise<Response> {
   const text = await response.text();
   const lines = text.split("\n");
 
@@ -98,8 +96,7 @@ async function sseToNonStreamingResponse(
         completion_tokens: chunk.usage.completion_tokens ?? 0,
         total_tokens:
           chunk.usage.total_tokens ??
-          (chunk.usage.prompt_tokens ?? 0) +
-            (chunk.usage.completion_tokens ?? 0),
+          (chunk.usage.prompt_tokens ?? 0) + (chunk.usage.completion_tokens ?? 0),
       };
     }
 
@@ -133,8 +130,7 @@ async function sseToNonStreamingResponse(
         if (tc.id) existing.id = tc.id;
         if (tc.type) existing.type = tc.type;
         if (tc.function?.name) existing.function.name += tc.function.name;
-        if (tc.function?.arguments)
-          existing.function.arguments += tc.function.arguments;
+        if (tc.function?.arguments) existing.function.arguments += tc.function.arguments;
       }
     }
   }
@@ -239,10 +235,7 @@ function getProvider(): OctopusStudioEngineProvider {
   return _provider;
 }
 
-export function getEvalModel(
-  provider: EvalProvider,
-  modelName: string,
-): LanguageModel {
+export function getEvalModel(provider: EvalProvider, modelName: string): LanguageModel {
   const octopusStudioProvider = getProvider();
   const modelId = `${GATEWAY_PREFIXES[provider]}${modelName}`;
 

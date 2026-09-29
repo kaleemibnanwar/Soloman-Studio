@@ -21,8 +21,7 @@ export function useDeleteAppTest() {
     Error,
     { appId: number; testFile: string }
   >({
-    mutationFn: ({ appId, testFile }) =>
-      ipc.tests.deleteAppTest({ appId, testFile }),
+    mutationFn: ({ appId, testFile }) => ipc.tests.deleteAppTest({ appId, testFile }),
     onSuccess: (result, { appId }) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.tests.list({ appId }),

@@ -7,8 +7,7 @@ export class ChatStreamPreviewStore {
   private readonly stores = new Map<number, SnapshotStore<string>>();
   private disposed = false;
 
-  getSnapshot = (chatId: number): string =>
-    this.stores.get(chatId)?.getSnapshot() ?? EMPTY_PREVIEW;
+  getSnapshot = (chatId: number): string => this.stores.get(chatId)?.getSnapshot() ?? EMPTY_PREVIEW;
 
   subscribeKey = (chatId: number, listener: () => void): (() => void) => {
     if (this.disposed) return () => undefined;

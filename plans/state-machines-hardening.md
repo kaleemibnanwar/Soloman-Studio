@@ -496,10 +496,7 @@ const STATE_KINDS = [
   "conflicted",
 ] as const satisfies readonly GithubOpsState["type"][];
 
-const COMMAND_KINDS = [
-  "push",
-  "rebase",
-] as const satisfies readonly GithubOpsCommand["type"][];
+const COMMAND_KINDS = ["push", "rebase"] as const satisfies readonly GithubOpsCommand["type"][];
 ```
 
 The standard suite accepts state and command inventories, event generators,

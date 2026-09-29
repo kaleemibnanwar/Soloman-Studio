@@ -5,11 +5,8 @@ import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { gitService } from "../services/git_service";
-import { storeDbTimestampAtCurrentVersion } from "../utils/neon_timestamp_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { storeDbTimestampAtCurrentVersion } from "../neon/neon_timestamp_utils";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { runPortalMigrationCommand } from "../utils/portal_migration";
 
 const logger = log.scope("portal_handlers");
@@ -20,10 +17,7 @@ async function getApp(appId: number) {
     where: eq(apps.id, appId),
   });
   if (!app) {
-    throw new OctopusStudioError(
-      `App with id ${appId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`App with id ${appId} not found`, OctopusStudioErrorKind.NotFound);
   }
   return app;
 }
@@ -46,10 +40,7 @@ export function registerPortalHandlers() {
             appId: app.id,
           });
         } catch (error) {
-          logger.error(
-            "Error storing Neon timestamp at current version:",
-            error,
-          );
+          logger.error("Error storing Neon timestamp at current version:", error);
           throw new Error(
             "Could not store Neon timestamp at current version; database versioning functionality is not working: " +
               error,

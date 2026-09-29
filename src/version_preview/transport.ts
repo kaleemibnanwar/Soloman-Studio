@@ -9,10 +9,7 @@ import type {
   PreviewState,
 } from "./state";
 
-type SafeRemoteSession = Omit<
-  PreviewSession,
-  "selectedDiffFile" | "isDiffVisible"
-> & {
+type SafeRemoteSession = Omit<PreviewSession, "selectedDiffFile" | "isDiffVisible"> & {
   readonly selectedDiffFile: null;
   readonly isDiffVisible: false;
 };
@@ -20,10 +17,7 @@ type SafeRemoteSession = Omit<
 type SafeRemoteFallback =
   | Extract<BranchSwitchFallback, { type: "closed" }>
   | {
-      [Kind in Exclude<
-        BranchSwitchFallback["type"],
-        "closed" | "recovery-required"
-      >]: {
+      [Kind in Exclude<BranchSwitchFallback["type"], "closed" | "recovery-required">]: {
         readonly type: Kind;
         readonly session: SafeRemoteSession;
       };
@@ -178,9 +172,7 @@ export const VersionPreviewIntentEventSchema = z.discriminatedUnion("type", [
     })
     .strict(),
 ]);
-export type VersionPreviewIntentEvent = z.infer<
-  typeof VersionPreviewIntentEventSchema
->;
+export type VersionPreviewIntentEvent = z.infer<typeof VersionPreviewIntentEventSchema>;
 
 export type VersionPreviewProducerEvent =
   | { type: "RECONCILE_REQUESTED" }
@@ -243,9 +235,7 @@ export type VersionPreviewProducerEvent =
       invocationRef: VersionPreviewInvocationRef;
     };
 
-export type VersionPreviewWireEvent =
-  | VersionPreviewIntentEvent
-  | VersionPreviewProducerEvent;
+export type VersionPreviewWireEvent = VersionPreviewIntentEvent | VersionPreviewProducerEvent;
 
 export interface VersionPreviewSettlement {
   readonly operationId: string;
@@ -283,9 +273,7 @@ const sessionSchema = z
   .strict();
 const fallbackSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("closed") }).strict(),
-  z
-    .object({ type: z.literal("viewing-diff"), session: sessionSchema })
-    .strict(),
+  z.object({ type: z.literal("viewing-diff"), session: sessionSchema }).strict(),
   z.object({ type: z.literal("browsing"), session: sessionSchema }).strict(),
   z.object({ type: z.literal("previewing"), session: sessionSchema }).strict(),
   z
@@ -298,16 +286,10 @@ const fallbackSchema = z.discriminatedUnion("type", [
 ]);
 export const PreviewStateSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("closed") }).strict(),
-  z
-    .object({ type: z.literal("viewing-diff"), session: sessionSchema })
-    .strict(),
+  z.object({ type: z.literal("viewing-diff"), session: sessionSchema }).strict(),
   z.object({ type: z.literal("browsing"), session: sessionSchema }).strict(),
-  z
-    .object({ type: z.literal("resolving-origin"), session: sessionSchema })
-    .strict(),
-  z
-    .object({ type: z.literal("checking-out"), session: sessionSchema })
-    .strict(),
+  z.object({ type: z.literal("resolving-origin"), session: sessionSchema }).strict(),
+  z.object({ type: z.literal("checking-out"), session: sessionSchema }).strict(),
   z.object({ type: z.literal("previewing"), session: sessionSchema }).strict(),
   z
     .object({
@@ -366,9 +348,7 @@ export const VersionPreviewRemoteSnapshotSchema = z
       .nullable(),
   })
   .strict();
-export type VersionPreviewRemoteSnapshot = z.infer<
-  typeof VersionPreviewRemoteSnapshotSchema
->;
+export type VersionPreviewRemoteSnapshot = z.infer<typeof VersionPreviewRemoteSnapshotSchema>;
 
 export function projectVersionPreviewRemoteSnapshot(
   appId: number,
@@ -434,10 +414,7 @@ function stripWindowPresentation(state: PreviewState): SafeRemotePreviewState {
   }
 }
 
-export function toPreviewDomainEvent(
-  appId: number,
-  event: VersionPreviewWireEvent,
-): PreviewEvent {
+export function toPreviewDomainEvent(appId: number, event: VersionPreviewWireEvent): PreviewEvent {
   switch (event.type) {
     case "RECONCILE_REQUESTED":
     case "RECONCILED":

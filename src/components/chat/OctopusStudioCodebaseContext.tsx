@@ -20,9 +20,9 @@ interface OctopusStudioCodebaseContextProps {
   };
 }
 
-export const OctopusStudioCodebaseContext: React.FC<
-  OctopusStudioCodebaseContextProps
-> = ({ node }) => {
+export const OctopusStudioCodebaseContext: React.FC<OctopusStudioCodebaseContextProps> = ({
+  node,
+}) => {
   const state = node?.properties?.state as CustomTagState;
   const inProgress = state === "pending";
   const [isExpanded, setIsExpanded] = useState(inProgress);
@@ -59,19 +59,13 @@ export const OctopusStudioCodebaseContext: React.FC<
             {files.map((file, index) => {
               const filePath = file.trim();
               const fileName = filePath.split("/").pop() || filePath;
-              const pathPart =
-                filePath.substring(0, filePath.length - fileName.length) || "";
+              const pathPart = filePath.substring(0, filePath.length - fileName.length) || "";
 
               return (
                 <div key={index} className="px-2 py-1 bg-muted/40 rounded-lg">
                   <div className="flex items-center gap-1.5">
-                    <FileText
-                      size={13}
-                      className="text-muted-foreground shrink-0"
-                    />
-                    <span className="text-sm font-medium text-foreground">
-                      {fileName}
-                    </span>
+                    <FileText size={13} className="text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium text-foreground">{fileName}</span>
                   </div>
                   {pathPart && (
                     <div className="text-[11px] text-muted-foreground ml-5 font-mono">

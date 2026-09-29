@@ -25,10 +25,7 @@ import {
 import { eq } from "drizzle-orm";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { validateChatContext } from "../utils/context_paths_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   getPackageManagerCommandEnv,
   PNPM_PM_ON_FAIL_IGNORE_ARG,
@@ -92,12 +89,9 @@ async function getSystemDebugInfo({
   }
 
   try {
-    pnpmVersion = await runShellCommand(
-      `pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} --version`,
-      {
-        env: getPackageManagerCommandEnv(),
-      },
-    );
+    pnpmVersion = await runShellCommand(`pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} --version`, {
+      env: getPackageManagerCommandEnv(),
+    });
   } catch (err) {
     console.error("Failed to get pnpm version:", err);
   }
@@ -164,8 +158,7 @@ async function getSystemDebugInfo({
     pnpmVersion,
     nodePath,
     telemetryId,
-    selectedLanguageModel:
-      serializeModelForDebug(settings.selectedModel) || "unknown",
+    selectedLanguageModel: serializeModelForDebug(settings.selectedModel) || "unknown",
     telemetryConsent: settings.telemetryConsent || "unknown",
     telemetryUrl: "https://us.i.posthog.com", // Hardcoded from renderer.tsx
     octopusStudioVersion,
@@ -189,16 +182,11 @@ function serializeModelForDebug(model: {
  * All Secret fields (API keys, OAuth tokens) are excluded.
  * Provider setup status is derived as boolean flags only.
  */
-function sanitizeSettingsForDebug(
-  settings: UserSettings,
-  selectedModel: ModelSelection,
-) {
+function sanitizeSettingsForDebug(settings: UserSettings, selectedModel: ModelSelection) {
   // Build provider setup status: { providerName: hasApiKey }
   const providerSetupStatus: Record<string, boolean> = {};
   if (settings.providerSettings) {
-    for (const [provider, providerSetting] of Object.entries(
-      settings.providerSettings,
-    )) {
+    for (const [provider, providerSetting] of Object.entries(settings.providerSettings)) {
       providerSetupStatus[provider] = !!providerSetting?.apiKey?.value;
     }
   }
@@ -222,18 +210,14 @@ function sanitizeSettingsForDebug(
     previewDeviceMode: settings.previewDeviceMode ?? null,
     enableProLazyEditsMode: settings.enableProLazyEditsMode ?? null,
     proLazyEditsMode: settings.proLazyEditsMode ?? null,
-    enableProSmartFilesContextMode:
-      settings.enableProSmartFilesContextMode ?? null,
+    enableProSmartFilesContextMode: settings.enableProSmartFilesContextMode ?? null,
     enableProWebSearch: settings.enableProWebSearch ?? null,
     proSmartContextOption: settings.proSmartContextOption ?? null,
-    enableSupabaseWriteSqlMigration:
-      settings.enableSupabaseWriteSqlMigration ?? null,
+    enableSupabaseWriteSqlMigration: settings.enableSupabaseWriteSqlMigration ?? null,
     agentToolConsents: settings.agentToolConsents ?? null,
     experiments: settings.experiments
       ? Object.fromEntries(
-          Object.entries(settings.experiments).filter(
-            ([, v]) => typeof v === "boolean",
-          ),
+          Object.entries(settings.experiments).filter(([, v]) => typeof v === "boolean"),
         )
       : null,
     customNodePath: settings.customNodePath ?? null,
@@ -257,21 +241,13 @@ function stripImagesFromAiMessagesJson(json: AiMessagesJsonV6 | null): unknown {
     if (!Array.isArray(msg.content)) continue;
     for (let i = 0; i < msg.content.length; i++) {
       const part = msg.content[i];
-      if (
-        part.type === "image" &&
-        typeof part.image === "string" &&
-        part.image.length > 200
-      ) {
+      if (part.type === "image" && typeof part.image === "string" && part.image.length > 200) {
         msg.content[i] = {
           ...part,
           _strippedByteLength: part.image.length,
           image: "[stripped]",
         };
-      } else if (
-        part.type === "file" &&
-        typeof part.data === "string" &&
-        part.data.length > 200
-      ) {
+      } else if (part.type === "file" && typeof part.data === "string" && part.data.length > 200) {
         msg.content[i] = {
           ...part,
           _strippedByteLength: part.data.length,
@@ -327,50 +303,39 @@ export function registerDebugHandlers() {
       const settings = readSettings();
 
       // Get OctopusStudio version
-      const packageJsonPath = path.resolve(
-        __dirname,
-        "..",
-        "..",
-        "package.json",
-      );
+      const packageJsonPath = path.resolve(__dirname, "..", "..", "package.json");
       let octopusStudioVersion = "unknown";
       try {
-        const packageJson = JSON.parse(
-          fs.readFileSync(packageJsonPath, "utf8"),
-        );
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
         octopusStudioVersion = packageJson.version;
       } catch (err) {
         console.error("Failed to read package.json:", err);
       }
 
       // Get runtime info in parallel
-      const [nodeVersion, pnpmVersion, nodePathResult, memoryDiagnostics] =
-        await Promise.all([
-          runShellCommand("node --version").catch(() => null),
-          runShellCommand(`pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} --version`, {
-            env: getPackageManagerCommandEnv(),
-          }).catch(() => null),
-          (platform() === "win32"
-            ? runShellCommand("where.exe node")
-            : runShellCommand("which node")
-          ).catch(() => null),
-          // Best-effort: never throws, but guard anyway — diagnostics must
-          // not be able to break the session export.
-          collectProcessMemoryDiagnostics().catch((err) => {
-            console.error("Failed to collect memory diagnostics:", err);
-            return null;
-          }),
-        ]);
+      const [nodeVersion, pnpmVersion, nodePathResult, memoryDiagnostics] = await Promise.all([
+        runShellCommand("node --version").catch(() => null),
+        runShellCommand(`pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} --version`, {
+          env: getPackageManagerCommandEnv(),
+        }).catch(() => null),
+        (platform() === "win32"
+          ? runShellCommand("where.exe node")
+          : runShellCommand("which node")
+        ).catch(() => null),
+        // Best-effort: never throws, but guard anyway — diagnostics must
+        // not be able to break the session export.
+        collectProcessMemoryDiagnostics().catch((err) => {
+          console.error("Failed to collect memory diagnostics:", err);
+          return null;
+        }),
+      ]);
 
       // Get chat with full messages from database
       const chatRecord = await db.query.chats.findFirst({
         where: eq(chats.id, chatId),
         with: {
           messages: {
-            orderBy: (messages, { asc }) => [
-              asc(messages.createdAt),
-              asc(messages.id),
-            ],
+            orderBy: (messages, { asc }) => [asc(messages.createdAt), asc(messages.id)],
           },
         },
       });
@@ -395,16 +360,15 @@ export function registerDebugHandlers() {
       }
 
       // Query custom providers, custom models, and MCP servers in parallel
-      const [customProviders, customModels, mcpServerRecords, codebase] =
-        await Promise.all([
-          db.select().from(language_model_providers),
-          db.select().from(language_models),
-          db.select().from(mcpServers),
-          extractCodebase({
-            appPath: getOctopusStudioAppPath(app.path),
-            chatContext: validateChatContext(app.chatContext),
-          }).then((result) => result.formattedOutput),
-        ]);
+      const [customProviders, customModels, mcpServerRecords, codebase] = await Promise.all([
+        db.select().from(language_model_providers),
+        db.select().from(language_models),
+        db.select().from(mcpServers),
+        extractCodebase({
+          appPath: getOctopusStudioAppPath(app.path),
+          chatContext: validateChatContext(app.chatContext),
+        }).then((result) => result.formattedOutput),
+      ]);
 
       // Read logs
       const logs = readAppLogs(5_000, "info");
@@ -430,8 +394,7 @@ export function registerDebugHandlers() {
 
         settings: sanitizeSettingsForDebug(
           settings,
-          chatRecord.modelSelection ??
-            (await resolveDefaultModelSelection(settings)),
+          chatRecord.modelSelection ?? (await resolveDefaultModelSelection(settings)),
         ),
 
         app: {
@@ -467,9 +430,7 @@ export function registerDebugHandlers() {
             role: msg.role,
             content: msg.content,
             createdAt: msg.createdAt.toISOString(),
-            aiMessagesJson: stripImagesFromAiMessagesJson(
-              msg.aiMessagesJson ?? null,
-            ),
+            aiMessagesJson: stripImagesFromAiMessagesJson(msg.aiMessagesJson ?? null),
             model: msg.model ?? null,
             totalTokens: msg.maxTokensUsed ?? null,
             approvalState: msg.approvalState ?? null,
@@ -532,10 +493,7 @@ export function registerDebugHandlers() {
     const image = await win.capturePage();
     // Validate image
     if (!image || image.isEmpty()) {
-      throw new OctopusStudioError(
-        "Failed to capture screenshot",
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError("Failed to capture screenshot", OctopusStudioErrorKind.External);
     }
     // Write the image to the clipboard
     clipboard.writeImage(image);

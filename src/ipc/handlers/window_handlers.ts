@@ -58,12 +58,9 @@ export function registerWindowHandlers() {
     return platform();
   });
 
-  createTypedHandler(
-    systemContracts.getInitialLoadTelemetryContext,
-    async () => {
-      return {
-        isFirstSession: getInitialLoadIsFirstSession(),
-      };
-    },
-  );
+  createTypedHandler(systemContracts.getInitialLoadTelemetryContext, async () => {
+    return {
+      isFirstSession: getInitialLoadIsFirstSession(),
+    };
+  });
 }

@@ -14,8 +14,7 @@ export const fixture: LocalAgentFixture = {
             user_prompt: "Build me a meal planning app",
             template_id: "react",
             theme_id: "default",
-            design_direction:
-              "Fresh, appetizing interface with produce-inspired colors.",
+            design_direction: "Fresh, appetizing interface with produce-inspired colors.",
             primary_color: "#22C55E",
             visuals: [
               {

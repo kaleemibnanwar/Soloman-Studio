@@ -55,9 +55,7 @@ export function DeleteCollectionDialog({
     >
       <DialogContent className="max-w-sm p-4">
         <DialogHeader className="pb-2">
-          <DialogTitle>
-            Delete collection {collection ? `"${collection.name}"` : ""}?
-          </DialogTitle>
+          <DialogTitle>Delete collection {collection ? `"${collection.name}"` : ""}?</DialogTitle>
           <DialogDescription className="text-xs">
             {count > 0
               ? `The ${count} app${count === 1 ? "" : "s"} in this collection won't be deleted — they'll just be uncollected.`

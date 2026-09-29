@@ -8,7 +8,7 @@ import {
   gitInit,
   gitRemove,
   hasStagedChanges,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 
 const logger = log.scope("git_service");
 
@@ -60,13 +60,7 @@ export class GitService {
    * Stages all changes and commits them. Returns the commit hash.
    * Throws if there is nothing to commit.
    */
-  async stageAllAndCommit({
-    path,
-    message,
-  }: {
-    path: string;
-    message: string;
-  }): Promise<string> {
+  async stageAllAndCommit({ path, message }: { path: string; message: string }): Promise<string> {
     await gitAddAll({ path });
     return gitCommit({ path, message });
   }
@@ -97,13 +91,7 @@ export class GitService {
    * `gitAdd` skips files ignored by .gitignore (e.g. `.env.local`), so staging
    * one of those is a no-op rather than an error.
    */
-  async stageFile({
-    path,
-    filepath,
-  }: {
-    path: string;
-    filepath: string;
-  }): Promise<void> {
+  async stageFile({ path, filepath }: { path: string; filepath: string }): Promise<void> {
     await gitAdd({ path, filepath });
   }
 
@@ -163,10 +151,7 @@ export class GitService {
     try {
       await gitRemove({ path, filepath });
     } catch (error) {
-      logger.warn(
-        `Couldn't git-remove '${filepath}' (likely untracked):`,
-        error,
-      );
+      logger.warn(`Couldn't git-remove '${filepath}' (likely untracked):`, error);
       return { commitHash: null, uncommittedReason: "untracked" };
     }
     try {
@@ -176,10 +161,7 @@ export class GitService {
     } catch (error) {
       // The removal is still staged, so the user can review or restore it
       // through the normal uncommitted-changes flow.
-      logger.warn(
-        `Staged deletion of '${filepath}' but couldn't commit it:`,
-        error,
-      );
+      logger.warn(`Staged deletion of '${filepath}' but couldn't commit it:`, error);
       return { commitHash: null, uncommittedReason: "commit-failed" };
     }
   }

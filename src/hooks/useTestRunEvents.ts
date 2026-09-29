@@ -41,15 +41,10 @@ export function useTestRunEvents() {
   const queryClient = useQueryClient();
   const runGenerationByAppId = useRef(new Map<number, number>());
   const activeRunByAppId = useRef(
-    new Map<
-      number,
-      { generation: number; source: "panel" | "agent"; startedAt: number }
-    >(),
+    new Map<number, { generation: number; source: "panel" | "agent"; startedAt: number }>(),
   );
   const pendingOutputRef = useRef(new Map<number, string>());
-  const outputFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const outputFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const flushPendingOutput = (appId?: number) => {
@@ -80,10 +75,7 @@ export function useTestRunEvents() {
 
     const unsubscribeOutput = ipc.events.tests.onOutput((payload) => {
       const pending = pendingOutputRef.current;
-      pending.set(
-        payload.appId,
-        (pending.get(payload.appId) ?? "") + payload.chunk,
-      );
+      pending.set(payload.appId, (pending.get(payload.appId) ?? "") + payload.chunk);
       outputFlushTimerRef.current ??= setTimeout(() => {
         outputFlushTimerRef.current = null;
         flushPendingOutput();
@@ -97,8 +89,7 @@ export function useTestRunEvents() {
           // setup-phase output after the tests have run, which would otherwise
           // flash the label back to "Setting up testing…". `idle` means no run
           // is active, so late output from a finished run is ignored entirely.
-          prev.phase === "idle" ||
-          PHASE_ORDER[payload.phase] <= PHASE_ORDER[prev.phase]
+          prev.phase === "idle" || PHASE_ORDER[payload.phase] <= PHASE_ORDER[prev.phase]
             ? prev
             : { ...prev, phase: payload.phase },
       });
@@ -154,8 +145,7 @@ export function useTestRunEvents() {
             infraError: payload.infraError,
             isolation: payload.isolation,
           },
-          isPartialRun:
-            testFile != null && (testLine != null || !!payload.grep),
+          isPartialRun: testFile != null && (testLine != null || !!payload.grep),
           expectedStartedAt: runStartedAt,
         });
       // Do not leave the finished run's spinner/Stop state waiting on disk I/O.
@@ -172,9 +162,7 @@ export function useTestRunEvents() {
           // A newer run may have started while the refresh was in flight. Its
           // running state and results must never be overwritten by this older
           // run's delayed reconciliation.
-          if (
-            activeRunByAppId.current.get(appId)?.generation !== runGeneration
-          ) {
+          if (activeRunByAppId.current.get(appId)?.generation !== runGeneration) {
             return;
           }
           queryClient.setQueryData(queryKeys.tests.list({ appId }), data);
@@ -194,13 +182,5 @@ export function useTestRunEvents() {
       }
       flushPendingOutput();
     };
-  }, [
-    appendOutput,
-    applyStarted,
-    applyFinished,
-    clearOutput,
-    setRunState,
-    setSpecs,
-    queryClient,
-  ]);
+  }, [appendOutput, applyStarted, applyFinished, clearOutput, setRunState, setSpecs, queryClient]);
 }

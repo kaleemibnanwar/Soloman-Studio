@@ -21,7 +21,7 @@ import {
   readGitIndexEntries,
   restoreGitIndexEntries,
   type GitIndexEntry,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 import { extractJson } from "../utils/extract_json";
 import { getModelClient } from "../utils/get_model_client";
 import { resolveDefaultModelSelection } from "../utils/model_effort";
@@ -35,10 +35,7 @@ import {
   restoreRecordedTestDraft,
 } from "../services/recorded_test_drafts";
 import { readSettings } from "@/main/settings";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   countAssertions,
   isAssertionItem,
@@ -72,10 +69,7 @@ import {
   buildAssertionCodePayload,
   TEST_ASSERTION_CODE_SYSTEM_PROMPT,
 } from "@/prompts/test_assertions_prompt";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 
 /**
  * Writing a recorded test to disk. Approving the assertion card is the only way
@@ -117,18 +111,13 @@ const specWriteKey = (appId: number) => `recorded-spec:${appId}`;
 const proposalWriteKey = (chatId: number) => `assertion-proposal:${chatId}`;
 
 const rawCodeSchema = z.object({
-  assertions: z
-    .array(z.object({ id: z.string(), code: z.string() }))
-    .default([]),
+  assertions: z.array(z.object({ id: z.string(), code: z.string() })).default([]),
 });
 
 async function getAppPath(appId: number): Promise<string> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app) {
-    throw new OctopusStudioError(
-      `App ${appId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`App ${appId} not found`, OctopusStudioErrorKind.NotFound);
   }
   return getOctopusStudioAppPath(app.path);
 }
@@ -163,10 +152,7 @@ function recordedDraftMarker(draft: RecordedTestDraft): string {
  * draft marker as a prefix — keeps working on specs written before this, and on
  * specs a user has hand-edited the tail of.
  */
-function recordedSpecMarker(
-  draft: RecordedTestDraft,
-  proposalId: string,
-): string {
+function recordedSpecMarker(draft: RecordedTestDraft, proposalId: string): string {
   return `${recordedDraftMarker(draft)} ${JSON.stringify(proposalId)}`;
 }
 
@@ -178,10 +164,7 @@ function recordedSpecMarker(
  * next character to be a space or nothing at all, so one draft id can never
  * match another that merely starts with it.
  */
-function markerLineMatchesDraft(
-  line: string | undefined,
-  draft: RecordedTestDraft,
-): boolean {
+function markerLineMatchesDraft(line: string | undefined, draft: RecordedTestDraft): boolean {
   if (line === undefined) return false;
   const marker = recordedDraftMarker(draft);
   if (!line.startsWith(marker)) return false;
@@ -190,10 +173,7 @@ function markerLineMatchesDraft(
 }
 
 /** The proposal id in a spec's marker line, or null for a spec without one. */
-function proposalIdFromMarkerLine(
-  line: string,
-  draft: RecordedTestDraft,
-): string | null {
+function proposalIdFromMarkerLine(line: string, draft: RecordedTestDraft): string | null {
   const rest = line.slice(recordedDraftMarker(draft).length).trim();
   if (!rest) return null;
   try {
@@ -220,10 +200,7 @@ async function specCarriesDraftMarker(
   draft: RecordedTestDraft,
 ): Promise<{ matches: boolean; proposalId: string | null }> {
   try {
-    const source = await fs.promises.readFile(
-      path.join(appPath, relativePath),
-      "utf-8",
-    );
+    const source = await fs.promises.readFile(path.join(appPath, relativePath), "utf-8");
     // Prefix, not equality: the line now carries the writing proposal's id
     // after the draft id, and specs written before that don't.
     const line = source.split(/\r?\n/, 1)[0];
@@ -279,9 +256,7 @@ async function findWrittenSpecForDraft(
     if (marker.matches) {
       return { relativePath: remembered, proposalId: marker.proposalId };
     }
-    logger.info(
-      `Forgetting ${remembered}: it no longer carries this recording's marker`,
-    );
+    logger.info(`Forgetting ${remembered}: it no longer carries this recording's marker`);
     forgetRecordedDraftWrite(appId, draft);
   }
 
@@ -295,9 +270,7 @@ async function findWrittenSpecForDraft(
     throw error;
   }
 
-  for (const entry of entries.sort((left, right) =>
-    left.name.localeCompare(right.name),
-  )) {
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     // Generated specs are flat in e2e-tests/. Skipping symlinks also prevents
     // this duplicate guard from following a user-created link outside the app.
     if (!entry.isFile() || !/^recorded-.+\.spec\.ts$/.test(entry.name)) {
@@ -305,10 +278,7 @@ async function findWrittenSpecForDraft(
     }
     let source: string;
     try {
-      source = await fs.promises.readFile(
-        path.join(appPath, E2E_TEST_DIR, entry.name),
-        "utf-8",
-      );
+      source = await fs.promises.readFile(path.join(appPath, E2E_TEST_DIR, entry.name), "utf-8");
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         // The file disappeared after readdir. It cannot contain the marker now,
@@ -318,10 +288,7 @@ async function findWrittenSpecForDraft(
       // An existing candidate that cannot be inspected may be this draft's
       // durable record. Surface the read failure rather than silently writing a
       // suffixed duplicate and consuming the draft a second time.
-      logger.warn(
-        `Couldn't inspect ${entry.name} for a recorded draft marker:`,
-        error,
-      );
+      logger.warn(`Couldn't inspect ${entry.name} for a recorded draft marker:`, error);
       throw error;
     }
     const line = source.split(/\r?\n/, 1)[0];
@@ -425,11 +392,7 @@ async function ensureSignInFixture(
   }
 
   await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
-  await fs.promises.writeFile(
-    absolutePath,
-    generateTestUserFixtureSource(draft.authMode),
-    "utf-8",
-  );
+  await fs.promises.writeFile(absolutePath, generateTestUserFixtureSource(draft.authMode), "utf-8");
   await stage(appPath, relativePath);
   return {
     relativePath,
@@ -444,21 +407,14 @@ async function ensureSignInFixture(
  * back. Best-effort and never throws, for the same reason `discardGeneratedSpec`
  * isn't fatal: this runs while a real error is already on its way to the user.
  */
-async function revertSignInFixture(
-  appPath: string,
-  change: SignInFixtureChange,
-): Promise<void> {
+async function revertSignInFixture(appPath: string, change: SignInFixtureChange): Promise<void> {
   try {
     if (change.previousContent === null) {
       // We created it, so the tree had no such file.
       await fs.promises.rm(change.absolutePath, { force: true });
     } else {
       // We replaced our own stale fixture. Put the exact bytes back.
-      await fs.promises.writeFile(
-        change.absolutePath,
-        change.previousContent,
-        "utf-8",
-      );
+      await fs.promises.writeFile(change.absolutePath, change.previousContent, "utf-8");
     }
 
     // The index is restored from the snapshot, not rebuilt from the file we
@@ -489,19 +445,13 @@ async function revertSignInFixture(
       try {
         await gitResetFile({ path: appPath, filepath: change.relativePath });
       } catch (error) {
-        logger.warn(
-          `Removed ${change.relativePath} but couldn't unstage it:`,
-          error,
-        );
+        logger.warn(`Removed ${change.relativePath} but couldn't unstage it:`, error);
       }
       return;
     }
     await stage(appPath, change.relativePath);
   } catch (error) {
-    logger.error(
-      `Couldn't restore ${change.relativePath} after a failed approval:`,
-      error,
-    );
+    logger.error(`Couldn't restore ${change.relativePath} after a failed approval:`, error);
   }
 }
 
@@ -636,16 +586,11 @@ async function discardGeneratedSpec(
         if (fixtureChange) {
           await revertSignInFixture(appPath, fixtureChange);
         }
-        logger.warn(
-          `Rolled back ${specPath}: the approval couldn't be persisted`,
-        );
+        logger.warn(`Rolled back ${specPath}: the approval couldn't be persisted`);
       },
     );
   } catch (error) {
-    logger.error(
-      `Couldn't roll back ${specPath} after a failed approval:`,
-      error,
-    );
+    logger.error(`Couldn't roll back ${specPath} after a failed approval:`, error);
   }
 }
 
@@ -696,6 +641,7 @@ async function callStructuredModel<T>({
       output: fastTextOutput(),
       model: modelClient.model,
       system,
+      temperature: 0,
       maxRetries: 1,
       abortSignal: controller.signal,
       headers: getAiHeaders({
@@ -817,10 +763,7 @@ async function synthesizeAssertionCode({
  * `[0, 1]` and replay the recording backwards. Assertions may move; steps
  * may not.
  */
-function assertStepsMatch(
-  submitted: AssertionPlanItem[],
-  stored: AssertionPlanItem[],
-): void {
+function assertStepsMatch(submitted: AssertionPlanItem[], stored: AssertionPlanItem[]): void {
   const indices = (items: AssertionPlanItem[]) =>
     items
       .filter((item) => item.kind === "step")
@@ -870,8 +813,7 @@ function needsSynthesis(
 ): boolean {
   if (item.needsCode) return true;
   const original = stored.get(item.id);
-  if (!original?.code || !isSingleAssertionStatement(original.code))
-    return true;
+  if (!original?.code || !isSingleAssertionStatement(original.code)) return true;
   return original.text.trim() !== item.text.trim();
 }
 
@@ -913,10 +855,7 @@ async function persistApproval({
       OctopusStudioErrorKind.Validation,
     );
   }
-  await db
-    .update(messages)
-    .set({ content: approvedContent })
-    .where(eq(messages.id, row.id));
+  await db.update(messages).set({ content: approvedContent }).where(eq(messages.id, row.id));
 }
 
 /**
@@ -942,11 +881,7 @@ async function persistPendingWrite({
   items: AssertionPlanItem[];
 }): Promise<{ content: string }> {
   const status = readAssertionsTagAttribute(row.content, "status", proposalId);
-  const requestId = readAssertionsTagAttribute(
-    row.content,
-    "request-id",
-    proposalId,
-  );
+  const requestId = readAssertionsTagAttribute(row.content, "request-id", proposalId);
   const content = replaceAssertionsTagInMessage(
     row.content,
     buildAssertionsTagContent({
@@ -972,10 +907,7 @@ async function persistPendingWrite({
 async function assertChatOwnsApp(chatId: number, appId: number): Promise<void> {
   const chat = await db.query.chats.findFirst({ where: eq(chats.id, chatId) });
   if (!chat) {
-    throw new OctopusStudioError(
-      `Chat ${chatId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`Chat ${chatId} not found`, OctopusStudioErrorKind.NotFound);
   }
   if (chat.appId !== appId) {
     throw new OctopusStudioError(
@@ -1009,21 +941,14 @@ export function registerTestAssertionHandlers() {
             OctopusStudioErrorKind.NotFound,
           );
         }
-        const status = readAssertionsTagAttribute(
-          row.content,
-          "status",
-          proposalId,
-        );
+        const status = readAssertionsTagAttribute(row.content, "status", proposalId);
         // Approving already wrote a file; declining afterwards would claim
         // nothing happened. Idempotent for a repeated discard.
         if (status === "approved" || status === "discarded") {
           return { ok: true as const };
         }
 
-        const stored = parseAssertionsPayloadFromMessage(
-          row.content,
-          proposalId,
-        );
+        const stored = parseAssertionsPayloadFromMessage(row.content, proposalId);
         if (!stored) {
           throw new OctopusStudioError(
             "This assertion proposal is corrupted and can't be discarded.",
@@ -1052,13 +977,8 @@ export function registerTestAssertionHandlers() {
             OctopusStudioErrorKind.Validation,
           );
         }
-        await db
-          .update(messages)
-          .set({ content: discardedContent })
-          .where(eq(messages.id, row.id));
-        logger.info(
-          `Discarded assertion proposal ${proposalId} (chat ${chatId})`,
-        );
+        await db.update(messages).set({ content: discardedContent }).where(eq(messages.id, row.id));
+        logger.info(`Discarded assertion proposal ${proposalId} (chat ${chatId})`);
         return { ok: true as const };
       }),
   );
@@ -1090,10 +1010,7 @@ export function registerTestAssertionHandlers() {
           );
         }
 
-        const stored = parseAssertionsPayloadFromMessage(
-          row.content,
-          proposalId,
-        );
+        const stored = parseAssertionsPayloadFromMessage(row.content, proposalId);
         if (!stored) {
           throw new OctopusStudioError(
             "This assertion proposal is corrupted and can't be applied.",
@@ -1127,11 +1044,7 @@ export function registerTestAssertionHandlers() {
           });
         };
 
-        const status = readAssertionsTagAttribute(
-          row.content,
-          "status",
-          proposalId,
-        );
+        const status = readAssertionsTagAttribute(row.content, "status", proposalId);
         // Idempotent: a second approve (double click, stale card) must not write
         // a second spec file.
         if (status === "approved") {
@@ -1163,10 +1076,7 @@ export function registerTestAssertionHandlers() {
           {
             appId,
             operation: "find-recorded-test",
-            resources: [
-              readAppResource("app-path"),
-              readAppResource("test-files"),
-            ],
+            resources: [readAppResource("app-path"), readAppResource("test-files")],
             // Keep this first conflicting admission after the idempotency
             // latches above: an already-approved card still answers, while a
             // new approval refuses atomically instead of queueing behind a
@@ -1232,21 +1142,18 @@ export function registerTestAssertionHandlers() {
         // may reorder, drop, and edit plan items, but the code that lands in the
         // spec is only ever the proposal's validated code or synthesized here.
         const storedAssertions = new Map(
-          stored.items
-            .filter(isAssertionItem)
-            .map((item) => [item.id, item] as const),
+          stored.items.filter(isAssertionItem).map((item) => [item.id, item] as const),
         );
         const pending = withText
           .filter(isAssertionItem)
           .filter((item) => needsSynthesis(item, storedAssertions));
-        const { codeById, warning: synthesisWarning } =
-          await synthesizeAssertionCode({
-            appId,
-            testTitle: stored.testTitle,
-            bodyStatements,
-            items: withText,
-            pending,
-          });
+        const { codeById, warning: synthesisWarning } = await synthesizeAssertionCode({
+          appId,
+          testTitle: stored.testTitle,
+          bodyStatements,
+          items: withText,
+          pending,
+        });
 
         const finalItems: AssertionPlanItem[] = [];
         const finalStatements: string[] = [];
@@ -1286,11 +1193,7 @@ export function registerTestAssertionHandlers() {
             {
               appId,
               operation: "write-recorded-test",
-              resources: [
-                readAppResource("app-path"),
-                "repository",
-                "test-files",
-              ],
+              resources: [readAppResource("app-path"), "repository", "test-files"],
               // The earlier read admission refuses atomically, but releases
               // before assertion synthesis. A recording can start during that
               // model call, so the write needs its own atomic refusal too.
@@ -1299,11 +1202,7 @@ export function registerTestAssertionHandlers() {
             async () =>
               withLock(specWriteKey(appId), async () => {
                 const appPath = await getAppPath(appId);
-                const raced = await findWrittenSpecForDraft(
-                  appId,
-                  appPath,
-                  stored.draft,
-                );
+                const raced = await findWrittenSpecForDraft(appId, appPath, stored.draft);
                 if (raced) {
                   return {
                     specPath: raced.relativePath,
@@ -1398,9 +1297,7 @@ export function registerTestAssertionHandlers() {
         announceDraftConsumed(specPath);
 
         const appliedCount = countAssertions(finalItems);
-        logger.info(
-          `Generated ${specPath} with ${appliedCount} assertion(s) (chat ${chatId})`,
-        );
+        logger.info(`Generated ${specPath} with ${appliedCount} assertion(s) (chat ${chatId})`);
         return { specPath, appliedCount, warning: synthesisWarning };
       }),
   );

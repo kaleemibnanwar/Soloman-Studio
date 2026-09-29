@@ -39,9 +39,7 @@ testSkipIfWindows(
     await frame.getByLabel("Subscribe").check();
 
     // At least one step registered.
-    await expect(
-      po.page.getByTestId("preview-recording-step-count"),
-    ).not.toHaveText("0 steps");
+    await expect(po.page.getByTestId("preview-recording-step-count")).not.toHaveText("0 steps");
 
     // Stop without naming it — naming is optional, and the AI names the test as
     // part of proposing it.
@@ -53,70 +51,65 @@ testSkipIfWindows(
     await expect(steps).toBeVisible({ timeout: Timeout.LONG });
     await expect(steps).toContainText("Increment");
     await expect(steps).toContainText("Subscribe");
-    await expect(
-      po.page.getByTestId("preview-recording-review-title"),
-    ).toHaveText("Untitled recording");
+    await expect(po.page.getByTestId("preview-recording-review-title")).toHaveText(
+      "Untitled recording",
+    );
 
     // The review offers one way forward and one way out. Nothing here writes a
     // test nobody has checked.
-    await expect(
-      po.page.getByTestId("preview-recording-generate-assertions-button"),
-    ).toHaveText("Generate test proposal");
+    await expect(po.page.getByTestId("preview-recording-generate-assertions-button")).toHaveText(
+      "Generate test proposal",
+    );
     // Two-step: the recording exists nowhere else, so discarding confirms first.
     await po.page.getByTestId("preview-recording-discard-button").click();
-    await po.page
-      .getByTestId("preview-recording-discard-confirm-button")
-      .click();
+    await po.page.getByTestId("preview-recording-discard-confirm-button").click();
     await expect(po.page.getByTestId("preview-recording-bar")).toBeHidden({
       timeout: Timeout.LONG,
     });
 
     // Nothing was written: the Tests panel has no recorded spec in it.
     await po.previewPanel.selectPreviewMode("tests");
-    await expect(
-      po.page.locator("#preview-panel").getByText(/recorded-.*\.spec\.ts/),
-    ).toHaveCount(0);
+    await expect(po.page.locator("#preview-panel").getByText(/recorded-.*\.spec\.ts/)).toHaveCount(
+      0,
+    );
   },
 );
 
 // The recorder lives in the preview, but the Tests panel is where users look
 // for it: the entry point there has to switch tabs and arm the session.
-testSkipIfWindows(
-  "starts a recording from the Tests panel entry point",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    await po.importApp("recorder");
+testSkipIfWindows("starts a recording from the Tests panel entry point", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.importApp("recorder");
 
-    // Recording is part of the testing feature — no opt-in, no record button.
-    // The panel already opens on Preview, and its tabs are toggle-to-close, so
-    // selecting that mode again collapses it — then the collapse is undone a
-    // beat later, which races the next mode switch's "open the panel first".
-    await po.previewPanel.ensurePreviewPanelOpen();
-    await expect(po.page.getByTestId("preview-record-button")).toBeHidden();
+  // Recording is part of the testing feature — no opt-in, no record button.
+  // The panel already opens on Preview, and its tabs are toggle-to-close, so
+  // selecting that mode again collapses it — then the collapse is undone a
+  // beat later, which races the next mode switch's "open the panel first".
+  await po.previewPanel.ensurePreviewPanelOpen();
+  await expect(po.page.getByTestId("preview-record-button")).toBeHidden();
 
-    await po.previewPanel.selectPreviewMode("tests");
-    await po.previewPanel.clickEnableTesting();
+  await po.previewPanel.selectPreviewMode("tests");
+  await po.previewPanel.clickEnableTesting();
 
-    await po.previewPanel.selectPreviewMode("preview");
-    await po.clickRestart();
-    await po.previewPanel.expectPreviewIframeIsVisible();
-    await expect(po.page.getByTestId("preview-record-button")).toBeVisible();
+  await po.previewPanel.selectPreviewMode("preview");
+  await po.clickRestart();
+  await po.previewPanel.expectPreviewIframeIsVisible();
+  await expect(po.page.getByTestId("preview-record-button")).toBeVisible();
 
-    await po.previewPanel.selectPreviewMode("tests");
-    await po.previewPanel.startRecording("tests-record-button");
+  await po.previewPanel.selectPreviewMode("tests");
+  await po.previewPanel.startRecording("tests-record-button");
 
-    // Recording runs in the preview, so the panel switches back to it.
-    await expect(po.page.getByTestId("preview-recording-bar")).toBeVisible({
-      timeout: Timeout.LONG,
-    });
-    await po.previewPanel.expectPreviewIframeIsVisible();
+  // Recording runs in the preview, so the panel switches back to it.
+  await expect(po.page.getByTestId("preview-recording-bar")).toBeVisible({
+    timeout: Timeout.LONG,
+  });
+  await po.previewPanel.expectPreviewIframeIsVisible();
 
-    await po.page.getByTestId("preview-recording-cancel-button").click();
-    await expect(po.page.getByTestId("preview-recording-bar")).toBeHidden({
-      timeout: Timeout.LONG,
-    });
-  },
-);
+  await po.page.getByTestId("preview-recording-cancel-button").click();
+  await expect(po.page.getByTestId("preview-recording-bar")).toBeHidden({
+    timeout: Timeout.LONG,
+  });
+});
 
 testSkipIfWindows(
   "signs in the isolated Neon test user inside the iframe before recording",
@@ -130,10 +123,9 @@ testSkipIfWindows(
     // and account while the fixture serves Better Auth-shaped endpoints locally.
     const appName = await po.appManagement.getCurrentAppName();
     await po.page.evaluate(async (name) => {
-      await (window as any).electron.ipcRenderer.invoke(
-        "test:set-neon-auth-fixture",
-        { appName: name },
-      );
+      await (window as any).electron.ipcRenderer.invoke("test:set-neon-auth-fixture", {
+        appName: name,
+      });
     }, appName);
 
     await po.previewPanel.selectPreviewMode("tests");
@@ -153,9 +145,7 @@ testSkipIfWindows(
       timeout: Timeout.LONG,
     });
     await expect
-      .poll(() =>
-        frame.locator("html").evaluate(() => window.location.pathname),
-      )
+      .poll(() => frame.locator("html").evaluate(() => window.location.pathname))
       .toBe("/");
 
     await po.page.getByTestId("preview-recording-cancel-button").click();

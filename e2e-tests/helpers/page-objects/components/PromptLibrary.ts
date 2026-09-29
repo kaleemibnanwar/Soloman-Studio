@@ -22,9 +22,7 @@ export class PromptLibrary {
     await this.page.getByRole("button", { name: "New Prompt" }).click();
     await this.page.getByRole("textbox", { name: "Title" }).fill(title);
     if (description) {
-      await this.page
-        .getByRole("textbox", { name: "Description (optional)" })
-        .fill(description);
+      await this.page.getByRole("textbox", { name: "Description (optional)" }).fill(description);
     }
     if (slug !== undefined) {
       await this.page.getByPlaceholder("Slash command (optional)").fill(slug);

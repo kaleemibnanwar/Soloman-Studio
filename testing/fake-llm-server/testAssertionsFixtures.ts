@@ -32,8 +32,7 @@
  * Matches the prompt the recorder's "Generate test proposal" button sends. The
  * title is optional: an unnamed recording asks the model to name it instead.
  */
-const ASSERTIONS_REQUEST_RE =
-  /^Add assertions to the test I just recorded(: "(.+)")?\s*$/m;
+const ASSERTIONS_REQUEST_RE = /^Add assertions to the test I just recorded(: "(.+)")?\s*$/m;
 
 /**
  * The recording the request is about, as `buildAssertionsPrompt` writes it.
@@ -126,9 +125,7 @@ function terminalActionLocator(statement: string): string | null {
     // Only a `.` at depth 0 separates the chain's own calls; anything deeper
     // is inside an argument.
     if (ch !== "." || depth !== 0) continue;
-    const action = REUSABLE_ACTIONS.find((name) =>
-      body.startsWith(`${name}(`, i + 1),
-    );
+    const action = REUSABLE_ACTIONS.find((name) => body.startsWith(`${name}(`, i + 1));
     if (action) lastActionStart = i;
   }
 
@@ -246,9 +243,7 @@ export function matchAssertionsAgentTurn(
  * E2E can assert the hand-off happened without paying for a real Playwright run.
  * Returns null when this conversation has no answered card in it.
  */
-export function matchAssertionsResumedTurn(
-  messageTexts: string[],
-): string | null {
+export function matchAssertionsResumedTurn(messageTexts: string[]): string | null {
   // Bounded to the CURRENT request, not the whole conversation. A chat can hold
   // more than one recording: record, propose, approve, then record again and
   // press "Generate test proposal" a second time. Scanning every message ever

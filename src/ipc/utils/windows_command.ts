@@ -63,18 +63,10 @@ export function buildWindowsCommandInvocation(
 ): { command: string; args: string[] } {
   const resolvedCommand = resolveWindowsExecutableName(command, platform);
 
-  if (
-    platform === "win32" &&
-    WINDOWS_BATCH_COMMAND_PATTERN.test(resolvedCommand)
-  ) {
+  if (platform === "win32" && WINDOWS_BATCH_COMMAND_PATTERN.test(resolvedCommand)) {
     return {
       command: comSpec,
-      args: [
-        "/d",
-        "/s",
-        "/c",
-        [resolvedCommand, ...args].map(quoteWindowsCmdArg).join(" "),
-      ],
+      args: ["/d", "/s", "/c", [resolvedCommand, ...args].map(quoteWindowsCmdArg).join(" ")],
     };
   }
 

@@ -1,10 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import type {
-  McpListToolsResult,
-  McpServer,
-  McpTool,
-  McpToolConsent,
-} from "@/ipc/types";
+import type { McpListToolsResult, McpServer, McpTool, McpToolConsent } from "@/ipc/types";
 
 export function PluginsStats({
   servers,
@@ -27,16 +22,13 @@ export function PluginsStats({
   // settled status yet), matching the cards. A server whose listing
   // failed contributes zero usable tools rather than holding the row
   // on the placeholder forever.
-  const discovering = enabled.some(
-    (s) => !toolsByServer[s.id] && !statusByServer[s.id],
-  );
+  const discovering = enabled.some((s) => !toolsByServer[s.id] && !statusByServer[s.id]);
   // Denied tools are not usable, so they don't count as enabled.
   const toolCount = enabled.reduce(
     (sum, s) =>
       sum +
-      (toolsByServer[s.id] ?? []).filter(
-        (t) => consentsMap[`${s.id}:${t.name}`] !== "denied",
-      ).length,
+      (toolsByServer[s.id] ?? []).filter((t) => consentsMap[`${s.id}:${t.name}`] !== "denied")
+        .length,
     0,
   );
   // The tool count only covers enabled plugins; naming the disabled
@@ -46,10 +38,7 @@ export function PluginsStats({
     <div className="text-sm text-muted-foreground" data-testid="plugins-stats">
       {servers.length} plugin{servers.length === 1 ? "" : "s"}
       {disabledCount > 0 ? ` (${disabledCount} disabled)` : ""} ·{" "}
-      {discovering
-        ? "— tools"
-        : `${toolCount} tool${toolCount === 1 ? "" : "s"}`}{" "}
-      enabled
+      {discovering ? "— tools" : `${toolCount} tool${toolCount === 1 ? "" : "s"}`} enabled
     </div>
   );
 }

@@ -1,8 +1,4 @@
-import {
-  getEffectiveDefaultChatMode,
-  type ChatMode,
-  type UserSettings,
-} from "./schemas";
+import { getEffectiveDefaultChatMode, type ChatMode, type UserSettings } from "./schemas";
 import { getFreeProCompatibleChatMode } from "./freeProModel";
 
 export function getHomeDefaultChatMode(
@@ -10,10 +6,6 @@ export function getHomeDefaultChatMode(
   envVars: Record<string, string | undefined>,
   freeAgentQuotaAvailable?: boolean,
 ): ChatMode {
-  const effectiveDefault = getEffectiveDefaultChatMode(
-    settings,
-    envVars,
-    freeAgentQuotaAvailable,
-  );
+  const effectiveDefault = getEffectiveDefaultChatMode(settings, envVars, freeAgentQuotaAvailable);
   return getFreeProCompatibleChatMode(settings.selectedModel, effectiveDefault);
 }

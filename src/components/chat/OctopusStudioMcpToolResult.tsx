@@ -14,9 +14,10 @@ interface OctopusStudioMcpToolResultProps {
   children?: React.ReactNode;
 }
 
-export const OctopusStudioMcpToolResult: React.FC<
-  OctopusStudioMcpToolResultProps
-> = ({ node, children }) => {
+export const OctopusStudioMcpToolResult: React.FC<OctopusStudioMcpToolResultProps> = ({
+  node,
+  children,
+}) => {
   const serverName: string = node?.properties?.serverName || "";
   const toolName: string = node?.properties?.toolName || "";
   const [expanded, setExpanded] = useState(false);
@@ -40,10 +41,7 @@ export const OctopusStudioMcpToolResult: React.FC<
       isExpanded={expanded}
       onClick={() => setExpanded((v) => !v)}
     >
-      <OctopusStudioCardHeader
-        icon={<CheckCircle size={15} />}
-        accentColor="emerald"
-      >
+      <OctopusStudioCardHeader icon={<CheckCircle size={15} />} accentColor="emerald">
         <OctopusStudioBadge color="emerald">Tool Result</OctopusStudioBadge>
         {serverName && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-800">

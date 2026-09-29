@@ -42,10 +42,7 @@ export async function resolveChatSummary(
       totalTokens: 0,
     };
   } catch (error) {
-    console.warn(
-      `[CHAT_UTILS] Failed to fetch chat metadata for ${chatId}:`,
-      error,
-    );
+    console.warn(`[CHAT_UTILS] Failed to fetch chat metadata for ${chatId}:`, error);
     return null;
   }
 }
@@ -58,9 +55,7 @@ export async function resolveAppNameForAppId(
   appId: number,
   queryClient: QueryClient,
 ): Promise<string> {
-  const app = queryClient.getQueryData<{ name: string } | null>(
-    queryKeys.apps.detail({ appId }),
-  );
+  const app = queryClient.getQueryData<{ name: string } | null>(queryKeys.apps.detail({ appId }));
   if (app?.name) return app.name;
 
   try {

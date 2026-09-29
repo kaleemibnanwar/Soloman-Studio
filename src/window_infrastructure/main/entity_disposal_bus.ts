@@ -43,10 +43,7 @@ export class EntityDisposalBus {
 }
 
 export const mainEntityDisposalRegistry = new EntityDisposalRegistry();
-export const entityDisposalBus = new EntityDisposalBus(
-  windowRegistry,
-  mainEntityDisposalRegistry,
-);
+export const entityDisposalBus = new EntityDisposalBus(windowRegistry, mainEntityDisposalRegistry);
 
 export function entityDisposalChannel(): string {
   return ENTITY_DISPOSAL_CHANNEL;

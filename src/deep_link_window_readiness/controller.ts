@@ -1,8 +1,5 @@
 import { TransactionalDispatcher } from "@/state_machines/dispatcher";
-import {
-  runDeepLinkWindowReadinessCommand,
-  type ReadinessQueue,
-} from "./commands";
+import { runDeepLinkWindowReadinessCommand, type ReadinessQueue } from "./commands";
 import type {
   DeepLinkWindowReadinessCommand,
   DeepLinkWindowReadinessEvent,
@@ -24,8 +21,7 @@ export class DeepLinkWindowReadiness<TWindow extends object> {
     this.dispatcher = new TransactionalDispatcher({
       initialState: { target: null, readyWindows: [] },
       transition,
-      runCommand: (command) =>
-        runDeepLinkWindowReadinessCommand(queue, command),
+      runCommand: (command) => runDeepLinkWindowReadinessCommand(queue, command),
       scheduler: {
         schedule(batch, execute) {
           for (const command of batch.commands) void execute(command);

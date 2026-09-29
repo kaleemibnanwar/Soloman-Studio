@@ -55,9 +55,7 @@ export function useNotificationHandler() {
   }, [notificationsEnabled]);
 
   // Track notifications and timers for auto-close
-  const autoCloseTimersRef = useRef(
-    new Map<string, ReturnType<typeof setTimeout>>(),
-  );
+  const autoCloseTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const notificationsRef = useRef(new Map<string, Notification>());
   const notificationChatIdByTagRef = useRef(new Map<string, number>());
   const activeConsentNotificationRequestsRef = useRef(new Set<string>());
@@ -76,8 +74,7 @@ export function useNotificationHandler() {
 
   const requestNotificationPermission = useCallback(async () => {
     if (typeof window.Notification === "undefined") return "denied" as const;
-    if (window.Notification.permission !== "default")
-      return window.Notification.permission;
+    if (window.Notification.permission !== "default") return window.Notification.permission;
     return window.Notification.requestPermission();
   }, []);
 
@@ -100,8 +97,7 @@ export function useNotificationHandler() {
       requireInteraction?: boolean;
       autoClose?: boolean;
     }) => {
-      const { chatId, title, body, tag, requireInteraction, autoClose } =
-        params;
+      const { chatId, title, body, tag, requireInteraction, autoClose } = params;
 
       // Deduplicate by tag to avoid collisions
       closeNativeNotification(tag);
@@ -178,14 +174,10 @@ export function useNotificationHandler() {
         currentRouteRef.current.pathname === "/chat" &&
         currentRouteRef.current.chatIdFromRoute === id;
       const shouldNotify =
-        !isViewingConsentChat ||
-        document.visibilityState === "hidden" ||
-        !document.hasFocus();
+        !isViewingConsentChat || document.visibilityState === "hidden" || !document.hasFocus();
       if (!shouldNotify) return;
       let currentPermission =
-        typeof window.Notification !== "undefined"
-          ? window.Notification.permission
-          : "denied";
+        typeof window.Notification !== "undefined" ? window.Notification.permission : "denied";
 
       if (currentPermission === "default") {
         if (!consentPermissionPromptedRef.current) {
@@ -202,9 +194,7 @@ export function useNotificationHandler() {
       if (currentPermission !== "granted") {
         if (!consentDeniedWarningShownRef.current) {
           consentDeniedWarningShownRef.current = true;
-          const target = params.sourceLabel
-            ? ` from "${params.sourceLabel}"`
-            : "";
+          const target = params.sourceLabel ? ` from "${params.sourceLabel}"` : "";
           showWarning(
             `"${params.toolName}"${target} needs your approval. Enable notifications for Octopus Studio in your operating system's notification settings.`,
           );
@@ -217,9 +207,7 @@ export function useNotificationHandler() {
         currentRouteRef.current.pathname === "/chat" &&
         currentRouteRef.current.chatIdFromRoute === id;
       const stillShouldNotify =
-        !isStillViewingConsentChat ||
-        document.visibilityState === "hidden" ||
-        !document.hasFocus();
+        !isStillViewingConsentChat || document.visibilityState === "hidden" || !document.hasFocus();
       if (!stillShouldNotify) return;
 
       // All consent requests are scoped to a chat, so resolve app/chat info
@@ -261,9 +249,7 @@ export function useNotificationHandler() {
         .catch(console.error)
         .finally(() => {
           activeConsentNotificationRequestsRef.current.delete(params.requestId);
-          settledConsentNotificationRequestsRef.current.delete(
-            params.requestId,
-          );
+          settledConsentNotificationRequestsRef.current.delete(params.requestId);
         });
     },
     [handleConsentRequest],
@@ -287,10 +273,7 @@ export function useNotificationHandler() {
     for (const [requestId, request] of projectedUserInputRequests) {
       if (request.status === "settled") continue;
       const descriptor = request.descriptor;
-      if (
-        descriptor.kind === "integration" ||
-        descriptor.kind === "test-assertions"
-      ) {
+      if (descriptor.kind === "integration" || descriptor.kind === "test-assertions") {
         continue;
       }
       userInputNotificationDescriptorsRef.current.set(requestId, descriptor);
@@ -316,9 +299,7 @@ export function useNotificationHandler() {
       currentRouteRef.current.pathname === "/chat" &&
       currentRouteRef.current.chatIdFromRoute === chatId;
     const shouldNotify =
-      !isViewingThisChat ||
-      document.visibilityState === "hidden" ||
-      !document.hasFocus();
+      !isViewingThisChat || document.visibilityState === "hidden" || !document.hasFocus();
 
     if (!notificationsEnabledRef.current || !shouldNotify) return;
 
@@ -388,8 +369,7 @@ export function useNotificationHandler() {
               : "Octopus Studio";
             const chatTitle = chatSummary?.title ?? null;
 
-            const bodyContext =
-              summary || chatTitle || "Chat response completed";
+            const bodyContext = summary || chatTitle || "Chat response completed";
             const trimmed = truncate(bodyContext, 60);
 
             showNativeNotification({
@@ -411,16 +391,10 @@ export function useNotificationHandler() {
     const unsubscribe = ipc.events.userInput.onRequested((descriptor) => {
       // Neither is a consent prompt: an integration is finished in its own
       // panel, and an assertion plan is reviewed in the chat card itself.
-      if (
-        descriptor.kind === "integration" ||
-        descriptor.kind === "test-assertions"
-      ) {
+      if (descriptor.kind === "integration" || descriptor.kind === "test-assertions") {
         return;
       }
-      userInputNotificationDescriptorsRef.current.set(
-        descriptor.requestId,
-        descriptor,
-      );
+      userInputNotificationDescriptorsRef.current.set(descriptor.requestId, descriptor);
       if (descriptor.kind === "agent-consent") {
         startConsentNotification({
           chatId: descriptor.chatId,
@@ -451,8 +425,7 @@ export function useNotificationHandler() {
 
   useEffect(() => {
     const unsubscribe = ipc.events.userInput.onClassified(({ requestId }) => {
-      const descriptor =
-        userInputNotificationDescriptorsRef.current.get(requestId);
+      const descriptor = userInputNotificationDescriptorsRef.current.get(requestId);
       if (!descriptor) {
         pendingClassifiedNotificationRequestIdsRef.current.add(requestId);
         return;
@@ -471,8 +444,7 @@ export function useNotificationHandler() {
 
   useEffect(() => {
     const unsubscribe = ipc.events.userInput.onSettled(({ requestId }) => {
-      const descriptor =
-        userInputNotificationDescriptorsRef.current.get(requestId);
+      const descriptor = userInputNotificationDescriptorsRef.current.get(requestId);
       pendingClassifiedNotificationRequestIdsRef.current.delete(requestId);
       if (!descriptor) return;
       userInputNotificationDescriptorsRef.current.delete(requestId);

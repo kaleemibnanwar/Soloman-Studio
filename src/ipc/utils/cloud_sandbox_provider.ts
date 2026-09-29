@@ -11,7 +11,7 @@ import {
 } from "@/ipc/utils/socket_firewall";
 import { IS_TEST_BUILD } from "./test_utils";
 import { z } from "zod";
-import { isPathIgnoredByGitIgnore } from "./gitignore_utils";
+import { isPathIgnoredByGitIgnore } from "../git/gitignore_utils";
 import { getOctopusStudioEngineBaseUrl } from "./octopus_studio_engine_url";
 
 const logger = log.scope("cloud_sandbox_provider");
@@ -70,12 +70,7 @@ const CloudSandboxStatusSchema = z.object({
   lastActiveAt: z.string().trim().min(1),
   lastSuccessfulSyncAt: z.string().trim().min(1).nullable(),
   expiresAt: z.string().trim().min(1),
-  billingState: z.enum([
-    "active",
-    "charging",
-    "terminated",
-    "billing_unavailable",
-  ]),
+  billingState: z.enum(["active", "charging", "terminated", "billing_unavailable"]),
   billingStartedAt: z.string().trim().min(1),
   billingLockedAt: z.string().trim().min(1).nullable(),
   lastChargedAt: z.string().trim().min(1).nullable(),
@@ -83,12 +78,7 @@ const CloudSandboxStatusSchema = z.object({
   billingSlicesCharged: z.number().int().nonnegative(),
   creditsCharged: z.number().nonnegative(),
   terminationReason: z
-    .enum([
-      "manual",
-      "idle_timeout",
-      "credits_exhausted",
-      "billing_unavailable",
-    ])
+    .enum(["manual", "idle_timeout", "credits_exhausted", "billing_unavailable"])
     .nullable(),
   lastErrorCode: z.string().trim().min(1).nullable(),
   lastErrorMessage: z.string().trim().min(1).nullable(),
@@ -139,10 +129,7 @@ function getDefaultStartCommand(): string {
   return `pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} run dev`;
 }
 
-function appendBestEffortPnpmRebuild(
-  installCommand: string,
-  packageNames: string[],
-): string {
+function appendBestEffortPnpmRebuild(installCommand: string, packageNames: string[]): string {
   const rebuildCommand = getBestEffortPnpmRebuildCommand(packageNames);
   if (!rebuildCommand) {
     return installCommand;
@@ -202,9 +189,7 @@ export interface CloudSandboxProvider {
     files: CloudSandboxFileMap,
     options?: { replaceAll?: boolean; deletedFiles?: string[] },
   ): Promise<{ previewUrl?: string; previewAuthToken?: string }>;
-  restartSandbox(
-    sandboxId: string,
-  ): Promise<{ previewUrl: string; previewAuthToken: string }>;
+  restartSandbox(sandboxId: string): Promise<{ previewUrl: string; previewAuthToken: string }>;
   getStatus(sandboxId: string): Promise<CloudSandboxStatus>;
   createShareLink(
     sandboxId: string,
@@ -224,31 +209,23 @@ const pendingUploads = new Map<
 >();
 const activeCloudSandboxesByAppId = new Map<number, ActiveCloudSandbox>();
 const activeCloudSandboxesByPath = new Map<string, ActiveCloudSandbox>();
-let cloudSandboxSyncUpdateListener:
-  | ((update: CloudSandboxSyncUpdate) => void)
-  | undefined;
+let cloudSandboxSyncUpdateListener: ((update: CloudSandboxSyncUpdate) => void) | undefined;
 
 function getOctopusStudioEngineApiKey() {
   const settings = readSettings();
   const apiKey = settings.providerSettings?.auto?.apiKey?.value;
 
   if (!apiKey && !IS_TEST_BUILD) {
-    throw new Error(
-      "OctopusStudio Pro API key is required for cloud sandboxes.",
-    );
+    throw new Error("OctopusStudio Pro API key is required for cloud sandboxes.");
   }
 
   return apiKey;
 }
 
-async function cloudSandboxFetch(
-  endpoint: string,
-  init: RequestInit = {},
-): Promise<Response> {
+async function cloudSandboxFetch(endpoint: string, init: RequestInit = {}): Promise<Response> {
   const apiKey = getOctopusStudioEngineApiKey();
   const headers = new Headers(init.headers);
-  const isMultipartBody =
-    typeof FormData !== "undefined" && init.body instanceof FormData;
+  const isMultipartBody = typeof FormData !== "undefined" && init.body instanceof FormData;
 
   if (!headers.has("Content-Type") && init.body && !isMultipartBody) {
     headers.set("Content-Type", "application/json");
@@ -257,13 +234,10 @@ async function cloudSandboxFetch(
     headers.set("Authorization", `Bearer ${apiKey}`);
   }
 
-  const response = await fetch(
-    `${getOctopusStudioEngineBaseUrl()}${endpoint}`,
-    {
-      ...init,
-      headers,
-    },
-  );
+  const response = await fetch(`${getOctopusStudioEngineBaseUrl()}${endpoint}`, {
+    ...init,
+    headers,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -313,9 +287,7 @@ async function parseResponseJson<T>(
   const result = schema.safeParse(parsed);
 
   if (!result.success) {
-    throw new Error(
-      `Invalid ${context} response from cloud sandbox API: ${result.error.message}`,
-    );
+    throw new Error(`Invalid ${context} response from cloud sandbox API: ${result.error.message}`);
   }
 
   return result.data;
@@ -355,9 +327,7 @@ function buildCloudSandboxUploadFormData(input: {
   return formData;
 }
 
-export async function buildCloudSandboxFileMap(
-  appPath: string,
-): Promise<CloudSandboxFileMap> {
+export async function buildCloudSandboxFileMap(appPath: string): Promise<CloudSandboxFileMap> {
   const files = (await collectCloudSandboxFiles(appPath, appPath)).sort();
   const entries = await Promise.all(
     files.map(async (relativePath) => {
@@ -404,10 +374,7 @@ function shouldForceCloudSandboxFullSync(input: {
   return false;
 }
 
-async function isCloudSandboxGitIgnored(
-  appPath: string,
-  relativePath: string,
-): Promise<boolean> {
+async function isCloudSandboxGitIgnored(appPath: string, relativePath: string): Promise<boolean> {
   return isPathIgnoredByGitIgnore({
     basePath: appPath,
     filePath: path.join(appPath, normalizePath(relativePath)),
@@ -431,10 +398,7 @@ async function shouldIncludeCloudSandboxPath(
   return !(await isCloudSandboxGitIgnored(appPath, normalizedPath));
 }
 
-async function collectCloudSandboxFiles(
-  dir: string,
-  appPath: string,
-): Promise<string[]> {
+async function collectCloudSandboxFiles(dir: string, appPath: string): Promise<string[]> {
   let entries;
 
   try {
@@ -579,12 +543,8 @@ function resolveActiveCloudSandbox(input: {
   appPath?: string;
 }): ActiveCloudSandbox | undefined {
   return (
-    (input.appId !== undefined
-      ? activeCloudSandboxesByAppId.get(input.appId)
-      : undefined) ??
-    (input.appPath
-      ? activeCloudSandboxesByPath.get(path.resolve(input.appPath))
-      : undefined)
+    (input.appId !== undefined ? activeCloudSandboxesByAppId.get(input.appId) : undefined) ??
+    (input.appPath ? activeCloudSandboxesByPath.get(path.resolve(input.appPath)) : undefined)
   );
 }
 
@@ -615,15 +575,12 @@ async function uploadPendingSnapshot(input: {
     return;
   }
 
-  const { files, deletedFiles: missingChangedFiles } =
-    await buildCloudSandboxPartialFileMap({
-      appPath: input.activeSandbox.appPath,
-      changedPaths: input.changedPaths,
-    });
+  const { files, deletedFiles: missingChangedFiles } = await buildCloudSandboxPartialFileMap({
+    appPath: input.activeSandbox.appPath,
+    changedPaths: input.changedPaths,
+  });
 
-  const deletedFiles = [
-    ...new Set([...input.deletedPaths, ...missingChangedFiles]),
-  ].sort();
+  const deletedFiles = [...new Set([...input.deletedPaths, ...missingChangedFiles])].sort();
 
   if (Object.keys(files).length === 0 && deletedFiles.length === 0) {
     return;
@@ -714,9 +671,8 @@ class OctopusStudioEngineCloudSandboxProvider implements CloudSandboxProvider {
   }) {
     let promotedPackages: string[] = [];
     if (!input.installCommand?.trim()) {
-      promotedPackages = (
-        await commitPnpmAllowBuildsConfigIfChanged(input.appPath)
-      ).promotedPackages;
+      promotedPackages = (await commitPnpmAllowBuildsConfigIfChanged(input.appPath))
+        .promotedPackages;
     }
 
     const { installCommand: resolvedInstallCommand, startCommand } =
@@ -734,11 +690,7 @@ class OctopusStudioEngineCloudSandboxProvider implements CloudSandboxProvider {
       }),
     });
 
-    return parseResponseJson(
-      response,
-      CloudSandboxCreateResponseSchema,
-      "create sandbox",
-    );
+    return parseResponseJson(response, CloudSandboxCreateResponseSchema, "create sandbox");
   }
 
   async destroySandbox(sandboxId: string) {
@@ -787,52 +739,30 @@ class OctopusStudioEngineCloudSandboxProvider implements CloudSandboxProvider {
   }
 
   async restartSandbox(sandboxId: string) {
-    const response = await cloudSandboxFetch(
-      `/sandboxes/${sandboxId}/restart`,
-      {
-        method: "POST",
-      },
-    );
+    const response = await cloudSandboxFetch(`/sandboxes/${sandboxId}/restart`, {
+      method: "POST",
+    });
 
-    return parseResponseJson(
-      response,
-      CloudSandboxRestartResponseSchema,
-      "restart sandbox",
-    );
+    return parseResponseJson(response, CloudSandboxRestartResponseSchema, "restart sandbox");
   }
 
   async getStatus(sandboxId: string) {
     const response = await cloudSandboxFetch(`/sandboxes/${sandboxId}/status`);
-    return parseServiceResponse(
-      response,
-      CloudSandboxStatusSchema,
-      "cloud sandbox status",
-    );
+    return parseServiceResponse(response, CloudSandboxStatusSchema, "cloud sandbox status");
   }
 
-  async createShareLink(
-    sandboxId: string,
-    options?: { expiresInSeconds?: number },
-  ) {
-    const response = await cloudSandboxFetch(
-      `/sandboxes/${sandboxId}/share-links`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          expiresInSeconds: options?.expiresInSeconds,
-        }),
-      },
-    );
-    return parseServiceResponse(
-      response,
-      CloudSandboxShareLinkSchema,
-      "cloud sandbox share link",
-    );
+  async createShareLink(sandboxId: string, options?: { expiresInSeconds?: number }) {
+    const response = await cloudSandboxFetch(`/sandboxes/${sandboxId}/share-links`, {
+      method: "POST",
+      body: JSON.stringify({
+        expiresInSeconds: options?.expiresInSeconds,
+      }),
+    });
+    return parseServiceResponse(response, CloudSandboxShareLinkSchema, "cloud sandbox share link");
   }
 }
 
-const defaultProvider: CloudSandboxProvider =
-  new OctopusStudioEngineCloudSandboxProvider();
+const defaultProvider: CloudSandboxProvider = new OctopusStudioEngineCloudSandboxProvider();
 
 export async function destroyCloudSandbox(sandboxId: string): Promise<void> {
   await defaultProvider.destroySandbox(sandboxId);
@@ -863,16 +793,11 @@ export async function restartCloudSandbox(sandboxId: string) {
   return defaultProvider.restartSandbox(sandboxId);
 }
 
-export function streamCloudSandboxLogs(
-  sandboxId: string,
-  signal?: AbortSignal,
-) {
+export function streamCloudSandboxLogs(sandboxId: string, signal?: AbortSignal) {
   return defaultProvider.streamLogs(sandboxId, signal);
 }
 
-export async function getCloudSandboxStatus(
-  sandboxId: string,
-): Promise<CloudSandboxStatus> {
+export async function getCloudSandboxStatus(sandboxId: string): Promise<CloudSandboxStatus> {
   return defaultProvider.getStatus(sandboxId);
 }
 
@@ -907,10 +832,7 @@ export function registerRunningCloudSandbox(input: ActiveCloudSandbox): void {
   activeCloudSandboxesByPath.set(activeSandbox.appPath, activeSandbox);
 }
 
-export function unregisterRunningCloudSandbox(input: {
-  appId: number;
-  appPath?: string;
-}): void {
+export function unregisterRunningCloudSandbox(input: { appId: number; appPath?: string }): void {
   const existing = activeCloudSandboxesByAppId.get(input.appId);
   if (existing) {
     activeCloudSandboxesByPath.delete(existing.appPath);

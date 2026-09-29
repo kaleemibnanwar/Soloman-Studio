@@ -2,15 +2,7 @@ import { useAtomValue } from "jotai";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useVersions } from "@/hooks/useVersions";
 import { formatDistanceToNow } from "date-fns";
-import {
-  RotateCcw,
-  X,
-  Database,
-  Loader2,
-  Search,
-  Star,
-  Pencil,
-} from "lucide-react";
+import { RotateCcw, X, Database, Loader2, Search, Star, Pencil } from "lucide-react";
 import type { Version } from "@/ipc/types";
 import { ipc, MAX_VERSION_NOTE_LENGTH } from "@/ipc/types";
 import { cn } from "@/lib/utils";
@@ -18,23 +10,13 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Virtuoso } from "react-virtuoso";
 
 import { useVersionPreview } from "@/hooks/useVersionPreview";
 import { diffVersionIdForState } from "@/version_preview/state";
 
-function HighlightMatch({
-  text,
-  query,
-}: {
-  text: string;
-  query: string;
-}): React.ReactNode {
+function HighlightMatch({ text, query }: { text: string; query: string }): React.ReactNode {
   if (!query) return text;
   const index = text.toLowerCase().indexOf(query.toLowerCase());
   if (index === -1) return text;
@@ -126,15 +108,12 @@ function VersionRow({
   const displayMessage =
     version.message &&
     (version.message.startsWith("Reverted all changes back to version ")
-      ? version.message.replace(
-          /Reverted all changes back to version ([a-f0-9]+)/,
-          (_, hash) => {
-            const targetVersionNumber = versionNumberByOid.get(hash);
-            return targetVersionNumber !== undefined
-              ? `Reverted all changes back to version ${targetVersionNumber}`
-              : version.message;
-          },
-        )
+      ? version.message.replace(/Reverted all changes back to version ([a-f0-9]+)/, (_, hash) => {
+          const targetVersionNumber = versionNumberByOid.get(hash);
+          return targetVersionNumber !== undefined
+            ? `Reverted all changes back to version ${targetVersionNumber}`
+            : version.message;
+        })
       : version.message);
 
   return (
@@ -182,11 +161,7 @@ function VersionRow({
                     ? `Remove version ${versionNumber} from favorites`
                     : `Favorite version ${versionNumber}`
                 }
-                title={
-                  version.isFavorite
-                    ? "Remove version from favorites"
-                    : "Favorite version"
-                }
+                title={version.isFavorite ? "Remove version from favorites" : "Favorite version"}
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleFavorite(version);
@@ -198,32 +173,17 @@ function VersionRow({
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Star
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    version.isFavorite && "fill-[#6c55dc]",
-                  )}
-                />
+                <Star className={cn("h-3.5 w-3.5", version.isFavorite && "fill-[#6c55dc]")} />
               </button>
               <span className="font-medium text-xs">
-                Version{" "}
-                <HighlightMatch
-                  text={String(versionNumber)}
-                  query={trimmedSearchQuery}
-                />{" "}
-                (
-                <HighlightMatch
-                  text={version.oid.slice(0, 7)}
-                  query={trimmedSearchQuery}
-                />
-                )
+                Version <HighlightMatch text={String(versionNumber)} query={trimmedSearchQuery} /> (
+                <HighlightMatch text={version.oid.slice(0, 7)} query={trimmedSearchQuery} />)
               </span>
               {/* example format: '2025-07-25T21:52:01Z' */}
               {version.dbTimestamp &&
                 (() => {
                   const timestampMs = new Date(version.dbTimestamp).getTime();
-                  const isExpired =
-                    Date.now() - timestampMs > 24 * 60 * 60 * 1000;
+                  const isExpired = Date.now() - timestampMs > 24 * 60 * 60 * 1000;
                   return (
                     <Tooltip>
                       <TooltipTrigger>
@@ -265,10 +225,7 @@ function VersionRow({
             <div className="min-w-0 flex-1">
               {displayMessage && (
                 <p className="text-sm">
-                  <HighlightMatch
-                    text={displayMessage}
-                    query={trimmedSearchQuery}
-                  />
+                  <HighlightMatch text={displayMessage} query={trimmedSearchQuery} />
                 </p>
               )}
 
@@ -361,20 +318,19 @@ export function VersionPane() {
   const isResolvingPreviewBranch = previewState.type === "resolving-origin";
   const isCheckingOutVersion = previewState.type === "checking-out";
   const isRevertingVersion = previewState.type === "restoring";
-  const isAnyVersionMutationPending =
-    !previewProjection.capabilities.canRestore;
+  const isAnyVersionMutationPending = !previewProjection.capabilities.canRestore;
   const { canSelectVersion } = previewProjection.capabilities;
   const selectedVersionId = diffVersionIdForState(previewState);
 
   const [cachedVersions, setCachedVersions] = useState<Version[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [expandedNoteVersionIds, setExpandedNoteVersionIds] = useState<
-    Set<string>
-  >(() => new Set());
-  const [autoFocusNoteVersionIds, setAutoFocusNoteVersionIds] = useState<
-    Set<string>
-  >(() => new Set());
+  const [expandedNoteVersionIds, setExpandedNoteVersionIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [autoFocusNoteVersionIds, setAutoFocusNoteVersionIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
   const noteSaveTimeoutsRef = useRef(new Map<string, PendingNoteSave>());
   const noteSaveSequencesRef = useRef(new Map<string, number>());
@@ -387,21 +343,14 @@ export function VersionPane() {
     enabled: isVisible && !!appId,
   });
   const screenshotByHash = useMemo(
-    () =>
-      new Map(
-        screenshotsData?.screenshots.map((s) => [s.commitHash, s.url]) ?? [],
-      ),
+    () => new Map(screenshotsData?.screenshots.map((s) => [s.commitHash, s.url]) ?? []),
     [screenshotsData],
   );
 
   const updateCachedVersion = useCallback(
-    (
-      versionId: string,
-      updates: Partial<Pick<Version, "isFavorite" | "note">>,
-    ) => {
+    (versionId: string, updates: Partial<Pick<Version, "isFavorite" | "note">>) => {
       setCachedVersions((prevVersions) => {
-        const sourceVersions =
-          prevVersions.length > 0 ? prevVersions : liveVersionsRef.current;
+        const sourceVersions = prevVersions.length > 0 ? prevVersions : liveVersionsRef.current;
         if (sourceVersions.length === 0) {
           return prevVersions;
         }
@@ -423,27 +372,18 @@ export function VersionPane() {
       syncCache = true,
     ) => {
       const pendingSaveKey = getPendingNoteSaveKey(targetAppId, versionId);
-      const isLatestSave = () =>
-        noteSaveSequencesRef.current.get(pendingSaveKey) === saveSequence;
+      const isLatestSave = () => noteSaveSequencesRef.current.get(pendingSaveKey) === saveSequence;
       try {
         const result = await setVersionNote({
           appId: targetAppId,
           versionId,
           note,
         });
-        if (
-          syncCache &&
-          isLatestSave() &&
-          targetAppId === currentAppIdRef.current
-        ) {
+        if (syncCache && isLatestSave() && targetAppId === currentAppIdRef.current) {
           updateCachedVersion(result.oid, { note: result.note });
         }
       } catch {
-        if (
-          syncCache &&
-          isLatestSave() &&
-          targetAppId === currentAppIdRef.current
-        ) {
+        if (syncCache && isLatestSave() && targetAppId === currentAppIdRef.current) {
           updateCachedVersion(versionId, { note: previousNote });
         }
       } finally {
@@ -580,8 +520,7 @@ export function VersionPane() {
     if (existingPendingSave) {
       clearTimeout(existingPendingSave.timeout);
     }
-    const saveSequence =
-      (noteSaveSequencesRef.current.get(pendingSaveKey) ?? 0) + 1;
+    const saveSequence = (noteSaveSequencesRef.current.get(pendingSaveKey) ?? 0) + 1;
     noteSaveSequencesRef.current.set(pendingSaveKey, saveSequence);
     const timeout = setTimeout(() => {
       const pendingSave = noteSaveTimeoutsRef.current.get(pendingSaveKey);
@@ -735,17 +674,9 @@ export function VersionPane() {
           </div>
           <button
             type="button"
-            aria-label={
-              showFavoritesOnly
-                ? "Show all versions"
-                : "Show favorite versions only"
-            }
+            aria-label={showFavoritesOnly ? "Show all versions" : "Show favorite versions only"}
             aria-pressed={showFavoritesOnly}
-            title={
-              showFavoritesOnly
-                ? "Show all versions"
-                : "Show favorite versions only"
-            }
+            title={showFavoritesOnly ? "Show all versions" : "Show favorite versions only"}
             onClick={() => setShowFavoritesOnly((value) => !value)}
             className={cn(
               "h-8 w-8 inline-flex items-center justify-center rounded-md border border-input transition-colors",
@@ -754,9 +685,7 @@ export function VersionPane() {
                 : "text-muted-foreground hover:text-foreground hover:bg-accent",
             )}
           >
-            <Star
-              className={cn("h-3.5 w-3.5", showFavoritesOnly && "fill-current")}
-            />
+            <Star className={cn("h-3.5 w-3.5", showFavoritesOnly && "fill-current")} />
           </button>
         </div>
       </div>
@@ -790,9 +719,7 @@ export function VersionPane() {
                   isRevertingVersion={isRevertingVersion}
                   isAnyVersionMutationPending={isAnyVersionMutationPending}
                   canSelectVersion={canSelectVersion}
-                  showNoteEditor={
-                    expandedNoteVersionIds.has(version.oid) || !!version.note
-                  }
+                  showNoteEditor={expandedNoteVersionIds.has(version.oid) || !!version.note}
                   shouldAutoFocusNote={autoFocusNoteVersionIds.has(version.oid)}
                   versionNumberByOid={versionNumberByOid}
                   onVersionClick={handleVersionClick}

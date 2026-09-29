@@ -12,10 +12,7 @@ type TestStatus = RuntimeTestResult["status"] | "running" | "not-run";
  * prefix or being absolute), so we fall back from exact -> suffix -> basename.
  * Returns the original path when no unambiguous match exists.
  */
-export function reconcileResultFile(
-  resultFile: string,
-  specFiles: string[],
-): string {
+export function reconcileResultFile(resultFile: string, specFiles: string[]): string {
   const normalized = resultFile.replace(/\\/g, "/");
   if (specFiles.includes(normalized)) return normalized;
 
@@ -54,9 +51,7 @@ export function findCaseResult(
   testCase: TestCase,
 ): TestCaseResult | undefined {
   if (!result?.tests) return undefined;
-  return result.tests.find((t) =>
-    sameTestCaseByLineOrTitleFallback(t, testCase),
-  );
+  return result.tests.find((t) => sameTestCaseByLineOrTitleFallback(t, testCase));
 }
 
 /**
@@ -69,23 +64,16 @@ export function mergeCaseResults(
 ): TestCaseResult[] {
   const merged = [...(existing ?? [])];
   for (const inc of incoming) {
-    let idx = merged.findIndex((t) =>
-      sameTestCaseByLineOrTitleFallback(t, inc),
-    );
+    let idx = merged.findIndex((t) => sameTestCaseByLineOrTitleFallback(t, inc));
     if (idx < 0) {
       const existingTitleMatches = merged
         .map((test, index) => ({ test, index }))
         .filter(({ test }) => test.title === inc.title);
-      const incomingTitleMatches = incoming.filter(
-        (test) => test.title === inc.title,
-      );
+      const incomingTitleMatches = incoming.filter((test) => test.title === inc.title);
       // A test's line can move after the agent edits the spec. Replace the old
       // result by title only when that identity is unambiguous on both sides;
       // duplicate test titles must remain distinct by line.
-      if (
-        existingTitleMatches.length === 1 &&
-        incomingTitleMatches.length === 1
-      ) {
+      if (existingTitleMatches.length === 1 && incomingTitleMatches.length === 1) {
         idx = existingTitleMatches[0].index;
       }
     }
@@ -97,10 +85,7 @@ export function mergeCaseResults(
 }
 
 /** Roll per-test results up to a file-level result (assertion > infra > pass). */
-export function aggregateFileResult(
-  file: string,
-  tests: TestCaseResult[],
-): TestResult {
+export function aggregateFileResult(file: string, tests: TestCaseResult[]): TestResult {
   let durationMs = 0;
   let hasFailed = false;
   let hasInfra = false;
@@ -112,8 +97,7 @@ export function aggregateFileResult(
     else if (t.status === "inconclusive") hasInfra = true;
     if (t.status !== "passed") {
       if (!error && t.error) error = t.error;
-      if (!screenshotPath && t.screenshotPath)
-        screenshotPath = t.screenshotPath;
+      if (!screenshotPath && t.screenshotPath) screenshotPath = t.screenshotPath;
     }
   }
   return {
@@ -126,15 +110,10 @@ export function aggregateFileResult(
   };
 }
 
-function allKnownCasesCovered(
-  knownTests: TestCase[],
-  results: TestCaseResult[],
-): boolean {
+function allKnownCasesCovered(knownTests: TestCase[], results: TestCaseResult[]): boolean {
   if (knownTests.length === 0) return true;
   return knownTests.every((testCase) =>
-    results.some((result) =>
-      sameTestCaseByLineOrTitleFallback(result, testCase),
-    ),
+    results.some((result) => sameTestCaseByLineOrTitleFallback(result, testCase)),
   );
 }
 
@@ -148,10 +127,7 @@ function buildPartialAwareResult({
   tests: TestCaseResult[];
 }): RuntimeTestResult {
   const aggregated = aggregateFileResult(file, tests);
-  if (
-    aggregated.status === "passed" &&
-    !allKnownCasesCovered(knownTests, tests)
-  ) {
+  if (aggregated.status === "passed" && !allKnownCasesCovered(knownTests, tests)) {
     return { ...aggregated, status: "partial" };
   }
   return aggregated;

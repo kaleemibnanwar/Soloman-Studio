@@ -19,16 +19,9 @@ import {
   type MachineSnapshotEnvelope,
 } from "./remote_protocol";
 
-export type RemoteConnectionStatus =
-  | "connecting"
-  | "ready"
-  | "disconnected"
-  | "incompatible";
+export type RemoteConnectionStatus = "connecting" | "ready" | "disconnected" | "incompatible";
 
-export type RemoteTransportStatus =
-  | "connected"
-  | "disconnected"
-  | "incompatible";
+export type RemoteTransportStatus = "connected" | "disconnected" | "incompatible";
 
 export interface RemoteMachineClientConnection {
   getStatus(): RemoteTransportStatus;
@@ -43,11 +36,7 @@ export interface RemoteMachineClientConnection {
 
 export class RemoteMachineTransportError extends Error {
   constructor(
-    readonly code:
-      | "disconnected"
-      | "incompatible"
-      | "renderer-destroyed"
-      | "invalid-payload",
+    readonly code: "disconnected" | "incompatible" | "renderer-destroyed" | "invalid-payload",
     message: string,
     options?: ErrorOptions,
   ) {
@@ -83,10 +72,7 @@ export type ObservedRevisionToken =
       readonly [observedRevisionBrand]: true;
     };
 
-export function observeDomainRevision(
-  name: string,
-  revision: number,
-): ObservedRevisionToken {
+export function observeDomainRevision(name: string, revision: number): ObservedRevisionToken {
   if (name.length === 0 || !Number.isSafeInteger(revision) || revision < 0) {
     throw new Error("Invalid observed domain revision");
   }
@@ -130,10 +116,7 @@ export interface RemoteActorRef<State, Event, Reason extends IgnoreReason> {
     requestId: string,
     listener: (outcome: unknown, actor: ActorRuntimeMetadata) => void,
   ): () => void;
-  dispatch(
-    event: Event,
-    options?: RemoteDispatchOptions,
-  ): Promise<MachineDispatchReceipt<Reason>>;
+  dispatch(event: Event, options?: RemoteDispatchOptions): Promise<MachineDispatchReceipt<Reason>>;
   retain(): RemoteSubscriptionLease;
   resync(): Promise<void>;
 }
@@ -198,12 +181,11 @@ interface OwnershipToken {
 
 const MAX_BUFFERED_SNAPSHOTS = 16;
 
-class RemoteSnapshotStore<
-  Key,
+class RemoteSnapshotStore<Key, State, Event, Reason extends IgnoreReason> implements RemoteActorRef<
   State,
   Event,
-  Reason extends IgnoreReason,
-> implements RemoteActorRef<State, Event, Reason> {
+  Reason
+> {
   readonly kind = "remote" as const;
   private readonly view: SnapshotStore<RemoteActorView<State>>;
   private readonly buffered: MachineSnapshotEnvelope[] = [];
@@ -297,8 +279,7 @@ class RemoteSnapshotStore<
   dispatch = (
     event: Event,
     options?: RemoteDispatchOptions,
-  ): Promise<MachineDispatchReceipt<Reason>> =>
-    this.client.dispatch(this, event, options);
+  ): Promise<MachineDispatchReceipt<Reason>> => this.client.dispatch(this, event, options);
 
   retain = (): RemoteSubscriptionLease => this.client.retain(this, "explicit");
 
@@ -375,11 +356,9 @@ class RemoteSnapshotStore<
     this.buffered.splice(0);
     this.metadata = undefined;
     this.transportSubscribed = false;
-    this.setView(
-      this.definition.remote.unavailableSnapshot(this.key),
-      "connecting",
-      { kind: "unavailable" },
-    );
+    this.setView(this.definition.remote.unavailableSnapshot(this.key), "connecting", {
+      kind: "unavailable",
+    });
   }
 
   currentMetadata(): StoreMetadata | undefined {
@@ -467,11 +446,9 @@ class RemoteSnapshotStore<
           this.setTransportStatus("disconnected");
         } else {
           this.bootstrapped = false;
-          this.setView(
-            this.definition.remote.unavailableSnapshot(this.key),
-            "disconnected",
-            { kind: "unavailable" },
-          );
+          this.setView(this.definition.remote.unavailableSnapshot(this.key), "disconnected", {
+            kind: "unavailable",
+          });
         }
         throw error;
       }
@@ -526,13 +503,9 @@ class RemoteSnapshotStore<
     this.transportSubscribed = false;
     this.bootstrapped = true;
     this.buffered.splice(0);
-    this.setView(
-      this.definition.remote.unavailableSnapshot(this.key),
-      "ready",
-      {
-        kind: "unavailable",
-      },
-    );
+    this.setView(this.definition.remote.unavailableSnapshot(this.key), "ready", {
+      kind: "unavailable",
+    });
   }
 
   receiveOperationOutcome(envelope: MachineOperationOutcomeEnvelope): void {
@@ -543,9 +516,7 @@ class RemoteSnapshotStore<
     if (!isWithinStructuredCloneBudget(envelope, codecs.maxEnvelopeBytes)) {
       return;
     }
-    const invocationRef = codecs.invocationRefCodec.safeParse(
-      envelope.invocationRef,
-    );
+    const invocationRef = codecs.invocationRefCodec.safeParse(envelope.invocationRef);
     const outcome = codecs.outcomeCodec.safeParse(envelope.outcome);
     if (!invocationRef.success || !outcome.success) return;
     for (const listener of Array.from(
@@ -571,11 +542,9 @@ class RemoteSnapshotStore<
     this.bootstrapped = false;
     this.metadata = undefined;
     this.transportSubscribed = false;
-    this.setView(
-      this.definition.remote.unavailableSnapshot(this.key),
-      "disconnected",
-      { kind: "unavailable" },
-    );
+    this.setView(this.definition.remote.unavailableSnapshot(this.key), "disconnected", {
+      kind: "unavailable",
+    });
     this.view.dispose();
     this.buffered.splice(0);
     this.operationOutcomeListeners.clear();
@@ -586,17 +555,12 @@ class RemoteSnapshotStore<
       this.bootstrapped = true;
       this.buffered.splice(0);
       this.metadata = undefined;
-      this.setView(
-        this.definition.remote.unavailableSnapshot(this.key),
-        "ready",
-        { kind: "unavailable" },
-      );
+      this.setView(this.definition.remote.unavailableSnapshot(this.key), "ready", {
+        kind: "unavailable",
+      });
       return;
     }
-    if (
-      this.metadata &&
-      this.metadata.actorInstanceId !== snapshot.actorInstanceId
-    ) {
+    if (this.metadata && this.metadata.actorInstanceId !== snapshot.actorInstanceId) {
       this.disposedActorIds.add(this.metadata.actorInstanceId);
     }
     const observedRevision = this.createObservedRevision(snapshot);
@@ -616,10 +580,7 @@ class RemoteSnapshotStore<
 
   private applySnapshot(snapshot: MachineSnapshotEnvelope): void {
     if (this.disposedActorIds.has(snapshot.actorInstanceId)) return;
-    if (
-      !this.metadata ||
-      snapshot.actorInstanceId !== this.metadata.actorInstanceId
-    ) {
+    if (!this.metadata || snapshot.actorInstanceId !== this.metadata.actorInstanceId) {
       return;
     }
     if (snapshot.revision <= this.metadata.revision) return;
@@ -641,14 +602,8 @@ class RemoteSnapshotStore<
 
   private validateSnapshot(payload: unknown): MachineSnapshotEnvelope {
     const outer = MachineSnapshotEnvelopeSchema.safeParse(payload);
-    if (
-      !outer.success ||
-      this.client.addressKey(outer.data) !== this.addressKey
-    ) {
-      throw new RemoteMachineTransportError(
-        "invalid-payload",
-        "Invalid remote snapshot envelope",
-      );
+    if (!outer.success || this.client.addressKey(outer.data) !== this.addressKey) {
+      throw new RemoteMachineTransportError("invalid-payload", "Invalid remote snapshot envelope");
     }
     if (outer.data.protocolVersion !== this.address.protocolVersion) {
       throw new RemoteMachineTransportError(
@@ -657,14 +612,10 @@ class RemoteSnapshotStore<
       );
     }
     const state = (
-      this.definition.remoteIntent?.snapshotCodec ??
-      this.definition.remote.snapshotCodec
+      this.definition.remoteIntent?.snapshotCodec ?? this.definition.remote.snapshotCodec
     ).safeParse(outer.data.encodedState);
     if (!state.success) {
-      throw new RemoteMachineTransportError(
-        "invalid-payload",
-        "Invalid remote snapshot state",
-      );
+      throw new RemoteMachineTransportError("invalid-payload", "Invalid remote snapshot state");
     }
     return { ...outer.data, encodedState: state.data };
   }
@@ -678,8 +629,7 @@ class RemoteSnapshotStore<
   private setView(
     state: State,
     connection: RemoteConnectionStatus,
-    snapshot: RemoteActorView<State>["snapshot"] = this.view.getSnapshot()
-      .snapshot,
+    snapshot: RemoteActorView<State>["snapshot"] = this.view.getSnapshot().snapshot,
   ): void {
     const current = this.view.getSnapshot();
     if (
@@ -705,10 +655,7 @@ class RemoteSnapshotStore<
       return;
     }
     if (this.activeSubscriberOwnershipGeneration > 0) {
-      if (
-        this.pendingSubscriberReleaseGeneration !==
-        this.activeSubscriberOwnershipGeneration
-      ) {
+      if (this.pendingSubscriberReleaseGeneration !== this.activeSubscriberOwnershipGeneration) {
         return;
       }
       this.pendingSubscriberReleaseGeneration = undefined;
@@ -730,10 +677,7 @@ class RemoteSnapshotStore<
 }
 
 export class RemoteMachineClient {
-  private readonly stores = new Map<
-    string,
-    RemoteSnapshotStore<any, any, any, any>
-  >();
+  private readonly stores = new Map<string, RemoteSnapshotStore<any, any, any, any>>();
   private readonly pendingDispatches = new Map<
     number,
     (error: RemoteMachineTransportError) => void
@@ -782,9 +726,7 @@ export class RemoteMachineClient {
     const previousConnection = this.connection;
     for (const store of this.stores.values()) {
       if (store.hasInterest()) {
-        void previousConnection
-          .unsubscribe(store.address)
-          .catch(() => undefined);
+        void previousConnection.unsubscribe(store.address).catch(() => undefined);
       }
     }
     this.connection = connection;
@@ -812,13 +754,7 @@ export class RemoteMachineClient {
     const addressKey = `${definition.id}\0${keyContract.keyToString(parsedKey.data)}`;
     const existing = this.stores.get(addressKey);
     if (existing) return existing;
-    const store = new RemoteSnapshotStore(
-      this,
-      definition,
-      parsedKey.data,
-      address,
-      addressKey,
-    );
+    const store = new RemoteSnapshotStore(this, definition, parsedKey.data, address, addressKey);
     this.stores.set(addressKey, store);
     return store;
   }
@@ -888,15 +824,12 @@ export class RemoteMachineClient {
     };
   }
 
-  addressKey(
-    address: Pick<MachineAddress, "machineId" | "encodedKey">,
-  ): string {
+  addressKey(address: Pick<MachineAddress, "machineId" | "encodedKey">): string {
     const matching = [...this.stores.values()].find(
       (store) => store.definition.id === address.machineId,
     );
     if (!matching) return `${address.machineId}\0<unknown>`;
-    const keyContract =
-      matching.definition.remoteIntent ?? matching.definition.remote;
+    const keyContract = matching.definition.remoteIntent ?? matching.definition.remote;
     const key = keyContract.keyCodec.safeParse(address.encodedKey);
     return key.success
       ? `${address.machineId}\0${keyContract.keyToString(key.data)}`
@@ -909,10 +842,7 @@ export class RemoteMachineClient {
     options?: RemoteDispatchOptions,
   ): Promise<MachineDispatchReceipt<Reason>> {
     if (this.disposed) {
-      throw new RemoteMachineTransportError(
-        "renderer-destroyed",
-        "Renderer was destroyed",
-      );
+      throw new RemoteMachineTransportError("renderer-destroyed", "Renderer was destroyed");
     }
     if (this.status !== "connected") throw this.transportError();
     if (store.definition.remoteIntent && !store.isBootstrapped()) {
@@ -922,8 +852,7 @@ export class RemoteMachineClient {
       );
     }
     const parsedEvent = (
-      store.definition.remoteIntent?.rendererIntentCodec ??
-      store.definition.remote.eventCodec
+      store.definition.remoteIntent?.rendererIntentCodec ?? store.definition.remote.eventCodec
     ).safeParse(event);
     if (!parsedEvent.success) {
       throw new RemoteMachineTransportError(
@@ -938,8 +867,7 @@ export class RemoteMachineClient {
       | Readonly<Record<string, RemoteIntentPolicy>>
       | undefined;
     const nativeRevisionPolicy =
-      nativePolicies?.[(parsedEvent.data as { readonly type: string }).type]
-        ?.observedRevision;
+      nativePolicies?.[(parsedEvent.data as { readonly type: string }).type]?.observedRevision;
     const suppliedExpected = options?.expected;
     const legacyIntentRevision =
       typeof parsedEvent.data === "object" &&
@@ -949,16 +877,13 @@ export class RemoteMachineClient {
         ? parsedEvent.data.expectedRevision
         : undefined;
     const expected =
-      nativeRevisionPolicy?.kind === "actor" &&
-      suppliedExpected?.kind === "actor"
+      nativeRevisionPolicy?.kind === "actor" && suppliedExpected?.kind === "actor"
         ? suppliedExpected
         : nativeRevisionPolicy?.kind === "domain" &&
             suppliedExpected?.kind === "domain" &&
             suppliedExpected.name === nativeRevisionPolicy.name
           ? suppliedExpected
-          : nativeRevisionPolicy?.kind === "actor" &&
-              metadata &&
-              legacyIntentRevision !== undefined
+          : nativeRevisionPolicy?.kind === "actor" && metadata && legacyIntentRevision !== undefined
             ? ({
                 kind: "actor",
                 actorInstanceId: metadata.actorInstanceId,
@@ -974,10 +899,8 @@ export class RemoteMachineClient {
         options?.messageId ??
         this.ids.next(`${store.definition.id}:message`),
       encodedEvent: parsedEvent.data,
-      correlationId:
-        options?.requestIdentity?.requestId ?? options?.correlationId,
-      causationId:
-        options?.requestIdentity?.idempotencyKey ?? options?.causationId,
+      correlationId: options?.requestIdentity?.requestId ?? options?.correlationId,
+      causationId: options?.requestIdentity?.idempotencyKey ?? options?.causationId,
       expectedActorInstanceId:
         (expected?.kind === "actor" ? expected.actorInstanceId : undefined) ??
         metadata?.actorInstanceId,
@@ -988,22 +911,13 @@ export class RemoteMachineClient {
       this.pendingDispatches.set(sequence, reject);
     });
     try {
-      const payload = await Promise.race([
-        this.connection.dispatch(envelope),
-        disconnected,
-      ]);
+      const payload = await Promise.race([this.connection.dispatch(envelope), disconnected]);
       if (generation !== this.generation) throw this.transportError();
       const receipt = MachineDispatchReceiptSchema.safeParse(payload);
       if (!receipt.success || receipt.data.messageId !== envelope.messageId) {
-        throw new RemoteMachineTransportError(
-          "invalid-payload",
-          "Invalid remote dispatch receipt",
-        );
+        throw new RemoteMachineTransportError("invalid-payload", "Invalid remote dispatch receipt");
       }
-      if (
-        receipt.data.kind === "rejected" &&
-        receipt.data.reason === "protocol-version"
-      ) {
+      if (receipt.data.kind === "rejected" && receipt.data.reason === "protocol-version") {
         this.markIncompatible();
       }
       return receipt.data as MachineDispatchReceipt<Reason>;
@@ -1014,10 +928,7 @@ export class RemoteMachineClient {
   }
 
   isProtocolError(error: unknown): boolean {
-    return (
-      error instanceof RemoteMachineTransportError &&
-      error.code === "incompatible"
-    );
+    return error instanceof RemoteMachineTransportError && error.code === "incompatible";
   }
 
   markIncompatible(error?: unknown): void {
@@ -1062,10 +973,7 @@ export class RemoteMachineClient {
     if (this.started) return Promise.resolve();
     if (this.disposed) {
       return Promise.reject(
-        new RemoteMachineTransportError(
-          "renderer-destroyed",
-          "Renderer was destroyed",
-        ),
+        new RemoteMachineTransportError("renderer-destroyed", "Renderer was destroyed"),
       );
     }
     return new Promise<void>((resolve, reject) => {
@@ -1081,26 +989,18 @@ export class RemoteMachineClient {
     this.removeSnapshotListener = this.connection.onSnapshot((payload) => {
       const parsed = MachineSnapshotEnvelopeSchema.safeParse(payload);
       if (!parsed.success) return;
-      this.stores
-        .get(this.addressKey(parsed.data))
-        ?.receiveSnapshot(parsed.data);
+      this.stores.get(this.addressKey(parsed.data))?.receiveSnapshot(parsed.data);
     });
     this.removeDisposedListener = this.connection.onDisposed((payload) => {
       const parsed = MachineDisposedEnvelopeSchema.safeParse(payload);
       if (!parsed.success) return;
-      this.stores
-        .get(this.addressKey(parsed.data))
-        ?.receiveDisposed(parsed.data);
+      this.stores.get(this.addressKey(parsed.data))?.receiveDisposed(parsed.data);
     });
-    this.removeOperationOutcomeListener = this.connection.onOperationOutcome?.(
-      (payload) => {
-        const parsed = MachineOperationOutcomeEnvelopeSchema.safeParse(payload);
-        if (!parsed.success) return;
-        this.stores
-          .get(this.addressKey(parsed.data))
-          ?.receiveOperationOutcome(parsed.data);
-      },
-    );
+    this.removeOperationOutcomeListener = this.connection.onOperationOutcome?.((payload) => {
+      const parsed = MachineOperationOutcomeEnvelopeSchema.safeParse(payload);
+      if (!parsed.success) return;
+      this.stores.get(this.addressKey(parsed.data))?.receiveOperationOutcome(parsed.data);
+    });
     const currentStatus = this.connection.getStatus();
     if (currentStatus === this.status) {
       for (const store of this.stores.values()) {

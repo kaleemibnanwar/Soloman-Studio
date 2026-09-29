@@ -1,25 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
-import {
-  Folder,
-  Plus,
-  Search,
-  Star,
-  Upload,
-  Loader2,
-  X,
-  MoreVertical,
-  Trash2,
-} from "lucide-react";
+import { Folder, Plus, Search, Star, Upload, Loader2, X, MoreVertical, Trash2 } from "lucide-react";
 import { useAtom, useSetAtom } from "jotai";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { removeChatIdFromAllTrackingAtom, selectedChatIdAtom } from "@/atoms/chatAtoms";
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-} from "@/components/ui/sidebar";
+import { SidebarGroup, SidebarGroupContent, SidebarMenu } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,8 +70,7 @@ export function AppList({
     useSidebarSectionCollapse("coding-projects");
   const { collapsed: chatProjectsCollapsed, toggle: toggleChatProjects } =
     useSidebarSectionCollapse("chat-projects");
-  const { collapsed: chatsCollapsed, toggle: toggleChats } =
-    useSidebarSectionCollapse("chats");
+  const { collapsed: chatsCollapsed, toggle: toggleChats } = useSidebarSectionCollapse("chats");
 
   const allApps = useMemo(
     () =>
@@ -102,18 +87,11 @@ export function AppList({
   );
 
   const favoriteApps = useMemo(
-    () =>
-      apps.filter(
-        (app) =>
-          app.isFavorite && app.type !== "chat" && !app.isDefaultChatProject,
-      ),
+    () => apps.filter((app) => app.isFavorite && app.type !== "chat" && !app.isDefaultChatProject),
     [apps],
   );
 
-  const visibleCollectionIds = useMemo(
-    () => new Set(collections.map((c) => c.id)),
-    [collections],
-  );
+  const visibleCollectionIds = useMemo(() => new Set(collections.map((c) => c.id)), [collections]);
 
   const nonFavoriteApps = useMemo(
     () =>
@@ -122,8 +100,7 @@ export function AppList({
           app.type !== "chat" &&
           !app.isDefaultChatProject &&
           !app.isFavorite &&
-          (app.collectionId == null ||
-            !visibleCollectionIds.has(app.collectionId)),
+          (app.collectionId == null || !visibleCollectionIds.has(app.collectionId)),
       ),
     [apps, visibleCollectionIds],
   );
@@ -197,9 +174,7 @@ export function AppList({
       await invalidateChats();
       setIsClearAllDialogOpen(false);
     } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to clear chat history",
-      );
+      showError(error instanceof Error ? error.message : "Failed to clear chat history");
     } finally {
       setIsClearingAll(false);
     }
@@ -210,12 +185,9 @@ export function AppList({
   }
 
   const hasApps =
-    favoriteApps.length > 0 ||
-    nonFavoriteApps.length > 0 ||
-    collectionMembers.size > 0;
+    favoriteApps.length > 0 || nonFavoriteApps.length > 0 || collectionMembers.size > 0;
   const hasChatProjects = chatProjects.length > 0;
-  const isLoadingDefaultChats =
-    defaultChatProjectId != null && defaultChatsLoading;
+  const isLoadingDefaultChats = defaultChatProjectId != null && defaultChatsLoading;
 
   const trimmedQuery = searchQuery.trim().toLowerCase();
   const isSearching = trimmedQuery !== "";
@@ -248,7 +220,12 @@ export function AppList({
     if (defaultChatProjectId != null) {
       for (const chat of defaultChats) {
         if ((chat.title ?? "").toLowerCase().includes(trimmedQuery)) {
-          results.push({ kind: "chat", id: chat.id, title: chat.title ?? "", createdAt: chat.createdAt });
+          results.push({
+            kind: "chat",
+            id: chat.id,
+            title: chat.title ?? "",
+            createdAt: chat.createdAt,
+          });
         }
       }
     }
@@ -257,10 +234,7 @@ export function AppList({
 
   return (
     <>
-      <SidebarGroup
-        className="h-full overflow-y-auto"
-        data-testid="app-list-container"
-      >
+      <SidebarGroup className="h-full overflow-y-auto" data-testid="app-list-container">
         <SidebarGroupContent>
           <div className="flex flex-col gap-2">
             {/* Universal search — live-filters the merged list below. Deep
@@ -300,18 +274,12 @@ export function AppList({
             </div>
 
             {loading ? (
-              <div className="py-2 px-4 text-sm text-muted-foreground">
-                Loading apps...
-              </div>
+              <div className="py-2 px-4 text-sm text-muted-foreground">Loading apps...</div>
             ) : error ? (
-              <div className="py-2 px-4 text-sm text-destructive">
-                Error loading apps
-              </div>
+              <div className="py-2 px-4 text-sm text-destructive">Error loading apps</div>
             ) : isSearching ? (
               searchResults && searchResults.length === 0 ? (
-                <div className="py-3 px-4 text-sm text-muted-foreground">
-                  No results
-                </div>
+                <div className="py-3 px-4 text-sm text-muted-foreground">No results</div>
               ) : (
                 <div className="space-y-0.5">
                   {searchResults?.map((r) =>
@@ -335,9 +303,7 @@ export function AppList({
                     ) : (
                       <button
                         key={`chat-${r.id}`}
-                        onClick={() =>
-                          selectChat({ chatId: r.id, appId: defaultChatProjectId! })
-                        }
+                        onClick={() => selectChat({ chatId: r.id, appId: defaultChatProjectId! })}
                         className="mx-1 flex w-full items-center gap-2 rounded-lg pl-6 pr-3 py-1.5 text-left hover:bg-sidebar-accent/60"
                       >
                         <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-sidebar-foreground/75">
@@ -469,10 +435,16 @@ export function AppList({
                     onToggleCollapsed={toggleChatProjects}
                     actions={
                       <>
-                        <HeaderIconButton title="New Chat Project" onClick={() => setIsNewDialogOpen(true)}>
+                        <HeaderIconButton
+                          title="New Chat Project"
+                          onClick={() => setIsNewDialogOpen(true)}
+                        >
                           <Plus className="h-3.5 w-3.5" />
                         </HeaderIconButton>
-                        <HeaderIconButton title="Import Chat Project" onClick={() => setIsImportDialogOpen(true)}>
+                        <HeaderIconButton
+                          title="Import Chat Project"
+                          onClick={() => setIsImportDialogOpen(true)}
+                        >
                           <Upload className="h-3.5 w-3.5" />
                         </HeaderIconButton>
                       </>
@@ -555,8 +527,7 @@ export function AppList({
                   ) : (
                     defaultChats.map((chat) => {
                       const isActive =
-                        selectedChatId === chat.id &&
-                        selectedAppId === defaultChatProjectId;
+                        selectedChatId === chat.id && selectedAppId === defaultChatProjectId;
                       return (
                         <button
                           key={chat.id}

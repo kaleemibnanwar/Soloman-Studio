@@ -10,10 +10,7 @@ import { CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { NewLibraryItemMenu } from "@/components/NewLibraryItemMenu";
 import { LibraryCard, type LibraryItem } from "@/components/LibraryCard";
 import { LibrarySearchBar } from "@/components/LibrarySearchBar";
-import {
-  LibraryFilterTabs,
-  type FilterType,
-} from "@/components/LibraryFilterTabs";
+import { LibraryFilterTabs, type FilterType } from "@/components/LibraryFilterTabs";
 import { OctopusStudioAppMediaFolder } from "@/components/OctopusStudioAppMediaFolder";
 import { ImageGeneratorDialog } from "@/components/ImageGeneratorDialog";
 import { ImageGenerationProgressButton } from "@/components/ImageGenerationProgressButton";
@@ -27,8 +24,7 @@ export default function LibraryHomePage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
     const params = new URLSearchParams(window.location.search);
     const filter = params.get("filter");
-    if (filter === "themes" || filter === "prompts" || filter === "media")
-      return filter;
+    if (filter === "themes" || filter === "prompts" || filter === "media") return filter;
     return "all";
   });
 
@@ -68,9 +64,7 @@ export default function LibraryHomePage() {
     let items: LibraryItem[] = [];
 
     if (activeFilter === "all" || activeFilter === "themes") {
-      items.push(
-        ...customThemes.map((t) => ({ type: "theme" as const, data: t })),
-      );
+      items.push(...customThemes.map((t) => ({ type: "theme" as const, data: t })));
     }
     if (activeFilter === "all" || activeFilter === "prompts") {
       items.push(...prompts.map((p) => ({ type: "prompt" as const, data: p })));
@@ -97,13 +91,9 @@ export default function LibraryHomePage() {
     // Sort by updatedAt descending
     items.sort((a, b) => {
       const dateA =
-        a.data.updatedAt instanceof Date
-          ? a.data.updatedAt
-          : new Date(a.data.updatedAt);
+        a.data.updatedAt instanceof Date ? a.data.updatedAt : new Date(a.data.updatedAt);
       const dateB =
-        b.data.updatedAt instanceof Date
-          ? b.data.updatedAt
-          : new Date(b.data.updatedAt);
+        b.data.updatedAt instanceof Date ? b.data.updatedAt : new Date(b.data.updatedAt);
       return dateB.getTime() - dateA.getTime();
     });
 
@@ -116,8 +106,7 @@ export default function LibraryHomePage() {
     return filterMediaAppsByQuery(mediaApps, searchQuery);
   }, [mediaApps, activeFilter, searchQuery]);
 
-  const hasNoResults =
-    filteredItems.length === 0 && filteredMediaApps.length === 0;
+  const hasNoResults = filteredItems.length === 0 && filteredMediaApps.length === 0;
 
   return (
     <div className="min-h-screen w-full">
@@ -204,15 +193,9 @@ export default function LibraryHomePage() {
           )}
         </div>
 
-        <CustomThemeDialog
-          open={createThemeDialogOpen}
-          onOpenChange={setCreateThemeDialogOpen}
-        />
+        <CustomThemeDialog open={createThemeDialogOpen} onOpenChange={setCreateThemeDialogOpen} />
 
-        <ImageGeneratorDialog
-          open={imageGeneratorOpen}
-          onOpenChange={setImageGeneratorOpen}
-        />
+        <ImageGeneratorDialog open={imageGeneratorOpen} onOpenChange={setImageGeneratorOpen} />
       </div>
     </div>
   );

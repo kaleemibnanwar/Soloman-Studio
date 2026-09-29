@@ -29,9 +29,10 @@ interface OctopusStudioAttachmentProps {
   };
 }
 
-export const OctopusStudioAttachment: React.FC<
-  OctopusStudioAttachmentProps
-> = ({ node, size = "md" }) => {
+export const OctopusStudioAttachment: React.FC<OctopusStudioAttachmentProps> = ({
+  node,
+  size = "md",
+}) => {
   const name = node?.properties?.name || "Untitled";
   const type = node?.properties?.type || "";
   const url = node?.properties?.url || "";
@@ -39,10 +40,58 @@ export const OctopusStudioAttachment: React.FC<
   const attachmentType = node?.properties?.attachmentType || "chat-context";
 
   const isImage = type.startsWith("image/");
-  const accentColor =
-    attachmentType === "upload-to-codebase" ? "blue" : "green";
+  const accentColor = attachmentType === "upload-to-codebase" ? "blue" : "green";
   const [imageError, setImageError] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // Safely determine if the file can be previewed in the browser
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  const previewableExtensions = new Set([
+    "pdf",
+    "html",
+    "htm",
+    "txt",
+    "csv",
+    "md",
+    "json",
+    "js",
+    "ts",
+    "css",
+    "xml",
+    "jsx",
+    "tsx",
+    "yml",
+    "yaml",
+    "mp4",
+    "m4v",
+    "webm",
+    "mov",
+    "mkv",
+    "avi",
+    "ogv",
+    "mp3",
+    "wav",
+    "ogg",
+    "m4a",
+    "aac",
+    "flac",
+    "opus",
+    "wma",
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "webp",
+    "svg",
+    "bmp",
+    "ico",
+    "avif",
+  ]);
+  const isPreviewable =
+    previewableExtensions.has(ext) ||
+    isImage ||
+    type.startsWith("video/") ||
+    type.startsWith("audio/");
 
   // Reset error state when the image URL changes (e.g., new attachment rendered)
   useEffect(() => {
@@ -91,28 +140,48 @@ export const OctopusStudioAttachment: React.FC<
 
   // Non-image files or image load error fallback
   return (
-    <OctopusStudioCard
-      accentColor={accentColor}
-      onClick={filePath ? () => openFile(filePath) : undefined}
-    >
-      <OctopusStudioCardHeader
-        icon={isImage ? <Image size={15} /> : <FileText size={15} />}
+    <>
+      <OctopusStudioCard
         accentColor={accentColor}
+        onClick={
+          isPreviewable && url
+            ? () => setIsLightboxOpen(true)
+            : filePath
+              ? () => openFile(filePath)
+              : undefined
+        }
       >
-        <span className="font-medium text-sm text-foreground truncate">
-          {imageError ? "Image unavailable" : name}
-        </span>
-        <OctopusStudioBadge color={accentColor}>
-          {attachmentType === "upload-to-codebase" ? "Upload" : "Context"}
-        </OctopusStudioBadge>
-        {filePath && (
-          <ExternalLink
-            size={14}
-            className="ml-auto text-muted-foreground shrink-0"
-            aria-hidden
-          />
-        )}
-      </OctopusStudioCardHeader>
-    </OctopusStudioCard>
+        <OctopusStudioCardHeader
+          icon={isImage ? <Image size={15} /> : <FileText size={15} />}
+          accentColor={accentColor}
+        >
+          <span className="font-medium text-sm text-foreground truncate">
+            {imageError ? "Image unavailable" : name}
+          </span>
+          <OctopusStudioBadge color={accentColor}>
+            {attachmentType === "upload-to-codebase" ? "Upload" : "Context"}
+          </OctopusStudioBadge>
+          {filePath && (
+            <ExternalLink
+              size={14}
+              className="ml-auto text-muted-foreground shrink-0"
+              aria-hidden
+            />
+          )}
+        </OctopusStudioCardHeader>
+      </OctopusStudioCard>
+      {isLightboxOpen && url && (
+        <ImageLightbox
+          imageUrl={url}
+          alt={name}
+          filePath={filePath || undefined}
+          onClose={() => setIsLightboxOpen(false)}
+          onError={() => {
+            setImageError(true);
+            setIsLightboxOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 };

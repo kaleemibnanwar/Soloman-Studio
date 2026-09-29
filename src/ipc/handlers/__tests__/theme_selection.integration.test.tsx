@@ -4,10 +4,7 @@ import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 
 import { apps } from "@/db/schema";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 async function openThemesMenu() {
@@ -58,18 +55,14 @@ describe("theme selection (integration)", () => {
     harness.mount({ chatId });
 
     await openThemesMenu();
-    expect(screen.getByTestId("theme-option-none").className).toContain(
-      "bg-primary/10",
-    );
+    expect(screen.getByTestId("theme-option-none").className).toContain("bg-primary/10");
 
     clickThemeOption("theme-option-default");
     await waitFor(async () => expect(await getAppThemeId()).toBe("default"));
 
     await openThemesMenu();
     await waitFor(() =>
-      expect(screen.getByTestId("theme-option-default").className).toContain(
-        "bg-primary/10",
-      ),
+      expect(screen.getByTestId("theme-option-default").className).toContain("bg-primary/10"),
     );
 
     clickThemeOption("theme-option-none");
@@ -77,9 +70,7 @@ describe("theme selection (integration)", () => {
 
     await openThemesMenu();
     await waitFor(() =>
-      expect(screen.getByTestId("theme-option-none").className).toContain(
-        "bg-primary/10",
-      ),
+      expect(screen.getByTestId("theme-option-none").className).toContain("bg-primary/10"),
     );
   });
 });

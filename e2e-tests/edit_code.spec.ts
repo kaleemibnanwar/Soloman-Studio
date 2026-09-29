@@ -2,47 +2,30 @@ import { test, Timeout } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import {
-  replaceEditorContent,
-  selectFileAndWaitForEditor,
-} from "./helpers/monaco_editor";
+import { replaceEditorContent, selectFileAndWaitForEditor } from "./helpers/monaco_editor";
 
 function normalizeLineEndings(value: string) {
   return value.replace(/\r\n?/g, "\n");
 }
 
-async function expectFileContent(
-  appPath: string,
-  relativePath: string,
-  expectedContent: string,
-) {
+async function expectFileContent(appPath: string, relativePath: string, expectedContent: string) {
   await expect
-    .poll(
-      () =>
-        normalizeLineEndings(
-          fs.readFileSync(path.join(appPath, relativePath), "utf8"),
-        ),
-      { timeout: Timeout.MEDIUM },
-    )
+    .poll(() => normalizeLineEndings(fs.readFileSync(path.join(appPath, relativePath), "utf8")), {
+      timeout: Timeout.MEDIUM,
+    })
     .toEqual(normalizeLineEndings(expectedContent));
 }
 
 test("edit code", async ({ po }) => {
   await po.setUp({ autoApprove: true });
-  const editedFilePath = path.join(
-    "src",
-    "components",
-    "made-with-octopusStudio.tsx",
-  );
+  const editedFilePath = path.join("src", "components", "made-with-octopusStudio.tsx");
   await po.sendPrompt("foo");
   const appPath = await po.appManagement.getCurrentAppPath();
 
   await po.previewPanel.clickTogglePreviewPanel();
 
   await po.previewPanel.selectPreviewMode("code");
-  await expect(
-    po.page.getByText("Loading files...", { exact: false }),
-  ).toBeHidden({
+  await expect(po.page.getByText("Loading files...", { exact: false })).toBeHidden({
     timeout: Timeout.LONG,
   });
 
@@ -54,25 +37,14 @@ test("edit code", async ({ po }) => {
 
   // We are NOT snapshotting the app files because the Monaco UI edit
   // is not deterministic.
-  await expectFileContent(
-    appPath,
-    editedFilePath,
-    "export const MadeWithOctopusStudio = ;",
-  );
-  const editedFile = fs.readFileSync(
-    path.join(appPath, editedFilePath),
-    "utf8",
-  );
+  await expectFileContent(appPath, editedFilePath, "export const MadeWithOctopusStudio = ;");
+  const editedFile = fs.readFileSync(path.join(appPath, editedFilePath), "utf8");
   expect(editedFile).toContain("export const MadeWithOctopusStudio = ;");
 });
 
 test("edit code edits the right file during rapid switches", async ({ po }) => {
   await po.setUp({ autoApprove: true });
-  const firstOpenedFilePath = path.join(
-    "src",
-    "components",
-    "made-with-octopusStudio.tsx",
-  );
+  const firstOpenedFilePath = path.join("src", "components", "made-with-octopusStudio.tsx");
   const robotsFilePath = path.join("public", "robots.txt");
   await po.sendPrompt("foo");
   const appPath = await po.appManagement.getCurrentAppPath();
@@ -82,9 +54,7 @@ test("edit code edits the right file during rapid switches", async ({ po }) => {
   await po.previewPanel.clickTogglePreviewPanel();
 
   await po.previewPanel.selectPreviewMode("code");
-  await expect(
-    po.page.getByText("Loading files...", { exact: false }),
-  ).toBeHidden({
+  await expect(po.page.getByText("Loading files...", { exact: false })).toBeHidden({
     timeout: Timeout.LONG,
   });
 

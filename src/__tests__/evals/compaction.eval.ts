@@ -17,27 +17,14 @@
  * summary.md.
  */
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-if (
-  !process.env.OCTOPUS_STUDIO_PRO_API_KEY &&
-  process.env.OCTOPUS_STUDIO_PRO_KEY
-) {
+if (!process.env.OCTOPUS_STUDIO_PRO_API_KEY && process.env.OCTOPUS_STUDIO_PRO_KEY) {
   process.env.OCTOPUS_STUDIO_PRO_API_KEY = process.env.OCTOPUS_STUDIO_PRO_KEY;
 }
 
-import {
-  GPT_5_4,
-  getEvalModel,
-  hasOctopusStudioProKey,
-} from "./helpers/get_eval_model";
+import { GPT_5_4, getEvalModel, hasOctopusStudioProKey } from "./helpers/get_eval_model";
 import {
   loadFixtures,
   loadSpecs,
@@ -95,10 +82,7 @@ function createGate(limit: number) {
 const gate = createGate(Number(process.env.CMP_CONCURRENCY ?? "2"));
 
 const RUN_ID = `run-${new Date().toISOString().replace(/[:.]/g, "-")}${smoke ? "-smoke" : ""}`;
-const RESULTS_ROOT = resolve(
-  __dirname,
-  "../../../benchmark-results/compaction",
-);
+const RESULTS_ROOT = resolve(__dirname, "../../../benchmark-results/compaction");
 const RESULTS_DIR = resolve(RESULTS_ROOT, RUN_ID);
 
 interface RunRecord {
@@ -119,10 +103,7 @@ interface RunRecord {
 const records: RunRecord[] = [];
 function recordRun(rec: RunRecord) {
   records.push(rec);
-  appendFileSync(
-    resolve(RESULTS_DIR, "results.jsonl"),
-    JSON.stringify(rec) + "\n",
-  );
+  appendFileSync(resolve(RESULTS_DIR, "results.jsonl"), JSON.stringify(rec) + "\n");
 }
 
 function completedJobKeys(): Set<string> {
@@ -216,10 +197,7 @@ const canRun = hasOctopusStudioProKey() && fixtures.length > 0 && optedIn;
         await gate(async () => {
           const model = getEvalModel("openai", job.model);
           const run = await runCompaction({ model, fixture: job.fixture });
-          const structural = structuralChecks(
-            run.summary,
-            fixtureTranscript(job.fixture),
-          );
+          const structural = structuralChecks(run.summary, fixtureTranscript(job.fixture));
           const judgeModel = getEvalModel("openai", GPT_5_4);
           const factGrid = await judgeFactGrid({
             judgeModel,
@@ -247,10 +225,7 @@ const canRun = hasOctopusStudioProKey() && fixtures.length > 0 && optedIn;
       } catch (error) {
         recordRun({
           ...base,
-          error:
-            error instanceof Error
-              ? `${error.message}\n${error.stack}`
-              : String(error),
+          error: error instanceof Error ? `${error.message}\n${error.stack}` : String(error),
         });
       }
       expect(true).toBe(true);
@@ -287,25 +262,17 @@ function summarize(recs: RunRecord[]): string {
   }
 
   lines.push("", "## Weighted retention by fixture", "");
-  lines.push(
-    `| fixture | ${MODELS.join(" | ")} |`,
-    `|---|${MODELS.map(() => "---").join("|")}|`,
-  );
+  lines.push(`| fixture | ${MODELS.join(" | ")} |`, `|---|${MODELS.map(() => "---").join("|")}|`);
   for (const f of [...new Set(ok.map((r) => r.fixture))].sort()) {
     const row = MODELS.map((m) => {
       const rs = ok.filter((r) => r.fixture === f && r.model === m);
-      return rs.length
-        ? pctf(mean(rs.map((r) => r.scores!.weightedRetention)))
-        : "–";
+      return rs.length ? pctf(mean(rs.map((r) => r.scores!.weightedRetention))) : "–";
     });
     lines.push(`| ${f} | ${row.join(" | ")} |`);
   }
 
   lines.push("", "## Probe score by fixture", "");
-  lines.push(
-    `| fixture | ${MODELS.join(" | ")} |`,
-    `|---|${MODELS.map(() => "---").join("|")}|`,
-  );
+  lines.push(`| fixture | ${MODELS.join(" | ")} |`, `|---|${MODELS.map(() => "---").join("|")}|`);
   for (const f of [...new Set(ok.map((r) => r.fixture))].sort()) {
     const row = MODELS.map((m) => {
       const rs = ok.filter((r) => r.fixture === f && r.model === m);
@@ -317,9 +284,7 @@ function summarize(recs: RunRecord[]): string {
   if (errored.length) {
     lines.push("", "## Errors", "");
     for (const r of errored.slice(0, 15)) {
-      lines.push(
-        `- ${r.fixture} · ${r.model} · rep${r.rep}: ${r.error?.split("\n")[0]}`,
-      );
+      lines.push(`- ${r.fixture} · ${r.model} · rep${r.rep}: ${r.error?.split("\n")[0]}`);
     }
   }
   return lines.join("\n");

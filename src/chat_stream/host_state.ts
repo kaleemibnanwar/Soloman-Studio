@@ -3,13 +3,7 @@ import type { ChatStreamInvocationRef } from "./invocation";
 import type { ChatQueueEntry, SerializableChatTurnIntent } from "./transport";
 
 export interface ChatStreamHostState {
-  readonly phase:
-    | "idle"
-    | "admitting"
-    | "streaming"
-    | "cancelling"
-    | "finalizing"
-    | "errored";
+  readonly phase: "idle" | "admitting" | "streaming" | "cancelling" | "finalizing" | "errored";
   readonly active: {
     readonly intent: SerializableChatTurnIntent;
     readonly invocationRef: ChatStreamInvocationRef;
@@ -21,11 +15,7 @@ export interface ChatStreamHostState {
   readonly queue: readonly ChatQueueEntry[];
   readonly lastAcceptance: {
     readonly intentId: string;
-    readonly acceptance:
-      | "queued"
-      | "message-accepted"
-      | "replayed"
-      | "rejected";
+    readonly acceptance: "queued" | "message-accepted" | "replayed" | "rejected";
     readonly acceptedMessageId?: number;
     readonly error?: string;
   } | null;

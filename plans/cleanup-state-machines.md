@@ -180,10 +180,7 @@ interface WindowRegistry {
   register(webContentsId: number, windowSessionId: WindowSessionId): void;
   unregister(webContentsId: number): void;
   setFocused(windowSessionId: WindowSessionId): void;
-  setVisibleEntities(
-    windowSessionId: WindowSessionId,
-    entities: readonly VisibleEntity[],
-  ): void;
+  setVisibleEntities(windowSessionId: WindowSessionId, entities: readonly VisibleEntity[]): void;
   findWindowsShowing(entity: VisibleEntity): readonly WindowSessionId[];
   routePresentation(request: PresentationRouteRequest): WindowSessionId | null;
   claimCapability(request: WindowCapabilityRequest): WindowCapabilityLease;

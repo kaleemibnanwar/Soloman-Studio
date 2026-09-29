@@ -27,19 +27,14 @@ export function QuestionnaireInput() {
   const userInputReadModel = getUserInputReadModel({ store });
   const questionnaireMap = usePendingQuestionnaires();
   const chatId = useAtomValue(selectedChatIdAtom);
-  const questionnaire =
-    chatId != null ? questionnaireMap.get(chatId) : undefined;
+  const questionnaire = chatId != null ? questionnaireMap.get(chatId) : undefined;
 
   // Track current question index
   const [currentIndex, setCurrentIndex] = useState(0);
   // Store all responses
-  const [responses, setResponses] = useState<Record<string, string | string[]>>(
-    {},
-  );
+  const [responses, setResponses] = useState<Record<string, string | string[]>>({});
   // Store additional free-form text for each question
-  const [additionalTexts, setAdditionalTexts] = useState<
-    Record<string, string>
-  >({});
+  const [additionalTexts, setAdditionalTexts] = useState<Record<string, string>>({});
   // Expand/collapse state
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -60,11 +55,7 @@ export function QuestionnaireInput() {
     });
     setAdditionalTexts({});
     setIsExpanded(true);
-  }, [
-    questionnaire?.chatId,
-    questionnaire?.requestId,
-    questionnaire?.questions?.length,
-  ]);
+  }, [questionnaire?.chatId, questionnaire?.requestId, questionnaire?.questions?.length]);
 
   const handleDismiss = async () => {
     if (!questionnaire) return;
@@ -184,10 +175,7 @@ export function QuestionnaireInput() {
   };
 
   return (
-    <div
-      className="border-b border-border bg-muted/30"
-      aria-busy={questionnaire.isResponding}
-    >
+    <div className="border-b border-border bg-muted/30" aria-busy={questionnaire.isResponding}>
       <div className="flex items-center">
         <button
           type="button"
@@ -209,9 +197,7 @@ export function QuestionnaireInput() {
             ) : (
               <>
                 <Circle className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                <span className="text-sm truncate">
-                  {currentQuestion.question}
-                </span>
+                <span className="text-sm truncate">{currentQuestion.question}</span>
                 <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0">
                   ({currentIndex + 1}/{questionnaire.questions.length})
                 </span>
@@ -257,17 +243,13 @@ export function QuestionnaireInput() {
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">
                 {currentQuestion.question}
-                {currentQuestion.required !== false && (
-                  <span className="text-red-500 ml-1">*</span>
-                )}
+                {currentQuestion.required !== false && <span className="text-red-500 ml-1">*</span>}
               </Label>
               <div className="mt-2">
                 {effectiveType === "text" && (
                   <Input
                     autoFocus
-                    placeholder={
-                      currentQuestion.placeholder || "Type your answer..."
-                    }
+                    placeholder={currentQuestion.placeholder || "Type your answer..."}
                     value={(responses[currentQuestion.id] as string) || ""}
                     onChange={(e) =>
                       setResponses((prev) => ({
@@ -297,31 +279,23 @@ export function QuestionnaireInput() {
                     }}
                     className="space-y-0.5"
                   >
-                    {currentQuestion.options
-                      .slice(0, MAX_DISPLAYED_OPTIONS)
-                      .map((option) => (
-                        <div
-                          key={option}
-                          className="flex items-center space-x-2 py-1 px-2 rounded hover:bg-muted/50 transition-colors"
+                    {currentQuestion.options.slice(0, MAX_DISPLAYED_OPTIONS).map((option) => (
+                      <div
+                        key={option}
+                        className="flex items-center space-x-2 py-1 px-2 rounded hover:bg-muted/50 transition-colors"
+                      >
+                        <RadioGroupItem value={option} id={`${currentQuestion.id}-${option}`} />
+                        <Label
+                          htmlFor={`${currentQuestion.id}-${option}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
                         >
-                          <RadioGroupItem
-                            value={option}
-                            id={`${currentQuestion.id}-${option}`}
-                          />
-                          <Label
-                            htmlFor={`${currentQuestion.id}-${option}`}
-                            className="text-sm font-normal cursor-pointer flex-1"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
+                          {option}
+                        </Label>
+                      </div>
+                    ))}
                     {/* Custom free-form option integrated as a radio item */}
                     <div className="flex items-center space-x-2 py-1 px-2 rounded hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem
-                        value={CUSTOM_OPTION}
-                        id={`${currentQuestion.id}-custom`}
-                      />
+                      <RadioGroupItem value={CUSTOM_OPTION} id={`${currentQuestion.id}-custom`} />
                       <Input
                         placeholder="Other..."
                         className="flex-1 h-7 text-sm"
@@ -352,49 +326,41 @@ export function QuestionnaireInput() {
 
                 {effectiveType === "checkbox" && currentQuestion.options && (
                   <div className="space-y-0.5">
-                    {currentQuestion.options
-                      .slice(0, MAX_DISPLAYED_OPTIONS)
-                      .map((option) => (
-                        <div
-                          key={option}
-                          className="flex items-center space-x-2 py-1 px-2 rounded hover:bg-muted/50 transition-colors"
-                        >
-                          <Checkbox
-                            id={`${currentQuestion.id}-${option}`}
-                            checked={(
-                              (responses[currentQuestion.id] as
-                                | string[]
-                                | undefined) || []
-                            ).includes(option)}
-                            onCheckedChange={(checked) => {
-                              setResponses((prev) => {
-                                const current =
-                                  (prev[currentQuestion.id] as
-                                    | string[]
-                                    | undefined) || [];
-                                if (checked) {
-                                  return {
-                                    ...prev,
-                                    [currentQuestion.id]: [...current, option],
-                                  };
-                                }
+                    {currentQuestion.options.slice(0, MAX_DISPLAYED_OPTIONS).map((option) => (
+                      <div
+                        key={option}
+                        className="flex items-center space-x-2 py-1 px-2 rounded hover:bg-muted/50 transition-colors"
+                      >
+                        <Checkbox
+                          id={`${currentQuestion.id}-${option}`}
+                          checked={(
+                            (responses[currentQuestion.id] as string[] | undefined) || []
+                          ).includes(option)}
+                          onCheckedChange={(checked) => {
+                            setResponses((prev) => {
+                              const current =
+                                (prev[currentQuestion.id] as string[] | undefined) || [];
+                              if (checked) {
                                 return {
                                   ...prev,
-                                  [currentQuestion.id]: current.filter(
-                                    (o) => o !== option,
-                                  ),
+                                  [currentQuestion.id]: [...current, option],
                                 };
-                              });
-                            }}
-                          />
-                          <Label
-                            htmlFor={`${currentQuestion.id}-${option}`}
-                            className="text-sm font-normal cursor-pointer flex-1"
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
+                              }
+                              return {
+                                ...prev,
+                                [currentQuestion.id]: current.filter((o) => o !== option),
+                              };
+                            });
+                          }}
+                        />
+                        <Label
+                          htmlFor={`${currentQuestion.id}-${option}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {option}
+                        </Label>
+                      </div>
+                    ))}
                     {/* Free-form text input as an inline row (no checkbox) */}
                     <div className="flex items-center py-1 px-2 rounded hover:bg-muted/50 transition-colors">
                       <Input
@@ -425,11 +391,7 @@ export function QuestionnaireInput() {
                 <ArrowLeft size={14} className="mr-1.5" />
                 Back
               </Button>
-              <Button
-                onClick={handleNext}
-                disabled={isNextDisabled()}
-                size="sm"
-              >
+              <Button onClick={handleNext} disabled={isNextDisabled()} size="sm">
                 {isLastQuestion ? (
                   <>
                     <Send size={14} className="mr-1.5" />

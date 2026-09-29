@@ -11,9 +11,7 @@ test.describe("Back button navigation", () => {
 
     const showcase = po.page.getByTestId("featured-app-showcase");
     await expect(showcase).toBeVisible({ timeout: Timeout.MEDIUM });
-    const showcaseCards = await showcase
-      .getByTestId(/^app-showcase-card-/)
-      .all();
+    const showcaseCards = await showcase.getByTestId(/^app-showcase-card-/).all();
     expect(showcaseCards.length).toBeGreaterThan(0);
     await showcaseCards[0].click();
 

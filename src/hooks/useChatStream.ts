@@ -30,8 +30,7 @@ export function useChatStreamState(
     [chatId, manager],
   );
   const getSnapshot = useCallback(
-    () =>
-      chatId === undefined ? undefined : manager.ensure(chatId).getSnapshot(),
+    () => (chatId === undefined ? undefined : manager.ensure(chatId).getSnapshot()),
     [chatId, manager],
   );
   return useSyncExternalStore(subscribe, getSnapshot);
@@ -43,10 +42,7 @@ export function useChatStreamPreview(chatId: number): string {
     (listener: () => void) => manager.subscribePreview(chatId, listener),
     [chatId, manager],
   );
-  const getSnapshot = useCallback(
-    () => manager.getPreviewSnapshot(chatId),
-    [chatId, manager],
-  );
+  const getSnapshot = useCallback(() => manager.getPreviewSnapshot(chatId), [chatId, manager]);
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
@@ -54,9 +50,7 @@ export function useChatStreamHasPreview(chatId: number | null): boolean {
   const manager = useChatStreamManager();
   const subscribe = useCallback(
     (listener: () => void) =>
-      chatId === null
-        ? IDLE_UNSUBSCRIBE
-        : manager.subscribePreview(chatId, listener),
+      chatId === null ? IDLE_UNSUBSCRIBE : manager.subscribePreview(chatId, listener),
     [chatId, manager],
   );
   const getSnapshot = useCallback(
@@ -79,10 +73,7 @@ export function useChatStreamHasPreview(chatId: number | null): boolean {
  * chats whose page is not open.
  */
 export function useChatStreamRuntime(
-  facades: Pick<
-    ChatStreamRuntimeDeps,
-    "requestPreviewReload" | "requestCapture"
-  >,
+  facades: Pick<ChatStreamRuntimeDeps, "requestPreviewReload" | "requestCapture">,
 ): void {
   const manager = useChatStreamManager();
   const store = useStore();
@@ -104,8 +95,7 @@ export function useChatStreamRuntime(
       getPosthog: () => posthogRef.current ?? null,
       requestPreviewReload: facades.requestPreviewReload,
       requestCapture: facades.requestCapture,
-      setPackageManagerWarning:
-        packageWarnings.setWarning.bind(packageWarnings),
+      setPackageManagerWarning: packageWarnings.setWarning.bind(packageWarnings),
     });
   }, [
     facades.requestCapture,

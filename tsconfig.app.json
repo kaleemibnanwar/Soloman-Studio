@@ -40,9 +40,5 @@
     "packages/ts-pg-schema-diff/src",
     "packages/pg-schema-classifier/src"
   ],
-  "exclude": [
-    "e2e-tests/fixtures",
-    "src/__tests__/evals/fixtures",
-    "eval-results"
-  ]
+  "exclude": ["e2e-tests/fixtures", "src/__tests__/evals/fixtures", "eval-results"]
 }

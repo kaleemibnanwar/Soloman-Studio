@@ -2,27 +2,17 @@ import { expect, type TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  testWithConfigSkipIfWindows,
-  Timeout,
-  type PageObject,
-} from "./helpers/test_helper";
+import { testWithConfigSkipIfWindows, Timeout, type PageObject } from "./helpers/test_helper";
 
 const originalNpmCache = process.env.npm_config_cache;
 const originalNpmStoreDir = process.env.npm_config_store_dir;
 const originalPnpmStoreDir = process.env.pnpm_config_store_dir;
 const originalPath = process.env.PATH;
 const originalTestPnpmVersion = process.env.OCTOPUS_STUDIO_TEST_PNPM_VERSION;
-const originalTestInstallPnpmVersion =
-  process.env.OCTOPUS_STUDIO_TEST_INSTALL_PNPM_VERSION;
-const originalDefaultApproveBuildsUrl =
-  process.env.OCTOPUS_STUDIO_DEFAULT_APPROVE_BUILDS_URL;
-const SOCKET_FIREWALL_VERDICT_TIMEOUT = process.env.CI
-  ? 240_000
-  : Timeout.EXTRA_LONG;
-const SOCKET_FIREWALL_TEST_TIMEOUT = process.env.CI
-  ? 360_000
-  : Timeout.EXTRA_LONG * 2;
+const originalTestInstallPnpmVersion = process.env.OCTOPUS_STUDIO_TEST_INSTALL_PNPM_VERSION;
+const originalDefaultApproveBuildsUrl = process.env.OCTOPUS_STUDIO_DEFAULT_APPROVE_BUILDS_URL;
+const SOCKET_FIREWALL_VERDICT_TIMEOUT = process.env.CI ? 240_000 : Timeout.EXTRA_LONG;
+const SOCKET_FIREWALL_TEST_TIMEOUT = process.env.CI ? 360_000 : Timeout.EXTRA_LONG * 2;
 
 async function configurePackageManagerCache(userDataDir: string) {
   const npmCacheDir = path.join(userDataDir, "npm-cache");
@@ -92,10 +82,7 @@ async function createSupportedPnpmShim(userDataDir: string) {
   }).trim();
 
   await fs.mkdir(fakeBinDir, { recursive: true });
-  await fs.writeFile(
-    pnpmPath,
-    ["#!/bin/sh", `exec "${systemPnpmPath}" "$@"`, ""].join("\n"),
-  );
+  await fs.writeFile(pnpmPath, ["#!/bin/sh", `exec "${systemPnpmPath}" "$@"`, ""].join("\n"));
   await fs.chmod(pnpmPath, 0o755);
   process.env.PATH = `${fakeBinDir}${path.delimiter}${process.env.PATH ?? ""}`;
 }
@@ -111,27 +98,18 @@ function warmSocketFirewallCache() {
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      execFileSync(
-        "npx",
-        ["--prefer-offline", "--yes", "sfw@2.0.4", "--help"],
-        {
-          encoding: "utf8",
-          env: warmupEnv,
-          timeout: 120_000,
-        },
-      );
+      execFileSync("npx", ["--prefer-offline", "--yes", "sfw@2.0.4", "--help"], {
+        encoding: "utf8",
+        env: warmupEnv,
+        timeout: 120_000,
+      });
       return;
     } catch (error) {
       lastError = error;
       if (attempt === maxAttempts) {
         break;
       }
-      Atomics.wait(
-        new Int32Array(new SharedArrayBuffer(4)),
-        0,
-        0,
-        attempt * 5_000,
-      );
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, attempt * 5_000);
     }
   }
 
@@ -172,15 +150,13 @@ async function restorePackageManagerCache() {
   if (originalTestInstallPnpmVersion === undefined) {
     delete process.env.OCTOPUS_STUDIO_TEST_INSTALL_PNPM_VERSION;
   } else {
-    process.env.OCTOPUS_STUDIO_TEST_INSTALL_PNPM_VERSION =
-      originalTestInstallPnpmVersion;
+    process.env.OCTOPUS_STUDIO_TEST_INSTALL_PNPM_VERSION = originalTestInstallPnpmVersion;
   }
 
   if (originalDefaultApproveBuildsUrl === undefined) {
     delete process.env.OCTOPUS_STUDIO_DEFAULT_APPROVE_BUILDS_URL;
   } else {
-    process.env.OCTOPUS_STUDIO_DEFAULT_APPROVE_BUILDS_URL =
-      originalDefaultApproveBuildsUrl;
+    process.env.OCTOPUS_STUDIO_DEFAULT_APPROVE_BUILDS_URL = originalDefaultApproveBuildsUrl;
   }
 }
 
@@ -234,18 +210,13 @@ async function openMinimalBuildChat(po: PageObject) {
       await (window as any).electron.ipcRenderer.invoke("set-user-settings", {
         customNodePath: nodeBinDir,
       });
-      await (window as any).electron.ipcRenderer.invoke(
-        "reload-env-path",
-        undefined,
-      );
+      await (window as any).electron.ipcRenderer.invoke("reload-env-path", undefined);
     },
     path.join(po.userDataDir, "supported-pnpm-bin"),
   );
 
   await po.navigation.goToSettingsTab();
-  await expect(
-    po.page.getByRole("switch", { name: "Block unsafe npm packages" }),
-  ).toBeChecked();
+  await expect(po.page.getByRole("switch", { name: "Block unsafe npm packages" })).toBeChecked();
 
   await po.navigation.goToAppsTab();
   await po.importApp("minimal");
@@ -312,10 +283,7 @@ async function addLocalDependencyWithIgnoredBuild(appPath: string) {
     ...packageJson.dependencies,
     "fake-build-dep": "file:./packages/fake-build-dep",
   };
-  await fs.writeFile(
-    packageJsonPath,
-    `${JSON.stringify(packageJson, null, 2)}\n`,
-  );
+  await fs.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
 }
 
 function extendSocketFirewallTestTimeout(testInfo: TestInfo) {
@@ -334,8 +302,7 @@ testSkipIfWindows(
   async ({ po }, testInfo) => {
     extendSocketFirewallTestTimeout(testInfo);
 
-    const { packageJsonPath, pnpmLockPath, pnpmWorkspacePath } =
-      await openMinimalBuildChat(po);
+    const { packageJsonPath, pnpmLockPath, pnpmWorkspacePath } = await openMinimalBuildChat(po);
     const initialPackageJson = await fs.readFile(packageJsonPath, "utf8");
     const initialPnpmLock = await fs.readFile(pnpmLockPath, "utf8");
     await fs.rm(pnpmWorkspacePath, { force: true });
@@ -347,9 +314,7 @@ testSkipIfWindows(
 
     await clickApproveProposal(po);
     await expect(async () => {
-      const packageJson = JSON.parse(
-        await fs.readFile(packageJsonPath, "utf8"),
-      );
+      const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
       expect(packageJson.dependencies?.lodash).toEqual(expect.any(String));
       expect(await fs.readFile(pnpmLockPath, "utf8")).not.toBe(initialPnpmLock);
     }).toPass({
@@ -357,29 +322,17 @@ testSkipIfWindows(
     });
     const pnpmWorkspaceConfig = await fs.readFile(pnpmWorkspacePath, "utf8");
     expect(pnpmWorkspaceConfig).toContain("minimumReleaseAge: 1440");
-    expect(pnpmWorkspaceConfig).toContain(
-      "# octopusStudio-default-allow-builds begin",
-    );
-    expect(pnpmWorkspaceConfig).toContain(
-      "# octopusStudio-default-allow-builds-schema=v1",
-    );
+    expect(pnpmWorkspaceConfig).toContain("# octopusStudio-default-allow-builds begin");
+    expect(pnpmWorkspaceConfig).toContain("# octopusStudio-default-allow-builds-schema=v1");
     expect(pnpmWorkspaceConfig).toContain(
       "# octopusStudio-default-allow-builds-data-version=2026-05-21.2",
     );
-    expect(pnpmWorkspaceConfig).toContain(
-      "# octopusStudio-default-allow-builds-channel=remote",
-    );
-    expect(pnpmWorkspaceConfig).toContain(
-      "# octopusStudio-default-allow-builds end",
-    );
+    expect(pnpmWorkspaceConfig).toContain("# octopusStudio-default-allow-builds-channel=remote");
+    expect(pnpmWorkspaceConfig).toContain("# octopusStudio-default-allow-builds end");
 
-    await expect(
-      po.page.getByText(/Failed to add dependencies:/),
-    ).not.toBeVisible();
+    await expect(po.page.getByText(/Failed to add dependencies:/)).not.toBeVisible();
 
-    expect(await fs.readFile(packageJsonPath, "utf8")).not.toBe(
-      initialPackageJson,
-    );
+    expect(await fs.readFile(packageJsonPath, "utf8")).not.toBe(initialPackageJson);
   },
 );
 
@@ -433,22 +386,15 @@ oldPnpmTestSkipIfWindows(
       await (window as any).electron.ipcRenderer.invoke("set-user-settings", {
         customNodePath: nodeBinDir,
       });
-      await (window as any).electron.ipcRenderer.invoke(
-        "reload-env-path",
-        undefined,
-      );
+      await (window as any).electron.ipcRenderer.invoke("reload-env-path", undefined);
     }, fakeOldPnpmBinDir);
 
     await po.importApp("minimal");
 
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
     const appPath = await po.appManagement.getCurrentAppPath();
     await expect(async () => {
-      await expect(
-        fs.stat(path.join(appPath, "pnpm-workspace.yaml")),
-      ).resolves.toBeTruthy();
+      await expect(fs.stat(path.join(appPath, "pnpm-workspace.yaml"))).resolves.toBeTruthy();
     }).toPass({ timeout: Timeout.EXTRA_LONG });
 
     await po.clickRestart();
@@ -460,20 +406,13 @@ oldPnpmTestSkipIfWindows(
     await expect(warningBanner).toContainText("Install pnpm 10.16.0 or newer", {
       timeout: Timeout.EXTRA_LONG,
     });
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
 
-    await warningBanner
-      .getByRole("button", { name: "Dismiss pnpm warning" })
-      .click();
+    await warningBanner.getByRole("button", { name: "Dismiss pnpm warning" }).click();
     await expect(warningBanner).toBeHidden({ timeout: Timeout.MEDIUM });
     await expect(async () => {
       const settings = await po.page.evaluate(async () => {
-        return (window as any).electron.ipcRenderer.invoke(
-          "get-user-settings",
-          undefined,
-        );
+        return (window as any).electron.ipcRenderer.invoke("get-user-settings", undefined);
       });
       expect(settings.hidePnpmMinimumReleaseAgeWarning).not.toBe(true);
     }).toPass({ timeout: Timeout.MEDIUM });
@@ -482,9 +421,7 @@ oldPnpmTestSkipIfWindows(
     await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible({
       timeout: Timeout.MEDIUM,
     });
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
     await expect(warningBanner).toBeHidden({ timeout: Timeout.MEDIUM });
   },
 );
@@ -495,24 +432,16 @@ upgradePnpmTestSkipIfWindows(
     testInfo.setTimeout(SOCKET_FIREWALL_TEST_TIMEOUT);
 
     await po.setUp();
-    const upgradeablePnpmBinDir = path.join(
-      po.userDataDir,
-      "upgradeable-pnpm-bin",
-    );
+    const upgradeablePnpmBinDir = path.join(po.userDataDir, "upgradeable-pnpm-bin");
     await po.page.evaluate(async (nodeBinDir) => {
       await (window as any).electron.ipcRenderer.invoke("set-user-settings", {
         customNodePath: nodeBinDir,
       });
-      await (window as any).electron.ipcRenderer.invoke(
-        "reload-env-path",
-        undefined,
-      );
+      await (window as any).electron.ipcRenderer.invoke("reload-env-path", undefined);
     }, upgradeablePnpmBinDir);
 
     await po.importApp("minimal");
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
 
     const warningBanner = po.page.getByTestId("package-manager-warning-banner");
     await expect(warningBanner).toContainText("Install pnpm 10.16.0 or newer", {
@@ -521,21 +450,15 @@ upgradePnpmTestSkipIfWindows(
 
     await warningBanner.getByRole("button", { name: "Install" }).click();
     const logList = po.previewPanel.locatePreviewLoadingLogList();
-    await expect(
-      logList.getByText("Rebuilding app after pnpm install..."),
-    ).toBeVisible({
+    await expect(logList.getByText("Rebuilding app after pnpm install...")).toBeVisible({
       timeout: Timeout.EXTRA_LONG,
     });
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
     await expect(warningBanner).toBeHidden({ timeout: Timeout.EXTRA_LONG });
 
     const appPath = await po.appManagement.getCurrentAppPath();
     await expect(async () => {
-      await expect(
-        fs.stat(path.join(appPath, "pnpm-workspace.yaml")),
-      ).resolves.toBeTruthy();
+      await expect(fs.stat(path.join(appPath, "pnpm-workspace.yaml"))).resolves.toBeTruthy();
     }).toPass({ timeout: Timeout.EXTRA_LONG });
 
     await po.clickRestart();
@@ -554,9 +477,7 @@ realPnpmStrictBuildsTestSkipIfWindows(
 
     await po.setUp();
     await po.importApp("minimal");
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
 
     const appPath = await po.appManagement.getCurrentAppPath();
     const appId = await getCurrentAppId(po);
@@ -564,15 +485,11 @@ realPnpmStrictBuildsTestSkipIfWindows(
 
     await po.page.evaluate(
       async ({ appId }) => {
-        await (window as any).electron.ipcRenderer.invoke(
-          "update-app-commands",
-          {
-            appId,
-            installCommand:
-              "pnpm --config.strictDepBuilds=true install --no-frozen-lockfile",
-            startCommand: "pnpm run dev -- --host 127.0.0.1",
-          },
-        );
+        await (window as any).electron.ipcRenderer.invoke("update-app-commands", {
+          appId,
+          installCommand: "pnpm --config.strictDepBuilds=true install --no-frozen-lockfile",
+          startCommand: "pnpm run dev -- --host 127.0.0.1",
+        });
       },
       { appId },
     );
@@ -581,25 +498,19 @@ realPnpmStrictBuildsTestSkipIfWindows(
     await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible({
       timeout: Timeout.MEDIUM,
     });
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
 
     const pnpmWorkspaceConfig = await fs.readFile(
       path.join(appPath, "pnpm-workspace.yaml"),
       "utf8",
     );
-    expect(pnpmWorkspaceConfig).toContain(
-      "fake-build-dep: false # octopusStudio-auto-denied",
-    );
+    expect(pnpmWorkspaceConfig).toContain("fake-build-dep: false # octopusStudio-auto-denied");
     await expect(async () => {
       const modulesConfig = await fs.readFile(
         path.join(appPath, "node_modules", ".modules.yaml"),
         "utf8",
       );
-      expect(modulesConfig).not.toContain(
-        "fake-build-dep@file:packages/fake-build-dep",
-      );
+      expect(modulesConfig).not.toContain("fake-build-dep@file:packages/fake-build-dep");
     }).toPass({ timeout: Timeout.EXTRA_LONG });
   },
 );
@@ -611,9 +522,7 @@ realPnpmStrictBuildsTestSkipIfWindows(
 
     await po.setUp();
     await po.importApp("minimal");
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
 
     const appPath = await po.appManagement.getCurrentAppPath();
     const packageJsonPath = path.join(appPath, "package.json");
@@ -621,10 +530,7 @@ realPnpmStrictBuildsTestSkipIfWindows(
     // An old pin contradicts the managed pnpm: CI/deploys following it cannot
     // read the 9.0 lockfile OctopusStudio writes. This is the migration trigger.
     packageJson.packageManager = "pnpm@8.15.9";
-    await fs.writeFile(
-      packageJsonPath,
-      `${JSON.stringify(packageJson, null, 2)}\n`,
-    );
+    await fs.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
 
     await po.clickRestart();
     await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible({
@@ -635,37 +541,25 @@ realPnpmStrictBuildsTestSkipIfWindows(
     await expect(warningBanner).toContainText("This app pins an older pnpm", {
       timeout: Timeout.EXTRA_LONG,
     });
-    await warningBanner
-      .getByTestId("package-manager-warning-run-upgrade")
-      .click();
+    await warningBanner.getByTestId("package-manager-warning-run-upgrade").click();
     await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible({
       timeout: Timeout.MEDIUM,
     });
-    await po.previewPanel.expectPreviewIframeIsVisible(
-      SOCKET_FIREWALL_TEST_TIMEOUT,
-    );
-    await expect(
-      po.page.getByTestId("package-manager-warning-banner"),
-    ).toBeHidden({
+    await po.previewPanel.expectPreviewIframeIsVisible(SOCKET_FIREWALL_TEST_TIMEOUT);
+    await expect(po.page.getByTestId("package-manager-warning-banner")).toBeHidden({
       timeout: Timeout.MEDIUM,
     });
 
-    const migratedPackageJson = JSON.parse(
-      await fs.readFile(packageJsonPath, "utf8"),
-    );
+    const migratedPackageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
     expect(migratedPackageJson.packageManager).toMatch(/^pnpm@(9|\d{2,})\./);
 
-    const lockfile = await fs.readFile(
-      path.join(appPath, "pnpm-lock.yaml"),
-      "utf8",
-    );
+    const lockfile = await fs.readFile(path.join(appPath, "pnpm-lock.yaml"), "utf8");
     expect(lockfile).toContain("lockfileVersion: '9.0'");
 
-    const lastCommitSubject = execFileSync(
-      "git",
-      ["log", "-1", "--format=%s"],
-      { cwd: appPath, encoding: "utf8" },
-    ).trim();
+    const lastCommitSubject = execFileSync("git", ["log", "-1", "--format=%s"], {
+      cwd: appPath,
+      encoding: "utf8",
+    }).trim();
     expect(lastCommitSubject).toContain("migrate to pnpm");
   },
 );

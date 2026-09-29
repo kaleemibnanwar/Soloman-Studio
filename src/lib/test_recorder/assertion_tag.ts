@@ -56,9 +56,7 @@ export function buildAssertionsTagContent({
  * XML-unescaped). Returns null on anything malformed so the card can render an
  * error state instead of throwing.
  */
-export function parseAssertionsPayload(
-  content: string,
-): AssertionProposalPayload | null {
+export function parseAssertionsPayload(content: string): AssertionProposalPayload | null {
   const trimmed = content.trim();
   if (!trimmed) return null;
   let raw: unknown;
@@ -72,10 +70,7 @@ export function parseAssertionsPayload(
 }
 
 function assertionsTagBlockRe(): RegExp {
-  return new RegExp(
-    `<${ASSERTIONS_TAG}\\b([^>]*)>([\\s\\S]*?)</${ASSERTIONS_TAG}>`,
-    "g",
-  );
+  return new RegExp(`<${ASSERTIONS_TAG}\\b([^>]*)>([\\s\\S]*?)</${ASSERTIONS_TAG}>`, "g");
 }
 
 function readAttribute(openTagAttrs: string, attribute: string): string | null {
@@ -108,10 +103,7 @@ function findAssertionsTagBlock(
   let match: RegExpExecArray | null;
   while ((match = re.exec(messageContent)) !== null) {
     const attrs = match[1];
-    if (
-      proposalId === undefined ||
-      readAttribute(attrs, "proposal-id") === proposalId
-    ) {
+    if (proposalId === undefined || readAttribute(attrs, "proposal-id") === proposalId) {
       return { block: match[0], index: match.index, attrs, body: match[2] };
     }
   }
@@ -149,10 +141,7 @@ export function readAssertionsTagAttribute(
   return found ? readAttribute(found.attrs, attribute) : null;
 }
 
-export function messageHasAssertionsProposal(
-  messageContent: string,
-  proposalId: string,
-): boolean {
+export function messageHasAssertionsProposal(messageContent: string, proposalId: string): boolean {
   return findAssertionsTagBlock(messageContent, proposalId) !== null;
 }
 
@@ -167,9 +156,6 @@ export function parseAssertionsPayloadFromMessage(
 ): AssertionProposalPayload | null {
   const found = findAssertionsTagBlock(messageContent, proposalId);
   if (!found) return null;
-  const unescaped = found.body
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
+  const unescaped = found.body.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
   return parseAssertionsPayload(unescaped);
 }

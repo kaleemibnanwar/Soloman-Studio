@@ -58,9 +58,7 @@ export async function getImageModelClient(
   const providerDisplayName = providerConfig.name ?? providerConfig.id;
   const apiKey = getProviderApiKeyForRequest(
     settings.providerSettings?.[model.provider]?.apiKey?.value ||
-      (providerConfig.envVarName
-        ? getEnvVar(providerConfig.envVarName)
-        : undefined),
+      (providerConfig.envVarName ? getEnvVar(providerConfig.envVarName) : undefined),
     providerDisplayName,
   );
   const fetchOption: { fetch?: FetchFunction } = getTestFetchOption();
@@ -204,9 +202,7 @@ export async function generateImageWithFallback(
         google: { responseModalities: ["TEXT", "IMAGE"] },
       },
     });
-    const imageFile = result.files.find((file) =>
-      file.mediaType?.startsWith("image/"),
-    );
+    const imageFile = result.files.find((file) => file.mediaType?.startsWith("image/"));
     if (imageFile) {
       return { base64: imageFile.base64 };
     }

@@ -31,10 +31,7 @@ import { useUncommittedFiles } from "@/hooks/useUncommittedFiles";
 import { useCommitChanges } from "@/hooks/useCommitChanges";
 import { useCommitMessage } from "@/hooks/useCommitMessage";
 import { cn } from "@/lib/utils";
-import {
-  getStatusIcon,
-  LineStats,
-} from "@/components/chat/uncommittedFileStatus";
+import { getStatusIcon, LineStats } from "@/components/chat/uncommittedFileStatus";
 import { CommitFileList } from "@/components/chat/CommitFileList";
 import { useVersionPreview } from "@/hooks/useVersionPreview";
 
@@ -68,18 +65,12 @@ export function CommitMenu({ appId }: CommitMenuProps) {
   // this it would survive that unmount invisibly and pop back open the next
   // time the user returns to Code. The staged diff renders inside this same
   // toolbar's view, so the round trip out to a diff does not unmount us.
-  useEffect(
-    () => () => closeCommitDialog({ source: "editor", appId }),
-    [closeCommitDialog, appId],
-  );
+  useEffect(() => () => closeCommitDialog({ source: "editor", appId }), [closeCommitDialog, appId]);
 
   // Opening a staged file's diff must clear any selected version diff, since
   // CodeView suppresses staged-diff mode whenever a version diff is active.
   // `returnTo` is what brings the user back to the dialog they came from.
-  const openStagedDiff = (
-    filePath: string,
-    returnTo: CommitDialogOwner | null,
-  ) => {
+  const openStagedDiff = (filePath: string, returnTo: CommitDialogOwner | null) => {
     sendPreviewEvent({ type: "CLOSE" });
     openStagedDiffFile({ path: filePath, returnTo });
   };
@@ -123,9 +114,7 @@ export function CommitMenu({ appId }: CommitMenuProps) {
         <GitCommitVertical size={14} />
         {t("preview.commit")}
         {hasUncommittedFiles && (
-          <span className="rounded-full bg-muted px-1.5 text-xs">
-            {uncommittedFiles.length}
-          </span>
+          <span className="rounded-full bg-muted px-1.5 text-xs">{uncommittedFiles.length}</span>
         )}
       </Button>
       <DropdownMenu>
@@ -195,17 +184,12 @@ export function CommitMenu({ appId }: CommitMenuProps) {
         >
           <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>{t("preview.commitChanges")}</DialogTitle>
-            <DialogDescription>
-              {t("preview.commitDialogDescription")}
-            </DialogDescription>
+            <DialogDescription>{t("preview.commitDialogDescription")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 px-6 pb-4 overflow-y-auto flex-1 min-h-0">
             <div>
-              <label
-                htmlFor="editor-commit-message"
-                className="text-sm font-medium mb-2 block"
-              >
+              <label htmlFor="editor-commit-message" className="text-sm font-medium mb-2 block">
                 {t("preview.commitMessage")}
               </label>
               <Input
@@ -225,9 +209,7 @@ export function CommitMenu({ appId }: CommitMenuProps) {
               </p>
               <CommitFileList
                 files={uncommittedFiles}
-                onSelectFile={(path) =>
-                  openStagedDiff(path, { source: "editor", appId })
-                }
+                onSelectFile={(path) => openStagedDiff(path, { source: "editor", appId })}
                 disabled={isCommitting}
                 testId="editor-commit-files-list"
               />
@@ -235,20 +217,12 @@ export function CommitMenu({ appId }: CommitMenuProps) {
           </div>
 
           <DialogFooter className="px-6 pb-6 pt-2">
-            <Button
-              variant="outline"
-              onClick={dismissDialog}
-              disabled={isCommitting}
-            >
+            <Button variant="outline" onClick={dismissDialog} disabled={isCommitting}>
               {t("preview.cancel")}
             </Button>
             <Button
               onClick={handleCommit}
-              disabled={
-                !commitMessage.trim() ||
-                isCommitting ||
-                uncommittedFiles.length === 0
-              }
+              disabled={!commitMessage.trim() || isCommitting || uncommittedFiles.length === 0}
               data-testid="editor-commit-confirm-button"
             >
               {isCommitting ? t("preview.committing") : t("preview.commit")}

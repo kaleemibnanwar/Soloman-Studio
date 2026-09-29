@@ -1,16 +1,13 @@
 import fsAsync from "node:fs/promises";
 import path from "node:path";
-import { gitListFilesNative } from "../ipc/utils/git_utils";
-import { isPathIgnoredByGitIgnore } from "../ipc/utils/gitignore_utils";
+import { gitListFilesNative } from "../ipc/git/git_utils";
+import { isPathIgnoredByGitIgnore } from "../ipc/git/gitignore_utils";
 import log from "electron-log";
 import { IS_TEST_BUILD } from "../ipc/utils/test_utils";
 import { glob } from "glob";
 import { AppChatContext } from "../lib/schemas";
 import { readSettings } from "@/main/settings";
-import {
-  extractCodebaseStarted,
-  extractCodebaseFinished,
-} from "./memory_activity";
+import { extractCodebaseStarted, extractCodebaseFinished } from "./memory_activity";
 
 const logger = log.scope("utils/codebase");
 
@@ -67,15 +64,7 @@ const ALLOWED_EXTENSIONS = [
 // be conservative and never include these directories.
 //
 // ex: https://github.com/octopus-studio-sh/octopusStudio/issues/727
-const EXCLUDED_DIRS = [
-  "node_modules",
-  ".git",
-  "dist",
-  "build",
-  ".next",
-  ".venv",
-  "venv",
-];
+const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "build", ".next", ".venv", "venv"];
 
 // Files to always exclude
 const EXCLUDED_FILES = [
@@ -134,9 +123,7 @@ const fileContentCache = new Map<string, FileCache>();
 /**
  * Read file contents with caching based on last modified time
  */
-export async function readFileWithCache(
-  filePath: string,
-): Promise<string | undefined> {
+export async function readFileWithCache(filePath: string): Promise<string | undefined> {
   try {
     // Get file stats to check the modification time
     const stats = await fsAsync.stat(filePath);
@@ -226,10 +213,7 @@ async function collectFilesNativeGit(dir: string): Promise<string[]> {
 /**
  * Recursively walk a directory and collect all relevant files.
  */
-async function collectFilesByTraversal(
-  dir: string,
-  baseDir: string,
-): Promise<string[]> {
+async function collectFilesByTraversal(dir: string, baseDir: string): Promise<string[]> {
   const files: string[] = [];
 
   // Check if directory exists
@@ -314,16 +298,12 @@ function shouldReadFileContents({
   const fileName = path.basename(filePath);
 
   // OMITTED_FILES takes precedence - never read if omitted
-  if (
-    OMITTED_FILES.some((pattern) => normalizedRelativePath.includes(pattern))
-  ) {
+  if (OMITTED_FILES.some((pattern) => normalizedRelativePath.includes(pattern))) {
     return false;
   }
 
   // Check if file should be included based on extension or filename
-  return (
-    ALLOWED_EXTENSIONS.includes(ext) || ALWAYS_INCLUDE_FILES.includes(fileName)
-  );
+  return ALLOWED_EXTENSIONS.includes(ext) || ALWAYS_INCLUDE_FILES.includes(fileName);
 }
 
 function shouldReadFileContentsForSmartContext({
@@ -337,18 +317,12 @@ function shouldReadFileContentsForSmartContext({
   const fileName = path.basename(filePath);
 
   // ALWAYS__OMITTED_FILES takes precedence - never read if omitted
-  if (
-    ALWAYS_OMITTED_FILES.some((pattern) =>
-      normalizedRelativePath.includes(pattern),
-    )
-  ) {
+  if (ALWAYS_OMITTED_FILES.some((pattern) => normalizedRelativePath.includes(pattern))) {
     return false;
   }
 
   // Check if file should be included based on extension or filename
-  return (
-    ALLOWED_EXTENSIONS.includes(ext) || ALWAYS_INCLUDE_FILES.includes(fileName)
-  );
+  return ALLOWED_EXTENSIONS.includes(ext) || ALWAYS_INCLUDE_FILES.includes(fileName);
 }
 
 /**
@@ -423,8 +397,7 @@ async function prepareCodebaseFiles({
 }): Promise<PreparedCodebaseFile[] | undefined> {
   const settings = readSettings();
   const isSmartContextEnabled =
-    settings?.enableOctopusStudioPro &&
-    settings?.enableProSmartFilesContextMode;
+    settings?.enableOctopusStudioPro && settings?.enableProSmartFilesContextMode;
 
   try {
     await fsAsync.access(appPath);
@@ -441,32 +414,22 @@ async function prepareCodebaseFiles({
 
   if (contextPaths && contextPaths.length > 0) {
     for (const contextPath of contextPaths) {
-      const matches = await glob(
-        createFullGlobPath({ appPath, globPath: contextPath.globPath }),
-        {
-          nodir: true,
-          absolute: true,
-          ignore: "**/node_modules/**",
-        },
-      );
+      const matches = await glob(createFullGlobPath({ appPath, globPath: contextPath.globPath }), {
+        nodir: true,
+        absolute: true,
+        ignore: "**/node_modules/**",
+      });
       matches.forEach((file) => includedFiles.add(path.normalize(file)));
     }
   }
 
-  if (
-    isSmartContextEnabled &&
-    smartContextAutoIncludes &&
-    smartContextAutoIncludes.length > 0
-  ) {
+  if (isSmartContextEnabled && smartContextAutoIncludes && smartContextAutoIncludes.length > 0) {
     for (const autoInclude of smartContextAutoIncludes) {
-      const matches = await glob(
-        createFullGlobPath({ appPath, globPath: autoInclude.globPath }),
-        {
-          nodir: true,
-          absolute: true,
-          ignore: "**/node_modules/**",
-        },
-      );
+      const matches = await glob(createFullGlobPath({ appPath, globPath: autoInclude.globPath }), {
+        nodir: true,
+        absolute: true,
+        ignore: "**/node_modules/**",
+      });
       matches.forEach((file) => {
         const normalizedFile = path.normalize(file);
         autoIncludedFiles.add(normalizedFile);
@@ -477,14 +440,11 @@ async function prepareCodebaseFiles({
 
   if (excludePaths && excludePaths.length > 0) {
     for (const excludePath of excludePaths) {
-      const matches = await glob(
-        createFullGlobPath({ appPath, globPath: excludePath.globPath }),
-        {
-          nodir: true,
-          absolute: true,
-          ignore: "**/node_modules/**",
-        },
-      );
+      const matches = await glob(createFullGlobPath({ appPath, globPath: excludePath.globPath }), {
+        nodir: true,
+        absolute: true,
+        ignore: "**/node_modules/**",
+      });
       matches.forEach((file) => excludedFiles.add(path.normalize(file)));
     }
   }
@@ -504,9 +464,7 @@ async function prepareCodebaseFiles({
   return sortedFiles.map((file) => ({
     absolutePath: file,
     path: path.relative(appPath, file).split(path.sep).join("/"),
-    force:
-      autoIncludedFiles.has(path.normalize(file)) &&
-      !excludedFiles.has(path.normalize(file)),
+    force: autoIncludedFiles.has(path.normalize(file)) && !excludedFiles.has(path.normalize(file)),
   }));
 }
 
@@ -520,8 +478,7 @@ export async function listCodebaseFileMetadata({
   appPath: string;
   chatContext: AppChatContext;
 }): Promise<{ files: BaseFile[]; totalFileCount: number }> {
-  const preparedFiles =
-    (await prepareCodebaseFiles({ appPath, chatContext })) ?? [];
+  const preparedFiles = (await prepareCodebaseFiles({ appPath, chatContext })) ?? [];
 
   return {
     files: preparedFiles.map(({ path: filePath, force }) => ({
@@ -610,9 +567,7 @@ async function extractCodebaseInner({
   });
 
   const formattedResults = await Promise.all(formatPromises);
-  const formattedFiles = formattedResults.map(
-    (result) => result.formattedContent,
-  );
+  const formattedFiles = formattedResults.map((result) => result.formattedContent);
   const filesArray = formattedResults.map((result) => result.file);
   const formattedOutput = formattedFiles.join("");
 
@@ -658,9 +613,7 @@ async function sortFilesByModificationTime(
     // This is a workaround to ensure stable ordering, although
     // ideally we'd like to sort it by modification time which is
     // important for cache-ability.
-    return fileStats
-      .sort((a, b) => a.file.localeCompare(b.file))
-      .map((item) => item.file);
+    return fileStats.sort((a, b) => a.file.localeCompare(b.file)).map((item) => item.file);
   }
   // Sort by modification time (oldest first)
   return fileStats
@@ -668,13 +621,7 @@ async function sortFilesByModificationTime(
     .map((item) => item.file);
 }
 
-function createFullGlobPath({
-  appPath,
-  globPath,
-}: {
-  appPath: string;
-  globPath: string;
-}): string {
+function createFullGlobPath({ appPath, globPath }: { appPath: string; globPath: string }): string {
   // By default the glob package treats "\" as an escape character.
   // We want the path to use forward slash for all platforms.
   return `${appPath.replace(/\\/g, "/")}/${globPath}`;

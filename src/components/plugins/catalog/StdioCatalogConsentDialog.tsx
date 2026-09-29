@@ -37,11 +37,7 @@ export function StdioCatalogConsentDialog({
   const envPrefix = Object.entries(entry.env ?? {})
     .map(([key, value]) => `${key}=${quoteIfSpaced(value)}`)
     .join(" ");
-  const fullCommand = [
-    envPrefix,
-    entry.command,
-    ...entry.args.map(quoteIfSpaced),
-  ]
+  const fullCommand = [envPrefix, entry.command, ...entry.args.map(quoteIfSpaced)]
     .filter(Boolean)
     .join(" ");
 
@@ -52,13 +48,13 @@ export function StdioCatalogConsentDialog({
           <AlertDialogTitle>Run this plugin on your computer?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-3">
             <span className="block">
-              <span className="text-foreground font-medium">{entry.name}</span>{" "}
-              runs locally by downloading and executing an npm package on your
-              computer, with the same access as any program you run.
+              <span className="text-foreground font-medium">{entry.name}</span> runs locally by
+              downloading and executing an npm package on your computer, with the same access as any
+              program you run.
             </span>
             <span className="block">
-              Octopus Studio curates this catalog, but the package is maintained
-              by a third party and runs without a sandbox.
+              Octopus Studio curates this catalog, but the package is maintained by a third party
+              and runs without a sandbox.
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>

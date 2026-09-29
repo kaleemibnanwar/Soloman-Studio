@@ -104,18 +104,9 @@ export const showInfo = (message: string) => {
  * @param message The prompt message to display
  * @param onResponse Callback function called when user responds
  */
-export const showInputRequest = (
-  message: string,
-  onResponse: (response: "y" | "n") => void,
-) => {
+export const showInputRequest = (message: string, onResponse: (response: "y" | "n") => void) => {
   const toastId = toast.custom(
-    (t) => (
-      <InputRequestToast
-        message={message}
-        toastId={t}
-        onResponse={onResponse}
-      />
-    ),
+    (t) => <InputRequestToast message={message} toastId={t} onResponse={onResponse} />,
     { duration: Infinity }, // Don't auto-close
   );
 

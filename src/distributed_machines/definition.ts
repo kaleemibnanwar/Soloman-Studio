@@ -1,9 +1,6 @@
 import type { IdSource } from "@/state_machines/clock";
 import type { z } from "zod";
-import type {
-  CommandScheduler,
-  DispatchTicket,
-} from "@/state_machines/dispatcher";
+import type { CommandScheduler, DispatchTicket } from "@/state_machines/dispatcher";
 import type { InvocationRef } from "@/state_machines/invocation_ref";
 import type { TaskScope } from "@/state_machines/task_scope";
 import type { TimerLeaseScope } from "@/state_machines/timer_lease";
@@ -82,9 +79,7 @@ type OutcomePublisher<Outcome> = {
 }["bivarianceHack"];
 
 type OutcomePublisherFactory<Key, State, Event, Outcome> = {
-  bivarianceHack(
-    context: MachineHostContext<Key, State, Event>,
-  ): OutcomePublisher<Outcome>;
+  bivarianceHack(context: MachineHostContext<Key, State, Event>): OutcomePublisher<Outcome>;
 }["bivarianceHack"];
 
 /**
@@ -127,18 +122,10 @@ export interface ActorLifecyclePolicy<Key, State> {
   readonly restartPersistence: "ephemeral" | "persistent";
   readonly flushOnShutdown: boolean;
   readonly isTerminal?: (state: State) => boolean;
-  readonly settleWaiters?: (
-    context: ActorDisposalContext<Key, State>,
-  ) => void | Promise<void>;
-  readonly projectTerminal?: (
-    context: ActorDisposalContext<Key, State>,
-  ) => void | Promise<void>;
-  readonly flush?: (
-    context: ActorDisposalContext<Key, State>,
-  ) => void | Promise<void>;
-  readonly onDisposed?: (
-    context: ActorDisposalContext<Key, State>,
-  ) => void | Promise<void>;
+  readonly settleWaiters?: (context: ActorDisposalContext<Key, State>) => void | Promise<void>;
+  readonly projectTerminal?: (context: ActorDisposalContext<Key, State>) => void | Promise<void>;
+  readonly flush?: (context: ActorDisposalContext<Key, State>) => void | Promise<void>;
+  readonly onDisposed?: (context: ActorDisposalContext<Key, State>) => void | Promise<void>;
 }
 
 /**
@@ -162,12 +149,7 @@ export interface RemoteMachineSender {
 
 export type RemoteRevisionPolicy = "allow-stale" | "reject-stale";
 
-export interface RemoteMachineContract<
-  Key,
-  State,
-  Event,
-  RemoteState = unknown,
-> {
+export interface RemoteMachineContract<Key, State, Event, RemoteState = unknown> {
   readonly protocolVersion: number;
   /**
    * Optional per-machine ceilings for validated wire envelopes. Machines with
@@ -187,11 +169,7 @@ export interface RemoteMachineContract<
   readonly eventCodec: z.ZodType<Event>;
   readonly snapshotCodec: z.ZodType<RemoteState>;
   readonly keyToString: (key: Key) => string;
-  readonly projectSnapshot: (
-    state: State,
-    key: Key,
-    metadata: ActorRuntimeMetadata,
-  ) => RemoteState;
+  readonly projectSnapshot: (state: State, key: Key, metadata: ActorRuntimeMetadata) => RemoteState;
   /**
    * Explicit non-authoritative renderer view used before bootstrap, after
    * disposal, and while the transport is unavailable.
@@ -229,10 +207,7 @@ export interface RemoteOperationContract<
     readonly fingerprint: string;
   }):
     | {
-        readonly registry: OperationRegistry<
-          DomainOutcome,
-          OperationInvocationRef
-        >;
+        readonly registry: OperationRegistry<DomainOutcome, OperationInvocationRef>;
         readonly identity: OperationLookupIdentity;
         readonly createInvocationRef: () => OperationInvocationRef;
       }
@@ -284,12 +259,7 @@ export interface DistributedMachineDefinition<
    * Optional authoritative post-commit outcome sink. ActorHost invokes it only
    * after the new snapshot is committed; failures are isolated by dispatcher.
    */
-  readonly createOutcomePublisher?: OutcomePublisherFactory<
-    Key,
-    State,
-    Event,
-    Outcome
-  >;
+  readonly createOutcomePublisher?: OutcomePublisherFactory<Key, State, Event, Outcome>;
   readonly lifecycle: ActorLifecyclePolicy<Key, State>;
   readonly persistence?: MachinePersistencePolicy<Key, State>;
   readonly remote?: RemoteMachineContract<Key, State, Event>;
@@ -328,16 +298,7 @@ export interface DistributedMachineDefinition<
 declare const frameworkCoveredRemoteMachine: unique symbol;
 
 export type FrameworkCoveredRemoteMachine<
-  Definition extends DistributedMachineDefinition<
-    string,
-    any,
-    any,
-    any,
-    any,
-    any,
-    any,
-    any
-  >,
+  Definition extends DistributedMachineDefinition<string, any, any, any, any, any, any, any>,
 > = Definition & {
   readonly [frameworkCoveredRemoteMachine]: true;
 };
@@ -371,16 +332,7 @@ type ProtocolV1FrameworkBoundary<Key, State, Event, RemoteIntent> = {
 };
 
 type FrameworkBoundaryFor<
-  Definition extends DistributedMachineDefinition<
-    string,
-    any,
-    any,
-    any,
-    any,
-    any,
-    any,
-    any
-  >,
+  Definition extends DistributedMachineDefinition<string, any, any, any, any, any, any, any>,
 > =
   Definition extends DistributedMachineDefinition<
     string,
@@ -403,31 +355,17 @@ type FrameworkBoundaryFor<
  * remote-intent contract or the narrow completion-aware protocol-v1 adapter.
  */
 export function defineFrameworkCoveredRemoteMachine<
-  const Definition extends DistributedMachineDefinition<
-    string,
-    any,
-    any,
-    any,
-    any,
-    any,
-    any,
-    any
-  >,
+  const Definition extends DistributedMachineDefinition<string, any, any, any, any, any, any, any>,
 >(
   definition: Definition & FrameworkBoundaryFor<Definition>,
 ): FrameworkCoveredRemoteMachine<Definition> {
-  const intentContract =
-    definition.remoteIntent ?? definition.remoteIntentDeclaration;
+  const intentContract = definition.remoteIntent ?? definition.remoteIntentDeclaration;
   if (!intentContract) {
-    throw new Error(
-      `Framework-covered machine ${definition.id} has no remote intent contract`,
-    );
+    throw new Error(`Framework-covered machine ${definition.id} has no remote intent contract`);
   }
   const hasTrackedCompletion = Object.values(
     intentContract.intents as Readonly<Record<string, RemoteIntentPolicy>>,
-  ).some(
-    (policy: RemoteIntentPolicy) => policy.completion === "tracked-completion",
-  );
+  ).some((policy: RemoteIntentPolicy) => policy.completion === "tracked-completion");
   if (
     hasTrackedCompletion &&
     definition.remoteIntent &&
@@ -437,18 +375,12 @@ export function defineFrameworkCoveredRemoteMachine<
       `Framework-covered machine ${definition.id} declares tracked completion without finalizeOperation`,
     );
   }
-  if (
-    hasTrackedCompletion &&
-    definition.remoteIntentDeclaration &&
-    !definition.remoteOperation
-  ) {
+  if (hasTrackedCompletion && definition.remoteIntentDeclaration && !definition.remoteOperation) {
     throw new Error(
       `Framework-covered machine ${definition.id} declares tracked completion without remoteOperation`,
     );
   }
-  return Object.freeze(
-    definition,
-  ) as unknown as FrameworkCoveredRemoteMachine<Definition>;
+  return Object.freeze(definition) as unknown as FrameworkCoveredRemoteMachine<Definition>;
 }
 
 export interface LocalActorRef<State, Event> {
@@ -460,11 +392,10 @@ export interface LocalActorRef<State, Event> {
   send(event: Event, dispatchContext?: DispatchContext): void;
 }
 
-export interface HostedActorRef<
+export interface HostedActorRef<State, Event, Reason extends IgnoreReason> extends LocalActorRef<
   State,
-  Event,
-  Reason extends IgnoreReason,
-> extends LocalActorRef<State, Event> {
+  Event
+> {
   /**
    * Captures a non-creating producer sink bound to this actor instance and
    * admission generation.
@@ -476,19 +407,13 @@ export interface HostedActorRef<
    * Enrolls external work under a captured actor/gate lifetime so destructive
    * fences wait for the full continuation.
    */
-  trackCaptured<Result>(
-    sink: ActorEventSink<Event>,
-    start: () => Promise<Result>,
-  ): Promise<Result>;
-  enqueue(
-    event: Event,
-    dispatchContext?: DispatchContext,
-  ): ActorDispatchTicket<State, Reason>;
+  trackCaptured<Result>(sink: ActorEventSink<Event>, start: () => Promise<Result>): Promise<Result>;
+  enqueue(event: Event, dispatchContext?: DispatchContext): ActorDispatchTicket<State, Reason>;
 }
 
-export interface ActorDispatchTicket<
+export interface ActorDispatchTicket<State, Reason extends IgnoreReason> extends DispatchTicket<
   State,
-  Reason extends IgnoreReason,
-> extends DispatchTicket<State, Reason> {
+  Reason
+> {
   getSettledMetadata(): ActorRuntimeMetadata | undefined;
 }

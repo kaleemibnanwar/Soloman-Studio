@@ -20,15 +20,9 @@ function escapeRegexLiteral(value: string): string {
  * into file tags. Used for `<octopus-studio-write>`: a `path`/`description` plus a body
  * with optional surrounding markdown fences.
  */
-function parseOctopusStudioFileTags(
-  fullResponse: string,
-  tagName: string,
-): OctopusStudioFileTag[] {
+function parseOctopusStudioFileTags(fullResponse: string, tagName: string): OctopusStudioFileTag[] {
   const escapedTagName = escapeRegexLiteral(tagName);
-  const tagRegex = new RegExp(
-    `<${escapedTagName}([^>]*)>([\\s\\S]*?)</${escapedTagName}>`,
-    "gi",
-  );
+  const tagRegex = new RegExp(`<${escapedTagName}([^>]*)>([\\s\\S]*?)</${escapedTagName}>`, "gi");
   const pathRegex = /path="([^"]+)"/;
   const descriptionRegex = /description="([^"]+)"/;
 
@@ -44,9 +38,7 @@ function parseOctopusStudioFileTags(
 
     if (pathMatch && pathMatch[1]) {
       const path = unescapeXmlAttr(pathMatch[1]);
-      const description = descriptionMatch?.[1]
-        ? unescapeXmlAttr(descriptionMatch[1])
-        : undefined;
+      const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
 
       const contentLines = content.split("\n");
       if (contentLines[0]?.startsWith("```")) {
@@ -59,18 +51,13 @@ function parseOctopusStudioFileTags(
 
       tags.push({ path: normalizePath(path), content, description });
     } else {
-      logger.warn(
-        `Found <${tagName}> tag without a valid 'path' attribute:`,
-        match[0],
-      );
+      logger.warn(`Found <${tagName}> tag without a valid 'path' attribute:`, match[0]);
     }
   }
   return tags;
 }
 
-export function getOctopusStudioWriteTags(
-  fullResponse: string,
-): OctopusStudioFileTag[] {
+export function getOctopusStudioWriteTags(fullResponse: string): OctopusStudioFileTag[] {
   return parseOctopusStudioFileTags(fullResponse, "octopus-studio-write");
 }
 
@@ -115,9 +102,7 @@ export function getOctopusStudioCopyTags(fullResponse: string): {
       tags.push({
         from: normalizePath(unescapeXmlAttr(fromMatch[1])),
         to: normalizePath(unescapeXmlAttr(toMatch[1])),
-        description: descriptionMatch?.[1]
-          ? unescapeXmlAttr(descriptionMatch[1])
-          : undefined,
+        description: descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined,
       });
     } else {
       logger.warn(
@@ -140,24 +125,18 @@ export function getOctopusStudioDeleteTags(fullResponse: string): string[] {
   return paths;
 }
 
-export function getOctopusStudioAddDependencyTags(
-  fullResponse: string,
-): string[] {
+export function getOctopusStudioAddDependencyTags(fullResponse: string): string[] {
   const octopusStudioAddDependencyRegex =
     /<octopus-studio-add-dependency packages="([^"]+)">[^<]*<\/octopus-studio-add-dependency>/g;
   let match;
   const packages: string[] = [];
-  while (
-    (match = octopusStudioAddDependencyRegex.exec(fullResponse)) !== null
-  ) {
+  while ((match = octopusStudioAddDependencyRegex.exec(fullResponse)) !== null) {
     packages.push(...unescapeXmlAttr(match[1]).trim().split(/\s+/));
   }
   return packages;
 }
 
-export function getOctopusStudioChatSummaryTag(
-  fullResponse: string,
-): string | null {
+export function getOctopusStudioChatSummaryTag(fullResponse: string): string | null {
   const octopusStudioChatSummaryRegex =
     /<octopus-studio-chat-summary>([\s\S]*?)<\/octopus-studio-chat-summary>/g;
   const match = octopusStudioChatSummaryRegex.exec(fullResponse);
@@ -167,9 +146,7 @@ export function getOctopusStudioChatSummaryTag(
   return null;
 }
 
-export function getOctopusStudioExecuteSqlTags(
-  fullResponse: string,
-): SqlQuery[] {
+export function getOctopusStudioExecuteSqlTags(fullResponse: string): SqlQuery[] {
   const octopusStudioExecuteSqlRegex =
     /<octopus-studio-execute-sql([^>]*)>([\s\S]*?)<\/octopus-studio-execute-sql>/g;
   const descriptionRegex = /description="([^"]+)"/;
@@ -180,9 +157,7 @@ export function getOctopusStudioExecuteSqlTags(
     const attributesString = match[1] || "";
     let content = unescapeXmlContent(match[2].trim());
     const descriptionMatch = descriptionRegex.exec(attributesString);
-    const description = descriptionMatch?.[1]
-      ? unescapeXmlAttr(descriptionMatch[1])
-      : undefined;
+    const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
 
     // Handle markdown code blocks if present
     const contentLines = content.split("\n");
@@ -226,9 +201,7 @@ export function getOctopusStudioSearchReplaceTags(fullResponse: string): {
   let match;
   const tags: { path: string; content: string; description?: string }[] = [];
 
-  while (
-    (match = octopusStudioSearchReplaceRegex.exec(fullResponse)) !== null
-  ) {
+  while ((match = octopusStudioSearchReplaceRegex.exec(fullResponse)) !== null) {
     const attributesString = match[1] || "";
     let content = unescapeXmlContent(match[2].trim());
 
@@ -237,9 +210,7 @@ export function getOctopusStudioSearchReplaceTags(fullResponse: string): {
 
     if (pathMatch && pathMatch[1]) {
       const path = unescapeXmlAttr(pathMatch[1]);
-      const description = descriptionMatch?.[1]
-        ? unescapeXmlAttr(descriptionMatch[1])
-        : undefined;
+      const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
 
       // Handle markdown code fences if present
       const contentLines = content.split("\n");

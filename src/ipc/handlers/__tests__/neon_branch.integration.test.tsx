@@ -1,15 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   process.env.E2E_TEST_BUILD = "true";
@@ -33,10 +25,7 @@ import { eq } from "drizzle-orm";
 
 import { apps, chats } from "@/db/schema";
 import { writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 type TestApp = {
@@ -98,15 +87,9 @@ describe("Neon branch actions (integration)", () => {
         2,
       ) + "\n",
     );
-    fs.writeFileSync(
-      path.join(appDir, "next.config.ts"),
-      "export default {};\n",
-    );
+    fs.writeFileSync(path.join(appDir, "next.config.ts"), "export default {};\n");
 
-    const [appRow] = await harness.db
-      .insert(apps)
-      .values({ name, path: appDir })
-      .returning();
+    const [appRow] = await harness.db.insert(apps).values({ name, path: appDir }).returning();
     await harness.db.insert(chats).values({ appId: appRow.id });
     return { appId: appRow.id, name, appDir };
   }

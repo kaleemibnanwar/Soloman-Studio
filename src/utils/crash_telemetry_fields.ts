@@ -1,9 +1,7 @@
 import type { UserSettings } from "../lib/schemas";
 import type { ActivitySnapshot } from "./memory_activity";
 
-export type PerformanceSnapshot = NonNullable<
-  UserSettings["lastKnownPerformance"]
->;
+export type PerformanceSnapshot = NonNullable<UserSettings["lastKnownPerformance"]>;
 
 // Known Electron process types get their own telemetry field; anything else
 // is summed into "other" so the set of PostHog columns stays stable.
@@ -15,9 +13,7 @@ const KNOWN_PROCESS_TYPES = new Set(["browser", "tab", "gpu", "utility"]);
  * because PostHog cannot easily filter or aggregate nested JSON.
  * time_since_last_heartbeat_ms is measured at send time, not crash time.
  */
-export function crashPerformanceEventFields(
-  perf: PerformanceSnapshot,
-): Record<string, unknown> {
+export function crashPerformanceEventFields(perf: PerformanceSnapshot): Record<string, unknown> {
   return {
     last_known_memory_mb: perf.memoryUsageMB,
     last_known_cpu_pct: perf.cpuUsagePercent,

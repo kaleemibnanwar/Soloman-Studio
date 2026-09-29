@@ -10,9 +10,7 @@ const STALE_TIME_MS = 30_000;
 const TEST_STALE_TIME_MS = 500;
 const FREE_MODEL_QUOTA_LIMIT = 5;
 
-export function useFreeModelQuota({
-  enabled = true,
-}: { enabled?: boolean } = {}) {
+export function useFreeModelQuota({ enabled = true }: { enabled?: boolean } = {}) {
   const { settings } = useSettings();
   const queryClient = useQueryClient();
   const { userBudget, isLoadingUserBudget } = useUserBudgetInfo({ enabled });
@@ -47,10 +45,7 @@ export function useFreeModelQuota({
     isQuotaExceeded: quotaStatus?.isQuotaExceeded ?? false,
     messagesUsed: quotaStatus?.messagesUsed ?? 0,
     messagesLimit: quotaStatus?.messagesLimit ?? FREE_MODEL_QUOTA_LIMIT,
-    messagesRemaining: Math.max(
-      0,
-      quotaStatus?.messagesRemaining ?? FREE_MODEL_QUOTA_LIMIT,
-    ),
+    messagesRemaining: Math.max(0, quotaStatus?.messagesRemaining ?? FREE_MODEL_QUOTA_LIMIT),
     resetTime: quotaStatus?.resetTime ?? null,
   };
 }

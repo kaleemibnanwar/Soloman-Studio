@@ -2,9 +2,7 @@ export async function resolvePreviewBrowserUrl(input: {
   isCloudMode: boolean;
   selectedAppId: number | null;
   originalUrl: string | null | undefined;
-  createCloudSandboxShareLink: (params: {
-    appId: number;
-  }) => Promise<{ url: string }>;
+  createCloudSandboxShareLink: (params: { appId: number }) => Promise<{ url: string }>;
 }): Promise<string> {
   if (input.isCloudMode) {
     if (input.selectedAppId === null) {

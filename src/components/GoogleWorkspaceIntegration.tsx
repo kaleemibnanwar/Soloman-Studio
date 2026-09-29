@@ -23,9 +23,7 @@ export function GoogleWorkspaceIntegration() {
       allServers.filter(
         (s) =>
           s.catalogSlug &&
-          (GOOGLE_WORKSPACE_MCP_SLUGS as readonly string[]).includes(
-            s.catalogSlug,
-          ),
+          (GOOGLE_WORKSPACE_MCP_SLUGS as readonly string[]).includes(s.catalogSlug),
       ),
     );
   };
@@ -42,9 +40,7 @@ export function GoogleWorkspaceIntegration() {
       await refresh();
       showSuccess("Google account connected");
     } catch (error) {
-      showError(
-        `Failed to connect: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      showError(`Failed to connect: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setConnecting(false);
     }
@@ -77,13 +73,10 @@ export function GoogleWorkspaceIntegration() {
     return (
       <div className="space-y-2">
         <div>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Google Account
-          </h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Google Account</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Connect once to enable Drive sync and the Gmail, Calendar, Docs,
-            Sheets, Slides, Chat, and Contacts MCP tools for the agent — no
-            separate sign-in for each one.
+            Connect once to enable Drive sync and the Gmail, Calendar, Docs, Sheets, Slides, Chat,
+            and Contacts MCP tools for the agent — no separate sign-in for each one.
           </p>
         </div>
         <Button size="sm" onClick={handleConnect} disabled={connecting}>
@@ -102,19 +95,10 @@ export function GoogleWorkspaceIntegration() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Google Account
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Connected as {email}
-          </p>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Google Account</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Connected as {email}</p>
         </div>
-        <Button
-          onClick={handleDisconnect}
-          variant="destructive"
-          size="sm"
-          disabled={disconnecting}
-        >
+        <Button onClick={handleDisconnect} variant="destructive" size="sm" disabled={disconnecting}>
           {disconnecting ? "Disconnecting…" : "Disconnect"}
         </Button>
       </div>

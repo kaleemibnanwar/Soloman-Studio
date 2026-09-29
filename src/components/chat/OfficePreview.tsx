@@ -80,9 +80,7 @@ export function OfficePreview({ data }: { data: unknown }) {
           {line}
         </p>
       ))}
-      {text.length === 0 && (
-        <p className="text-xs text-muted-foreground">(empty document)</p>
-      )}
+      {text.length === 0 && <p className="text-xs text-muted-foreground">(empty document)</p>}
     </div>
   );
 }

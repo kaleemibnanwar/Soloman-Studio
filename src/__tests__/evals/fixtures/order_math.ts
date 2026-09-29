@@ -110,8 +110,7 @@ export function couponAppliestoShipping(order: Order): boolean {
 export function effectiveShippingCost(order: Order): number {
   const base = order.shippingCost;
   if (!order.coupon?.appliesToShipping) return base;
-  if (order.coupon.type === "fixed")
-    return Math.max(0, base - order.coupon.value);
+  if (order.coupon.type === "fixed") return Math.max(0, base - order.coupon.value);
   return base * (1 - order.coupon.value / 100);
 }
 
@@ -174,11 +173,7 @@ export function formatOrderLine(item: LineItem): string {
   return `${item.sku} × ${item.quantity} @ $${item.unitPrice.toFixed(2)}`;
 }
 
-export function applyBulkDiscount(
-  items: LineItem[],
-  threshold: number,
-  pct: number,
-): number {
+export function applyBulkDiscount(items: LineItem[], threshold: number, pct: number): number {
   const sub = subtotalOf(items);
   if (sub < threshold) return sub;
   return sub * (1 - pct);
@@ -195,9 +190,7 @@ export function orderContainsSku(order: Order, sku: string): boolean {
 }
 
 export function totalForSku(order: Order, sku: string): number {
-  return order.items
-    .filter((i) => i.sku === sku)
-    .reduce((n, i) => n + i.quantity * i.unitPrice, 0);
+  return order.items.filter((i) => i.sku === sku).reduce((n, i) => n + i.quantity * i.unitPrice, 0);
 }
 
 export function mergeOrders(orders: Order[]): Order {
@@ -247,10 +240,7 @@ export function formatCurrency(amount: number, currency: string): string {
 
 // ── Refund calculations ────────────────────────────────────────────────────
 
-export function refundAmountForItems(
-  order: Order,
-  returnedSkus: string[],
-): number {
+export function refundAmountForItems(order: Order, returnedSkus: string[]): number {
   const returnedItems = order.items.filter((i) => returnedSkus.includes(i.sku));
   if (returnedItems.length === 0) return 0;
 
@@ -290,25 +280,17 @@ export function averageOrderValue(orders: Order[]): number {
 }
 
 export function topOrdersByValue(orders: Order[], n: number): Order[] {
-  return [...orders]
-    .sort((a, b) => calculateTotal(b) - calculateTotal(a))
-    .slice(0, n);
+  return [...orders].sort((a, b) => calculateTotal(b) - calculateTotal(a)).slice(0, n);
 }
 
 export function totalRevenue(orders: Order[]): number {
   return orders.reduce((sum, o) => sum + calculateTotal(o), 0);
 }
 
-export function ordersAboveThreshold(
-  orders: Order[],
-  threshold: number,
-): Order[] {
+export function ordersAboveThreshold(orders: Order[], threshold: number): Order[] {
   return orders.filter((o) => calculateTotal(o) >= threshold);
 }
 
-export function ordersBelowThreshold(
-  orders: Order[],
-  threshold: number,
-): Order[] {
+export function ordersBelowThreshold(orders: Order[], threshold: number): Order[] {
   return orders.filter((o) => calculateTotal(o) < threshold);
 }

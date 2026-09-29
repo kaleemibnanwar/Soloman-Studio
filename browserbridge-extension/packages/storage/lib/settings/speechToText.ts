@@ -1,6 +1,6 @@
-import { StorageEnum } from '../base/enums';
-import { createStorage } from '../base/base';
-import type { BaseStorage } from '../base/types';
+import { StorageEnum } from "../base/enums";
+import { createStorage } from "../base/base";
+import type { BaseStorage } from "../base/types";
 
 export interface SpeechToTextModelConfig {
   provider: string;
@@ -19,7 +19,7 @@ export type SpeechToTextStorage = BaseStorage<SpeechToTextRecord> & {
 };
 
 const storage = createStorage<SpeechToTextRecord>(
-  'speech-to-text-model',
+  "speech-to-text-model",
   { speechToTextModel: undefined },
   {
     storageEnum: StorageEnum.Local,
@@ -29,7 +29,7 @@ const storage = createStorage<SpeechToTextRecord>(
 
 function validateSpeechToTextModelConfig(config: SpeechToTextModelConfig) {
   if (!config.provider || !config.modelName) {
-    throw new Error('Provider and model name must be specified for speech-to-text');
+    throw new Error("Provider and model name must be specified for speech-to-text");
   }
 }
 

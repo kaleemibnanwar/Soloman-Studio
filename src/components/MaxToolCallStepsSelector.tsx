@@ -23,8 +23,7 @@ const options: OptionInfo[] = [
   {
     value: "25",
     label: "Low (25)",
-    description:
-      "Limits tool calls to 25. Good for simple tasks that don't need many steps.",
+    description: "Limits tool calls to 25. Good for simple tasks that don't need many steps.",
   },
   {
     value: "50",
@@ -39,8 +38,7 @@ const options: OptionInfo[] = [
   {
     value: "200",
     label: "High (200)",
-    description:
-      "Extended limit for complex multi-step tasks (may increase cost and time).",
+    description: "Extended limit for complex multi-step tasks (may increase cost and time).",
   },
 ];
 
@@ -76,10 +74,7 @@ export const MaxToolCallStepsSelector: React.FC = () => {
       label={t("ai.maxToolCallSteps")}
       description={currentOption.description}
     >
-      <Select
-        value={currentValue}
-        onValueChange={(v) => v && handleValueChange(v)}
-      >
+      <Select value={currentValue} onValueChange={(v) => v && handleValueChange(v)}>
         <SelectTrigger
           className="w-full sm:w-[240px]"
           id="max-tool-call-steps"

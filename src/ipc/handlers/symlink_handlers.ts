@@ -6,19 +6,9 @@ import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { createTypedHandler } from "./base";
 import { symlinkContracts } from "../types/symlink";
-import {
-  getChatProjectRootPath,
-  getOctopusStudioAppPath,
-} from "../../paths/paths";
-import {
-  assertMutationPathAllowed,
-  lstatIfExists,
-  prepareDeletePath,
-} from "../utils/path_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "../../errors/octopus_studio_error";
+import { getChatProjectRootPath, getOctopusStudioAppPath } from "../../paths/paths";
+import { assertMutationPathAllowed, lstatIfExists, prepareDeletePath } from "../utils/path_utils";
+import { OctopusStudioError, OctopusStudioErrorKind } from "../../errors/octopus_studio_error";
 
 const logger = log.scope("symlink_handlers");
 
@@ -41,10 +31,7 @@ async function loadProject(appId: number): Promise<ProjectRow> {
     columns: { id: true, type: true, path: true, directory: true },
   });
   if (!project) {
-    throw new OctopusStudioError(
-      `Project not found: ${appId}`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`Project not found: ${appId}`, OctopusStudioErrorKind.NotFound);
   }
   return project;
 }
@@ -73,10 +60,7 @@ export function registerSymlinkHandlers() {
         relativePath: sourcePath,
       });
       const realSourceRoot = await fs.promises.realpath(sourceRoot);
-      const sourceAbsolute = path.join(
-        realSourceRoot,
-        ...sourceRelative.split("/"),
-      );
+      const sourceAbsolute = path.join(realSourceRoot, ...sourceRelative.split("/"));
       const sourceStat = lstatIfExists(sourceAbsolute);
       if (!sourceStat) {
         throw new OctopusStudioError(
@@ -93,10 +77,7 @@ export function registerSymlinkHandlers() {
         followFinalSymlink: false,
       });
       const realTargetRoot = await fs.promises.realpath(targetRoot);
-      const targetAbsolute = path.join(
-        realTargetRoot,
-        ...targetRelative.split("/"),
-      );
+      const targetAbsolute = path.join(realTargetRoot, ...targetRelative.split("/"));
       if (lstatIfExists(targetAbsolute)) {
         throw new OctopusStudioError(
           `A file or folder already exists at "${targetPath}" in the target project`,
@@ -106,10 +87,7 @@ export function registerSymlinkHandlers() {
 
       // Refuse linking a directory into a location that already sits inside
       // it (or is the same real path) — that would create a symlink cycle.
-      const relativeFromSourceToTarget = path.relative(
-        sourceAbsolute,
-        targetAbsolute,
-      );
+      const relativeFromSourceToTarget = path.relative(sourceAbsolute, targetAbsolute);
       if (
         relativeFromSourceToTarget === "" ||
         (!relativeFromSourceToTarget.startsWith("..") &&
@@ -127,11 +105,7 @@ export function registerSymlinkHandlers() {
       await fs.promises.symlink(
         sourceAbsolute,
         targetAbsolute,
-        process.platform === "win32"
-          ? sourceStat.isDirectory()
-            ? "junction"
-            : "file"
-          : undefined,
+        process.platform === "win32" ? (sourceStat.isDirectory() ? "junction" : "file") : undefined,
       );
 
       logger.info(
@@ -178,9 +152,7 @@ export function registerSymlinkHandlers() {
       if (!stat?.isSymbolicLink()) {
         return { isSymlink: false, linkTarget: null };
       }
-      const linkTarget = await fs.promises
-        .realpath(fullPath)
-        .catch(() => null);
+      const linkTarget = await fs.promises.realpath(fullPath).catch(() => null);
       return { isSymlink: true, linkTarget };
     },
   );

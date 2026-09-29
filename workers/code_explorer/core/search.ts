@@ -175,9 +175,7 @@ function scoreNode(node: GraphNode, terms: string[], query: string): number {
   if (queryAsName && name.toLowerCase() === queryAsName) score += 35;
 
   const isTest = isTestOrSupportPath(file);
-  const asksForTests = terms.some((term) =>
-    ["test", "tests", "spec", "vitest"].includes(term),
-  );
+  const asksForTests = terms.some((term) => ["test", "tests", "spec", "vitest"].includes(term));
   if (isTest && !asksForTests) score *= 0.5;
 
   score += scoreMutationIntent({
@@ -204,14 +202,7 @@ function scoreMutationIntent({
   qualified: string;
   asksForTests: boolean;
 }): number {
-  const actionTerms = [
-    "create",
-    "delete",
-    "mutation",
-    "persist",
-    "save",
-    "submit",
-  ];
+  const actionTerms = ["create", "delete", "mutation", "persist", "save", "submit"];
   const genericMutationTerms = [
     "api",
     "client",
@@ -233,9 +224,7 @@ function scoreMutationIntent({
 
   const domainTerms = terms.filter(
     (term) =>
-      term.length >= 4 &&
-      !actionTerms.includes(term) &&
-      !genericMutationTerms.includes(term),
+      term.length >= 4 && !actionTerms.includes(term) && !genericMutationTerms.includes(term),
   );
   const compactName = name.replace(/[^a-z0-9]/g, "");
   const compactQualified = qualified.replace(/[^a-z0-9]/g, "");

@@ -13,8 +13,7 @@ if (!Number.isInteger(issueNumber) || issueNumber <= 0) {
 if (!triagePath) throw new Error("TRIAGE_OUTPUT_PATH is required");
 
 const [owner, repo] = repository.split("/");
-if (!owner || !repo)
-  throw new Error(`Invalid GITHUB_REPOSITORY: ${repository}`);
+if (!owner || !repo) throw new Error(`Invalid GITHUB_REPOSITORY: ${repository}`);
 
 const allowedLabels = new Set([
   "bug",
@@ -35,9 +34,7 @@ if (!triage || typeof triage !== "object" || Array.isArray(triage)) {
 const cleanText = (value, maxLength) =>
   `${value ?? ""}`.replace(/\s+/g, " ").trim().slice(0, maxLength);
 
-const labels = [...new Set(triage.labels ?? [])].map((label) =>
-  cleanText(label, 80),
-);
+const labels = [...new Set(triage.labels ?? [])].map((label) => cleanText(label, 80));
 if (!Array.isArray(triage.labels)) {
   throw new Error("labels must be an array");
 }
@@ -106,9 +103,7 @@ const duplicates = duplicatesRaw.slice(0, 5).map((duplicate, index) => {
 });
 
 const title =
-  typeof triage.title === "string" && triage.title.trim()
-    ? cleanText(triage.title, 80)
-    : null;
+  typeof triage.title === "string" && triage.title.trim() ? cleanText(triage.title, 80) : null;
 
 const api = async (pathname, options = {}) => {
   const response = await fetch(`https://api.github.com/${pathname}`, {

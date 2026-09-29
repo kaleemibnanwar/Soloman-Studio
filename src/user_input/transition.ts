@@ -70,10 +70,7 @@ function isAlways(response: UserInputResponse): boolean {
   );
 }
 
-function responseMatches(
-  descriptor: UserInputDescriptor,
-  response: UserInputResponse,
-): boolean {
+function responseMatches(descriptor: UserInputDescriptor, response: UserInputResponse): boolean {
   return descriptor.kind === response.kind;
 }
 
@@ -87,11 +84,7 @@ export function transition(
 ): UserInputTransitionResult {
   if (event.type === "requested") {
     const commands: UserInputCommand[] = [];
-    if (
-      state.status === "awaiting" ||
-      state.status === "armed" ||
-      state.status === "due"
-    ) {
+    if (state.status === "awaiting" || state.status === "armed" || state.status === "due") {
       commands.push(...terminalCommands(state.descriptor, "superseded", null));
     }
     const next: UserInputState = {
@@ -107,10 +100,7 @@ export function transition(
         ms: event.deadlineMs,
       },
     );
-    return applied(
-      JSON.stringify(state) === JSON.stringify(next) ? state : next,
-      commands,
-    );
+    return applied(JSON.stringify(state) === JSON.stringify(next) ? state : next, commands);
   }
 
   if (state.status === "idle") return ignore(state, "unknown-request");
@@ -187,10 +177,9 @@ export function transition(
           reason: event.reason,
         });
       }
-      return applied(
-        { ...state, classifier: "review", classifierReason: event.reason },
-        [{ type: "broadcast-classified", descriptor, reason: event.reason }],
-      );
+      return applied({ ...state, classifier: "review", classifierReason: event.reason }, [
+        { type: "broadcast-classified", descriptor, reason: event.reason },
+      ]);
     }
     case "timed-out":
       return settle(descriptor, "timed-out", null);

@@ -36,10 +36,7 @@ export class MainAppRuntimeOutput implements AppRuntimeOutput {
 
   enqueue(output: AppOutput): void {
     this.admitLifecycle(output);
-    appOutputInterests.enqueue(
-      { kind: "app-output", appId: this.appId },
-      this.bind(output),
-    );
+    appOutputInterests.enqueue({ kind: "app-output", appId: this.appId }, this.bind(output));
   }
 
   flush(): void {
@@ -65,10 +62,7 @@ export class MainAppRuntimeOutput implements AppRuntimeOutput {
       });
       return;
     }
-    if (
-      output.type === "agent-lifecycle-started" &&
-      output.lifecycleOperation
-    ) {
+    if (output.type === "agent-lifecycle-started" && output.lifecycleOperation) {
       this.producer.send({
         type: "EXTERNAL_RESTART_STARTED",
         invocationRef,
@@ -77,10 +71,7 @@ export class MainAppRuntimeOutput implements AppRuntimeOutput {
       });
       return;
     }
-    if (
-      output.type === "agent-lifecycle-succeeded" ||
-      output.type === "agent-lifecycle-failed"
-    ) {
+    if (output.type === "agent-lifecycle-succeeded" || output.type === "agent-lifecycle-failed") {
       this.producer.send(
         output.type === "agent-lifecycle-succeeded"
           ? {
@@ -104,26 +95,17 @@ export class MainAppRuntimeOutput implements AppRuntimeOutput {
         this.producer.send({ type: "PROXY_READY", invocationRef, url });
       }
     }
-    if (
-      output.message.includes("hmr update") &&
-      output.message.includes("[vite]")
-    ) {
+    if (output.message.includes("hmr update") && output.message.includes("[vite]")) {
       this.producer.send({ type: "HMR_DETECTED", invocationRef });
     }
   }
 }
 
 function parseProxyReady(message: string): RunUrl | undefined {
-  const appUrl = message.match(
-    /\[octopus-studio-proxy-server\]started=\[(.*?)\]/,
-  )?.[1];
+  const appUrl = message.match(/\[octopus-studio-proxy-server\]started=\[(.*?)\]/)?.[1];
   const originalUrl = message.match(/original=\[(.*?)\]/)?.[1];
   const mode = message.match(/mode=\[(.*?)\]/)?.[1];
-  if (
-    !appUrl ||
-    !originalUrl ||
-    (mode !== "host" && mode !== "docker" && mode !== "cloud")
-  ) {
+  if (!appUrl || !originalUrl || (mode !== "host" && mode !== "docker" && mode !== "cloud")) {
     return undefined;
   }
   return { appUrl, originalUrl, mode };

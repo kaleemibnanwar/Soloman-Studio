@@ -1,10 +1,6 @@
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSummarizeInNewChat } from "./SummarizeInNewChatButton";
 
 const CONTEXT_LIMIT_THRESHOLD = 40_000;
@@ -32,10 +28,7 @@ export function shouldShowContextLimitBanner({
   return tokensRemaining <= CONTEXT_LIMIT_THRESHOLD;
 }
 
-export function ContextLimitBanner({
-  totalTokens,
-  contextWindow,
-}: ContextLimitBannerProps) {
+export function ContextLimitBanner({ totalTokens, contextWindow }: ContextLimitBannerProps) {
   const { handleSummarize } = useSummarizeInNewChat();
 
   if (!shouldShowContextLimitBanner({ totalTokens, contextWindow })) {

@@ -1,16 +1,10 @@
-import {
-  ImageGenerationApiResponseSchema,
-  type ImageThemeMode,
-} from "../types/image_generation";
+import { ImageGenerationApiResponseSchema, type ImageThemeMode } from "../types/image_generation";
 import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { getOctopusStudioAppPath } from "../../paths/paths";
-import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../utils/media_path_utils";
+import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../media/media_path_utils";
 import { safeJoin } from "../utils/path_utils";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "./app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "./app_operation_coordinator";
 import { assertNoActiveRecording } from "./recording_registry";
 import { readSettings } from "../../main/settings";
 import { eq } from "drizzle-orm";
@@ -146,33 +140,22 @@ export class ImageGenerationService {
 
   assertAcceptingGenerations(appId: number): void {
     if (this.resetFenceCount > 0 || this.deletionFences.has(appId)) {
-      throw new OctopusStudioError(
-        "The app is being deleted",
-        OctopusStudioErrorKind.Precondition,
-      );
+      throw new OctopusStudioError("The app is being deleted", OctopusStudioErrorKind.Precondition);
     }
   }
 
-  private async execute(
-    params: GenerateImageInput,
-    controller: AbortController,
-  ) {
+  private async execute(params: GenerateImageInput, controller: AbortController) {
     const settings = readSettings();
 
     const app = await db.query.apps.findFirst({
       where: eq(apps.id, params.targetAppId),
     });
     if (!app) {
-      throw new OctopusStudioError(
-        "Target app not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("Target app not found", OctopusStudioErrorKind.NotFound);
     }
 
     const systemPrompt = THEME_SYSTEM_PROMPTS[params.themeMode];
-    const fullPrompt = systemPrompt
-      ? `${systemPrompt}\n\n${params.prompt}`
-      : params.prompt;
+    const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${params.prompt}` : params.prompt;
 
     const requestId = params.requestId;
 
@@ -187,12 +170,7 @@ export class ImageGenerationService {
           fullPrompt,
           controller,
         )
-      : await this.generateViaOctopusStudioEngine(
-          settings,
-          fullPrompt,
-          requestId,
-          controller,
-        );
+      : await this.generateViaOctopusStudioEngine(settings, fullPrompt, requestId, controller);
 
     if (!imageData?.b64_json && !imageData?.url) {
       throw new OctopusStudioError(
@@ -214,14 +192,9 @@ export class ImageGenerationService {
     } else if (imageData.url) {
       const imageUrl = new URL(imageData.url);
       if (imageUrl.protocol !== "https:") {
-        throw new OctopusStudioError(
-          "Image URL must use HTTPS",
-          OctopusStudioErrorKind.External,
-        );
+        throw new OctopusStudioError("Image URL must use HTTPS", OctopusStudioErrorKind.External);
       }
-      const downloadTimeoutSignal = AbortSignal.timeout(
-        IMAGE_GENERATION_TIMEOUT_MS,
-      );
+      const downloadTimeoutSignal = AbortSignal.timeout(IMAGE_GENERATION_TIMEOUT_MS);
       try {
         const imgResponse = await fetch(imageData.url, {
           signal: AbortSignal.any([controller.signal, downloadTimeoutSignal]),
@@ -284,17 +257,11 @@ export class ImageGenerationService {
           where: eq(apps.id, params.targetAppId),
         });
         if (!currentApp) {
-          throw new OctopusStudioError(
-            "Target app not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Target app not found", OctopusStudioErrorKind.NotFound);
         }
         const resolvedAppPath = getOctopusStudioAppPath(currentApp.path);
         await ensureOctopusStudioGitignored(resolvedAppPath);
-        const mediaDir = path.join(
-          resolvedAppPath,
-          OCTOPUS_STUDIO_MEDIA_DIR_NAME,
-        );
+        const mediaDir = path.join(resolvedAppPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
         await fs.promises.mkdir(mediaDir, { recursive: true });
 
         const timestamp = Date.now();
@@ -320,9 +287,7 @@ export class ImageGenerationService {
           finalized = true;
           throwIfGenerationCancelled(controller.signal);
         } catch (error) {
-          const cleanupOperations = [
-            fs.promises.rm(tempFilePath, { force: true }),
-          ];
+          const cleanupOperations = [fs.promises.rm(tempFilePath, { force: true })];
           if (finalized && controller.signal.aborted) {
             cleanupOperations.push(fs.promises.rm(filePath, { force: true }));
           }
@@ -357,17 +322,11 @@ export class ImageGenerationService {
     prompt: string,
     controller: AbortController,
   ): Promise<ImageGenData> {
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      IMAGE_GENERATION_TIMEOUT_MS,
-    );
+    const timeoutId = setTimeout(() => controller.abort(), IMAGE_GENERATION_TIMEOUT_MS);
     try {
-      const { base64 } = await generateImageWithFallback(
-        model,
-        settings,
-        prompt,
-        { abortSignal: controller.signal },
-      );
+      const { base64 } = await generateImageWithFallback(model, settings, prompt, {
+        abortSignal: controller.signal,
+      });
       return { b64_json: base64 };
     } catch (error) {
       if (controller.signal.aborted) {
@@ -408,29 +367,23 @@ export class ImageGenerationService {
       );
     }
 
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      IMAGE_GENERATION_TIMEOUT_MS,
-    );
+    const timeoutId = setTimeout(() => controller.abort(), IMAGE_GENERATION_TIMEOUT_MS);
 
     let response: Response;
     try {
-      response = await fetch(
-        `${getOctopusStudioEngineBaseUrl()}/images/generations`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-            "X-OctopusStudio-Request-Id": requestId,
-          },
-          body: JSON.stringify({
-            prompt,
-            model: "octopusStudio/image-gen",
-          }),
-          signal: controller.signal,
+      response = await fetch(`${getOctopusStudioEngineBaseUrl()}/images/generations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "X-OctopusStudio-Request-Id": requestId,
         },
-      );
+        body: JSON.stringify({
+          prompt,
+          model: "octopusStudio/image-gen",
+        }),
+        signal: controller.signal,
+      });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         throw new OctopusStudioError(
@@ -449,9 +402,7 @@ export class ImageGenerationService {
     if (!response.ok) {
       // Only log status code and request ID — never log response body
       // as it may echo back request details including credentials
-      logger.error(
-        `Image generation API error: HTTP ${response.status} (request: ${requestId})`,
-      );
+      logger.error(`Image generation API error: HTTP ${response.status} (request: ${requestId})`);
       throw new OctopusStudioError(
         `Image generation failed (HTTP ${response.status}). Please try again.`,
         getHttpErrorKind(response.status),
@@ -471,10 +422,7 @@ export class ImageGenerationService {
     return parsed.data.data[0];
   }
 
-  cancel(
-    requestId: string,
-    options: { readonly retainIfMissing?: boolean } = {},
-  ): boolean {
+  cancel(requestId: string, options: { readonly retainIfMissing?: boolean } = {}): boolean {
     const active = this.active.get(requestId);
     if (!active) {
       if (!options.retainIfMissing) return false;

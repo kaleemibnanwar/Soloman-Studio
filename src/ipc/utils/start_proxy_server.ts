@@ -3,14 +3,8 @@
 import { Worker } from "worker_threads";
 import path from "path";
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import {
-  PROXY_FALLBACK_MAX_ATTEMPTS,
-  getProxyFallbackPortStart,
-} from "../../../shared/ports";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { PROXY_FALLBACK_MAX_ATTEMPTS, getProxyFallbackPortStart } from "../../../shared/ports";
 
 const logger = log.scope("start_proxy_server");
 
@@ -33,19 +27,16 @@ export async function startProxy(
   const fallbackPortStart = getProxyFallbackPortStart();
   logger.info("Starting proxy on port", port);
 
-  const worker = new Worker(
-    path.resolve(__dirname, "..", "..", "worker", "proxy_server.js"),
-    {
-      workerData: {
-        targetOrigin,
-        port,
-        fallbackPortStart,
-        maxPortAttempts: PROXY_FALLBACK_MAX_ATTEMPTS,
-        fixedHeaders,
-        authBootstrapToken,
-      },
+  const worker = new Worker(path.resolve(__dirname, "..", "..", "worker", "proxy_server.js"), {
+    workerData: {
+      targetOrigin,
+      port,
+      fallbackPortStart,
+      maxPortAttempts: PROXY_FALLBACK_MAX_ATTEMPTS,
+      fixedHeaders,
+      authBootstrapToken,
     },
-  );
+  });
 
   worker.on("message", (m) => {
     logger.info("[proxy]", m);

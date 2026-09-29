@@ -102,10 +102,7 @@ export type PreviewState =
 
 export function ownsHistoricalCheckout(state: PreviewState): boolean {
   if (state.type === "switching-branch") {
-    return (
-      state.fallback.type === "previewing" ||
-      state.fallback.type === "recovery-required"
-    );
+    return state.fallback.type === "previewing" || state.fallback.type === "recovery-required";
   }
   return state.type !== "closed" && state.session.checkedOutVersionId !== null;
 }
@@ -263,8 +260,6 @@ export function diffVersionIdForState(state: PreviewState): string | null {
   return state.session.isDiffVisible ? state.session.targetVersionId : null;
 }
 
-export function selectedDiffFileForState(
-  state: PreviewState,
-): PreviewSession["selectedDiffFile"] {
+export function selectedDiffFileForState(state: PreviewState): PreviewSession["selectedDiffFile"] {
   return canShowDiff(state) ? state.session.selectedDiffFile : null;
 }

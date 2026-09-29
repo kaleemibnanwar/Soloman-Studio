@@ -44,9 +44,7 @@ testWithRealCatalog(
     await po.navigation.goToLibraryTab();
     await po.page.getByRole("link", { name: "Themes" }).click();
     await po.page.getByRole("button", { name: "New Theme" }).click();
-    await expect(
-      po.page.getByRole("dialog").getByText("Create Custom Theme"),
-    ).toBeVisible();
+    await expect(po.page.getByRole("dialog").getByText("Create Custom Theme")).toBeVisible();
 
     // Verify the "Model Selection" label is visible and at least one model
     // option button is rendered from the real catalog

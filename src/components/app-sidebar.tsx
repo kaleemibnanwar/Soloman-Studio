@@ -1,9 +1,4 @@
-import {
-  type LucideIcon,
-  Settings,
-  HelpCircle,
-  BookOpen,
-} from "lucide-react";
+import { type LucideIcon, Settings, HelpCircle, BookOpen } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -139,10 +134,7 @@ export function AppSidebar() {
           {/* Spacer clearing the title-bar (window drag region) height. The
               former full-width "New chat" primary action lived here; it now
               lives as a "+" button in the Chats section of AppList. */}
-          <div
-            className="shrink-0 h-[calc(var(--layout-title-bar-offset)+0.25rem)]"
-            aria-hidden
-          />
+          <div className="shrink-0 h-[calc(var(--layout-title-bar-offset)+0.25rem)]" aria-hidden />
 
           {/* Contextual list — the merged Apps/Tasks/Chat listing is the
               default view; Settings/Library are reachable from the footer.
@@ -215,11 +207,7 @@ export function AppSidebar() {
               pathname: routerState.location.pathname,
             })}
           />
-          <NavRow
-            icon={HelpCircle}
-            label="Help"
-            onClick={() => setHelpDialog({ open: true })}
-          />
+          <NavRow icon={HelpCircle} label="Help" onClick={() => setHelpDialog({ open: true })} />
         </div>
         <div aria-hidden className="mx-2 h-px w-[calc(100%-1rem)] shrink-0 bg-sidebar-border" />
         <EconomyModeSwitch />

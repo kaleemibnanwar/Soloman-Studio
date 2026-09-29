@@ -11,18 +11,9 @@
 // directly), after which further prompts run normally.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { messages as messagesTable } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
@@ -94,55 +85,39 @@ describe("local agent step limit (integration)", () => {
 
     // The OctopusStudioStepLimit pause card renders in the DOM — the same surface the
     // e2e asserted — with the real Continue control.
+    await waitFor(() => expect(screen.getByText("Paused after 100 tool calls")).toBeTruthy(), {
+      timeout: 90_000,
+    });
     await waitFor(
-      () =>
-        expect(screen.getByText("Paused after 100 tool calls")).toBeTruthy(),
-      { timeout: 90_000 },
-    );
-    await waitFor(
-      () =>
-        expect(
-          screen.getByText(/Automatically paused after 100 tool calls\./),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/Automatically paused after 100 tool calls\./)).toBeTruthy(),
       { timeout: 20_000 },
     );
 
     await harness.waitForStreamEnd(harness.chatId, 90_000);
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     // The pause holds the queue: the "Paused" chip renders and the queued
     // prompt has NOT been sent (not in the messages list, not in the db).
-    await waitFor(
-      () => expect(screen.getByText("Paused", { exact: true })).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByText("Paused", { exact: true })).toBeTruthy(), {
+      timeout: 15_000,
+    });
     expect(screen.getByText("1 Queued")).toBeTruthy();
     expect(
-      within(screen.getByTestId("messages-list")).queryByText(
-        "tc=local-agent/simple-response",
-      ),
+      within(screen.getByTestId("messages-list")).queryByText("tc=local-agent/simple-response"),
     ).toBeNull();
 
     const messages = await loadMessages();
     const assistant = messages.filter((m) => m.role === "assistant").at(-1)!;
     // Paused: the step-limit notice is appended...
-    expect(assistant.content).toContain(
-      '<octopus-studio-step-limit steps="100"',
-    );
-    expect(assistant.content).toContain(
-      "Automatically paused after 100 tool calls.",
-    );
+    expect(assistant.content).toContain('<octopus-studio-step-limit steps="100"');
+    expect(assistant.content).toContain("Automatically paused after 100 tool calls.");
     // ...and the fixture's final turn was never reached.
     expect(assistant.content).not.toContain("All steps completed.");
     // The fixture's final turn text never rendered either.
     expect(screen.queryByText(/All steps completed\./)).toBeNull();
-    expect(
-      messages.some((m) => m.content === "tc=local-agent/simple-response"),
-    ).toBe(false);
+    expect(messages.some((m) => m.content === "tc=local-agent/simple-response")).toBe(false);
 
     // Click the REAL OctopusStudioStepLimit "Continue" button — it streams a plain
     // "Continue" prompt (the step-limit turn's end was consumed above, so
@@ -154,21 +129,15 @@ describe("local agent step limit (integration)", () => {
     await harness.waitForStreamEnd(harness.chatId, 90_000);
 
     const continueMessages = await loadMessages();
-    const continueAssistant = continueMessages
-      .filter((m) => m.role === "assistant")
-      .at(-1)!;
-    expect(continueAssistant.content).not.toContain(
-      "<octopus-studio-step-limit",
-    );
+    const continueAssistant = continueMessages.filter((m) => m.role === "assistant").at(-1)!;
+    expect(continueAssistant.content).not.toContain("<octopus-studio-step-limit");
 
     // Continue resumes the queue: the queued prompt drains and streams as its
     // own turn — the queue×step-limit interaction unique to this test.
     await waitFor(
       () =>
         expect(
-          within(screen.getByTestId("messages-list")).getByText(
-            "tc=local-agent/simple-response",
-          ),
+          within(screen.getByTestId("messages-list")).getByText("tc=local-agent/simple-response"),
         ).toBeTruthy(),
       { timeout: 30_000 },
     );
@@ -176,9 +145,7 @@ describe("local agent step limit (integration)", () => {
     await waitFor(
       () =>
         expect(
-          screen.getByText(
-            /This is a simple response from the Basic Agent mode\./,
-          ),
+          screen.getByText(/This is a simple response from the Basic Agent mode\./),
         ).toBeTruthy(),
       { timeout: 20_000 },
     );
@@ -187,21 +154,16 @@ describe("local agent step limit (integration)", () => {
       timeout: 15_000,
     });
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const drainedMessages = await loadMessages();
     expect(
       drainedMessages.some(
-        (m) =>
-          m.role === "user" && m.content === "tc=local-agent/simple-response",
+        (m) => m.role === "user" && m.content === "tc=local-agent/simple-response",
       ),
     ).toBe(true);
-    const drainedAssistant = drainedMessages
-      .filter((m) => m.role === "assistant")
-      .at(-1)!;
+    const drainedAssistant = drainedMessages.filter((m) => m.role === "assistant").at(-1)!;
     expect(drainedAssistant.content).toContain(
       "Hello! I understand your request. This is a simple response from the Basic Agent mode.",
     );
@@ -213,17 +175,13 @@ describe("local agent step limit (integration)", () => {
     cleanup();
     harness.mount();
 
-    await waitFor(
-      () =>
-        expect(screen.getByText("Paused after 100 tool calls")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByText("Paused after 100 tool calls")).toBeTruthy(), {
+      timeout: 15_000,
+    });
     await waitFor(
       () =>
         expect(
-          screen.getByText(
-            /This is a simple response from the Basic Agent mode\./,
-          ),
+          screen.getByText(/This is a simple response from the Basic Agent mode\./),
         ).toBeTruthy(),
       { timeout: 15_000 },
     );

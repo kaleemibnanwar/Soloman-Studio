@@ -512,9 +512,7 @@
       "expected": "found",
       "gold_answer": "Maker earnings go out through GildPost on a weekly remittance cycle, with a 9-day clearing window before funds are released.",
       "gold_atoms": [["GildPost"], ["9-day"]],
-      "gold_evidence": [
-        { "chat": "marketplace_economics", "message_index": 5 }
-      ],
+      "gold_evidence": [{ "chat": "marketplace_economics", "message_index": 5 }],
       "judge_notes": "Correct iff the answer names GildPost as the payout/remittance provider AND mentions the 9-day clearing window before funds release (the weekly cycle is a bonus, not required). Partial iff it gives exactly one of GildPost or the 9-day window, or hedges between GildPost and other rails. Incorrect iff it asserts Stripe Connect, PayPal Payouts, or manual bank transfers as the decision, or claims no decision was made (the Stripe Connect enthusiasm in the earlier brainstorm chat was never a commitment)."
     },
     {
@@ -559,9 +557,7 @@
       "expected": "found",
       "gold_answer": "Commission is 7.25% of the item subtotal — internally nicknamed the Copperbeam rate — with postage and maker add-on charges passing through uncommissioned.",
       "gold_atoms": [["7.25%", "7.25"], ["Copperbeam"]],
-      "gold_evidence": [
-        { "chat": "marketplace_economics", "message_index": 9 }
-      ],
+      "gold_evidence": [{ "chat": "marketplace_economics", "message_index": 9 }],
       "judge_notes": "Correct iff the answer gives the 7.25% commission AND the Copperbeam name (subtotal-only scope and postage pass-through are bonuses). Partial iff only the 7.25% figure or only the Copperbeam name appears. Incorrect iff it answers 6.5%, 7.5%, 15%, or a 5-12% range (those are competitor figures and explored candidates from other chats), or claims the rate is undecided."
     }
   ]

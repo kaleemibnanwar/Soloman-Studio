@@ -28,9 +28,7 @@ export function getExtraProviderOptionsForEngine(
     return getAnthropicEngineThinkingOptions(modelSelection);
   }
   if (GEMINI_PROVIDERS.includes(providerId)) {
-    const budgetTokens = getGeminiThinkingBudgetTokens(
-      getModelEffort(modelSelection),
-    );
+    const budgetTokens = getGeminiThinkingBudgetTokens(getModelEffort(modelSelection));
     return {
       thinking: {
         type: "enabled",
@@ -81,17 +79,12 @@ export function getAnthropicProviderOptions(
       type: "adaptive",
       display: "summarized",
     },
-    effort: getModelEffort(
-      modelSelection,
-    ) as AnthropicProviderOptions["effort"],
+    effort: getModelEffort(modelSelection) as AnthropicProviderOptions["effort"],
     sendReasoning: true,
   };
 }
 
-export function getOpenAIProviderOptions(
-  settings: UserSettings,
-  modelSelection: ModelSelection,
-) {
+export function getOpenAIProviderOptions(settings: UserSettings, modelSelection: ModelSelection) {
   const effort = getModelEffort(modelSelection);
 
   if (settings.selectedChatMode === "local-agent") {

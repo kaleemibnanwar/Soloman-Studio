@@ -4,31 +4,28 @@ import {
   isComponentTaggerUpgradeNeeded,
   applyComponentTagger,
 } from "../ipc/utils/app_upgrade_utils";
-import { simpleSpawn } from "../ipc/utils/simpleSpawn";
-import { gitAddAll, gitCommit } from "../ipc/utils/git_utils";
+import { simpleSpawn } from "../ipc/process/simpleSpawn";
+import { gitAddAll, gitCommit } from "../ipc/git/git_utils";
 
-vi.mock(
-  "node:fs",
-  async (importOriginal: () => Promise<typeof import("node:fs")>) => {
-    const actual = await importOriginal();
-    return {
-      ...actual,
-      promises: {
-        ...actual.promises,
-        readFile: vi.fn(),
-        writeFile: vi.fn(),
-      },
-      existsSync: vi.fn(),
-      readFileSync: vi.fn(),
-    } as unknown as typeof import("node:fs");
-  },
-);
+vi.mock("node:fs", async (importOriginal: () => Promise<typeof import("node:fs")>) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    promises: {
+      ...actual.promises,
+      readFile: vi.fn(),
+      writeFile: vi.fn(),
+    },
+    existsSync: vi.fn(),
+    readFileSync: vi.fn(),
+  } as unknown as typeof import("node:fs");
+});
 
-vi.mock("../ipc/utils/simpleSpawn", () => ({
+vi.mock("../ipc/process/simpleSpawn", () => ({
   simpleSpawn: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../ipc/utils/git_utils", () => ({
+vi.mock("../ipc/git/git_utils", () => ({
   gitAddAll: vi.fn().mockResolvedValue(undefined),
   gitCommit: vi.fn().mockResolvedValue(undefined),
 }));
@@ -96,21 +93,17 @@ describe("applyComponentTagger", () => {
 
   it("inserts tagger import and adds to plugins", async () => {
     let writtenContent = "";
-    vi.spyOn(fs.promises, "writeFile").mockImplementation(
-      async (path, content) => {
-        if (typeof content === "string") {
-          writtenContent = content;
-        }
-      },
-    );
+    vi.spyOn(fs.promises, "writeFile").mockImplementation(async (path, content) => {
+      if (typeof content === "string") {
+        writtenContent = content;
+      }
+    });
 
     await applyComponentTagger(mockPath);
     expect(writtenContent).toContain(
       "import octopusStudioComponentTagger from '@octopus-studio-sh/react-vite-component-tagger';",
     );
-    expect(writtenContent).toContain(
-      "plugins: [octopusStudioComponentTagger(), ",
-    );
+    expect(writtenContent).toContain("plugins: [octopusStudioComponentTagger(), ");
     expect(gitAddAll).toHaveBeenCalled();
     expect(gitCommit).toHaveBeenCalled();
   });
@@ -132,22 +125,18 @@ describe("applyComponentTagger", () => {
     vi.spyOn(fs.promises, "readFile").mockResolvedValue(originalContent);
 
     let writtenContent = "";
-    vi.spyOn(fs.promises, "writeFile").mockImplementation(
-      async (path, content) => {
-        if (typeof content === "string") {
-          writtenContent = content;
-        }
-      },
-    );
+    vi.spyOn(fs.promises, "writeFile").mockImplementation(async (path, content) => {
+      if (typeof content === "string") {
+        writtenContent = content;
+      }
+    });
 
     await applyComponentTagger(mockPath);
 
     // The first plugins array (in otherConfig) should remain unchanged
     expect(writtenContent).toContain("plugins: [someTool()]");
     // The main plugins array under defineConfig should get the component tagger
-    expect(writtenContent).toContain(
-      "plugins: [octopusStudioComponentTagger(), react()]",
-    );
+    expect(writtenContent).toContain("plugins: [octopusStudioComponentTagger(), react()]");
   });
 
   it("rollback when install fails", async () => {
@@ -175,13 +164,11 @@ describe("applyComponentTagger", () => {
     });
 
     const writtenFiles: Record<string, string> = {};
-    vi.spyOn(fs.promises, "writeFile").mockImplementation(
-      async (filePath, content) => {
-        if (typeof content === "string") {
-          writtenFiles[String(filePath)] = content;
-        }
-      },
-    );
+    vi.spyOn(fs.promises, "writeFile").mockImplementation(async (filePath, content) => {
+      if (typeof content === "string") {
+        writtenFiles[String(filePath)] = content;
+      }
+    });
 
     await applyComponentTagger(mockPath, { installDependencies: false });
 
@@ -189,20 +176,14 @@ describe("applyComponentTagger", () => {
     expect(simpleSpawn).not.toHaveBeenCalled();
 
     // Check vite config was modified
-    const viteWrite = Object.entries(writtenFiles).find(([k]) =>
-      k.includes("vite.config"),
-    );
+    const viteWrite = Object.entries(writtenFiles).find(([k]) => k.includes("vite.config"));
     expect(viteWrite).toBeDefined();
     expect(viteWrite![1]).toContain("octopusStudioComponentTagger()");
 
     // Check package.json was updated with the tagger dependency
-    const pkgWrite = Object.entries(writtenFiles).find(([k]) =>
-      k.includes("package.json"),
-    );
+    const pkgWrite = Object.entries(writtenFiles).find(([k]) => k.includes("package.json"));
     expect(pkgWrite).toBeDefined();
-    expect(pkgWrite![1]).toContain(
-      "@octopus-studio-sh/react-vite-component-tagger",
-    );
+    expect(pkgWrite![1]).toContain("@octopus-studio-sh/react-vite-component-tagger");
 
     // Check git was still committed
     expect(gitAddAll).toHaveBeenCalled();

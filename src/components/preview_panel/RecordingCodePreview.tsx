@@ -41,10 +41,7 @@ export function RecordingCodePreview({
           data-testid="preview-recording-code-line"
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-(--background-lightest) px-2.5 py-1 font-mono text-xs animate-in fade-in slide-in-from-bottom-1 duration-200 motion-reduce:animate-none"
         >
-          <ChevronRight
-            size={12}
-            className="shrink-0 text-purple-500/70 dark:text-purple-400/70"
-          />
+          <ChevronRight size={12} className="shrink-0 text-purple-500/70 dark:text-purple-400/70" />
           <span className="truncate">{highlightPlaywrightLine(current)}</span>
         </code>
       ) : (

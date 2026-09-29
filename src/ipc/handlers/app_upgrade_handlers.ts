@@ -5,10 +5,7 @@ import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { getOctopusStudioAppPath } from "../../paths/paths";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   isComponentTaggerUpgradeNeeded,
   applyComponentTagger,
@@ -16,8 +13,8 @@ import {
 } from "../utils/app_upgrade_utils";
 import fs from "node:fs";
 import path from "node:path";
-import { gitAddAll, gitCommit } from "../utils/git_utils";
-import { simpleSpawn } from "../utils/simpleSpawn";
+import { gitAddAll, gitCommit } from "../git/git_utils";
+import { simpleSpawn } from "../process/simpleSpawn";
 import { PNPM_PM_ON_FAIL_IGNORE_ARG } from "../utils/socket_firewall";
 import {
   applyPnpmVersionMigration,
@@ -35,18 +32,15 @@ function getAvailableUpgrades(): Omit<AppUpgrade, "isNeeded">[] {
     {
       id: "component-tagger",
       title: "Enable select component to edit",
-      description:
-        "Installs the OctopusStudio component tagger Vite plugin and its dependencies.",
-      manualUpgradeUrl:
-        "https://octopusStudio.sh/docs/upgrades/select-component",
+      description: "Installs the OctopusStudio component tagger Vite plugin and its dependencies.",
+      manualUpgradeUrl: "https://octopusStudio.sh/docs/upgrades/select-component",
     },
     {
       id: "capacitor",
       title: "Upgrade to hybrid mobile app with Capacitor",
       description:
         "Adds Capacitor to your app lets it run on iOS and Android in addition to the web.",
-      manualUpgradeUrl:
-        "https://octopusStudio.sh/docs/guides/mobile-app#upgrade-your-app",
+      manualUpgradeUrl: "https://octopusStudio.sh/docs/guides/mobile-app#upgrade-your-app",
     },
     {
       id: "pnpm-version-migration",
@@ -65,10 +59,7 @@ async function getApp(appId: number) {
     where: eq(apps.id, appId),
   });
   if (!app) {
-    throw new OctopusStudioError(
-      `App with id ${appId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`App with id ${appId} not found`, OctopusStudioErrorKind.NotFound);
   }
   return app;
 }
@@ -103,13 +94,7 @@ function isCapacitorUpgradeNeeded(appPath: string): boolean {
   return true;
 }
 
-async function applyCapacitor({
-  appName,
-  appPath,
-}: {
-  appName: string;
-  appPath: string;
-}) {
+async function applyCapacitor({ appName, appPath }: { appName: string; appPath: string }) {
   // Install Capacitor dependencies
   try {
     await simpleSpawnWithDeniedPnpmBuildSelfHeal({
@@ -144,8 +129,7 @@ async function applyCapacitor({
     await simpleSpawnWithDeniedPnpmBuildSelfHeal({
       command: `pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} install --prod=false`,
       cwd: appPath,
-      successMessage:
-        "Development dependencies installed successfully with pnpm",
+      successMessage: "Development dependencies installed successfully with pnpm",
       errorPrefix: "Failed to install development dependencies via pnpm",
     });
   } catch (pnpmErr) {
@@ -153,8 +137,7 @@ async function applyCapacitor({
     await simpleSpawn({
       command: "npm install --include=dev --legacy-peer-deps",
       cwd: appPath,
-      successMessage:
-        "Development dependencies installed successfully with npm",
+      successMessage: "Development dependencies installed successfully with npm",
       errorPrefix: "Failed to install development dependencies",
     });
   }
@@ -182,46 +165,36 @@ async function applyCapacitor({
       err,
     );
     throw new Error(
-      "Failed to commit Capacitor changes. Please commit them manually. Error: " +
-        err,
+      "Failed to commit Capacitor changes. Please commit them manually. Error: " + err,
     );
   }
 }
 
 export function registerAppUpgradeHandlers() {
-  handle(
-    "get-app-upgrades",
-    async (_, { appId }: { appId: number }): Promise<AppUpgrade[]> => {
-      const app = await getApp(appId);
-      const appPath = getOctopusStudioAppPath(app.path);
+  handle("get-app-upgrades", async (_, { appId }: { appId: number }): Promise<AppUpgrade[]> => {
+    const app = await getApp(appId);
+    const appPath = getOctopusStudioAppPath(app.path);
 
-      const upgradesWithStatus = getAvailableUpgrades().map((upgrade) => {
-        let isNeeded = false;
-        if (upgrade.id === "component-tagger") {
-          isNeeded = isComponentTaggerUpgradeNeeded(appPath);
-        } else if (upgrade.id === "capacitor") {
-          isNeeded = isCapacitorUpgradeNeeded(appPath);
-        } else if (upgrade.id === "pnpm-version-migration") {
-          isNeeded = isPnpmVersionMigrationNeeded(appPath);
-        }
-        return { ...upgrade, isNeeded };
-      });
+    const upgradesWithStatus = getAvailableUpgrades().map((upgrade) => {
+      let isNeeded = false;
+      if (upgrade.id === "component-tagger") {
+        isNeeded = isComponentTaggerUpgradeNeeded(appPath);
+      } else if (upgrade.id === "capacitor") {
+        isNeeded = isCapacitorUpgradeNeeded(appPath);
+      } else if (upgrade.id === "pnpm-version-migration") {
+        isNeeded = isPnpmVersionMigrationNeeded(appPath);
+      }
+      return { ...upgrade, isNeeded };
+    });
 
-      return upgradesWithStatus;
-    },
-  );
+    return upgradesWithStatus;
+  });
 
   handle(
     "execute-app-upgrade",
-    async (
-      event,
-      { appId, upgradeId }: { appId: number; upgradeId: string },
-    ) => {
+    async (event, { appId, upgradeId }: { appId: number; upgradeId: string }) => {
       if (!upgradeId) {
-        throw new OctopusStudioError(
-          "upgradeId is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("upgradeId is required", OctopusStudioErrorKind.Validation);
       }
 
       const app = await getApp(appId);

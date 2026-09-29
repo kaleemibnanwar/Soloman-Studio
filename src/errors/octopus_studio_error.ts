@@ -43,11 +43,7 @@ export class OctopusStudioError extends Error {
   readonly kind: OctopusStudioErrorKind;
   readonly cause?: unknown;
 
-  constructor(
-    message: string,
-    kind: OctopusStudioErrorKind,
-    options?: { cause?: unknown },
-  ) {
+  constructor(message: string, kind: OctopusStudioErrorKind, options?: { cause?: unknown }) {
     super(message);
     this.name = "OctopusStudioError";
     this.kind = kind;
@@ -55,8 +51,6 @@ export class OctopusStudioError extends Error {
   }
 }
 
-export function isOctopusStudioError(
-  error: unknown,
-): error is OctopusStudioError {
+export function isOctopusStudioError(error: unknown): error is OctopusStudioError {
   return error instanceof OctopusStudioError;
 }

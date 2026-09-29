@@ -14,10 +14,7 @@ interface CommentCardProps {
   chatId: number;
 }
 
-export const CommentCard: React.FC<CommentCardProps> = ({
-  annotation,
-  chatId,
-}) => {
+export const CommentCard: React.FC<CommentCardProps> = ({ annotation, chatId }) => {
   const setAnnotations = useSetAtom(planAnnotationsAtom);
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(annotation.comment);
@@ -34,9 +31,7 @@ export const CommentCard: React.FC<CommentCardProps> = ({
 
   const handleSave = () => {
     if (!editedText.trim()) return;
-    setAnnotations((prev) =>
-      updatePlanAnnotation(prev, chatId, annotation.id, editedText.trim()),
-    );
+    setAnnotations((prev) => updatePlanAnnotation(prev, chatId, annotation.id, editedText.trim()));
     setIsEditing(false);
   };
 
@@ -86,11 +81,7 @@ export const CommentCard: React.FC<CommentCardProps> = ({
             <Button variant="ghost" size="sm" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!editedText.trim()}
-            >
+            <Button size="sm" onClick={handleSave} disabled={!editedText.trim()}>
               Save
             </Button>
           </div>

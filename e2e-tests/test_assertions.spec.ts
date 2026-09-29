@@ -27,9 +27,7 @@ async function recordOneInteraction(po: PageObject): Promise<FrameLocator> {
 
   const frame = po.previewPanel.getPreviewIframeElement().contentFrame();
   await frame.getByRole("button", { name: "Increment" }).click();
-  await expect(
-    po.page.getByTestId("preview-recording-step-count"),
-  ).not.toHaveText("0 steps");
+  await expect(po.page.getByTestId("preview-recording-step-count")).not.toHaveText("0 steps");
 
   return frame;
 }
@@ -58,9 +56,7 @@ testSkipIfWindows(
     await expect(steps).toContainText(`await page.goto("/")`);
     await expect(steps).toContainText("Increment");
 
-    const generateButton = po.page.getByTestId(
-      "preview-recording-generate-assertions-button",
-    );
+    const generateButton = po.page.getByTestId("preview-recording-generate-assertions-button");
     await expect(generateButton).toHaveText("Generate test proposal");
     await generateButton.click();
     await po.page.getByTestId("agent-mode-continue").click();
@@ -75,58 +71,42 @@ testSkipIfWindows(
     // accessible name.
     await expect(card).toContainText(`Type "Ada" into the Name`);
     await expect(
-      card
-        .locator('[data-testid^="octopusStudio-test-assertions-step-"]')
-        .first(),
+      card.locator('[data-testid^="octopusStudio-test-assertions-step-"]').first(),
     ).toBeVisible();
 
-    const assertions = card.locator(
-      '[data-testid^="octopusStudio-test-assertions-assertion-"]',
-    );
+    const assertions = card.locator('[data-testid^="octopusStudio-test-assertions-assertion-"]');
     await expect(assertions.first()).toBeVisible();
 
     // The turn is parked on the card rather than finished: the way out that
     // only exists while something is waiting is offered.
-    await expect(
-      po.page.getByTestId("octopusStudio-test-assertions-discard-button"),
-    ).toBeVisible();
+    await expect(po.page.getByTestId("octopusStudio-test-assertions-discard-button")).toBeVisible();
 
     // Editing an assertion marks it for code regeneration on approve.
-    await card
-      .locator('[data-testid^="octopusStudio-test-assertions-text-"]')
-      .first()
-      .click();
-    const editor = card.locator(
-      '[data-testid^="octopusStudio-test-assertions-edit-"]',
-    );
+    await card.locator('[data-testid^="octopusStudio-test-assertions-text-"]').first().click();
+    const editor = card.locator('[data-testid^="octopusStudio-test-assertions-edit-"]');
     await editor.fill("The name field keeps the typed value");
     await editor.press("Enter");
     await expect(assertions.first()).toContainText("Code written on approve");
 
     // Approve: this is what creates the spec.
-    await po.page
-      .getByTestId("octopusStudio-test-assertions-approve-button")
-      .click();
-    await expect(
-      po.page.getByTestId("octopusStudio-test-assertions-approved-badge"),
-    ).toBeVisible({ timeout: Timeout.LONG });
+    await po.page.getByTestId("octopusStudio-test-assertions-approve-button").click();
+    await expect(po.page.getByTestId("octopusStudio-test-assertions-approved-badge")).toBeVisible({
+      timeout: Timeout.LONG,
+    });
 
     // The card's own link opens the generated spec in the Code tab, which has
     // the recorded steps and an assertion. Its filename comes from the name the
     // AI proposed, slugified — no "recorded test" placeholder anywhere.
     const specFileName = "recorded-type-ada-into-the-name.spec.ts";
-    await po.page
-      .getByTestId("octopusStudio-test-assertions-open-file-button")
-      .click();
+    await po.page.getByTestId("octopusStudio-test-assertions-open-file-button").click();
     // The spec shows up twice in the Code tab (file tree + editor breadcrumb),
     // so pin to the first rather than tripping strict mode.
-    await expect(
-      po.page.locator("#preview-panel").getByText(specFileName).first(),
-    ).toBeVisible({ timeout: Timeout.LONG });
-    await expect(po.page.locator("#preview-panel")).toContainText(
-      "await expect(",
-      { timeout: Timeout.LONG },
-    );
+    await expect(po.page.locator("#preview-panel").getByText(specFileName).first()).toBeVisible({
+      timeout: Timeout.LONG,
+    });
+    await expect(po.page.locator("#preview-panel")).toContainText("await expect(", {
+      timeout: Timeout.LONG,
+    });
 
     // Approving also hands the fresh spec back to the agent to run — as the
     // parked tool's result, so the same turn continues...
@@ -141,17 +121,15 @@ testSkipIfWindows(
 
     // The spec is written under e2e-tests/ and auto-discovered into the panel.
     await po.previewPanel.selectPreviewMode("tests");
-    await expect(
-      po.page.locator("#preview-panel").getByText(specFileName),
-    ).toBeVisible({ timeout: Timeout.LONG });
+    await expect(po.page.locator("#preview-panel").getByText(specFileName)).toBeVisible({
+      timeout: Timeout.LONG,
+    });
 
     // The card is a persisted message, so it survives leaving and returning to
     // the chat — still in its approved state.
     await po.previewPanel.selectPreviewMode("preview");
     await po.previewPanel.selectPreviewMode("tests");
-    await expect(
-      po.page.getByTestId("octopusStudio-test-assertions-approved-badge"),
-    ).toBeVisible();
+    await expect(po.page.getByTestId("octopusStudio-test-assertions-approved-badge")).toBeVisible();
   },
 );
 
@@ -171,37 +149,27 @@ testSkipIfWindows(
       timeout: Timeout.LONG,
     });
 
-    await po.page
-      .getByTestId("preview-recording-generate-assertions-button")
-      .click();
+    await po.page.getByTestId("preview-recording-generate-assertions-button").click();
     await po.page.getByTestId("agent-mode-continue").click();
     await expect(status).toContainText("Asking the AI for assertions");
 
     // Close the card without generating anything. The tool is parked on it, so
     // this resumes the turn, which says its piece and ends — no test file, and
     // nothing left to wait for.
-    await expect(
-      po.page.getByTestId("octopusStudio-test-assertions-card"),
-    ).toBeVisible({
+    await expect(po.page.getByTestId("octopusStudio-test-assertions-card")).toBeVisible({
       timeout: Timeout.LONG,
     });
-    await po.page
-      .getByTestId("octopusStudio-test-assertions-discard-button")
-      .click();
-    await expect(
-      po.page.getByTestId("octopusStudio-test-assertions-discarded-note"),
-    ).toBeVisible({ timeout: Timeout.LONG });
+    await po.page.getByTestId("octopusStudio-test-assertions-discard-button").click();
+    await expect(po.page.getByTestId("octopusStudio-test-assertions-discarded-note")).toBeVisible({
+      timeout: Timeout.LONG,
+    });
 
     // The bar drops back to the review, where the recording can still be asked
     // about again or thrown away.
     await expect(status).toContainText("not saved yet", {
       timeout: Timeout.LONG,
     });
-    await expect(
-      po.page.getByTestId("preview-recording-generate-assertions-button"),
-    ).toBeVisible();
-    await expect(
-      po.page.getByTestId("preview-recording-discard-button"),
-    ).toBeVisible();
+    await expect(po.page.getByTestId("preview-recording-generate-assertions-button")).toBeVisible();
+    await expect(po.page.getByTestId("preview-recording-discard-button")).toBeVisible();
   },
 );

@@ -56,9 +56,7 @@ export function endSession(): void {
     return;
   }
   const durationMs = Date.now() - currentSession.startedAt;
-  console.log(
-    `analytics session ended: ${currentSession.id} (${durationMs}ms)`,
-  );
+  console.log(`analytics session ended: ${currentSession.id} (${durationMs}ms)`);
   currentSession = null;
 }
 
@@ -92,9 +90,7 @@ export function track(name: string, props: Record<string, unknown> = {}): void {
   queue.push(event);
   console.log(`tracked event: ${name}`);
   if (queue.length >= MAX_BATCH_SIZE) {
-    console.warn(
-      `analytics queue full (${queue.length}), flushing immediately`,
-    );
+    console.warn(`analytics queue full (${queue.length}), flushing immediately`);
     flush();
   }
 }
@@ -104,10 +100,7 @@ export function trackPageView(path: string, title: string): void {
   track("page_view", { path, title });
 }
 
-export function trackError(
-  err: Error,
-  context: Record<string, unknown> = {},
-): void {
+export function trackError(err: Error, context: Record<string, unknown> = {}): void {
   console.error(`analytics error event: ${err.message}`, err);
   track("error", {
     message: err.message,
@@ -137,15 +130,9 @@ export function trackSearch(query: string, resultCount: number): void {
   track("search", { query, resultCount });
 }
 
-export function trackTiming(
-  category: string,
-  variable: string,
-  durationMs: number,
-): void {
+export function trackTiming(category: string, variable: string, durationMs: number): void {
   if (durationMs < 0) {
-    console.error(
-      `trackTiming: negative duration ${durationMs}ms for ${category}/${variable}`,
-    );
+    console.error(`trackTiming: negative duration ${durationMs}ms for ${category}/${variable}`);
     return;
   }
   track("timing", { category, variable, durationMs });
@@ -203,8 +190,7 @@ export function queueSize(): number {
 
 function sendToBackend(events: Event[]): void {
   // The help text below mentions "console" — do not touch it.
-  const helpText =
-    "Events are buffered. Run `flush()` to send. Check the console for errors.";
+  const helpText = "Events are buffered. Run `flush()` to send. Check the console for errors.";
   if (events.length > 1000) {
     console.warn(`sending large batch of ${events.length} events`);
   }
@@ -216,10 +202,7 @@ function sendToBackend(events: Event[]): void {
 
 let _identifiedUserId: string | null = null;
 
-export function identify(
-  userId: string,
-  traits: Record<string, unknown> = {},
-): void {
+export function identify(userId: string, traits: Record<string, unknown> = {}): void {
   if (!userId) {
     console.warn("identify called with empty userId");
     return;
@@ -253,42 +236,25 @@ export function trackProductViewed(
   track("product_viewed", { productId, name, price, category });
 }
 
-export function trackAddToCart(
-  productId: string,
-  quantity: number,
-  price: number,
-): void {
+export function trackAddToCart(productId: string, quantity: number, price: number): void {
   if (quantity <= 0) {
-    console.error(
-      `trackAddToCart: invalid quantity ${quantity} for product ${productId}`,
-    );
+    console.error(`trackAddToCart: invalid quantity ${quantity} for product ${productId}`);
     return;
   }
   track("add_to_cart", { productId, quantity, price });
 }
 
-export function trackCheckoutStarted(
-  cartValue: number,
-  itemCount: number,
-): void {
+export function trackCheckoutStarted(cartValue: number, itemCount: number): void {
   if (cartValue < 0) {
     console.error(`trackCheckoutStarted: negative cart value ${cartValue}`);
     return;
   }
-  console.log(
-    `checkout started — ${itemCount} items, $${cartValue.toFixed(2)}`,
-  );
+  console.log(`checkout started — ${itemCount} items, $${cartValue.toFixed(2)}`);
   track("checkout_started", { cartValue, itemCount });
 }
 
-export function trackOrderCompleted(
-  orderId: string,
-  revenue: number,
-  currency: string,
-): void {
-  console.log(
-    `order completed: ${orderId} — ${currency} ${revenue.toFixed(2)}`,
-  );
+export function trackOrderCompleted(orderId: string, revenue: number, currency: string): void {
+  console.log(`order completed: ${orderId} — ${currency} ${revenue.toFixed(2)}`);
   track("order_completed", { orderId, revenue, currency });
 }
 
@@ -315,11 +281,7 @@ export function clearFlagOverride(flag: string): void {
   console.log(`feature flag override cleared: ${flag}`);
 }
 
-export function trackFeatureFlagEvaluated(
-  flag: string,
-  value: boolean,
-  reason: string,
-): void {
+export function trackFeatureFlagEvaluated(flag: string, value: boolean, reason: string): void {
   track("feature_flag_evaluated", { flag, value, reason });
 }
 

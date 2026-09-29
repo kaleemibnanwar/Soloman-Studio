@@ -2,14 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ipc } from "@/ipc/types";
 import { Button } from "@/components/ui/button";
-import {
-  Database,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  ChevronDown,
-  AlertTriangle,
-} from "lucide-react";
+import { Database, Loader2, CheckCircle2, XCircle, ChevronDown, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,29 +36,23 @@ export const MigrationPanelBody = ({ appId }: MigrationPanelProps) => {
   });
 
   const migrateMutation = useMutation({
-    mutationFn: (migrationId: string) =>
-      ipc.migration.migrate({ appId, migrationId }),
+    mutationFn: (migrationId: string) => ipc.migration.migrate({ appId, migrationId }),
   });
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const previewHasDataLoss = previewMutation.data?.hasDataLoss ?? false;
 
-  const productionBranch = branches.find(
-    (branch) => branch.type === "production",
-  );
+  const productionBranch = branches.find((branch) => branch.type === "production");
   const sourceBranchName = branches.find(
     (branch) => branch.branchId === app?.neonActiveBranchId,
   )?.branchName;
   const targetBranchName = productionBranch?.branchName;
   const projectName = projectInfo?.projectName ?? app?.neonProjectId ?? null;
-  const effectiveBranchId =
-    app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId;
+  const effectiveBranchId = app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId;
   const isProductionBranchActive =
     !!effectiveBranchId && effectiveBranchId === productionBranch?.branchId;
-  const hasBranchContext = Boolean(
-    projectName && sourceBranchName && targetBranchName,
-  );
+  const hasBranchContext = Boolean(projectName && sourceBranchName && targetBranchName);
   const description = hasBranchContext
     ? t("integrations.migration.descriptionWithBranches", {
         projectName,
@@ -113,9 +100,7 @@ export const MigrationPanelBody = ({ appId }: MigrationPanelProps) => {
 
       <Button
         disabled={
-          migrateMutation.isPending ||
-          previewMutation.isPending ||
-          isProductionBranchActive
+          migrateMutation.isPending || previewMutation.isPending || isProductionBranchActive
         }
         onClick={() => {
           setShowErrorDetails(false);
@@ -159,11 +144,7 @@ export const MigrationPanelBody = ({ appId }: MigrationPanelProps) => {
         preview={previewMutation.data ?? null}
         isLoading={previewMutation.isPending}
         isError={previewMutation.isError}
-        errorMessage={
-          previewMutation.error
-            ? getErrorMessage(previewMutation.error)
-            : undefined
-        }
+        errorMessage={previewMutation.error ? getErrorMessage(previewMutation.error) : undefined}
         targetBranchName={targetBranchName}
         onApprove={() => {
           setPreviewOpen(false);
@@ -179,9 +160,7 @@ export const MigrationPanelBody = ({ appId }: MigrationPanelProps) => {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("integrations.migration.migrateToProduction")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("integrations.migration.migrateToProduction")}</AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDescription}
               {previewHasDataLoss && (
@@ -192,9 +171,7 @@ export const MigrationPanelBody = ({ appId }: MigrationPanelProps) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t("integrations.migration.cancel")}
-            </AlertDialogCancel>
+            <AlertDialogCancel>{t("integrations.migration.cancel")}</AlertDialogCancel>
             {previewMutation.data && (
               <Button
                 type="button"
@@ -209,9 +186,7 @@ export const MigrationPanelBody = ({ appId }: MigrationPanelProps) => {
             )}
             <AlertDialogAction
               className={
-                previewHasDataLoss
-                  ? buttonVariants({ variant: "destructive" })
-                  : undefined
+                previewHasDataLoss ? buttonVariants({ variant: "destructive" }) : undefined
               }
               disabled={!previewMutation.data?.migrationId}
               onClick={() => {

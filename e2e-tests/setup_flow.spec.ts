@@ -1,8 +1,4 @@
-import {
-  testWithConfig,
-  Timeout,
-  type PageObject,
-} from "./helpers/test_helper";
+import { testWithConfig, Timeout, type PageObject } from "./helpers/test_helper";
 import { expect, type Locator } from "@playwright/test";
 import type { ElectronApplication } from "playwright";
 import * as fs from "fs";
@@ -15,21 +11,15 @@ testSetup.describe("Setup Flow", () => {
   testSetup("setup dialog shows AI provider options", async ({ po }) => {
     const dialog = await openAiSetupDialog(po);
 
-    await expect(
-      dialog.getByText("Your prompt is saved — it'll send as soon as"),
-    ).toBeVisible();
+    await expect(dialog.getByText("Your prompt is saved — it'll send as soon as")).toBeVisible();
     await expect(
       dialog.getByRole("button", {
         name: /Start free OctopusStudio Pro trial/,
       }),
     ).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Google" })).toBeVisible();
-    await expect(
-      dialog.getByRole("button", { name: "OpenRouter" }),
-    ).toBeVisible();
-    await expect(
-      dialog.getByRole("button", { name: "Other providers" }),
-    ).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "OpenRouter" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Other providers" })).toBeVisible();
     await expect(
       dialog.getByRole("button", {
         name: "Already have OctopusStudio Pro? Add your key",
@@ -41,41 +31,38 @@ testSetup.describe("Setup Flow", () => {
     let dialog = await openAiSetupDialog(po);
 
     await dialog.getByRole("button", { name: "Google" }).click();
-    await expect(
-      po.page.getByRole("heading", { name: "Configure Google" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(po.page.getByRole("heading", { name: "Configure Google" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
     await po.page.getByRole("button", { name: "Go Back" }).click();
 
     dialog = await openAiSetupDialog(po);
     await dialog.getByRole("button", { name: "OpenRouter" }).click();
-    await expect(
-      po.page.getByRole("heading", { name: "Configure OpenRouter" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(po.page.getByRole("heading", { name: "Configure OpenRouter" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
     await po.page.getByRole("button", { name: "Go Back" }).click();
 
     dialog = await openAiSetupDialog(po);
     await dialog.getByRole("button", { name: "Other providers" }).click();
-    await expect(
-      po.page.getByRole("heading", { level: 1, name: "Settings" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(po.page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
     await po.navigation.goToAppsTab();
 
-    await expect(
-      po.page.getByRole("heading", { name: "What do you want to build?" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(po.page.getByRole("heading", { name: "What do you want to build?" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
   });
 
-  testSetup(
-    "Google API key setup resumes the pending first prompt",
-    async ({ po }) => {
-      await seedFakeModelSelection(po);
-      const prompt = "Build a tiny habit tracker";
-      const dialog = await openAiSetupDialog(po, prompt);
+  testSetup("Google API key setup resumes the pending first prompt", async ({ po }) => {
+    await seedFakeModelSelection(po);
+    const prompt = "Build a tiny habit tracker";
+    const dialog = await openAiSetupDialog(po, prompt);
 
-      await setupGoogleKeyAndExpectResume(po, dialog, prompt);
-    },
-  );
+    await setupGoogleKeyAndExpectResume(po, dialog, prompt);
+  });
 
   testSetup(
     "Enter-key submit resumes the pending first prompt after Google API key setup",
@@ -109,23 +96,19 @@ testSetup.describe("Setup Flow", () => {
       await restoreLocalAgentDefault(po);
 
       await dialog.getByRole("button", { name: "OpenRouter" }).click();
-      await expect(
-        po.page.getByRole("heading", { name: "Configure OpenRouter" }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
+      await expect(po.page.getByRole("heading", { name: "Configure OpenRouter" })).toBeVisible({
+        timeout: Timeout.MEDIUM,
+      });
 
       await po.page
         .getByPlaceholder(/Enter new OpenRouter API Key here/)
         .fill("test-openrouter-key-12345");
       await po.page.getByRole("button", { name: "Save Key" }).click();
-      await expectProviderApiKeySaved(
-        po,
-        "openrouter",
-        "test-openrouter-key-12345",
-      );
+      await expectProviderApiKeySaved(po, "openrouter", "test-openrouter-key-12345");
 
-      await expect(
-        po.page.getByTestId("messages-list").getByText(prompt),
-      ).toBeVisible({ timeout: Timeout.EXTRA_LONG });
+      await expect(po.page.getByTestId("messages-list").getByText(prompt)).toBeVisible({
+        timeout: Timeout.EXTRA_LONG,
+      });
       await po.chatActions.waitForChatCompletion({
         timeout: Timeout.EXTRA_LONG,
       });
@@ -144,23 +127,18 @@ testSetup.describe("Setup Flow", () => {
       const dialog = await openAiSetupDialog(po, prompt);
 
       await dialog.getByRole("button", { name: "Google" }).click();
-      await expect(
-        po.page.getByRole("heading", { name: "Configure Google" }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
+      await expect(po.page.getByRole("heading", { name: "Configure Google" })).toBeVisible({
+        timeout: Timeout.MEDIUM,
+      });
 
-      await po.page
-        .context()
-        .grantPermissions(["clipboard-read", "clipboard-write"]);
-      await po.page.evaluate(
-        (key) => navigator.clipboard.writeText(key),
-        apiKey,
-      );
+      await po.page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+      await po.page.evaluate((key) => navigator.clipboard.writeText(key), apiKey);
       await po.page.getByRole("button", { name: "Paste & Save" }).click();
       await expectProviderApiKeySaved(po, "google", apiKey);
 
-      await expect(
-        po.page.getByTestId("messages-list").getByText(prompt),
-      ).toBeVisible({ timeout: Timeout.EXTRA_LONG });
+      await expect(po.page.getByTestId("messages-list").getByText(prompt)).toBeVisible({
+        timeout: Timeout.EXTRA_LONG,
+      });
       await po.chatActions.waitForChatCompletion({
         timeout: Timeout.EXTRA_LONG,
       });
@@ -169,119 +147,100 @@ testSetup.describe("Setup Flow", () => {
     },
   );
 
-  testSetup(
-    "invalid Google API key can be retried without saving or resuming",
-    async ({ po }) => {
-      await seedFakeModelSelection(po);
-      const prompt = "Build a tiny focus timer";
-      const dialog = await openAiSetupDialog(po, prompt);
+  testSetup("invalid Google API key can be retried without saving or resuming", async ({ po }) => {
+    await seedFakeModelSelection(po);
+    const prompt = "Build a tiny focus timer";
+    const dialog = await openAiSetupDialog(po, prompt);
 
-      await dialog.getByRole("button", { name: "Google" }).click();
-      await expect(
-        po.page.getByRole("heading", { name: "Configure Google" }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await dialog.getByRole("button", { name: "Google" }).click();
+    await expect(po.page.getByRole("heading", { name: "Configure Google" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
-      await po.page
-        .getByPlaceholder(/Enter new Google API Key here/)
-        .fill("invalid-google-key");
-      await po.page.getByRole("button", { name: "Save Key" }).click();
+    await po.page.getByPlaceholder(/Enter new Google API Key here/).fill("invalid-google-key");
+    await po.page.getByRole("button", { name: "Save Key" }).click();
 
-      const validationDialog = po.page.getByRole("alertdialog");
-      await expect(
-        validationDialog.getByRole("heading", {
-          name: "API key rejected",
-        }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
-      await validationDialog
-        .getByRole("button", { name: "Try another API key" })
-        .click();
-      await expect(validationDialog).toBeHidden({
-        timeout: Timeout.MEDIUM,
-      });
+    const validationDialog = po.page.getByRole("alertdialog");
+    await expect(
+      validationDialog.getByRole("heading", {
+        name: "API key rejected",
+      }),
+    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await validationDialog.getByRole("button", { name: "Try another API key" }).click();
+    await expect(validationDialog).toBeHidden({
+      timeout: Timeout.MEDIUM,
+    });
 
-      const settingsAfterRetry = po.settings.recordSettings() as {
-        providerSettings?: Record<string, unknown>;
-      };
-      expect(settingsAfterRetry.providerSettings?.google).toBe(undefined);
-      await expect(
-        po.page.getByRole("heading", { name: "Configure Google" }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
+    const settingsAfterRetry = po.settings.recordSettings() as {
+      providerSettings?: Record<string, unknown>;
+    };
+    expect(settingsAfterRetry.providerSettings?.google).toBe(undefined);
+    await expect(po.page.getByRole("heading", { name: "Configure Google" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
-      await po.page.getByRole("button", { name: "Test Key" }).click();
-      await expect(
-        validationDialog.getByRole("heading", {
-          name: "API key rejected",
-        }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
-      await expect(
-        validationDialog.getByRole("button", { name: "Keep invalid API key" }),
-      ).toBeHidden();
-      await validationDialog
-        .getByRole("button", { name: "Try another API key" })
-        .click();
-      await expect(validationDialog).toBeHidden({
-        timeout: Timeout.MEDIUM,
-      });
+    await po.page.getByRole("button", { name: "Test Key" }).click();
+    await expect(
+      validationDialog.getByRole("heading", {
+        name: "API key rejected",
+      }),
+    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(
+      validationDialog.getByRole("button", { name: "Keep invalid API key" }),
+    ).toBeHidden();
+    await validationDialog.getByRole("button", { name: "Try another API key" }).click();
+    await expect(validationDialog).toBeHidden({
+      timeout: Timeout.MEDIUM,
+    });
 
-      await po.page.getByRole("button", { name: "Save Key" }).click();
-      await expect(
-        validationDialog.getByRole("heading", {
-          name: "API key rejected",
-        }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
-      await validationDialog
-        .getByRole("button", { name: "Keep invalid API key" })
-        .click();
+    await po.page.getByRole("button", { name: "Save Key" }).click();
+    await expect(
+      validationDialog.getByRole("heading", {
+        name: "API key rejected",
+      }),
+    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await validationDialog.getByRole("button", { name: "Keep invalid API key" }).click();
 
-      await expect(
-        po.page.getByTestId("messages-list").getByText(prompt),
-      ).toBeVisible({ timeout: Timeout.EXTRA_LONG });
-      await po.chatActions.waitForChatCompletion({
-        timeout: Timeout.EXTRA_LONG,
-      });
-      await expectSelectedApp(po);
-    },
-  );
+    await expect(po.page.getByTestId("messages-list").getByText(prompt)).toBeVisible({
+      timeout: Timeout.EXTRA_LONG,
+    });
+    await po.chatActions.waitForChatCompletion({
+      timeout: Timeout.EXTRA_LONG,
+    });
+    await expectSelectedApp(po);
+  });
 
-  testSetup(
-    "Google API key setup resumes an attachment-only first prompt",
-    async ({ po }) => {
-      await seedFakeModelSelection(po);
-      const attachmentPath =
-        "e2e-tests/fixtures/attachment-only-setup-resume.txt";
-      const dialog = await openAiSetupDialog(po, "", {
-        beforeSubmit: async () => {
-          await attachHomeChatContextFile(po, attachmentPath);
-        },
-      });
+  testSetup("Google API key setup resumes an attachment-only first prompt", async ({ po }) => {
+    await seedFakeModelSelection(po);
+    const attachmentPath = "e2e-tests/fixtures/attachment-only-setup-resume.txt";
+    const dialog = await openAiSetupDialog(po, "", {
+      beforeSubmit: async () => {
+        await attachHomeChatContextFile(po, attachmentPath);
+      },
+    });
 
-      await dialog.getByRole("button", { name: "Google" }).click();
-      await expect(
-        po.page.getByRole("heading", { name: "Configure Google" }),
-      ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await dialog.getByRole("button", { name: "Google" }).click();
+    await expect(po.page.getByRole("heading", { name: "Configure Google" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
-      await po.page
-        .getByPlaceholder(/Enter new Google API Key here/)
-        .fill("test-google-key-12345");
-      await po.page.getByRole("button", { name: "Save Key" }).click();
+    await po.page.getByPlaceholder(/Enter new Google API Key here/).fill("test-google-key-12345");
+    await po.page.getByRole("button", { name: "Save Key" }).click();
 
-      await expect(po.page.getByText("[[octopusStudio-dump-path=")).toBeVisible(
-        {
-          timeout: Timeout.EXTRA_LONG,
-        },
-      );
-      await po.chatActions.waitForChatCompletion({
-        timeout: Timeout.EXTRA_LONG,
-      });
-      await expect(po.page.getByRole("dialog")).not.toBeVisible();
-      await expectSelectedApp(po);
+    await expect(po.page.getByText("[[octopusStudio-dump-path=")).toBeVisible({
+      timeout: Timeout.EXTRA_LONG,
+    });
+    await po.chatActions.waitForChatCompletion({
+      timeout: Timeout.EXTRA_LONG,
+    });
+    await expect(po.page.getByRole("dialog")).not.toBeVisible();
+    await expectSelectedApp(po);
 
-      const dump = await readLastServerDump(po);
-      const serializedDump = JSON.stringify(dump);
-      expect(serializedDump).toContain("attachment-only-setup-resume.txt");
-      expect(serializedDump).toContain("Attachment-only setup resume fixture.");
-    },
-  );
+    const dump = await readLastServerDump(po);
+    const serializedDump = JSON.stringify(dump);
+    expect(serializedDump).toContain("attachment-only-setup-resume.txt");
+    expect(serializedDump).toContain("Attachment-only setup resume fixture.");
+  });
 
   testSetup(
     "OctopusStudio Pro return deep link switches the pending first prompt from Build to Agent",
@@ -293,16 +252,14 @@ testSetup.describe("Setup Flow", () => {
 
       await triggerOctopusStudioProReturnDeepLink(electronApp);
 
-      await expect(
-        po.page.getByTestId("messages-list").getByText(prompt),
-      ).toBeVisible({ timeout: Timeout.EXTRA_LONG });
+      await expect(po.page.getByTestId("messages-list").getByText(prompt)).toBeVisible({
+        timeout: Timeout.EXTRA_LONG,
+      });
       await po.chatActions.waitForChatCompletion({
         timeout: Timeout.EXTRA_LONG,
       });
       await expect(po.page.getByRole("dialog")).not.toBeVisible();
-      await expect(
-        po.page.getByText("Welcome to OctopusStudio Pro!"),
-      ).not.toBeVisible();
+      await expect(po.page.getByText("Welcome to OctopusStudio Pro!")).not.toBeVisible();
       await expectSelectedApp(po);
       await expectLocalAgentMode(po, "Agent");
     },
@@ -312,10 +269,9 @@ testSetup.describe("Setup Flow", () => {
 async function expectInitialBuildMode(po: PageObject) {
   await po.pinBuildChatModeForSetup();
   await po.navigation.goToAppsTab();
-  await expect(po.page.getByTestId("chat-mode-selector")).toContainText(
-    "Build",
-    { timeout: Timeout.MEDIUM },
-  );
+  await expect(po.page.getByTestId("chat-mode-selector")).toContainText("Build", {
+    timeout: Timeout.MEDIUM,
+  });
 }
 
 async function restoreLocalAgentDefault(po: PageObject) {
@@ -331,14 +287,10 @@ async function restoreLocalAgentDefault(po: PageObject) {
     .toBe("local-agent");
 }
 
-async function expectLocalAgentMode(
-  po: PageObject,
-  expectedDisplayName: "Basic Agent" | "Agent",
-) {
-  await expect(po.page.getByTestId("chat-mode-selector")).toContainText(
-    expectedDisplayName,
-    { timeout: Timeout.MEDIUM },
-  );
+async function expectLocalAgentMode(po: PageObject, expectedDisplayName: "Basic Agent" | "Agent") {
+  await expect(po.page.getByTestId("chat-mode-selector")).toContainText(expectedDisplayName, {
+    timeout: Timeout.MEDIUM,
+  });
   await expect
     .poll(() => po.settings.recordSettings().selectedChatMode, {
       timeout: Timeout.MEDIUM,
@@ -346,25 +298,19 @@ async function expectLocalAgentMode(
     .toBe("local-agent");
 }
 
-async function setupGoogleKeyAndExpectResume(
-  po: PageObject,
-  dialog: Locator,
-  prompt: string,
-) {
+async function setupGoogleKeyAndExpectResume(po: PageObject, dialog: Locator, prompt: string) {
   await dialog.getByRole("button", { name: "Google" }).click();
-  await expect(
-    po.page.getByRole("heading", { name: "Configure Google" }),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.page.getByRole("heading", { name: "Configure Google" })).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 
-  await po.page
-    .getByPlaceholder(/Enter new Google API Key here/)
-    .fill("test-google-key-12345");
+  await po.page.getByPlaceholder(/Enter new Google API Key here/).fill("test-google-key-12345");
   await po.page.getByRole("button", { name: "Save Key" }).click();
   await expectProviderApiKeySaved(po, "google", "test-google-key-12345");
 
-  await expect(
-    po.page.getByTestId("messages-list").getByText(prompt),
-  ).toBeVisible({ timeout: Timeout.EXTRA_LONG });
+  await expect(po.page.getByTestId("messages-list").getByText(prompt)).toBeVisible({
+    timeout: Timeout.EXTRA_LONG,
+  });
   await po.chatActions.waitForChatCompletion({
     timeout: Timeout.EXTRA_LONG,
   });
@@ -376,19 +322,13 @@ async function expectSelectedApp(po: PageObject) {
   await expect
     .poll(
       async () =>
-        await po.page
-          .getByTestId("title-bar-app-name-button")
-          .getAttribute("data-app-name"),
+        await po.page.getByTestId("title-bar-app-name-button").getAttribute("data-app-name"),
       { timeout: Timeout.MEDIUM },
     )
     .not.toBe("");
 }
 
-async function expectProviderApiKeySaved(
-  po: PageObject,
-  provider: string,
-  expectedApiKey: string,
-) {
+async function expectProviderApiKeySaved(po: PageObject, provider: string, expectedApiKey: string) {
   await expect
     .poll(
       async () => {
@@ -425,9 +365,7 @@ async function seedFakeModelSelection(po: PageObject) {
   }, po.fakeLlmPort);
 }
 
-async function triggerOctopusStudioProReturnDeepLink(
-  electronApp: ElectronApplication,
-) {
+async function triggerOctopusStudioProReturnDeepLink(electronApp: ElectronApplication) {
   await electronApp.evaluate(({ app }) => {
     app.emit(
       "open-url",
@@ -457,9 +395,7 @@ async function openAiSetupDialog(
     });
     if (prompt.trim()) {
       await expect(
-        po.chatActions
-          .getHomeChatInputContainer()
-          .getByRole("button", { name: "Send message" }),
+        po.chatActions.getHomeChatInputContainer().getByRole("button", { name: "Send message" }),
       ).toBeEnabled({ timeout: 1_000 });
     }
   }).toPass({ timeout: Timeout.MEDIUM });
@@ -467,9 +403,7 @@ async function openAiSetupDialog(
   await options.beforeSubmit?.();
 
   await expect(
-    po.chatActions
-      .getHomeChatInputContainer()
-      .getByRole("button", { name: "Send message" }),
+    po.chatActions.getHomeChatInputContainer().getByRole("button", { name: "Send message" }),
   ).toBeEnabled({ timeout: Timeout.MEDIUM });
 
   if (options.submit === "enter") {
@@ -482,17 +416,14 @@ async function openAiSetupDialog(
   }
 
   const dialog = po.page.getByRole("dialog");
-  await expect(
-    dialog.getByText("Your prompt is saved — it'll send as soon as"),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(dialog.getByText("Your prompt is saved — it'll send as soon as")).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
   return dialog;
 }
 
 async function attachHomeChatContextFile(po: PageObject, filePath: string) {
-  await po.chatActions
-    .getHomeChatInputContainer()
-    .getByTestId("auxiliary-actions-menu")
-    .click();
+  await po.chatActions.getHomeChatInputContainer().getByTestId("auxiliary-actions-menu").click();
 
   await po.page.getByRole("menuitem", { name: "Attach files" }).click();
 
@@ -510,9 +441,7 @@ async function attachHomeChatContextFile(po: PageObject, filePath: string) {
 }
 
 async function readLastServerDump(po: PageObject) {
-  const messagesListText = await po.page
-    .getByTestId("messages-list")
-    .textContent();
+  const messagesListText = await po.page.getByTestId("messages-list").textContent();
   const dumpPathMatches =
     messagesListText?.match(/\[\[octopusStudio-dump-path=([^\]]+)\]\]/g) ?? [];
   expect(dumpPathMatches.length).toBeGreaterThan(0);

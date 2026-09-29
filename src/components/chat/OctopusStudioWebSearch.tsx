@@ -21,8 +21,7 @@ export const OctopusStudioWebSearch: React.FC<OctopusStudioWebSearchProps> = ({
   node,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const query =
-    node?.properties?.query || (typeof children === "string" ? children : "");
+  const query = node?.properties?.query || (typeof children === "string" ? children : "");
   const state = node?.properties?.state as CustomTagState;
   const inProgress = state === "pending";
 
@@ -36,16 +35,9 @@ export const OctopusStudioWebSearch: React.FC<OctopusStudioWebSearchProps> = ({
       <OctopusStudioCardHeader icon={<Globe size={15} />} accentColor="blue">
         <OctopusStudioBadge color="blue">Web Search</OctopusStudioBadge>
         {!isExpanded && query && (
-          <span className="text-sm text-muted-foreground italic truncate">
-            {query}
-          </span>
+          <span className="text-sm text-muted-foreground italic truncate">{query}</span>
         )}
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Searching..."
-          />
-        )}
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Searching..." />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isExpanded} />
         </div>
@@ -54,17 +46,13 @@ export const OctopusStudioWebSearch: React.FC<OctopusStudioWebSearchProps> = ({
         <div className="text-sm text-muted-foreground space-y-2">
           {query && (
             <div>
-              <span className="text-xs font-medium text-muted-foreground">
-                Query:
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Query:</span>
               <div className="italic mt-0.5 text-foreground">{query}</div>
             </div>
           )}
           {children && (
             <div>
-              <span className="text-xs font-medium text-muted-foreground">
-                Results:
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Results:</span>
               <div className="mt-0.5 text-foreground">{children}</div>
             </div>
           )}

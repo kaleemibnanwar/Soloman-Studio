@@ -61,10 +61,7 @@ function reopenPackagedApp(childProcess: ChildProcess) {
   execFileSync("/usr/bin/open", [appBundlePath], { timeout: 15_000 });
 }
 
-function waitForProcessExit(
-  childProcess: ChildProcess,
-  timeoutMs: number,
-): Promise<boolean> {
+function waitForProcessExit(childProcess: ChildProcess, timeoutMs: number): Promise<boolean> {
   if (childProcess.exitCode !== null || childProcess.signalCode !== null) {
     return Promise.resolve(true);
   }
@@ -92,9 +89,7 @@ test("reopens from the Dock and exits after native Command-Q", async ({
   if (!pid) throw new Error("Packaged Electron process has no PID");
 
   await po.page.close();
-  await expect
-    .poll(() => electronApp.windows().length, { timeout: Timeout.MEDIUM })
-    .toBe(0);
+  await expect.poll(() => electronApp.windows().length, { timeout: Timeout.MEDIUM }).toBe(0);
 
   const reopenedWindow = electronApp.waitForEvent("window");
   reopenPackagedApp(childProcess);

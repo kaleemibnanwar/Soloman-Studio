@@ -1,6 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Play,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Presentation,
+  MessageSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ipc } from "@/ipc/types";
 
@@ -9,12 +22,19 @@ interface PptxPreviewProps {
   filePath: string;
 }
 
-/** office-open colors are usually `{ value: "RRGGBB", transforms?: {...} }`, not plain strings. */
-type ColorLike = string | { value?: string; [key: string]: unknown };
+/** office-open colors are usually `{ value: "RRGGBB", transforms?: {...} }` or plain strings. */
+type ColorLike = string | { value?: string; color?: unknown; [key: string]: unknown };
 
 interface FillLike {
   type?: string;
   color?: ColorLike;
+  [key: string]: unknown;
+}
+
+interface OutlineLike {
+  color?: ColorLike;
+  width?: number;
+  [key: string]: unknown;
 }
 
 interface ShapeLike {
@@ -22,19 +42,46 @@ interface ShapeLike {
   y?: number;
   width?: number;
   height?: number;
+  geometry?: string;
   fill?: FillLike;
+  outline?: OutlineLike;
   textBody?: unknown;
+  [key: string]: unknown;
+}
+
+interface TableCellLike {
+  text?: string;
+  fill?: FillLike;
+  children?: unknown;
+  [key: string]: unknown;
+}
+
+interface TableRowLike {
+  cells?: TableCellLike[];
+  [key: string]: unknown;
+}
+
+interface TableLike {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  columnWidths?: number[];
+  rows?: TableRowLike[];
   [key: string]: unknown;
 }
 
 interface SlideChildLike {
   shape?: ShapeLike;
+  table?: TableLike;
+  picture?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
 interface SlideLike {
   children?: SlideChildLike[];
   background?: { fill?: FillLike };
+  notes?: unknown;
   [key: string]: unknown;
 }
 
@@ -44,101 +91,469 @@ interface PresentationLike {
   [key: string]: unknown;
 }
 
-// Standard PowerPoint slide dimensions in EMU (914400 EMU per inch), matching
-// the units shape x/y/width/height come back in from parsePresentation.
+// Standard PowerPoint slide dimensions in EMU (914400 EMU per inch).
 const CANVAS_SIZES: Record<string, { w: number; h: number }> = {
   "16:9": { w: 12192000, h: 6858000 },
   "4:3": { w: 9144000, h: 6858000 },
 };
 
-function collectText(node: unknown, acc: string[] = []): string[] {
-  if (node == null) return acc;
-  if (typeof node === "string") {
-    acc.push(node);
-    return acc;
-  }
-  if (Array.isArray(node)) {
-    for (const n of node) collectText(n, acc);
-    return acc;
-  }
-  if (typeof node === "object") {
-    const o = node as Record<string, unknown>;
-    if (typeof o.text === "string") acc.push(o.text);
-    for (const key of ["runs", "paragraphs", "children"]) {
-      if (key in o) collectText(o[key], acc);
+function extractHexColor(input: unknown): string | undefined {
+  if (!input) return undefined;
+  if (typeof input === "string") {
+    const clean = input.replace(/^#/, "").trim();
+    if (/^[0-9A-Fa-f]{6}$/.test(clean) || /^[0-9A-Fa-f]{8}$/.test(clean)) {
+      return `#${clean.slice(-6)}`;
     }
+    return undefined;
   }
-  return acc;
+  if (typeof input === "object") {
+    const obj = input as Record<string, unknown>;
+    if (obj.color) return extractHexColor(obj.color);
+    if (typeof obj.value === "string") return extractHexColor(obj.value);
+    if (typeof obj.fill === "object") return extractHexColor(obj.fill);
+  }
+  return undefined;
 }
 
-function fillColor(fill: FillLike | undefined): string | undefined {
-  if (!fill || fill.type === "none" || !fill.color) return undefined;
-  const raw = typeof fill.color === "string" ? fill.color : fill.color.value;
-  if (typeof raw !== "string") return undefined;
-  const hex = raw.replace(/^#/, "");
-  return hex.length === 6 || hex.length === 8 ? `#${hex.slice(-6)}` : undefined;
+function getHexLuminance(hex: string): number {
+  const clean = hex.replace(/^#/, "").trim();
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16) / 255;
+    const g = parseInt(clean[1] + clean[1], 16) / 255;
+    const b = parseInt(clean[2] + clean[2], 16) / 255;
+    const a = [r, g, b].map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  }
+  if (clean.length >= 6) {
+    const r = parseInt(clean.substring(0, 2), 16) / 255;
+    const g = parseInt(clean.substring(2, 4), 16) / 255;
+    const b = parseInt(clean.substring(4, 6), 16) / 255;
+    const a = [r, g, b].map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  }
+  return 1;
+}
+
+function getContrastRatio(hex1: string, hex2: string): number {
+  const lum1 = getHexLuminance(hex1);
+  const lum2 = getHexLuminance(hex2);
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function resolveSafeContrastColor(
+  textColor: string | undefined,
+  backgroundColor: string | undefined,
+  fallbackLight = "#FFFFFF",
+  fallbackDark = "#0F172A",
+): string {
+  const effectiveBg = backgroundColor ? extractHexColor(backgroundColor) || "#FFFFFF" : "#FFFFFF";
+  const bgLuminance = getHexLuminance(effectiveBg);
+  const isDarkBg = bgLuminance < 0.45;
+
+  if (!textColor) {
+    return isDarkBg ? fallbackLight : fallbackDark;
+  }
+
+  const cleanText = extractHexColor(textColor) || textColor;
+  if (cleanText.startsWith("#")) {
+    const ratio = getContrastRatio(cleanText, effectiveBg);
+    if (ratio < 3.2) {
+      return isDarkBg ? fallbackLight : fallbackDark;
+    }
+    return cleanText;
+  }
+
+  return isDarkBg ? fallbackLight : fallbackDark;
+}
+
+interface ParsedRun {
+  text: string;
+  size?: number; // in pt
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+  fontFamily?: string;
+}
+
+interface ParsedParagraph {
+  runs: ParsedRun[];
+  alignment?: "left" | "center" | "right" | "justify";
+  bullet?: boolean | string;
+  spaceBefore?: number;
+  spaceAfter?: number;
+}
+
+function parseParagraphsFromTextBody(textBody: unknown): ParsedParagraph[] {
+  if (!textBody) return [];
+  if (typeof textBody === "string") {
+    return [{ runs: [{ text: textBody }] }];
+  }
+
+  const result: ParsedParagraph[] = [];
+  const tb = textBody as Record<string, unknown>;
+  const rawParas = Array.isArray(tb.paragraphs)
+    ? tb.paragraphs
+    : Array.isArray(textBody)
+      ? textBody
+      : [tb];
+
+  for (const p of rawParas) {
+    if (!p) continue;
+    if (typeof p === "string") {
+      result.push({ runs: [{ text: p }] });
+      continue;
+    }
+
+    const pObj = p as Record<string, unknown>;
+    const pProps = (pObj.properties as Record<string, unknown>) ?? {};
+    const defRPr = (pProps.defaultRunProperties as Record<string, unknown>) ?? {};
+
+    const rawAlign = String(pProps.alignment ?? "").toLowerCase();
+    const alignment: "left" | "center" | "right" | "justify" =
+      rawAlign === "center" || rawAlign === "ctr"
+        ? "center"
+        : rawAlign === "right" || rawAlign === "r"
+          ? "right"
+          : rawAlign === "justify" || rawAlign === "just"
+            ? "justify"
+            : "left";
+
+    const runs: ParsedRun[] = [];
+    const rawRuns = Array.isArray(pObj.runs)
+      ? pObj.runs
+      : Array.isArray(pObj.children)
+        ? pObj.children
+        : [];
+
+    for (const r of rawRuns) {
+      if (!r) continue;
+      if (typeof r === "string") {
+        runs.push({ text: r });
+        continue;
+      }
+      const rObj = r as Record<string, unknown>;
+      const text = String(rObj.text ?? rObj.value ?? "");
+      if (!text) continue;
+
+      const rProps = (rObj.properties as Record<string, unknown>) ?? {};
+      const sizeVal = rProps.size ?? rProps.fontSize ?? defRPr.size ?? defRPr.fontSize;
+      const size =
+        typeof sizeVal === "number" ? (sizeVal > 100 ? sizeVal / 100 : sizeVal) : undefined;
+      const bold = Boolean(rProps.bold ?? defRPr.bold);
+      const italic = Boolean(rProps.italic ?? defRPr.italic);
+      const underline = Boolean(rProps.underline ?? defRPr.underline);
+      const color = extractHexColor(rProps.color ?? rProps.fill ?? defRPr.color ?? defRPr.fill);
+
+      runs.push({ text, size, bold, italic, underline, color });
+    }
+
+    if (runs.length === 0 && typeof pObj.text === "string" && pObj.text) {
+      runs.push({ text: pObj.text });
+    }
+
+    result.push({
+      runs,
+      alignment,
+      bullet: Boolean(pProps.bullet || pProps.bulletCharacter),
+    });
+  }
+
+  return result;
+}
+
+function ShapeItem({
+  shape,
+  canvas,
+  baseH,
+  slideBackground,
+}: {
+  shape: ShapeLike;
+  canvas: { w: number; h: number };
+  baseH: number;
+  slideBackground?: string;
+}) {
+  const leftPx = ((shape.x ?? 0) / canvas.w) * 960;
+  const topPx = ((shape.y ?? 0) / canvas.h) * baseH;
+  const widthPx = ((shape.width ?? 0) / canvas.w) * 960;
+  const heightPx = ((shape.height ?? 0) / canvas.h) * baseH;
+
+  const bgHex = extractHexColor(shape.fill?.color);
+  const borderHex = extractHexColor(shape.outline?.color);
+  const isRounded = shape.geometry === "roundRect" || shape.geometry === "roundRectangle";
+
+  const effectiveBg = bgHex || slideBackground;
+  const paragraphs = parseParagraphsFromTextBody(shape.textBody);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${leftPx}px`,
+        top: `${topPx}px`,
+        width: `${widthPx}px`,
+        height: `${heightPx}px`,
+        backgroundColor: bgHex,
+        borderColor: borderHex,
+        borderWidth: borderHex ? "1px" : undefined,
+        borderStyle: borderHex ? "solid" : undefined,
+        borderRadius: isRounded ? "10px" : undefined,
+      }}
+      className="overflow-hidden p-3 flex flex-col justify-center box-border"
+    >
+      {paragraphs.map((p, pIdx) => (
+        <div
+          key={pIdx}
+          style={{ textAlign: p.alignment ?? "left" }}
+          className={cn("leading-snug my-1", p.bullet && "list-disc pl-4")}
+        >
+          {p.runs.map((r, rIdx) => {
+            const finalColor = resolveSafeContrastColor(r.color, effectiveBg);
+            return (
+              <span
+                key={rIdx}
+                style={{
+                  fontSize: r.size ? `${Math.max(10, Math.round(r.size * 1.1))}px` : "16px",
+                  fontWeight: r.bold ? 700 : 400,
+                  fontStyle: r.italic ? "italic" : "normal",
+                  textDecoration: r.underline ? "underline" : "none",
+                  color: finalColor,
+                  lineHeight: "1.3",
+                }}
+              >
+                {r.text}
+              </span>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TableItem({
+  table,
+  canvas,
+  baseH,
+  slideBackground,
+}: {
+  table: TableLike;
+  canvas: { w: number; h: number };
+  baseH: number;
+  slideBackground?: string;
+}) {
+  const leftPx = ((table.x ?? 0) / canvas.w) * 960;
+  const topPx = ((table.y ?? 0) / canvas.h) * baseH;
+  const widthPx = ((table.width ?? 0) / canvas.w) * 960;
+  const heightPx = ((table.height ?? 0) / canvas.h) * baseH;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${leftPx}px`,
+        top: `${topPx}px`,
+        width: `${widthPx}px`,
+        height: `${heightPx}px`,
+      }}
+      className="overflow-hidden box-border"
+    >
+      <table className="w-full h-full border-collapse table-fixed text-sm">
+        <tbody>
+          {(table.rows ?? []).map((row, rIdx) => (
+            <tr key={rIdx}>
+              {(row.cells ?? []).map((cell, cIdx) => {
+                const cellBg =
+                  extractHexColor(cell.fill?.color) || (rIdx === 0 ? "#0F172A" : undefined);
+                const textColor =
+                  rIdx === 0
+                    ? "#FFFFFF"
+                    : resolveSafeContrastColor(undefined, cellBg || slideBackground);
+                return (
+                  <td
+                    key={cIdx}
+                    style={{ backgroundColor: cellBg, color: textColor }}
+                    className="border border-border/40 p-2 align-middle truncate font-medium"
+                  >
+                    {cell.text ?? ""}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function Slide({ slide, canvas }: { slide: SlideLike; canvas: { w: number; h: number } }) {
-  const background = fillColor(slide.background?.fill);
+  const bgHex = extractHexColor(slide.background?.fill?.color) || "#FFFFFF";
+  const baseW = 960;
+  const baseH = Math.round(960 * (canvas.h / canvas.w));
+
   return (
     <div
-      className="relative w-full overflow-hidden rounded border bg-white shadow-sm"
       style={{
-        aspectRatio: `${canvas.w} / ${canvas.h}`,
-        backgroundColor: background ?? "#ffffff",
-        containerType: "size",
+        width: `${baseW}px`,
+        height: `${baseH}px`,
+        backgroundColor: bgHex,
       }}
+      className="relative rounded-lg border border-border/60 shadow-md overflow-hidden shrink-0"
     >
       {(slide.children ?? []).map((child, i) => {
-        if (!child.shape) return null;
-        const { x = 0, y = 0, width = 0, height = 0 } = child.shape;
-        const text = collectText(child.shape.textBody).filter(Boolean).join(" ");
-        const box = fillColor(child.shape.fill);
-        const heightPct = (height / canvas.h) * 100;
-        return (
-          <div
-            key={i}
-            className="absolute overflow-hidden text-neutral-900"
-            style={{
-              left: `${(x / canvas.w) * 100}%`,
-              top: `${(y / canvas.h) * 100}%`,
-              width: `${(width / canvas.w) * 100}%`,
-              height: `${heightPct}%`,
-              backgroundColor: box,
-            }}
-          >
-            {text && (
-              // cqh (container query height) ties font size to the rendered
-              // slide's actual on-screen height, since raw EMU dimensions
-              // don't translate to a sensible pixel size directly.
-              <div
-                className="flex h-full w-full items-center px-[2%] py-[1%] leading-snug break-words"
-                style={{ fontSize: `${Math.max(1.2, Math.min(8, heightPct * 0.3))}cqh` }}
-              >
-                {text}
-              </div>
-            )}
-          </div>
-        );
+        if (child.shape) {
+          return (
+            <ShapeItem
+              key={i}
+              shape={child.shape}
+              canvas={canvas}
+              baseH={baseH}
+              slideBackground={bgHex}
+            />
+          );
+        }
+        if (child.table) {
+          return (
+            <TableItem
+              key={i}
+              table={child.table}
+              canvas={canvas}
+              baseH={baseH}
+              slideBackground={bgHex}
+            />
+          );
+        }
+        return null;
       })}
     </div>
   );
 }
 
-/**
- * Read-only slide-canvas preview for .pptx: shapes are laid out by their
- * stored x/y/width/height as percentages of the slide canvas, so it's
- * responsive without needing pixel-exact PowerPoint font/layout fidelity.
- * Editing pptx decks is out of scope - this is a viewer with a thumbnail
- * rail and slide navigation, not a slide editor.
- */
+function ThumbnailCard({
+  slide,
+  index,
+  isActive,
+  canvas,
+  onClick,
+}: {
+  slide: SlideLike;
+  index: number;
+  isActive: boolean;
+  canvas: { w: number; h: number };
+  onClick: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.16);
+  const baseW = 960;
+  const baseH = Math.round(960 * (canvas.h / canvas.w));
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setScale(entry.contentRect.width / baseW);
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [baseW]);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "group relative rounded-md border-2 p-1 text-left transition-all duration-150 w-full",
+        isActive
+          ? "border-primary shadow-sm ring-2 ring-primary/20 bg-background"
+          : "border-border/40 hover:border-border bg-background/50 hover:bg-background",
+      )}
+    >
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
+          height: `${baseH * scale}px`,
+        }}
+        className="relative overflow-hidden rounded bg-background"
+      >
+        <div
+          style={{
+            width: `${baseW}px`,
+            height: `${baseH}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+          className="pointer-events-none absolute top-0 left-0"
+        >
+          <Slide slide={slide} canvas={canvas} />
+        </div>
+      </div>
+      <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground font-medium px-1">
+        <span>Slide {index + 1}</span>
+        {isActive && <span className="text-primary font-semibold">Active</span>}
+      </div>
+    </button>
+  );
+}
+
 export function PptxPreview({ appId, filePath }: PptxPreviewProps) {
   const [presentation, setPresentation] = useState<PresentationLike | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [isPresenterMode, setIsPresenterMode] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [zoom, setZoom] = useState(100);
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!viewportRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setViewportSize({ width, height });
+        }
+      }
+    });
+    observer.observe(viewportRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Keyboard navigation for presentation & deck browsing (Google Slides style)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!presentation?.slides?.length) return;
+      const count = presentation.slides.length;
+      if (e.key === "ArrowRight" || e.key === "PageDown" || (isPresenterMode && e.key === " ")) {
+        e.preventDefault();
+        setActiveIndex((i) => Math.min(count - 1, i + 1));
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        setActiveIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setActiveIndex(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        setActiveIndex(count - 1);
+      } else if (e.key === "Escape") {
+        if (isPresenterMode) setIsPresenterMode(false);
+        if (expanded) setExpanded(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [presentation, isPresenterMode, expanded]);
 
   useEffect(() => {
     if (appId == null) return;
@@ -175,15 +590,21 @@ export function PptxPreview({ appId, filePath }: PptxPreviewProps) {
     [presentation?.size],
   );
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") setActiveIndex((i) => Math.min(slides.length - 1, i + 1));
-      if (e.key === "ArrowLeft") setActiveIndex((i) => Math.max(0, i - 1));
-      if (e.key === "Escape") setExpanded(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [slides.length]);
+  const baseW = 960;
+  const baseH = Math.round(960 * (canvas.h / canvas.w));
+
+  const padding = isPresenterMode ? 48 : 32;
+  const availW = Math.max(viewportSize.width - padding * 2, 80);
+  const availH = Math.max(
+    viewportSize.height - padding * 2 - (showNotes && !isPresenterMode ? 140 : 0),
+    80,
+  );
+
+  const fitScale =
+    viewportSize.width > 0 && viewportSize.height > 0
+      ? Math.min(availW / baseW, availH / baseH)
+      : 0.8;
+  const currentScale = Math.max(0.1, fitScale * (zoom / 100));
 
   if (loading) {
     return (
@@ -195,20 +616,77 @@ export function PptxPreview({ appId, filePath }: PptxPreviewProps) {
 
   if (error || !presentation) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-red-500">
+      <div className="flex h-full items-center justify-center text-sm text-destructive">
         {error ?? "Failed to load file"}
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <span className="truncate font-mono text-xs text-muted-foreground">{filePath}</span>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>
-            {slides.length > 0 ? activeIndex + 1 : 0} / {slides.length}
-          </span>
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      {/* Presentation Top Control Bar */}
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-1.5 bg-muted/20 text-xs shrink-0">
+        <div className="flex items-center gap-2">
+          <Presentation size={14} className="text-violet-500" />
+          <span className="truncate font-mono text-xs text-muted-foreground">{filePath}</span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Zoom controls */}
+          <div className="flex items-center gap-0.5 mr-2">
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => setZoom((z) => Math.max(30, z - 15))}
+                  >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
+              <TooltipContent>Zoom Out</TooltipContent>
+            </Tooltip>
+            <span className="w-10 text-center font-mono text-[11px] text-muted-foreground">
+              {zoom}%
+            </span>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => setZoom((z) => Math.min(250, z + 15))}
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
+              <TooltipContent>Zoom In</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => setZoom(100)}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                }
+              />
+              <TooltipContent>Reset Zoom (100%)</TooltipContent>
+            </Tooltip>
+          </div>
+
+          <div className="mx-1 h-4 w-px bg-border/60" />
+
+          {/* Slide navigation buttons */}
           <Button
             size="icon"
             variant="ghost"
@@ -218,6 +696,9 @@ export function PptxPreview({ appId, filePath }: PptxPreviewProps) {
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
+          <span className="text-xs text-muted-foreground font-medium px-1">
+            {activeIndex + 1} / {slides.length}
+          </span>
           <Button
             size="icon"
             variant="ghost"
@@ -227,39 +708,176 @@ export function PptxPreview({ appId, filePath }: PptxPreviewProps) {
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </Button>
+
+          <div className="mx-1 h-4 w-px bg-border/60" />
+
+          {/* Speaker Notes Toggle */}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="sm"
+                  variant={showNotes ? "secondary" : "ghost"}
+                  className="h-7 gap-1 text-xs"
+                  onClick={() => setShowNotes((v) => !v)}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Notes</span>
+                </Button>
+              }
+            />
+            <TooltipContent>Toggle Speaker Notes</TooltipContent>
+          </Tooltip>
+
+          {/* Presenter Mode (Slideshow) */}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs bg-primary/10 text-primary hover:bg-primary/20"
+                  onClick={() => setIsPresenterMode(true)}
+                >
+                  <Play className="h-3 w-3" />
+                  <span>Present</span>
+                </Button>
+              }
+            />
+            <TooltipContent>Start Slideshow (Presenter Mode)</TooltipContent>
+          </Tooltip>
+
+          {/* Toggle Thumbnails */}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  {expanded ? (
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              }
+            />
+            <TooltipContent>{expanded ? "Show Thumbnails" : "Hide Thumbnails"}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        {!expanded && (
-          <div className="flex w-40 shrink-0 flex-col gap-2 overflow-y-auto border-r bg-muted/20 p-2">
+      {/* Main Slide Deck Container */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Slide Thumbnails Sidebar */}
+        {!expanded && !isPresenterMode && (
+          <div className="flex w-44 shrink-0 flex-col gap-2.5 overflow-y-auto border-r border-border/60 bg-muted/10 p-2.5">
             {slides.map((slide, i) => (
-              <button
+              <ThumbnailCard
                 key={i}
-                type="button"
+                slide={slide}
+                index={i}
+                isActive={i === activeIndex}
+                canvas={canvas}
                 onClick={() => setActiveIndex(i)}
-                className={cn(
-                  "rounded border-2 text-left transition-colors",
-                  i === activeIndex ? "border-primary" : "border-transparent hover:border-border",
-                )}
-              >
-                <Slide slide={slide} canvas={canvas} />
-                <div className="mt-1 text-center text-[10px] text-muted-foreground">{i + 1}</div>
-              </button>
+              />
             ))}
           </div>
         )}
 
-        <div className="flex flex-1 items-center justify-center overflow-auto p-6">
+        {/* Center Canvas */}
+        <div
+          ref={viewportRef}
+          className={cn(
+            "flex flex-1 items-center justify-center overflow-auto p-4 sm:p-8",
+            isPresenterMode ? "fixed inset-0 z-50 bg-black/95 p-12" : "bg-muted/5",
+          )}
+        >
           {slides[activeIndex] ? (
-            <div className="w-full max-w-4xl">
-              <Slide slide={slides[activeIndex]} canvas={canvas} />
+            <div className="flex flex-col items-center gap-4">
+              {/* Proportional Scaled Slide */}
+              <div
+                style={{
+                  width: `${baseW * currentScale}px`,
+                  height: `${baseH * currentScale}px`,
+                }}
+                className="relative shrink-0 transition-[width,height] duration-75 shadow-lg rounded-lg overflow-hidden"
+              >
+                <div
+                  style={{
+                    width: `${baseW}px`,
+                    height: `${baseH}px`,
+                    transform: `scale(${currentScale})`,
+                    transformOrigin: "top left",
+                  }}
+                  className="absolute top-0 left-0"
+                >
+                  <Slide slide={slides[activeIndex]} canvas={canvas} />
+                </div>
+              </div>
+
+              {/* Speaker Notes Drawer (Google Slides style) */}
+              {showNotes && !isPresenterMode && (
+                <div
+                  style={{ width: `${Math.min(Math.max(baseW * currentScale, 320), 800)}px` }}
+                  className="rounded-lg border border-border/70 bg-background/90 p-3.5 shadow-sm text-xs text-foreground/90 transition-all duration-75"
+                >
+                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <MessageSquare size={12} />
+                    <span>Speaker Notes — Slide {activeIndex + 1}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed italic">
+                    {String(
+                      (typeof slides[activeIndex]?.notes === "object" &&
+                      slides[activeIndex]?.notes !== null
+                        ? (slides[activeIndex].notes as { text?: string }).text
+                        : slides[activeIndex]?.notes) ||
+                        "No presenter notes recorded for this slide.",
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">This presentation has no slides.</div>
+          )}
+
+          {/* Presenter Mode Controls Bar */}
+          {isPresenterMode && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/80 backdrop-blur border border-white/20 px-4 py-2 rounded-full text-white text-xs shadow-2xl">
+              <span>
+                {activeIndex + 1} / {slides.length}
+              </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-white hover:bg-white/20"
+                disabled={activeIndex === 0}
+                onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+              >
+                <ChevronLeft size={14} />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-white hover:bg-white/20"
+                disabled={activeIndex >= slides.length - 1}
+                onClick={() => setActiveIndex((i) => Math.min(slides.length - 1, i + 1))}
+              >
+                <ChevronRight size={14} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-xs text-white/80 hover:text-white"
+                onClick={() => setIsPresenterMode(false)}
+              >
+                Exit (Esc)
+              </Button>
+            </div>
           )}
         </div>
       </div>

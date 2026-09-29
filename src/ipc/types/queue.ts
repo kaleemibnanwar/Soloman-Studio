@@ -31,9 +31,7 @@ export const PersistedQueuedMessageSchema = z.object({
   userInputRequestId: z.string().optional(),
 });
 
-export type PersistedQueuedMessage = z.infer<
-  typeof PersistedQueuedMessageSchema
->;
+export type PersistedQueuedMessage = z.infer<typeof PersistedQueuedMessageSchema>;
 
 /**
  * The full persisted queue, keyed by chatId (as a string, since JSON object

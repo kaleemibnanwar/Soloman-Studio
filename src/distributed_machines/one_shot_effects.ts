@@ -8,10 +8,7 @@ export interface CorrelatedEffectContext<Event> {
 export interface CorrelatedEffectHandler<Command, Result, Failure, Event> {
   readonly correlation: (command: Command) => string;
   readonly disposal: "abort-and-settle";
-  readonly run: (
-    command: Command,
-    context: CorrelatedEffectContext<Event>,
-  ) => Promise<Result>;
+  readonly run: (command: Command, context: CorrelatedEffectContext<Event>) => Promise<Result>;
   readonly succeeded: (command: Command, result: Result) => Event;
   readonly failed: (command: Command, failure: Failure) => Event;
   readonly cancelled: (command: Command) => Event;
@@ -23,10 +20,7 @@ export interface CorrelatedEffectHandler<Command, Result, Failure, Event> {
     | { readonly kind: "unexpected"; readonly failure: Failure };
 }
 
-type CorrelatedEffectHandlerMap<
-  Command extends { readonly type: string },
-  Event,
-> = {
+type CorrelatedEffectHandlerMap<Command extends { readonly type: string }, Event> = {
   readonly [Type in Command["type"]]: CorrelatedEffectHandler<
     Extract<Command, { readonly type: Type }>,
     unknown,
@@ -39,19 +33,13 @@ type CorrelatedEffectHandlerMap<
  * The deliberately small one-shot effect vocabulary used by the production
  * pilots. The mapped type makes every declared command kind explicit.
  */
-export function defineCorrelatedEffectHandlers<
-  Command extends { readonly type: string },
-  Event,
->() {
+export function defineCorrelatedEffectHandlers<Command extends { readonly type: string }, Event>() {
   return <Handlers extends CorrelatedEffectHandlerMap<Command, Event>>(
     handlers: Handlers,
   ): Handlers => handlers;
 }
 
-export interface RunCorrelatedEffectOptions<
-  Command extends { readonly type: string },
-  Event,
-> {
+export interface RunCorrelatedEffectOptions<Command extends { readonly type: string }, Event> {
   readonly command: Command;
   readonly handlers: CorrelatedEffectHandlerMap<Command, Event>;
   readonly sink: ActorEventSink<Event>;
@@ -64,17 +52,14 @@ export interface RunCorrelatedEffectOptions<
  * dependency/programming failures remain visible through reportUnexpected while
  * still settling the owning operation with the handler's declared fallback.
  */
-export async function runCorrelatedEffect<
-  Command extends { readonly type: string },
-  Event,
->(options: RunCorrelatedEffectOptions<Command, Event>): Promise<void> {
+export async function runCorrelatedEffect<Command extends { readonly type: string }, Event>(
+  options: RunCorrelatedEffectOptions<Command, Event>,
+): Promise<void> {
   const handler = options.handlers[options.command.type as Command["type"]] as
     | CorrelatedEffectHandler<Command, unknown, unknown, Event>
     | undefined;
   if (!handler) {
-    throw new Error(
-      `Missing correlated effect handler: ${options.command.type}`,
-    );
+    throw new Error(`Missing correlated effect handler: ${options.command.type}`);
   }
   const signal = options.signal ?? new AbortController().signal;
   let terminal: Event;

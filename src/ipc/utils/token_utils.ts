@@ -58,10 +58,7 @@ export const estimateToolResultTokens = (
 };
 
 export const estimateMessagesTokens = (messages: Message[]): number => {
-  return messages.reduce(
-    (acc, message) => acc + estimateTokens(message.content),
-    0,
-  );
+  return messages.reduce((acc, message) => acc + estimateTokens(message.content), 0);
 };
 
 const DEFAULT_CONTEXT_WINDOW = 128_000;
@@ -72,9 +69,7 @@ export async function getContextWindow(model?: LargeLanguageModel) {
   return modelOption?.contextWindow || DEFAULT_CONTEXT_WINDOW;
 }
 
-export async function getMaxTokens(
-  model: LargeLanguageModel,
-): Promise<number | undefined> {
+export async function getMaxTokens(model: LargeLanguageModel): Promise<number | undefined> {
   const modelOption = await findLanguageModel(model);
   return modelOption?.maxOutputTokens ?? undefined;
 }
@@ -98,9 +93,7 @@ export async function getMaxOutputTokens(
   return Math.min(max, ECONOMY_MAX_OUTPUT_TOKENS);
 }
 
-export async function getTemperature(
-  model: LargeLanguageModel,
-): Promise<number | undefined> {
+export async function getTemperature(model: LargeLanguageModel): Promise<number | undefined> {
   const modelOption = await findLanguageModel(model);
   return modelOption?.temperature ?? undefined;
 }
@@ -117,12 +110,8 @@ export async function getTemperature(
  * compacts at 220k to leave more room for tool-heavy agent steps. Other
  * providers retain the historical 250k cap.
  */
-export function getCompactionThreshold(
-  contextWindow: number,
-  provider: string,
-): number {
-  const cap =
-    provider === "google" ? 190_000 : provider === "openai" ? 220_000 : 250_000;
+export function getCompactionThreshold(contextWindow: number, provider: string): number {
+  const cap = provider === "google" ? 190_000 : provider === "openai" ? 220_000 : 250_000;
   return Math.min(cap, Math.max(0, contextWindow - 25_000));
 }
 

@@ -114,12 +114,8 @@ describe("golden single-window: tab-session schema", () => {
 
     // Protects the Phase B per-window tab-session schema migration.
     expect(restored).toEqual(capturedSession);
-    expect(store.get(recentViewedChatIdsAtom)).toEqual([
-      1842, 1799, 1807, 1764,
-    ]);
-    expect(Array.from(store.get(sessionOpenedChatIdsAtom))).toEqual([
-      1842, 1799, 1807, 1764,
-    ]);
+    expect(store.get(recentViewedChatIdsAtom)).toEqual([1842, 1799, 1807, 1764]);
+    expect(Array.from(store.get(sessionOpenedChatIdsAtom))).toEqual([1842, 1799, 1807, 1764]);
     expect(Array.from(store.get(closedChatIdsAtom))).toEqual([1711, 1736]);
   });
 
@@ -141,9 +137,7 @@ describe("golden single-window: tab-session schema", () => {
         preserveTabOrder: true,
       }),
     );
-    expect(store.get(recentViewedChatIdsAtom)).toEqual([
-      1842, 1799, 1807, 1764,
-    ]);
+    expect(store.get(recentViewedChatIdsAtom)).toEqual([1842, 1799, 1807, 1764]);
     view.unmount();
   });
 });

@@ -1,18 +1,12 @@
 import { ipc } from "@/ipc/types";
 
-type DeepLinkPayload = Parameters<
-  Parameters<typeof ipc.events.misc.onDeepLinkReceived>[0]
->[0];
+type DeepLinkPayload = Parameters<Parameters<typeof ipc.events.misc.onDeepLinkReceived>[0]>[0];
 type ForceClosePayload = Parameters<
   Parameters<typeof ipc.events.system.onForceCloseDetected>[0]
 >[0];
-type TelemetryPayload = Parameters<
-  Parameters<typeof ipc.events.system.onTelemetryEvent>[0]
->[0];
+type TelemetryPayload = Parameters<Parameters<typeof ipc.events.system.onTelemetryEvent>[0]>[0];
 type ChatTabRemovalPayload = Parameters<
-  Parameters<
-    typeof ipc.events.windowInfrastructure.onRemoveTransferredChatTab
-  >[0]
+  Parameters<typeof ipc.events.windowInfrastructure.onRemoveTransferredChatTab>[0]
 >[0];
 type ChatNavigationPayload = Parameters<
   Parameters<typeof ipc.events.windowInfrastructure.onNavigateToChat>[0]
@@ -41,8 +35,7 @@ export class ReplayEvent<T> {
 export const earlyDeepLinkEvents = new ReplayEvent<DeepLinkPayload>();
 export const earlyForceCloseEvents = new ReplayEvent<ForceClosePayload>();
 export const earlyTelemetryEvents = new ReplayEvent<TelemetryPayload>();
-export const earlyChatTabRemovalEvents =
-  new ReplayEvent<ChatTabRemovalPayload>();
+export const earlyChatTabRemovalEvents = new ReplayEvent<ChatTabRemovalPayload>();
 export const chatNavigationEvents = new ReplayEvent<ChatNavigationPayload>();
 
 let registered = false;

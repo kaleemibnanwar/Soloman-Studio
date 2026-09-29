@@ -10,12 +10,10 @@ export function useMcpCatalog() {
   return useQuery({
     queryKey: queryKeys.mcp.catalog,
     queryFn: () => ipc.mcp.listCatalog(),
-    staleTime: (query) =>
-      query.state.data?.entries.length ? 60 * 60 * 1000 : 30 * 1000,
+    staleTime: (query) => (query.state.data?.entries.length ? 60 * 60 * 1000 : 30 * 1000),
     // Staleness alone doesn't refetch, so poll while the catalog is empty
     // (e.g. after a transient fetch failure) until it fills.
-    refetchInterval: (query) =>
-      query.state.data?.entries.length ? false : 30 * 1000,
+    refetchInterval: (query) => (query.state.data?.entries.length ? false : 30 * 1000),
     refetchOnWindowFocus: false,
   });
 }

@@ -27,8 +27,5 @@ if (outputPath) {
 
 if (githubOutputPath) {
   const delimiter = `EOF_${crypto.randomUUID()}`;
-  fs.appendFileSync(
-    githubOutputPath,
-    `${outputName}<<${delimiter}\n${rendered}\n${delimiter}\n`,
-  );
+  fs.appendFileSync(githubOutputPath, `${outputName}<<${delimiter}\n${rendered}\n${delimiter}\n`);
 }

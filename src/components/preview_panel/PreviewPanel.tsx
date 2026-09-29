@@ -38,10 +38,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
 import { showError } from "@/lib/toast";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { useLatestConsoleEntry } from "@/preview_console/hooks";
 import { useTestRecorder } from "@/hooks/useTestRecorder";
 import { RecordingBannerHost } from "./RecordingBannerHost";
@@ -66,10 +63,7 @@ function useHoistedRecorder() {
   // isolation restarts the dev server, which bumps reloadKey while
   // startRecording is awaiting the iframe's authentication acknowledgement.
   const [recorderReloadKey, setRecorderReloadKey] = useState(0);
-  const reloadPreview = useCallback(
-    () => setRecorderReloadKey((current) => current + 1),
-    [],
-  );
+  const reloadPreview = useCallback(() => setRecorderReloadKey((current) => current + 1), []);
   const previewIframeManager = usePreviewIframeManager();
   // Through the machine, so the preview toolbar's route and the recorder agree
   // on where the session starts. A no-op when the preview is already there,
@@ -86,11 +80,7 @@ function useHoistedRecorder() {
 }
 
 // Console header component
-const ConsoleHeader = ({
-  isOpen,
-  onToggle,
-  latestMessage,
-}: ConsoleHeaderProps) => {
+const ConsoleHeader = ({ isOpen, onToggle, latestMessage }: ConsoleHeaderProps) => {
   const { t } = useTranslation("home");
   return (
     <div
@@ -99,9 +89,7 @@ const ConsoleHeader = ({
     >
       <Logs size={16} className="mt-0.5" />
       <div className="flex flex-col">
-        <span className="text-sm font-medium">
-          {t("preview.systemMessages")}
-        </span>
+        <span className="text-sm font-medium">{t("preview.systemMessages")}</span>
         {!isOpen && latestMessage && (
           <span className="text-xs text-gray-500 truncate max-w-[200px] md:max-w-[400px]">
             {latestMessage}
@@ -140,10 +128,7 @@ export function PreviewPanel() {
   });
   const nodeVersion = nodeSystemInfo?.nodeVersion;
   const isNodeMissing =
-    selectedAppId !== null &&
-    previewMode === "preview" &&
-    !isCheckingNode &&
-    !nodeVersion;
+    selectedAppId !== null && previewMode === "preview" && !isCheckingNode && !nodeVersion;
 
   const latestMessage = latestConsoleEntry?.message;
 
@@ -179,10 +164,7 @@ export function PreviewPanel() {
           return;
         }
 
-        console.debug(
-          "Running app (will start if not already running)",
-          selectedAppId,
-        );
+        console.debug("Running app (will start if not already running)", selectedAppId);
         runAppLifecycleInBackground("start", runApp(selectedAppId));
       }
     };
@@ -231,9 +213,7 @@ export function PreviewPanel() {
                   <PreviewNodeRequirement
                     appName={app?.name}
                     nodeDownloadUrl={nodeSystemInfo?.nodeDownloadUrl}
-                    managedNodeSupported={
-                      nodeSystemInfo?.managedNodeSupported ?? false
-                    }
+                    managedNodeSupported={nodeSystemInfo?.managedNodeSupported ?? false}
                     autoInstallManagedNode={
                       !!settings &&
                       !settings.disablePreviewNodeAutoInstall &&
@@ -264,13 +244,8 @@ export function PreviewPanel() {
                         await updateSettings({ customNodePath: result.path });
                         await ipc.system.reloadEnvPath();
                         await refetchNodeStatus();
-                      } else if (
-                        result.path === null &&
-                        result.canceled === false
-                      ) {
-                        showError(
-                          `Could not find Node.js at the path "${result.selectedPath}"`,
-                        );
+                      } else if (result.path === null && result.canceled === false) {
+                        showError(`Could not find Node.js at the path "${result.selectedPath}"`);
                       }
                     }}
                   />
@@ -329,10 +304,7 @@ export function PreviewPanel() {
 const NODE_POLL_INTERVAL_MS = 4000;
 
 function isManagedNodeInstallCancelError(error: unknown) {
-  return (
-    error instanceof OctopusStudioError &&
-    error.kind === OctopusStudioErrorKind.UserCancelled
-  );
+  return error instanceof OctopusStudioError && error.kind === OctopusStudioErrorKind.UserCancelled;
 }
 
 // Module-scoped so a remount of the setup card (e.g. switching preview tabs)
@@ -417,9 +389,7 @@ function PreviewNodeRequirement({
       if (isManagedNodeInstallCancelError(error)) {
         return;
       }
-      showError(
-        error.message ?? "Failed to install OctopusStudio-managed Node.js",
-      );
+      showError(error.message ?? "Failed to install OctopusStudio-managed Node.js");
     } finally {
       setIsInstallingManagedNode(false);
     }
@@ -494,8 +464,7 @@ function PreviewNodeRequirement({
                     Installing Node.js
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-foreground/80">
-                    Octopus Studio is setting up a private Node.js runtime for
-                    previews.
+                    Octopus Studio is setting up a private Node.js runtime for previews.
                   </p>
                   <div className="mt-4">
                     <div className="h-2 overflow-hidden rounded-full bg-(--background-darker)">
@@ -515,9 +484,7 @@ function PreviewNodeRequirement({
                     onClick={handleCancelManagedNodeInstall}
                     disabled={isCancellingManagedNode}
                   >
-                    {isCancellingManagedNode && (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    )}
+                    {isCancellingManagedNode && <Loader2 className="size-3.5 animate-spin" />}
                     Cancel
                   </Button>
                 </>
@@ -532,10 +499,7 @@ function PreviewNodeRequirement({
                   </ol>
                   {/* Live watching status while polling for the install */}
                   <div className="mt-4 flex items-center justify-center gap-2.5 rounded-lg bg-(--background-lighter) px-3 py-2.5">
-                    <span
-                      className="relative flex size-2 shrink-0"
-                      aria-hidden="true"
-                    >
+                    <span className="relative flex size-2 shrink-0" aria-hidden="true">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/50 [animation-duration:2.5s] motion-reduce:animate-none" />
                       <span className="relative inline-flex size-2 rounded-full bg-primary" />
                     </span>
@@ -550,8 +514,8 @@ function PreviewNodeRequirement({
                     Install Node.js to see your preview
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-foreground/80">
-                    The free engine that runs your app on this computer. About
-                    two minutes to install.
+                    The free engine that runs your app on this computer. About two minutes to
+                    install.
                   </p>
                   {managedNodeSupported ? (
                     <Button
@@ -577,8 +541,7 @@ function PreviewNodeRequirement({
               {isCheckFailed && (
                 <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                   <AlertCircle className="mr-1.5 inline size-3.5 align-[-2px]" />
-                  Octopus Studio couldn't check for Node.js. It will keep
-                  trying.
+                  Octopus Studio couldn't check for Node.js. It will keep trying.
                 </p>
               )}
 
@@ -597,10 +560,7 @@ function PreviewNodeRequirement({
                   )}
                   I already have Node.js
                 </Button>
-                <div
-                  className="h-4 w-px shrink-0 bg-border"
-                  aria-hidden="true"
-                />
+                <div className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -618,19 +578,18 @@ function PreviewNodeRequirement({
               </div>
 
               <div className="mt-2 flex items-center justify-center text-xs">
-                {nodeDownloadUrl &&
-                  (managedNodeSupported || hasOpenedInstaller) && (
-                    <button
-                      type="button"
-                      onClick={handleInstallNode}
-                      disabled={isInstallingManagedNode}
-                      className="cursor-pointer font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
-                    >
-                      {hasOpenedInstaller
-                        ? "Reopen nodejs.org download"
-                        : "Download from nodejs.org instead"}
-                    </button>
-                  )}
+                {nodeDownloadUrl && (managedNodeSupported || hasOpenedInstaller) && (
+                  <button
+                    type="button"
+                    onClick={handleInstallNode}
+                    disabled={isInstallingManagedNode}
+                    className="cursor-pointer font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
+                  >
+                    {hasOpenedInstaller
+                      ? "Reopen nodejs.org download"
+                      : "Download from nodejs.org instead"}
+                  </button>
+                )}
               </div>
 
               <p className="mt-3 text-xs leading-5 text-muted-foreground">

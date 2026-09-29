@@ -70,10 +70,7 @@ export function AddPluginDialog({
   onOpenChange: (open: boolean) => void;
   // Invoked after a successful create so the caller can kick off the
   // OAuth flow (or a probe) and surface feedback on the new card.
-  onServerCreated: (
-    created: McpServer,
-    opts: { wantsOAuth: boolean },
-  ) => Promise<void>;
+  onServerCreated: (created: McpServer, opts: { wantsOAuth: boolean }) => Promise<void>;
 }) {
   const navigate = useNavigate();
   const { createServer } = useMcp();
@@ -172,8 +169,7 @@ export function AddPluginDialog({
       oauthClientId: wantsOAuth ? oauthClientId.trim() || null : null,
       oauthClientSecret: wantsOAuth ? oauthClientSecret.trim() || null : null,
       oauthScope: wantsOAuth ? oauthScope.trim() || null : null,
-      oauthCallbackPort:
-        wantsOAuth && typeof callbackPort === "number" ? callbackPort : null,
+      oauthCallbackPort: wantsOAuth && typeof callbackPort === "number" ? callbackPort : null,
     });
     setName("");
     setTransport("stdio");
@@ -212,17 +208,14 @@ export function AddPluginDialog({
   // only after a server already exists.
   const willPersistOauthSecret =
     transport === "http" && oauthEnabled && oauthClientSecret.trim().length > 0;
-  const showPlaintextBanner =
-    oauthStorageEncrypted === false && willPersistOauthSecret;
+  const showPlaintextBanner = oauthStorageEncrypted === false && willPersistOauthSecret;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Add Plugin</DialogTitle>
-          <DialogDescription>
-            Connect an MCP server to give the AI new tools.
-          </DialogDescription>
+          <DialogDescription>Connect an MCP server to give the AI new tools.</DialogDescription>
         </DialogHeader>
         {showPlaintextBanner && <OauthPlaintextStorageAlert />}
         <div className="space-y-2">
@@ -299,9 +292,7 @@ export function AddPluginDialog({
                       // hold anything so carried-over credentials are
                       // visible rather than hidden in a collapsed section.
                       defaultValue={
-                        oauthClientId || oauthClientSecret || oauthScope
-                          ? ["advanced"]
-                          : []
+                        oauthClientId || oauthClientSecret || oauthScope ? ["advanced"] : []
                       }
                     >
                       <AccordionItem value="advanced">
@@ -312,9 +303,8 @@ export function AddPluginDialog({
                           <div className="space-y-2">
                             <Label>OAuth Client ID</Label>
                             <div className="text-xs text-muted-foreground">
-                              If the MCP server's setup requires you to register
-                              an app, paste the Client ID of your app here.
-                              Otherwise leave this blank.
+                              If the MCP server's setup requires you to register an app, paste the
+                              Client ID of your app here. Otherwise leave this blank.
                             </div>
                             <Input
                               value={oauthClientId}
@@ -325,23 +315,21 @@ export function AddPluginDialog({
                           <div className="space-y-2">
                             <Label>OAuth Client Secret</Label>
                             <div className="text-xs text-muted-foreground">
-                              Include this only if the MCP server gave you a
-                              secret alongside the Client ID.
+                              Include this only if the MCP server gave you a secret alongside the
+                              Client ID.
                             </div>
                             <Input
                               type="password"
                               value={oauthClientSecret}
-                              onChange={(e) =>
-                                setOauthClientSecret(e.target.value)
-                              }
+                              onChange={(e) => setOauthClientSecret(e.target.value)}
                               placeholder="Pre-registered client secret"
                             />
                           </div>
                           <div className="space-y-2">
                             <Label>OAuth Scope</Label>
                             <div className="text-xs text-muted-foreground">
-                              Permissions to request, space-separated. Leave
-                              this blank to use the server's default.
+                              Permissions to request, space-separated. Leave this blank to use the
+                              server's default.
                             </div>
                             <Input
                               value={oauthScope}
@@ -350,16 +338,14 @@ export function AddPluginDialog({
                             />
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            If you include a Client ID, make sure that you
-                            register{" "}
+                            If you include a Client ID, make sure that you register{" "}
                             <code>
                               http://localhost:
                               {callbackPort ?? "…"}
                               /callback
                             </code>{" "}
-                            as a redirect URI for your MCP server. Your MCP
-                            server most likely provides a dashboard where you
-                            can do this.
+                            as a redirect URI for your MCP server. Your MCP server most likely
+                            provides a dashboard where you can do this.
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -369,11 +355,7 @@ export function AddPluginDialog({
               </>
             )}
             <div className="flex items-center gap-2">
-              <Switch
-                aria-label="Enabled"
-                checked={enabled}
-                onCheckedChange={setEnabled}
-              />
+              <Switch aria-label="Enabled" checked={enabled} onCheckedChange={setEnabled} />
               <Label>Enabled</Label>
             </div>
           </div>

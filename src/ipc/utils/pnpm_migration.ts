@@ -1,11 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import { gitAdd, gitCommit } from "@/ipc/utils/git_utils";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { gitAdd, gitCommit } from "@/ipc/git/git_utils";
 import {
   ensurePnpmAllowBuildsConfigured,
   getPnpmMinimumReleaseAgeSupport,
@@ -17,10 +14,7 @@ import {
   recordAndReportDeniedPnpmBuilds,
   resolvePnpmIgnoredBuilds,
 } from "@/ipc/utils/pnpm_denied_builds";
-import {
-  getPackageManagerSignal,
-  signalPrefersPnpm,
-} from "@/ipc/utils/package_manager_selection";
+import { getPackageManagerSignal, signalPrefersPnpm } from "@/ipc/utils/package_manager_selection";
 import { sendTelemetryEvent } from "@/ipc/utils/telemetry";
 import { isVersionAtLeast } from "@/shared/version_utils";
 
@@ -37,9 +31,7 @@ const LOCKFILE_HEADER_BYTES = 512;
 export function getManagedPnpmMajorVersion(): number {
   const match = PNPM_GLOBAL_INSTALL_PACKAGE.match(/latest-(\d+)$/);
   if (!match) {
-    throw new Error(
-      `Cannot derive pnpm major version from "${PNPM_GLOBAL_INSTALL_PACKAGE}"`,
-    );
+    throw new Error(`Cannot derive pnpm major version from "${PNPM_GLOBAL_INSTALL_PACKAGE}"`);
   }
   return Number(match[1]);
 }
@@ -55,9 +47,7 @@ export function parsePnpmLockfileVersion(content: string): number | null {
   return Number.isFinite(version) ? version : null;
 }
 
-export function parsePinnedPnpmMajorVersion(
-  packageManagerField: string | null,
-): number | null {
+export function parsePinnedPnpmMajorVersion(packageManagerField: string | null): number | null {
   if (!packageManagerField) {
     return null;
   }
@@ -100,10 +90,7 @@ export function isPnpmVersionMigrationNeeded(appPath: string): boolean {
   }
 
   const lockfileVersion = readPnpmLockfileVersion(appPath);
-  if (
-    lockfileVersion !== null &&
-    lockfileVersion < COMPATIBLE_PNPM_LOCKFILE_MAJOR
-  ) {
+  if (lockfileVersion !== null && lockfileVersion < COMPATIBLE_PNPM_LOCKFILE_MAJOR) {
     return true;
   }
 
@@ -115,29 +102,17 @@ export function isPnpmVersionMigrationNeeded(appPath: string): boolean {
   return false;
 }
 
-async function updatePackageManagerPin(
-  appPath: string,
-  pnpmVersion: string,
-): Promise<string> {
+async function updatePackageManagerPin(appPath: string, pnpmVersion: string): Promise<string> {
   const packageJsonPath = path.join(appPath, "package.json");
   const originalContent = await fs.promises.readFile(packageJsonPath, "utf8");
   const packageJson = JSON.parse(originalContent);
   packageJson.packageManager = `pnpm@${pnpmVersion}`;
-  await fs.promises.writeFile(
-    packageJsonPath,
-    `${JSON.stringify(packageJson, null, 2)}\n`,
-  );
+  await fs.promises.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
   return originalContent;
 }
 
-async function restorePackageJson(
-  appPath: string,
-  packageJsonContent: string,
-): Promise<void> {
-  await fs.promises.writeFile(
-    path.join(appPath, "package.json"),
-    packageJsonContent,
-  );
+async function restorePackageJson(appPath: string, packageJsonContent: string): Promise<void> {
+  await fs.promises.writeFile(path.join(appPath, "package.json"), packageJsonContent);
 }
 
 /**
@@ -146,11 +121,7 @@ async function restorePackageJson(
  * lockfile is rewritten to the matching format, and commits both together so
  * the repo's self-description, lockfile, and CI/deploy behavior agree.
  */
-export async function applyPnpmVersionMigration({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<void> {
+export async function applyPnpmVersionMigration({ appPath }: { appPath: string }): Promise<void> {
   const pnpmSupport = await getPnpmMinimumReleaseAgeSupport();
   if (!pnpmSupport.available || !pnpmSupport.version) {
     throw new OctopusStudioError(
@@ -161,12 +132,7 @@ export async function applyPnpmVersionMigration({
   // If PATH fell back to an old system pnpm (e.g. the managed install is
   // missing), "migrating" would pin the old pnpm and rewrite the lockfile in
   // the old format, leaving the upgrade permanently needed.
-  if (
-    !isVersionAtLeast(
-      pnpmSupport.version,
-      `${COMPATIBLE_PNPM_LOCKFILE_MAJOR}.0.0`,
-    )
-  ) {
+  if (!isVersionAtLeast(pnpmSupport.version, `${COMPATIBLE_PNPM_LOCKFILE_MAJOR}.0.0`)) {
     throw new OctopusStudioError(
       `The available pnpm (${pnpmSupport.version}) is older than pnpm ${COMPATIBLE_PNPM_LOCKFILE_MAJOR}, so the project cannot be migrated. Restart OctopusStudio and try again.`,
       OctopusStudioErrorKind.External,
@@ -181,10 +147,7 @@ export async function applyPnpmVersionMigration({
   // original package.json so the failed migration does not hide future prompts.
   let originalPackageJsonContent: string;
   try {
-    originalPackageJsonContent = await updatePackageManagerPin(
-      appPath,
-      pnpmSupport.version,
-    );
+    originalPackageJsonContent = await updatePackageManagerPin(appPath, pnpmSupport.version);
   } catch (error) {
     logger.warn("Failed to update packageManager pin:", error);
     throw new OctopusStudioError(
@@ -197,8 +160,7 @@ export async function applyPnpmVersionMigration({
     await simpleSpawnWithDeniedPnpmBuildSelfHeal({
       command: `pnpm ${PNPM_INSTALL_POLICY_ARGS.join(" ")} install`,
       cwd: appPath,
-      successMessage:
-        "Reinstalled dependencies with the OctopusStudio-managed pnpm",
+      successMessage: "Reinstalled dependencies with the OctopusStudio-managed pnpm",
       errorPrefix: "Failed to reinstall dependencies with pnpm",
     });
   } catch (error) {

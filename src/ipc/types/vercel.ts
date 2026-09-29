@@ -28,9 +28,7 @@ export const SaveVercelAccessTokenParamsSchema = z.object({
   token: z.string(),
 });
 
-export type SaveVercelAccessTokenParams = z.infer<
-  typeof SaveVercelAccessTokenParamsSchema
->;
+export type SaveVercelAccessTokenParams = z.infer<typeof SaveVercelAccessTokenParamsSchema>;
 
 export const ConnectToExistingVercelProjectParamsSchema = z.object({
   appId: z.number(),
@@ -45,9 +43,7 @@ export const IsVercelProjectAvailableParamsSchema = z.object({
   name: z.string(),
 });
 
-export type IsVercelProjectAvailableParams = z.infer<
-  typeof IsVercelProjectAvailableParamsSchema
->;
+export type IsVercelProjectAvailableParams = z.infer<typeof IsVercelProjectAvailableParamsSchema>;
 
 export const IsVercelProjectAvailableResponseSchema = z.object({
   available: z.boolean(),
@@ -63,25 +59,19 @@ export const CreateVercelProjectParamsSchema = z.object({
   appId: z.number(),
 });
 
-export type CreateVercelProjectParams = z.infer<
-  typeof CreateVercelProjectParamsSchema
->;
+export type CreateVercelProjectParams = z.infer<typeof CreateVercelProjectParamsSchema>;
 
 export const GetVercelDeploymentsParamsSchema = z.object({
   appId: z.number(),
 });
 
-export type GetVercelDeploymentsParams = z.infer<
-  typeof GetVercelDeploymentsParamsSchema
->;
+export type GetVercelDeploymentsParams = z.infer<typeof GetVercelDeploymentsParamsSchema>;
 
 export const DisconnectVercelProjectParamsSchema = z.object({
   appId: z.number(),
 });
 
-export type DisconnectVercelProjectParams = z.infer<
-  typeof DisconnectVercelProjectParamsSchema
->;
+export type DisconnectVercelProjectParams = z.infer<typeof DisconnectVercelProjectParamsSchema>;
 
 // --- Neon → Vercel sync ---
 
@@ -100,9 +90,7 @@ export const VercelSyncNeonConfigParamsSchema = z.object({
   branchType: z.enum(["production", "development"]).optional(),
 });
 
-export type VercelSyncNeonConfigParams = z.infer<
-  typeof VercelSyncNeonConfigParamsSchema
->;
+export type VercelSyncNeonConfigParams = z.infer<typeof VercelSyncNeonConfigParamsSchema>;
 
 export const VercelSyncPreviewSchema = z.object({
   vercelProjectName: z.string().nullable(),
@@ -140,9 +128,7 @@ export const CreateVercelProjectResultSchema = z
   })
   .optional();
 
-export type CreateVercelProjectResult = z.infer<
-  typeof CreateVercelProjectResultSchema
->;
+export type CreateVercelProjectResult = z.infer<typeof CreateVercelProjectResultSchema>;
 
 // =============================================================================
 // Vercel Contracts

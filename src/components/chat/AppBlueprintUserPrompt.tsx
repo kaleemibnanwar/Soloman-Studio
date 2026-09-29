@@ -23,10 +23,7 @@ export const AppBlueprintUserPrompt: React.FC<AppBlueprintUserPromptProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-start gap-2">
-        <MessageSquare
-          size={14}
-          className="text-muted-foreground mt-0.5 shrink-0"
-        />
+        <MessageSquare size={14} className="text-muted-foreground mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground/80 whitespace-pre-wrap break-words">
             {displayText}

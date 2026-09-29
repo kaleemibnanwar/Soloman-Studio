@@ -4,10 +4,7 @@ import { expect } from "@playwright/test";
 import { PageObject, test, Timeout } from "./helpers/test_helper";
 import * as eph from "electron-playwright-helpers";
 
-async function expectCustomAppsFolderSetting(
-  po: PageObject,
-  expectedPath: string | null,
-) {
+async function expectCustomAppsFolderSetting(po: PageObject, expectedPath: string | null) {
   await expect
     .poll(() => po.settings.recordSettings().customAppsFolder ?? null, {
       timeout: Timeout.LONG,
@@ -132,12 +129,9 @@ test("custom folder change doesn't make apps inaccessible", async ({ po }) => {
   // Should be able to start up app; if we can't then we'll see an error
   let toast;
   try {
-    toast = await po.page.waitForSelector(
-      `[data-sonner-toast]:has-text("Error")`,
-      {
-        timeout: Timeout.SHORT,
-      },
-    );
+    toast = await po.page.waitForSelector(`[data-sonner-toast]:has-text("Error")`, {
+      timeout: Timeout.SHORT,
+    });
   } catch {
     // Fall through
   }

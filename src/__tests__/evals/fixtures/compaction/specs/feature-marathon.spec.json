@@ -37,25 +37,15 @@
       "id": "p3",
       "goal": "First requirement change: the user asks to add magic link login as a second option while keeping the password form too (plant F5). Assistant implements signInWithOtp inside src/lib/auth.ts (plant F6) and adds a tabbed Login UI. The user warns that emailRedirectTo must point at the /auth/callback route in production, not localhost (plant F7), so a new src/pages/AuthCallback.tsx page is added. German localization strings for the auth screens are generated as a bulk locale file.",
       "turns": 5,
-      "activeFiles": [
-        "src/lib/auth.ts",
-        "src/pages/Login.tsx",
-        "src/pages/AuthCallback.tsx"
-      ],
+      "activeFiles": ["src/lib/auth.ts", "src/pages/Login.tsx", "src/pages/AuthCallback.tsx"],
       "factIds": ["F5", "F6", "F7"],
-      "bulk": [
-        { "asset": "locale-json", "path": "src/locales/de.json", "count": 400 }
-      ]
+      "bulk": [{ "asset": "locale-json", "path": "src/locales/de.json", "count": 400 }]
     },
     {
       "id": "p4",
       "goal": "Profile page. Assistant creates src/pages/Profile.tsx which loads its row from the profiles table by user id (plant F8), with fields for display name and a short bio textarea under the display name field (trap T2 old direction). Mid-phase the user changes signup policy: signup now requires a valid invite code checked against the invite_codes table (trap T1 new direction), so Signup.tsx gains an invite code input and a lookup query. A utility CSS file is generated as bulk for the new form styling.",
       "turns": 5,
-      "activeFiles": [
-        "src/pages/Profile.tsx",
-        "src/pages/Signup.tsx",
-        "src/lib/profile.ts"
-      ],
+      "activeFiles": ["src/pages/Profile.tsx", "src/pages/Signup.tsx", "src/lib/profile.ts"],
       "factIds": ["F8"],
       "bulk": [
         {
@@ -69,11 +59,7 @@
       "id": "p5",
       "goal": "Second requirement change and in-flight avatar work. The user decides to drop the bio column entirely and keep only display_name on profiles (trap T2 new direction, plant F9); assistant removes the textarea and writes a migration note. Then avatar upload begins: an avatars storage bucket is created and uploadAvatar is written in src/lib/storage.ts, but Profile.tsx does not call it yet (plant F10). The phase ends mid-task: the avatars bucket still needs an insert policy scoped to the user id folder (plant F11), and the user notes that after avatars we still owe the password reset page at /auth/reset (plant F12). The session cuts off with the assistant about to write the storage policy SQL.",
       "turns": 6,
-      "activeFiles": [
-        "src/pages/Profile.tsx",
-        "src/lib/storage.ts",
-        "src/lib/profile.ts"
-      ],
+      "activeFiles": ["src/pages/Profile.tsx", "src/lib/storage.ts", "src/lib/profile.ts"],
       "factIds": ["F9", "F10", "F11", "F12"]
     }
   ],

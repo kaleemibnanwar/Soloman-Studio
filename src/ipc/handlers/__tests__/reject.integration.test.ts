@@ -10,10 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { messages as messagesTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -47,30 +44,24 @@ describe("reject (integration)", () => {
     const { send } = await harness.typeInChat("tc=write-index");
     send();
 
-    await waitFor(
-      () => expect(screen.getByText("tc=write-index")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByText("tc=write-index")).toBeTruthy(), {
+      timeout: 15_000,
+    });
     // The streamed assistant text renders in the DOM.
-    await waitFor(
-      () => expect(screen.getByText(/And it's done!/)).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/And it's done!/)).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await harness.waitForStreamEnd(harness.chatId);
     // Equivalent of the node harness's `result === chatId`: the stream ended
     // for this chat with no error events.
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     // The response proposes a <octopus-studio-write> but nothing is applied yet.
     const messages = await harness.db.query.messages.findMany();
     const assistant = messages.find((m) => m.role === "assistant")!;
-    expect(assistant.content).toContain(
-      '<octopus-studio-write path="src/pages/Index.tsx"',
-    );
+    expect(assistant.content).toContain('<octopus-studio-write path="src/pages/Index.tsx"');
     expect(assistant.approvalState).toBeNull();
     expect(assistant.commitHash).toBeNull();
     expect(harness.appFileExists("src/pages/Index.tsx")).toBe(false);
@@ -85,9 +76,7 @@ describe("reject (integration)", () => {
     );
     expect(screen.getByTestId("approve-proposal-button")).toBeTruthy();
     await waitFor(() =>
-      expect((rejectButton as HTMLButtonElement).hasAttribute("disabled")).toBe(
-        false,
-      ),
+      expect((rejectButton as HTMLButtonElement).hasAttribute("disabled")).toBe(false),
     );
 
     // Click the real Reject button (ChatInput.handleReject -> reject-proposal).
@@ -107,10 +96,9 @@ describe("reject (integration)", () => {
 
     // ...the proposal bar disappears from the UI (proposal refetch finds the
     // message no longer pending)...
-    await waitFor(
-      () => expect(screen.queryByTestId("reject-proposal-button")).toBeNull(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.queryByTestId("reject-proposal-button")).toBeNull(), {
+      timeout: 15_000,
+    });
 
     // ...and the proposed change was never applied.
     expect(harness.appFileExists("src/pages/Index.tsx")).toBe(false);

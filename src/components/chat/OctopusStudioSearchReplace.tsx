@@ -23,9 +23,12 @@ interface OctopusStudioSearchReplaceProps {
   description?: string;
 }
 
-export const OctopusStudioSearchReplace: React.FC<
-  OctopusStudioSearchReplaceProps
-> = ({ children, node, path: pathProp, description: descriptionProp }) => {
+export const OctopusStudioSearchReplace: React.FC<OctopusStudioSearchReplaceProps> = ({
+  children,
+  node,
+  path: pathProp,
+  description: descriptionProp,
+}) => {
   const [isContentVisible, setIsContentVisible] = useState(false);
 
   const path = pathProp || node?.properties?.path || "";
@@ -34,10 +37,7 @@ export const OctopusStudioSearchReplace: React.FC<
   const inProgress = state === "pending";
   const aborted = state === "aborted";
 
-  const blocks = useMemo(
-    () => parseSearchReplaceBlocks(String(children ?? "")),
-    [children],
-  );
+  const blocks = useMemo(() => parseSearchReplaceBlocks(String(children ?? "")), [children]);
 
   const fileName = path ? path.split("/").pop() : "";
 
@@ -52,22 +52,12 @@ export const OctopusStudioSearchReplace: React.FC<
       <OctopusStudioCardHeader icon={<Search size={15} />} accentColor="violet">
         <OctopusStudioBadge color="violet">Search & Replace</OctopusStudioBadge>
         {fileName && (
-          <span className="font-medium text-sm text-foreground truncate">
-            {fileName}
-          </span>
+          <span className="font-medium text-sm text-foreground truncate">{fileName}</span>
         )}
         {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Applying changes..."
-          />
+          <OctopusStudioStateIndicator state="pending" pendingLabel="Applying changes..." />
         )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
         </div>
@@ -80,29 +70,16 @@ export const OctopusStudioSearchReplace: React.FC<
         </OctopusStudioDescription>
       )}
       <OctopusStudioCardContent isExpanded={isContentVisible}>
-        <div
-          className="text-xs cursor-text"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="text-xs cursor-text" onClick={(e) => e.stopPropagation()}>
           {blocks.length === 0 ? (
-            <CodeHighlight className="language-typescript">
-              {children}
-            </CodeHighlight>
+            <CodeHighlight className="language-typescript">{children}</CodeHighlight>
           ) : (
             <div className="space-y-2">
               {blocks.map((b, i) => (
-                <div
-                  key={i}
-                  className="border border-border/60 rounded-lg overflow-hidden"
-                >
+                <div key={i} className="border border-border/60 rounded-lg overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 text-[11px]">
-                    <ArrowLeftRight
-                      size={13}
-                      className="text-muted-foreground"
-                    />
-                    <span className="font-medium text-muted-foreground">
-                      Change {i + 1}
-                    </span>
+                    <ArrowLeftRight size={13} className="text-muted-foreground" />
+                    <span className="font-medium text-muted-foreground">Change {i + 1}</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
                     <div className="p-3 border-t border-border/40 md:border-r">

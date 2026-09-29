@@ -7,12 +7,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ipc } from "@/ipc/types";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Track whether we've already checked release notes this session.
 let hasCheckedReleaseNotes = false;
@@ -60,10 +55,7 @@ export function ReleaseNotesDialog() {
           });
         }
       } catch (err) {
-        console.warn(
-          "Unable to check if release note exists for: " + appVersion,
-          err,
-        );
+        console.warn("Unable to check if release note exists for: " + appVersion, err);
       }
     };
     checkReleaseNotes();

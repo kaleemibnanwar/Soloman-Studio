@@ -13,11 +13,7 @@ import { RecordedActionSchema } from "./types";
 export const RECORDED_TEST_DRAFT_VERSION = 1 as const;
 
 /** How the recording session was authenticated (drives the `signIn` fixture). */
-export const RecordedTestAuthModeSchema = z.enum([
-  "none",
-  "neon-better-auth",
-  "supabase-password",
-]);
+export const RecordedTestAuthModeSchema = z.enum(["none", "neon-better-auth", "supabase-password"]);
 export type RecordedTestAuthMode = z.infer<typeof RecordedTestAuthModeSchema>;
 
 /**
@@ -51,11 +47,7 @@ export function draftTitle(draft: { testName?: string }): string {
  * nothing usable is left, so callers can tell "unnamed" from "named".
  */
 export function normalizeTestName(raw: string | undefined): string {
-  return (raw ?? "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, MAX_TEST_NAME_LENGTH)
-    .trim();
+  return (raw ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_TEST_NAME_LENGTH).trim();
 }
 
 export const RecordedTestDraftSchema = z.object({
@@ -91,8 +83,6 @@ export const RecordedTestDraftSchema = z.object({
 });
 export type RecordedTestDraft = z.infer<typeof RecordedTestDraftSchema>;
 
-export function draftIncludesSignIn(draft: {
-  authMode: RecordedTestAuthMode;
-}): boolean {
+export function draftIncludesSignIn(draft: { authMode: RecordedTestAuthMode }): boolean {
   return draft.authMode !== "none";
 }

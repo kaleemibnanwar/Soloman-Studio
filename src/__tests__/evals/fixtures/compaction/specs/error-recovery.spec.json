@@ -52,15 +52,9 @@
       "id": "p4",
       "goal": "The noExternal workaround collapses: the same PrismaClient SSR error returns on the production build, and the assistant concludes the ssr.noExternal entry only papered over it in dev and reverts that vite.config.ts change. The durable fix lands in src/lib/server/prisma.ts: switched to a default import of @prisma/client and destructured PrismaClient from it (plant F9, which is trap T3 current evidence). Both dev and npm run build now pass and the salary filter works locally. The user states a standing rule for this repo: never edit or squash a migration that has already been applied in production (plant F10). Separately the assistant generates a large German locale file for job category labels as part of ongoing i18n work.",
       "turns": 5,
-      "activeFiles": [
-        "src/lib/server/prisma.ts",
-        "vite.config.ts",
-        "src/locales/de.json"
-      ],
+      "activeFiles": ["src/lib/server/prisma.ts", "vite.config.ts", "src/locales/de.json"],
       "factIds": ["F9", "F10"],
-      "bulk": [
-        { "asset": "locale-json", "path": "src/locales/de.json", "count": 380 }
-      ]
+      "bulk": [{ "asset": "locale-json", "path": "src/locales/de.json", "count": 380 }]
     },
     {
       "id": "p5",

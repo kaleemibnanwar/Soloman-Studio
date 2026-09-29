@@ -11,11 +11,11 @@ A local, open-source AI app builder: describe an app, get a real running codebas
 
 ### Downloads
 
-| Platform | Artifact | Notes |
-|---|---|---|
-| Linux (x64) | `octopus-studio_1.10.0_amd64.deb` | `sudo apt install ./octopus-studio_1.10.0_amd64.deb` |
+| Platform      | Artifact                              | Notes                                                                                                                                          |
+| ------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linux (x64)   | `octopus-studio_1.10.0_amd64.deb`     | `sudo apt install ./octopus-studio_1.10.0_amd64.deb`                                                                                           |
 | Windows (x64) | `octopus-studio-1.10.0-win32-x64.zip` | Portable build — unzip and run `octopus-studio.exe`. No installer in this release (built without Wine/Mono available); unzip and run directly. |
-| macOS | — | Not built in this release — macOS packaging requires building on macOS itself. A signed/notarized build will follow via CI. |
+| macOS         | —                                     | Not built in this release — macOS packaging requires building on macOS itself. A signed/notarized build will follow via CI.                    |
 
 ### Full changelog
 

@@ -4,9 +4,7 @@ import { queryKeys } from "@/lib/queryKeys";
 
 const FIVE_MINUTES_IN_MS = 5 * 60 * 1000;
 
-export function useUserBudgetInfo({
-  enabled = true,
-}: { enabled?: boolean } = {}) {
+export function useUserBudgetInfo({ enabled = true }: { enabled?: boolean } = {}) {
   const { data, isLoading, error, isFetching, refetch } = useQuery<
     UserBudgetInfo | null,
     Error,

@@ -11,11 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { getLanguage } from "@/utils/get_language";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { enqueueFileSave, getFileSaveQueueKey } from "./fileSaveQueue";
 import { editorCursorAtom } from "@/atoms/viewAtoms";
@@ -36,15 +32,9 @@ interface BreadcrumbProps {
   isSaving: boolean;
 }
 
-const retainedMonacoModels = new Map<
-  string,
-  { model: MonacoEditor.ITextModel; count: number }
->();
+const retainedMonacoModels = new Map<string, { model: MonacoEditor.ITextModel; count: number }>();
 
-function retainMonacoModel(
-  modelPath: string,
-  model: MonacoEditor.ITextModel,
-): () => void {
+function retainMonacoModel(modelPath: string, model: MonacoEditor.ITextModel): () => void {
   const retainedModel = retainedMonacoModels.get(modelPath);
   if (retainedModel?.model === model) {
     retainedModel.count += 1;
@@ -74,12 +64,7 @@ function retainMonacoModel(
   };
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({
-  path,
-  hasUnsavedChanges,
-  onSave,
-  isSaving,
-}) => {
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ path, hasUnsavedChanges, onSave, isSaving }) => {
   const { t } = useTranslation("home");
   const segments = path.split("/").filter(Boolean);
 
@@ -89,12 +74,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         <div className="flex items-center gap-1 overflow-hidden min-w-0">
           {segments.map((segment, index) => (
             <React.Fragment key={index}>
-              {index > 0 && (
-                <ChevronRight
-                  size={14}
-                  className="text-gray-400 flex-shrink-0"
-                />
-              )}
+              {index > 0 && <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />}
               <span className="hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer truncate">
                 {segment}
               </span>
@@ -118,17 +98,11 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
               <Save size={12} />
             </TooltipTrigger>
             <TooltipContent>
-              {hasUnsavedChanges
-                ? t("preview.saveChanges")
-                : t("preview.noUnsavedChanges")}
+              {hasUnsavedChanges ? t("preview.saveChanges") : t("preview.noUnsavedChanges")}
             </TooltipContent>
           </Tooltip>
           {hasUnsavedChanges && (
-            <Circle
-              size={8}
-              fill="currentColor"
-              className="text-amber-600 dark:text-amber-400"
-            />
+            <Circle size={8} fill="currentColor" className="text-amber-600 dark:text-amber-400" />
           )}
         </div>
       </div>
@@ -182,10 +156,7 @@ export const FileEditor = ({
 
   // Initialize editor state from disk once per mounted file editor instance.
   useEffect(() => {
-    if (
-      content === null ||
-      (hasInitializedContentRef.current && needsSaveRef.current)
-    ) {
+    if (content === null || (hasInitializedContentRef.current && needsSaveRef.current)) {
       return;
     }
 
@@ -201,11 +172,8 @@ export const FileEditor = ({
   // Determine if dark mode based on theme
   const isDarkMode =
     theme === "dark" ||
-    (theme === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
-  const editorTheme = isDarkMode
-    ? "octopus-studio-dark"
-    : "octopus-studio-light";
+    (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const editorTheme = isDarkMode ? "octopus-studio-dark" : "octopus-studio-light";
   const modelPath = React.useMemo(() => {
     const normalizedPath = filePath.replace(/^\/+/, "");
     return `file:///app-${appId ?? "unknown"}/${encodeURI(normalizedPath)}`;
@@ -234,11 +202,7 @@ export const FileEditor = ({
       releaseModelRef.current = retainMonacoModel(modelPath, model);
     }
 
-    if (
-      persistCursor &&
-      editorCursor?.appId === appId &&
-      editorCursor.path === filePath
-    ) {
+    if (persistCursor && editorCursor?.appId === appId && editorCursor.path === filePath) {
       editor.setPosition({
         lineNumber: editorCursor.lineNumber,
         column: editorCursor.column,
@@ -253,18 +217,16 @@ export const FileEditor = ({
     }
 
     cursorSubscriptionRef.current?.dispose();
-    cursorSubscriptionRef.current = editor.onDidChangeCursorPosition(
-      ({ position }) => {
-        const target = cursorTargetRef.current;
-        if (!target.persistCursor) return;
-        setEditorCursor({
-          appId: target.appId,
-          path: target.filePath,
-          lineNumber: position.lineNumber,
-          column: position.column,
-        });
-      },
-    );
+    cursorSubscriptionRef.current = editor.onDidChangeCursorPosition(({ position }) => {
+      const target = cursorTargetRef.current;
+      if (!target.persistCursor) return;
+      setEditorCursor({
+        appId: target.appId,
+        path: target.filePath,
+        lineNumber: position.lineNumber,
+        column: position.column,
+      });
+    });
 
     // Save when the editor loses focus and the current model is dirty.
     editor.onDidBlurEditorText(() => {
@@ -285,10 +247,7 @@ export const FileEditor = ({
       return;
     }
     const current = editor.getPosition();
-    if (
-      current?.lineNumber === editorCursor.lineNumber &&
-      current.column === editorCursor.column
-    ) {
+    if (current?.lineNumber === editorCursor.lineNumber && current.column === editorCursor.column) {
       return;
     }
     editor.setPosition({
@@ -388,21 +347,11 @@ export const FileEditor = ({
       previousTarget.initialLine !== initialLine;
     initialLineTargetRef.current = { appId, filePath, initialLine };
     const hasRestoredCursor =
-      persistCursor &&
-      editorCursor?.appId === appId &&
-      editorCursor.path === filePath;
+      persistCursor && editorCursor?.appId === appId && editorCursor.path === filePath;
     if (content !== null && (!hasRestoredCursor || isNewSameFileLineTarget)) {
       navigateToLine(initialLine ?? null);
     }
-  }, [
-    appId,
-    content,
-    editorCursor,
-    filePath,
-    initialLine,
-    navigateToLine,
-    persistCursor,
-  ]);
+  }, [appId, content, editorCursor, filePath, initialLine, navigateToLine, persistCursor]);
 
   if (loading) {
     return <div className="p-4">{t("preview.loadingFileContent")}</div>;
@@ -413,9 +362,7 @@ export const FileEditor = ({
   }
 
   if (content === null) {
-    return (
-      <div className="p-4 text-gray-500">{t("preview.noContentAvailable")}</div>
-    );
+    return <div className="p-4 text-gray-500">{t("preview.noContentAvailable")}</div>;
   }
 
   return (

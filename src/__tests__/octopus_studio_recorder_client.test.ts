@@ -37,8 +37,7 @@ function setup({ allowUntrusted = true }: { allowUntrusted?: boolean } = {}) {
   const parent = {
     postMessage: (msg: any) => {
       messages.push(msg);
-      if (msg && msg.type === "octopus-studio-recorder-action")
-        actions.push(msg.action);
+      if (msg && msg.type === "octopus-studio-recorder-action") actions.push(msg.action);
     },
   };
 
@@ -101,25 +100,19 @@ function setup({ allowUntrusted = true }: { allowUntrusted?: boolean } = {}) {
     });
 
   const click = (el: AnyEl) =>
-    el.dispatchEvent(
-      new hw.MouseEvent("click", { bubbles: true, cancelable: true }),
-    );
+    el.dispatchEvent(new hw.MouseEvent("click", { bubbles: true, cancelable: true }));
   const dblclick = (el: AnyEl) =>
     el.dispatchEvent(new hw.MouseEvent("dblclick", { bubbles: true }));
   const typeInto = (el: AnyEl, value: string) => {
     el.value = value;
     el.dispatchEvent(new hw.Event("input", { bubbles: true }));
   };
-  const change = (el: AnyEl) =>
-    el.dispatchEvent(new hw.Event("change", { bubbles: true }));
+  const change = (el: AnyEl) => el.dispatchEvent(new hw.Event("change", { bubbles: true }));
   const keydown = (el: AnyEl, init: Record<string, unknown>) =>
-    el.dispatchEvent(
-      new hw.KeyboardEvent("keydown", { bubbles: true, ...init }),
-    );
+    el.dispatchEvent(new hw.KeyboardEvent("keydown", { bubbles: true, ...init }));
   const mousemove = (el: AnyEl) =>
     el.dispatchEvent(new hw.MouseEvent("mousemove", { bubbles: true }));
-  const overlays = () =>
-    doc.querySelectorAll(".__octopus_studio_recorder_overlay__");
+  const overlays = () => doc.querySelectorAll(".__octopus_studio_recorder_overlay__");
 
   return {
     hw,
@@ -224,10 +217,7 @@ describe("octopus-studio recorder client", () => {
     r.click(first);
     r.click(second);
 
-    expect(r.actions.map((a: any) => a.locator.name)).toEqual([
-      "First",
-      "Second",
-    ]);
+    expect(r.actions.map((a: any) => a.locator.name)).toEqual(["First", "Second"]);
   });
 
   it("records a label-activated button only once against the control", () => {
@@ -270,10 +260,7 @@ describe("octopus-studio recorder client", () => {
     r.click(button);
     r.dblclick(label);
 
-    expect(r.actions.map((action: any) => action.kind)).toEqual([
-      "click",
-      "dblclick",
-    ]);
+    expect(r.actions.map((action: any) => action.kind)).toEqual(["click", "dblclick"]);
     expect(r.actions[1].locator).toEqual(r.actions[0].locator);
   });
 
@@ -348,25 +335,19 @@ describe("octopus-studio recorder client", () => {
     // not a button, it just mentions one. Retargeting to it would record the
     // click against the wrapper and leave the real target's handler unexercised
     // on replay.
-    r.setHtml(
-      `<div role="presentation button"><span data-testid="save">Save</span></div>`,
-    );
+    r.setHtml(`<div role="presentation button"><span data-testid="save">Save</span></div>`);
     r.activate();
     r.click(r.doc.querySelector("[data-testid='save']"));
     r.settleClick();
 
-    expect(r.actions).toEqual([
-      { kind: "click", locator: { kind: "testid", value: "save" } },
-    ]);
+    expect(r.actions).toEqual([{ kind: "click", locator: { kind: "testid", value: "save" } }]);
   });
 
   it("still retargets to a wrapper whose live role is interactive", () => {
     const r = setup();
     // Here `button` is the first supported token, so the wrapper really is a
     // button and the click belongs to it rather than to the label inside.
-    r.setHtml(
-      `<div role="button link" aria-label="Save"><span>Save</span></div>`,
-    );
+    r.setHtml(`<div role="button link" aria-label="Save"><span>Save</span></div>`);
     r.activate();
     r.click(r.doc.querySelector("span"));
     r.settleClick();
@@ -390,9 +371,7 @@ describe("octopus-studio recorder client", () => {
 
   it("records Space activation for custom interactive roles", () => {
     const r = setup();
-    r.setHtml(
-      `<div role="switch" aria-label="Notifications" tabindex="0"></div>`,
-    );
+    r.setHtml(`<div role="switch" aria-label="Notifications" tabindex="0"></div>`);
     r.activate();
     r.keydown(r.doc.querySelector("[role=switch]"), { key: " " });
 
@@ -459,9 +438,7 @@ describe("octopus-studio recorder client", () => {
     r.activate();
     r.click(r.doc.body);
 
-    expect(r.actions).toEqual([
-      { kind: "click", locator: { kind: "css", value: "body" } },
-    ]);
+    expect(r.actions).toEqual([{ kind: "click", locator: { kind: "css", value: "body" } }]);
   });
 
   it("redacts a password field revealed before the recorder ever saw it", () => {
@@ -475,9 +452,7 @@ describe("octopus-studio recorder client", () => {
     input.setAttribute("type", "text");
     r.typeInto(input, "hunter2");
 
-    expect(r.actions.map((action: any) => action.value)).toEqual([
-      "REPLACE_WITH_PASSWORD",
-    ]);
+    expect(r.actions.map((action: any) => action.value)).toEqual(["REPLACE_WITH_PASSWORD"]);
     expect(JSON.stringify(r.actions)).not.toContain("hunter2");
   });
 
@@ -534,9 +509,7 @@ describe("octopus-studio recorder client", () => {
 
     // Every value stayed redacted (identical consecutive fills collapse, so one
     // action is expected) and no plaintext reached the parent.
-    expect(r.actions.map((action: any) => action.value)).toEqual([
-      "REPLACE_WITH_PASSWORD",
-    ]);
+    expect(r.actions.map((action: any) => action.value)).toEqual(["REPLACE_WITH_PASSWORD"]);
     expect(JSON.stringify(r.actions)).not.toContain("hunter");
   });
 
@@ -629,10 +602,7 @@ describe("octopus-studio recorder client", () => {
 
     // No `dblclick`: replaying one on top of check + uncheck would activate the
     // box four times where the user activated it twice.
-    expect(r.actions.map((action: any) => action.kind)).toEqual([
-      "check",
-      "uncheck",
-    ]);
+    expect(r.actions.map((action: any) => action.kind)).toEqual(["check", "uncheck"]);
   });
 
   it("records a dropdown choice as a select with the chosen value", () => {
@@ -738,11 +708,7 @@ describe("octopus-studio recorder client", () => {
     r.keydown(number, { key: "ArrowUp" });
     r.typeInto(number, "2");
 
-    expect(r.actions.map((action: any) => action.kind)).toEqual([
-      "select",
-      "fill",
-      "fill",
-    ]);
+    expect(r.actions.map((action: any) => action.kind)).toEqual(["select", "fill", "fill"]);
   });
 
   // Arrows do nothing to a checkbox: no group to walk, so no `change` follows
@@ -750,9 +716,7 @@ describe("octopus-studio recorder client", () => {
   // interaction with the app's own handler from the recording.
   it("still records arrow keys on a checkbox, which no change follows", () => {
     const r = setup();
-    r.setHtml(
-      `<label for="agree">Agree</label><input id="agree" type="checkbox" />`,
-    );
+    r.setHtml(`<label for="agree">Agree</label><input id="agree" type="checkbox" />`);
     r.activate();
 
     r.keydown(r.doc.querySelector('input[type="checkbox"]'), {
@@ -773,19 +737,11 @@ describe("octopus-studio recorder client", () => {
     );
     r.activate();
 
-    for (const selector of [
-      "select",
-      'input[type="range"]',
-      'input[type="radio"]',
-    ]) {
+    for (const selector of ["select", 'input[type="range"]', 'input[type="radio"]']) {
       r.keydown(r.doc.querySelector(selector), { key: "Escape" });
     }
 
-    expect(r.actions.map((action: any) => action.kind)).toEqual([
-      "press",
-      "press",
-      "press",
-    ]);
+    expect(r.actions.map((action: any) => action.kind)).toEqual(["press", "press", "press"]);
   });
 
   it("still records arrow keys in a text field, which no change follows", () => {
@@ -802,23 +758,15 @@ describe("octopus-studio recorder client", () => {
   // as in a text field, so no `change` follows to stand in for the press.
   it("still records horizontal arrows on a number input", () => {
     const r = setup();
-    r.setHtml(
-      `<label for="qty">Quantity</label><input id="qty" type="number" value="1" />`,
-    );
+    r.setHtml(`<label for="qty">Quantity</label><input id="qty" type="number" value="1" />`);
     r.activate();
     const number = r.doc.querySelector('input[type="number"]');
 
     r.keydown(number, { key: "ArrowLeft" });
     r.keydown(number, { key: "ArrowRight" });
 
-    expect(r.actions.map((action: any) => action.kind)).toEqual([
-      "press",
-      "press",
-    ]);
-    expect(r.actions.map((action: any) => action.key)).toEqual([
-      "ArrowLeft",
-      "ArrowRight",
-    ]);
+    expect(r.actions.map((action: any) => action.kind)).toEqual(["press", "press"]);
+    expect(r.actions.map((action: any) => action.key)).toEqual(["ArrowLeft", "ArrowRight"]);
   });
 
   it("uses the accessible text from every native label", () => {
@@ -927,9 +875,7 @@ describe("octopus-studio recorder client", () => {
   // first, the duplicate click usually lands on the destination document.
   it("records an implicit form submit once, not as a press and a click", () => {
     const r = setup();
-    r.setHtml(
-      `<form><input aria-label="Search" /><button type="submit">Go</button></form>`,
-    );
+    r.setHtml(`<form><input aria-label="Search" /><button type="submit">Go</button></form>`);
     r.activate();
 
     r.keydown(r.doc.querySelector("input"), { key: "Enter" });
@@ -954,9 +900,7 @@ describe("octopus-studio recorder client", () => {
 
   it("keeps recording a click made after the implicit-submit window", () => {
     const r = setup();
-    r.setHtml(
-      `<form><input aria-label="Search" /><button type="submit">Go</button></form>`,
-    );
+    r.setHtml(`<form><input aria-label="Search" /><button type="submit">Go</button></form>`);
     r.activate();
 
     r.keydown(r.doc.querySelector("input"), { key: "Enter" });
@@ -999,9 +943,7 @@ describe("octopus-studio recorder client", () => {
     // The attribute is a source location injected only by OctopusStudio's dev plugin, so
     // a locator built from it points at a moving target the replayed build
     // doesn't even carry.
-    r.setHtml(
-      `<div data-octopus-studio-id="src/App.tsx:12:4"><span></span></div>`,
-    );
+    r.setHtml(`<div data-octopus-studio-id="src/App.tsx:12:4"><span></span></div>`);
     r.activate();
     r.click(r.doc.querySelector("span"));
     r.settleClick();
@@ -1022,9 +964,7 @@ describe("octopus-studio recorder client", () => {
     r.settleClick();
 
     // `body > html` is not a selector; the root has to stand alone.
-    expect(r.actions).toEqual([
-      { kind: "click", locator: { kind: "css", value: "html" } },
-    ]);
+    expect(r.actions).toEqual([{ kind: "click", locator: { kind: "css", value: "html" } }]);
   });
 
   it("records nothing for a file picker, which replay cannot reproduce", () => {
@@ -1082,10 +1022,7 @@ describe("octopus-studio recorder client", () => {
     const r = setup();
     // Playwright's getByRole skips hidden elements, so counting this one would
     // hand replay an .nth(1) pointing at an element it never sees.
-    r.setHtml(
-      `<div style="display: none"><button>Item</button></div>` +
-        `<button>Item</button>`,
-    );
+    r.setHtml(`<div style="display: none"><button>Item</button></div>` + `<button>Item</button>`);
     r.activate();
     r.click(r.doc.querySelectorAll("button")[1]);
 

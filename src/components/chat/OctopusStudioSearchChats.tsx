@@ -26,9 +26,10 @@ interface OctopusStudioSearchChatsProps {
   };
 }
 
-export const OctopusStudioSearchChats: React.FC<
-  OctopusStudioSearchChatsProps
-> = ({ children, node }) => {
+export const OctopusStudioSearchChats: React.FC<OctopusStudioSearchChatsProps> = ({
+  children,
+  node,
+}) => {
   const { t } = useTranslation("chat");
   const [isContentVisible, setIsContentVisible] = useState(false);
 
@@ -48,16 +49,9 @@ export const OctopusStudioSearchChats: React.FC<
       isExpanded={isContentVisible}
       data-testid="octopus-studio-search-chats"
     >
-      <OctopusStudioCardHeader
-        icon={<MessagesSquare size={15} />}
-        accentColor="violet"
-      >
-        <OctopusStudioBadge color="violet">
-          {t("searchChatsTool.badge")}
-        </OctopusStudioBadge>
-        <span className="font-medium text-sm text-foreground truncate">
-          {`"${query}"`}
-        </span>
+      <OctopusStudioCardHeader icon={<MessagesSquare size={15} />} accentColor="violet">
+        <OctopusStudioBadge color="violet">{t("searchChatsTool.badge")}</OctopusStudioBadge>
+        <span className="font-medium text-sm text-foreground truncate">{`"${query}"`}</span>
         {resultCount !== undefined && !inProgress && (
           <span className="text-xs text-muted-foreground shrink-0">
             ({t("searchChatsTool.chatCount", { count: Number(resultCount) })})

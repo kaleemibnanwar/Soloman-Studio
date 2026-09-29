@@ -5,10 +5,7 @@ import { db } from "@/db";
 import { apps, chats } from "@/db/schema";
 import type { DistributedMachineDefinition } from "@/distributed_machines/definition";
 import { REMOTE_MACHINE_PROTOCOL_VERSION } from "@/distributed_machines/remote_protocol";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { createChatForApp } from "@/ipc/utils/chat_creation_utils";
 import { savePlanToDisk } from "@/ipc/handlers/planPersistence";
 import { getOctopusStudioAppPath } from "@/paths/paths";
@@ -38,10 +35,7 @@ import {
   type PlanHandoffHostState,
   type PlanHandoffIgnoreReason,
 } from "./host_state";
-import {
-  PLAN_HANDOFF_DISPLAY_MS,
-  transitionPlanHandoffHost,
-} from "./host_transition";
+import { PLAN_HANDOFF_DISPLAY_MS, transitionPlanHandoffHost } from "./host_transition";
 
 function initialState(key: PlanHandoffKey): PlanHandoffHostState {
   assertChatActorAdmissionOpen(key.sourceChatId);
@@ -54,9 +48,7 @@ function initialState(key: PlanHandoffKey): PlanHandoffHostState {
 }
 
 function assertPlanHash(intent: PlanHandoffIntent): void {
-  const actual = createHash("sha256")
-    .update(serializePlanDocument(intent.plan))
-    .digest("hex");
+  const actual = createHash("sha256").update(serializePlanDocument(intent.plan)).digest("hex");
   if (actual !== intent.planHash || intent.planVersion !== actual) {
     throw new OctopusStudioError(
       "Plan handoff payload does not match its immutable version",
@@ -72,12 +64,9 @@ async function runPostAdmissionStep(
   try {
     await step();
   } catch (error) {
-    console.error(
-      `[plan-handoff] ${label} failed after implementation admission`,
-      {
-        error,
-      },
-    );
+    console.error(`[plan-handoff] ${label} failed after implementation admission`, {
+      error,
+    });
   }
 }
 
@@ -96,10 +85,7 @@ function createCommandRunner(
   >[0],
 ) {
   context.send({ type: "RESUME" });
-  return async (
-    command: PlanHandoffCommand,
-    emit: (event: PlanHandoffHostEvent) => void,
-  ) => {
+  return async (command: PlanHandoffCommand, emit: (event: PlanHandoffHostEvent) => void) => {
     const { intent } = command;
     const taskKey = `handoff:${intent.handoffId}`;
     if (command.type === "begin-handoff") {
@@ -133,16 +119,9 @@ function createCommandRunner(
         handoffId: intent.handoffId,
         phase: "persisting",
       });
-      const app = db
-        .select({ path: apps.path })
-        .from(apps)
-        .where(eq(apps.id, intent.appId))
-        .get();
+      const app = db.select({ path: apps.path }).from(apps).where(eq(apps.id, intent.appId)).get();
       if (!app) {
-        throw new OctopusStudioError(
-          "App not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
       }
       const planSlug = await savePlanToDisk({
         appPath: getOctopusStudioAppPath(app.path),
@@ -227,10 +206,7 @@ function createCommandRunner(
       );
       if (!intent.acceptInNewChat) {
         await runPostAdmissionStep("Chat mode update", () => {
-          db.update(chats)
-            .set({ chatMode: "local-agent" })
-            .where(eq(chats.id, targetChatId))
-            .run();
+          db.update(chats).set({ chatMode: "local-agent" }).where(eq(chats.id, targetChatId)).run();
         });
       }
       if (intent.acceptInNewChat) {
@@ -311,8 +287,7 @@ export const planHandoffDefinition = {
     protocolVersion: REMOTE_MACHINE_PROTOCOL_VERSION,
     keyCodec: PlanHandoffKeySchema,
     encodeKey: (key) => key,
-    canonicalizeKeyAfterAuthorization: (key) =>
-      planHandoffKey(key.sourceChatId),
+    canonicalizeKeyAfterAuthorization: (key) => planHandoffKey(key.sourceChatId),
     eventCodec: PlanHandoffIntentEventSchema as z.ZodType<PlanHandoffHostEvent>,
     snapshotCodec: PlanHandoffRemoteSnapshotSchema,
     keyToString: (key) => String(key.sourceChatId),

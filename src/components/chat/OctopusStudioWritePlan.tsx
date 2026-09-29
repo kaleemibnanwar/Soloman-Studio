@@ -18,9 +18,7 @@ interface OctopusStudioWritePlanProps {
   children?: React.ReactNode;
 }
 
-export const OctopusStudioWritePlan: React.FC<OctopusStudioWritePlanProps> = ({
-  node,
-}) => {
+export const OctopusStudioWritePlan: React.FC<OctopusStudioWritePlanProps> = ({ node }) => {
   const { title, summary, complete, state } = node.properties;
   const [showSummary, setShowSummary] = useState(false);
   const setPreviewMode = useSetAtom(previewModeAtom);
@@ -41,10 +39,7 @@ export const OctopusStudioWritePlan: React.FC<OctopusStudioWritePlanProps> = ({
     >
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText
-            className={`text-primary ${isInProgress ? "animate-pulse" : ""}`}
-            size={20}
-          />
+          <FileText className={`text-primary ${isInProgress ? "animate-pulse" : ""}`} size={20} />
           <div className="flex items-center gap-2">
             <span className="font-semibold text-foreground">{title}</span>
             {summary && (
@@ -54,11 +49,7 @@ export const OctopusStudioWritePlan: React.FC<OctopusStudioWritePlanProps> = ({
                 className="text-primary hover:text-primary/80 transition-colors"
                 aria-label={showSummary ? "Hide summary" : "Show summary"}
               >
-                {showSummary ? (
-                  <ChevronUp size={16} />
-                ) : (
-                  <ChevronDown size={16} />
-                )}
+                {showSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
             )}
           </div>

@@ -19,10 +19,7 @@ interface OctopusStudioStatusProps {
   children?: React.ReactNode;
 }
 
-export function OctopusStudioStatus({
-  node,
-  children,
-}: OctopusStudioStatusProps) {
+export function OctopusStudioStatus({ node, children }: OctopusStudioStatusProps) {
   const { title = "Processing...", state } = node.properties;
   const isInProgress = state === "pending";
   const isAborted = state === "aborted";
@@ -33,12 +30,7 @@ export function OctopusStudioStatus({
   const [isContentVisible, setIsContentVisible] = useState(false);
 
   // Pick accent color based on state
-  const accentColor =
-    isAborted || isError
-      ? "red"
-      : isInProgress || isWarning
-        ? "amber"
-        : "green";
+  const accentColor = isAborted || isError ? "red" : isInProgress || isWarning ? "amber" : "green";
 
   // Pick the left icon based on state
   const icon = isInProgress ? (

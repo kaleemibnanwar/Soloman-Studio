@@ -27,16 +27,9 @@ const TRANSIENT_TOP_LEVEL_ENTRIES = new Set([
   "typescript-cache",
 ]);
 
-const TRANSIENT_NAME_PREFIXES = [
-  ".com.electron.",
-  ".com.github.Electron.",
-  "Singleton",
-];
+const TRANSIENT_NAME_PREFIXES = [".com.electron.", ".com.github.Electron.", "Singleton"];
 
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 export function getProductionUserDataPath({
   platform = process.platform,
@@ -48,27 +41,17 @@ export function getProductionUserDataPath({
   }
 
   if (platform === "darwin") {
-    return path.join(
-      homeDir,
-      "Library",
-      "Application Support",
-      "octopus-studio",
-    );
+    return path.join(homeDir, "Library", "Application Support", "octopus-studio");
   }
 
   if (platform === "win32") {
     if (!env.APPDATA) {
-      throw new Error(
-        "APPDATA is not set; cannot locate OctopusStudio's production data.",
-      );
+      throw new Error("APPDATA is not set; cannot locate OctopusStudio's production data.");
     }
     return path.join(env.APPDATA, "octopus-studio");
   }
 
-  return path.join(
-    env.XDG_CONFIG_HOME || path.join(homeDir, ".config"),
-    "octopus-studio",
-  );
+  return path.join(env.XDG_CONFIG_HOME || path.join(homeDir, ".config"), "octopus-studio");
 }
 
 export function shouldCopyProductionPath(sourceRoot, sourcePath) {
@@ -77,9 +60,7 @@ export function shouldCopyProductionPath(sourceRoot, sourcePath) {
 
   const topLevelName = relativePath.split(path.sep)[0];
   if (TRANSIENT_TOP_LEVEL_ENTRIES.has(topLevelName)) return false;
-  if (
-    TRANSIENT_NAME_PREFIXES.some((prefix) => topLevelName.startsWith(prefix))
-  ) {
+  if (TRANSIENT_NAME_PREFIXES.some((prefix) => topLevelName.startsWith(prefix))) {
     return false;
   }
 
@@ -115,10 +96,7 @@ export function getProcessesUsingDataDirectories(
   }
 
   const openPaths = dataDirectories
-    .flatMap((directory) => [
-      path.join(directory, "sqlite.db"),
-      path.join(directory, "Cookies"),
-    ])
+    .flatMap((directory) => [path.join(directory, "sqlite.db"), path.join(directory, "Cookies")])
     .filter(existsSync);
 
   if (openPaths.length === 0) return [];
@@ -153,10 +131,7 @@ export function copyProductionDataToDev({
     throw new Error(`Production user data directory does not exist: ${source}`);
   }
 
-  if (
-    existsSync(destination) &&
-    realpathSync(source) === realpathSync(destination)
-  ) {
+  if (existsSync(destination) && realpathSync(source) === realpathSync(destination)) {
     throw new Error("Production and development user data paths are the same.");
   }
 
@@ -206,15 +181,10 @@ export function copyProductionDataToDev({
 
 function main() {
   const { source, destination } = copyProductionDataToDev();
-  console.log(
-    `Copied OctopusStudio production data from:\n  ${source}\nto:\n  ${destination}`,
-  );
+  console.log(`Copied OctopusStudio production data from:\n  ${source}\nto:\n  ${destination}`);
 }
 
-if (
-  process.argv[1] &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
-) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   try {
     main();
   } catch (error) {

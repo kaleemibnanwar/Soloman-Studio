@@ -3,10 +3,7 @@ import { useAtom } from "jotai";
 import { FlaskConical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { dismissedLegacyTestMigrationAppIdsAtom } from "@/atoms/testRuntimeAtoms";
-import {
-  useLegacyTests,
-  useMigrateLegacyTests,
-} from "@/hooks/useLegacyTestMigration";
+import { useLegacyTests, useMigrateLegacyTests } from "@/hooks/useLegacyTestMigration";
 import { showError, showSuccess } from "@/lib/toast";
 import { MigrateTestsDialog } from "./MigrateTestsDialog";
 
@@ -18,9 +15,7 @@ import { MigrateTestsDialog } from "./MigrateTestsDialog";
  * the banner self-clears.
  */
 export function MigrateTestsBanner({ appId }: { appId: number }) {
-  const [dismissedIds, setDismissedIds] = useAtom(
-    dismissedLegacyTestMigrationAppIdsAtom,
-  );
+  const [dismissedIds, setDismissedIds] = useAtom(dismissedLegacyTestMigrationAppIdsAtom);
   const dismissed = dismissedIds.has(appId);
   const legacyQuery = useLegacyTests(appId, !dismissed);
   const migrate = useMigrateLegacyTests();
@@ -41,8 +36,10 @@ export function MigrateTestsBanner({ appId }: { appId: number }) {
 
   const handleConfirm = async (selected: string[]) => {
     try {
-      const { results, movedSupportFiles, skippedSupportFiles } =
-        await migrate.mutateAsync({ appId, files: selected });
+      const { results, movedSupportFiles, skippedSupportFiles } = await migrate.mutateAsync({
+        appId,
+        files: selected,
+      });
       const moved = results.filter((r) => r.ok).length;
       const failed = results.filter((r) => !r.ok);
       if (moved > 0) {
@@ -50,9 +47,7 @@ export function MigrateTestsBanner({ appId }: { appId: number }) {
           movedSupportFiles.length > 0
             ? ` (+${movedSupportFiles.length} supporting file${movedSupportFiles.length === 1 ? "" : "s"})`
             : "";
-        showSuccess(
-          `Moved ${moved} test${moved === 1 ? "" : "s"} to e2e-tests/${supportNote}`,
-        );
+        showSuccess(`Moved ${moved} test${moved === 1 ? "" : "s"} to e2e-tests/${supportNote}`);
       }
       if (failed.length > 0) {
         showError(
@@ -84,10 +79,9 @@ export function MigrateTestsBanner({ appId }: { appId: number }) {
       >
         <FlaskConical className="size-4 shrink-0 text-amber-700 dark:text-amber-300" />
         <span className="min-w-0 flex-1 truncate">
-          {count} Playwright test{count === 1 ? "" : "s"} still live in{" "}
-          <code>tests/</code>. Move {count === 1 ? "it" : "them"} to{" "}
-          <code>e2e-tests/</code> to keep {count === 1 ? "it" : "them"} in this
-          panel.
+          {count} Playwright test{count === 1 ? "" : "s"} still live in <code>tests/</code>. Move{" "}
+          {count === 1 ? "it" : "them"} to <code>e2e-tests/</code> to keep{" "}
+          {count === 1 ? "it" : "them"} in this panel.
         </span>
         <div className="flex shrink-0 items-center gap-1.5">
           <Button

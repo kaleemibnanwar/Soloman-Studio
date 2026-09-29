@@ -14,41 +14,32 @@ test.describe("Toggle Screen Size Tests", () => {
     });
   }
 
-  testSkipIfWindows(
-    "should open and close device mode popover",
-    async ({ po }) => {
-      test.setTimeout(Timeout.EXTRA_LONG * 1.5);
-      await setupApp(po);
+  testSkipIfWindows("should open and close device mode popover", async ({ po }) => {
+    test.setTimeout(Timeout.EXTRA_LONG * 1.5);
+    await setupApp(po);
 
-      // Click the device mode button to open popover
-      const deviceModeButton = po.page.locator(
-        '[data-testid="device-mode-button"]',
-      );
-      await deviceModeButton.click();
+    // Click the device mode button to open popover
+    const deviceModeButton = po.page.locator('[data-testid="device-mode-button"]');
+    await deviceModeButton.click();
 
-      // Verify popover is visible with device options
-      const originalButton = po.page.locator('[aria-label="Desktop view"]');
-      await expect(originalButton).toBeVisible();
+    // Verify popover is visible with device options
+    const originalButton = po.page.locator('[aria-label="Desktop view"]');
+    await expect(originalButton).toBeVisible();
 
-      // Close popover by clicking the button again
-      await deviceModeButton.click();
+    // Close popover by clicking the button again
+    await deviceModeButton.click();
 
-      // Verify popover is closed
-      await expect(originalButton).toBeHidden();
-    },
-  );
+    // Verify popover is closed
+    await expect(originalButton).toBeHidden();
+  });
 
   testSkipIfWindows("should switch between device modes", async ({ po }) => {
     test.setTimeout(Timeout.EXTRA_LONG * 1.5);
     await setupApp(po);
 
-    const deviceModeButton = po.page.locator(
-      '[data-testid="device-mode-button"]',
-    );
+    const deviceModeButton = po.page.locator('[data-testid="device-mode-button"]');
 
-    const previewIframe = po.page.locator(
-      '[data-testid="preview-iframe-element"]',
-    );
+    const previewIframe = po.page.locator('[data-testid="preview-iframe-element"]');
 
     // Switch to tablet mode
     await deviceModeButton.click();
@@ -77,35 +68,28 @@ test.describe("Toggle Screen Size Tests", () => {
     expect(mobileWidth).toBe("375");
   });
 
-  testSkipIfWindows(
-    "should persist device mode after rebuild",
-    async ({ po }) => {
-      test.setTimeout(Timeout.EXTRA_LONG * 2);
-      await setupApp(po);
+  testSkipIfWindows("should persist device mode after rebuild", async ({ po }) => {
+    test.setTimeout(Timeout.EXTRA_LONG * 2);
+    await setupApp(po);
 
-      const deviceModeButton = po.page.locator(
-        '[data-testid="device-mode-button"]',
-      );
-      const previewIframe = po.page.locator(
-        '[data-testid="preview-iframe-element"]',
-      );
+    const deviceModeButton = po.page.locator('[data-testid="device-mode-button"]');
+    const previewIframe = po.page.locator('[data-testid="preview-iframe-element"]');
 
-      // Switch to mobile mode
-      await deviceModeButton.click();
-      await po.page.locator('[aria-label="Mobile view"]').click();
-      await expect(previewIframe).toHaveAttribute("style", /width:\s*375px/);
+    // Switch to mobile mode
+    await deviceModeButton.click();
+    await po.page.locator('[aria-label="Mobile view"]').click();
+    await expect(previewIframe).toHaveAttribute("style", /width:\s*375px/);
 
-      // Trigger rebuild
-      await po.previewPanel.clickRebuild();
-      await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible();
-      await expect(po.previewPanel.locateLoadingAppPreview()).not.toBeVisible({
-        timeout: Timeout.EXTRA_LONG,
-      });
+    // Trigger rebuild
+    await po.previewPanel.clickRebuild();
+    await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible();
+    await expect(po.previewPanel.locateLoadingAppPreview()).not.toBeVisible({
+      timeout: Timeout.EXTRA_LONG,
+    });
 
-      // Verify mobile mode persists after rebuild
-      await expect(previewIframe).toHaveAttribute("style", /width:\s*375px/, {
-        timeout: Timeout.LONG,
-      });
-    },
-  );
+    // Verify mobile mode persists after rebuild
+    await expect(previewIframe).toHaveAttribute("style", /width:\s*375px/, {
+      timeout: Timeout.LONG,
+    });
+  });
 });

@@ -4,10 +4,7 @@ import { prompts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createTypedHandler } from "./base";
 import { promptContracts } from "../types/prompts";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const _logger = log.scope("prompt_handlers");
 

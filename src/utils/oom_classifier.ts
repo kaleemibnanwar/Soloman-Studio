@@ -79,10 +79,7 @@ export function classifyOom(input: {
     // while the last heartbeat is at most one interval before death.
     const heapUsedMB = performance.heapUsedMB ?? 0;
     const heapLimitMB = performance.heapLimitMB ?? 0;
-    if (
-      heapLimitMB > 0 &&
-      (heapUsedMB / heapLimitMB) * 100 >= HEAP_NEAR_LIMIT_PCT
-    ) {
+    if (heapLimitMB > 0 && (heapUsedMB / heapLimitMB) * 100 >= HEAP_NEAR_LIMIT_PCT) {
       signals.push("heap_near_limit");
     }
     // Windows only: os.freemem() there reports available memory, cache
@@ -90,11 +87,7 @@ export function classifyOom(input: {
     // healthy system with a warm file cache can look nearly full.
     const totalMB = performance.systemMemoryTotalMB ?? 0;
     const usedMB = performance.systemMemoryUsageMB ?? 0;
-    if (
-      platform === "win32" &&
-      totalMB > 0 &&
-      usedMB / totalMB >= SYSTEM_MEMORY_NEAR_LIMIT_RATIO
-    ) {
+    if (platform === "win32" && totalMB > 0 && usedMB / totalMB >= SYSTEM_MEMORY_NEAR_LIMIT_RATIO) {
       signals.push("system_memory_near_limit");
     }
   }
@@ -108,10 +101,6 @@ export function classifyOom(input: {
   return { verdict: "none", signals };
 }
 
-function hasV8OomAnnotation(
-  annotations: Record<string, string> | undefined,
-): boolean {
-  return Object.keys(annotations ?? {}).some((key) =>
-    key.startsWith("electron.v8-oom."),
-  );
+function hasV8OomAnnotation(annotations: Record<string, string> | undefined): boolean {
+  return Object.keys(annotations ?? {}).some((key) => key.startsWith("electron.v8-oom."));
 }

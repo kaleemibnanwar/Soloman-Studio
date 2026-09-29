@@ -3,15 +3,7 @@ import path from "node:path";
 
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { eq } from "drizzle-orm";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   process.env.E2E_TEST_BUILD = "true";
@@ -19,10 +11,7 @@ vi.hoisted(() => {
 
 import { messages } from "@/db/schema";
 import type { UserSettings } from "@/lib/schemas";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 const PRO_SETTINGS: Partial<UserSettings> = {
@@ -67,9 +56,7 @@ describe("chat image generation (integration)", () => {
     menuTrigger.focus();
     fireEvent.keyDown(menuTrigger, { key: "ArrowDown" });
 
-    const generateImageItem = await screen.findByTestId(
-      "generate-image-menu-item",
-    );
+    const generateImageItem = await screen.findByTestId("generate-image-menu-item");
     fireEvent.pointerDown(generateImageItem);
     fireEvent.pointerUp(generateImageItem);
     fireEvent.click(generateImageItem);
@@ -83,9 +70,7 @@ describe("chat image generation (integration)", () => {
     const generateButton = await screen.findByRole("button", {
       name: "Generate",
     });
-    await waitFor(() =>
-      expect((generateButton as HTMLButtonElement).disabled).toBe(false),
-    );
+    await waitFor(() => expect((generateButton as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(generateButton);
 
     await waitFor(() => expect(dialog.isConnected).toBe(false));
@@ -98,28 +83,17 @@ describe("chat image generation (integration)", () => {
     expect(fileName).toMatch(/^generated_a_beautiful_sunset_over_mo/);
     expect(fileName.endsWith(".png")).toBe(true);
 
-    const mediaPath = path.join(
-      harness.appDir,
-      ".octopusStudio",
-      "media",
-      fileName,
-    );
+    const mediaPath = path.join(harness.appDir, ".octopusStudio", "media", fileName);
     expect(fs.existsSync(mediaPath)).toBe(true);
 
     const sendButton = await screen.findByRole("button", {
       name: /^(sendMessage|Send message)$/,
     });
-    await waitFor(() =>
-      expect((sendButton as HTMLButtonElement).disabled).toBe(false),
-    );
+    await waitFor(() => expect((sendButton as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(sendButton);
 
     await waitFor(() => expect(screen.queryByAltText(prompt)).toBeNull());
-    await screen.findByRole(
-      "button",
-      { name: `Expand image: ${fileName}` },
-      { timeout: 20_000 },
-    );
+    await screen.findByRole("button", { name: `Expand image: ${fileName}` }, { timeout: 20_000 });
 
     const [userMessage] = await harness.db
       .select()

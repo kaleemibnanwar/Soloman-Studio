@@ -39,9 +39,7 @@ export function consensusFilePath(projectPath: string): string {
 }
 
 function section(raw: string, heading: string): string[] {
-  const match = raw.match(
-    new RegExp(`## ${heading}[ \\t]*\\n([\\s\\S]*?)(?=\\n## |$)`, "i"),
-  );
+  const match = raw.match(new RegExp(`## ${heading}[ \\t]*\\n([\\s\\S]*?)(?=\\n## |$)`, "i"));
   return (match?.[1] ?? "")
     .split("\n")
     .map((line) => line.trim().replace(/^- /, "").trim())

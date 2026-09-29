@@ -10,15 +10,11 @@ export class AgentConsent {
   constructor(public page: Page) {}
 
   getAgentConsentBanner() {
-    return this.page
-      .getByRole("button", { name: "Always allow" })
-      .locator("..");
+    return this.page.getByRole("button", { name: "Always allow" }).locator("..");
   }
 
   async waitForAgentConsentBanner(timeout = Timeout.MEDIUM) {
-    await expect(
-      this.page.getByRole("button", { name: "Always allow" }),
-    ).toBeVisible({ timeout });
+    await expect(this.page.getByRole("button", { name: "Always allow" })).toBeVisible({ timeout });
   }
 
   async clickAgentConsentAlwaysAllow() {

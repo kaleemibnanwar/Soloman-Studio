@@ -59,9 +59,7 @@ export function OctopusStudioProTrialDialog({
             <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Unlock OctopusStudio Pro
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Start your free 7-day trial today
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Start your free 7-day trial today</p>
           </div>
         </div>
 
@@ -79,9 +77,7 @@ export function OctopusStudioProTrialDialog({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-foreground">{feature.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {feature.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </div>
                 <Check className="h-5 w-5 shrink-0 text-green-600 dark:text-green-500" />
               </div>

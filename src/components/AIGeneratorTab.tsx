@@ -12,11 +12,7 @@ import {
 import { ipc } from "@/ipc/types";
 import { showError } from "@/lib/toast";
 import { toast } from "sonner";
-import type {
-  ThemeGenerationMode,
-  ThemeGenerationModel,
-  ThemeInputSource,
-} from "@/ipc/types";
+import type { ThemeGenerationMode, ThemeGenerationModel, ThemeInputSource } from "@/ipc/types";
 
 // Image upload constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per image (raw file size)
@@ -53,10 +49,8 @@ export function AIGeneratorTab({
 }: AIGeneratorTabProps) {
   const [aiImages, setAiImages] = useState<ThemeImage[]>([]);
   const [aiKeywords, setAiKeywords] = useState("");
-  const [aiGenerationMode, setAiGenerationMode] =
-    useState<ThemeGenerationMode>("inspired");
-  const [aiSelectedModel, setAiSelectedModel] =
-    useState<ThemeGenerationModel>("");
+  const [aiGenerationMode, setAiGenerationMode] = useState<ThemeGenerationMode>("inspired");
+  const [aiSelectedModel, setAiSelectedModel] = useState<ThemeGenerationModel>("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Track if dialog is open to prevent orphaned uploads from adding images after close
@@ -68,33 +62,29 @@ export function AIGeneratorTab({
 
   const generatePromptMutation = useGenerateThemePrompt();
   const generateFromUrlMutation = useGenerateThemeFromUrl();
-  const isGenerating =
-    generatePromptMutation.isPending || generateFromUrlMutation.isPending;
+  const isGenerating = generatePromptMutation.isPending || generateFromUrlMutation.isPending;
   const { themeGenerationModelOptions, isLoadingThemeGenerationModelOptions } =
     useThemeGenerationModelOptions();
 
   // Cleanup function to revoke blob URLs and delete temp files
-  const cleanupImages = useCallback(
-    async (images: ThemeImage[], showErrors = false) => {
-      // Revoke blob URLs to free memory
-      images.forEach((img) => {
-        URL.revokeObjectURL(img.preview);
-      });
+  const cleanupImages = useCallback(async (images: ThemeImage[], showErrors = false) => {
+    // Revoke blob URLs to free memory
+    images.forEach((img) => {
+      URL.revokeObjectURL(img.preview);
+    });
 
-      // Delete temp files via IPC
-      const paths = images.map((img) => img.path);
-      if (paths.length > 0) {
-        try {
-          await ipc.template.cleanupThemeImages({ paths });
-        } catch {
-          if (showErrors) {
-            showError("Failed to cleanup temporary image files");
-          }
+    // Delete temp files via IPC
+    const paths = images.map((img) => img.path);
+    if (paths.length > 0) {
+      try {
+        await ipc.template.cleanupThemeImages({ paths });
+      } catch {
+        if (showErrors) {
+          showError("Failed to cleanup temporary image files");
         }
       }
-    },
-    [],
-  );
+    }
+  }, []);
 
   // Keep ref in sync with isDialogOpen prop
   useEffect(() => {
@@ -166,9 +156,7 @@ export function AIGeneratorTab({
         for (const file of filesToProcess) {
           // Validate file type
           if (!file.type.startsWith("image/")) {
-            showError(
-              `Please upload only image files. "${file.name}" is not a valid image.`,
-            );
+            showError(`Please upload only image files. "${file.name}" is not a valid image.`);
             continue;
           }
 
@@ -340,9 +328,7 @@ export function AIGeneratorTab({
             type="button"
             onClick={() => setInputSource("images")}
             className={`flex flex-col items-center rounded-lg border p-3 text-center transition-colors ${
-              inputSource === "images"
-                ? "border-primary bg-primary/5"
-                : "hover:bg-muted/50"
+              inputSource === "images" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
             <Upload className="h-5 w-5 mb-1" />
@@ -355,9 +341,7 @@ export function AIGeneratorTab({
             type="button"
             onClick={() => setInputSource("url")}
             className={`flex flex-col items-center rounded-lg border p-3 text-center transition-colors ${
-              inputSource === "url"
-                ? "border-primary bg-primary/5"
-                : "hover:bg-muted/50"
+              inputSource === "url" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
             <Link className="h-5 w-5 mb-1" />
@@ -470,15 +454,12 @@ export function AIGeneratorTab({
             type="button"
             onClick={() => setAiGenerationMode("inspired")}
             className={`flex flex-col items-start rounded-lg border p-3 text-left transition-colors ${
-              aiGenerationMode === "inspired"
-                ? "border-primary bg-primary/5"
-                : "hover:bg-muted/50"
+              aiGenerationMode === "inspired" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
             }`}
           >
             <span className="font-medium">Inspired</span>
             <span className="text-xs text-muted-foreground mt-1">
-              Extracts an abstract, reusable design system. Does not replicate
-              the original UI.
+              Extracts an abstract, reusable design system. Does not replicate the original UI.
             </span>
           </button>
           <button
@@ -552,9 +533,7 @@ export function AIGeneratorTab({
         {isGenerating ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {inputSource === "url"
-              ? "Generating from website..."
-              : "Generating prompt..."}
+            {inputSource === "url" ? "Generating from website..." : "Generating prompt..."}
           </>
         ) : (
           <>
@@ -587,11 +566,7 @@ export function AIGeneratorTab({
 
       {/* Save Button - only show when prompt is generated */}
       {aiGeneratedPrompt && (
-        <Button
-          onClick={onSave}
-          disabled={isSaving || !aiName.trim()}
-          className="w-full"
-        >
+        <Button onClick={onSave} disabled={isSaving || !aiName.trim()} className="w-full">
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

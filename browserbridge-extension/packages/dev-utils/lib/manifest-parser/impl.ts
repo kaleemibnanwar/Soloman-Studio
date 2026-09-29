@@ -1,8 +1,8 @@
-import type { ManifestParserInterface, Manifest } from './type';
+import type { ManifestParserInterface, Manifest } from "./type";
 
 export const ManifestParserImpl: ManifestParserInterface = {
   convertManifestToString: (manifest, env) => {
-    if (env === 'firefox') {
+    if (env === "firefox") {
       manifest = convertToFirefoxCompatibleManifest(manifest);
     }
     return JSON.stringify(manifest, null, 2);
@@ -16,7 +16,7 @@ function convertToFirefoxCompatibleManifest(manifest: Manifest) {
 
   manifestCopy.background = {
     scripts: [manifest.background?.service_worker],
-    type: 'module',
+    type: "module",
   };
   manifestCopy.options_ui = {
     page: manifest.options_page,
@@ -27,8 +27,8 @@ function convertToFirefoxCompatibleManifest(manifest: Manifest) {
   };
   manifestCopy.browser_specific_settings = {
     gecko: {
-      id: 'example@example.com',
-      strict_min_version: '109.0',
+      id: "example@example.com",
+      strict_min_version: "109.0",
     },
   };
   delete manifestCopy.options_page;

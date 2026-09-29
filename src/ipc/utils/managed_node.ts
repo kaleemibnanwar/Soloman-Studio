@@ -7,10 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { IS_TEST_BUILD } from "@/ipc/utils/test_utils";
 import {
   clearSanitizedPathCache,
@@ -29,28 +26,20 @@ const EXPECTED_MANAGED_NODE_VERSION =
     ? process.env.OCTOPUS_STUDIO_TEST_MANAGED_NODE_EXPECTED_VERSION
     : MANAGED_NODE_VERSION;
 export const MINIMUM_SYSTEM_NODE_VERSION = "20.0.0";
-export const MANAGED_NODE_INSTALL_CANCELLED_MESSAGE =
-  "Managed Node.js install was cancelled.";
+export const MANAGED_NODE_INSTALL_CANCELLED_MESSAGE = "Managed Node.js install was cancelled.";
 const MANAGED_NODE_DIR = "node";
 const NODE_DIST_BASE_URL = `https://nodejs.org/dist/${MANAGED_NODE_VERSION}`;
 const NODE_MIRROR_BASE_URL = `https://registry.npmmirror.com/-/binary/node/${MANAGED_NODE_VERSION}`;
 const DOWNLOAD_STALL_TIMEOUT_MS = 60_000;
 
-type SupportedManagedNodeKey =
-  | "darwin-arm64"
-  | "darwin-x64"
-  | "win32-arm64"
-  | "win32-x64";
+type SupportedManagedNodeKey = "darwin-arm64" | "darwin-x64" | "win32-arm64" | "win32-x64";
 
 type ManagedNodeArtifact = {
   fileName: string;
   sha256: string;
 };
 
-const MANAGED_NODE_ARTIFACTS: Record<
-  SupportedManagedNodeKey,
-  ManagedNodeArtifact
-> = {
+const MANAGED_NODE_ARTIFACTS: Record<SupportedManagedNodeKey, ManagedNodeArtifact> = {
   "darwin-arm64": {
     fileName: "node-v24.18.0-darwin-arm64.tar.gz",
     sha256: "e1a97e14c99c803e96c7339403282ea05a499c32f8d83defe9ef5ec66f979ed1",
@@ -108,10 +97,7 @@ function createManagedNodeInstallCancelledError(): OctopusStudioError {
 }
 
 function isManagedNodeInstallCancelledError(error: unknown): boolean {
-  return (
-    error instanceof OctopusStudioError &&
-    error.kind === OctopusStudioErrorKind.UserCancelled
-  );
+  return error instanceof OctopusStudioError && error.kind === OctopusStudioErrorKind.UserCancelled;
 }
 
 function throwIfManagedNodeInstallCancelled(signal: AbortSignal): void {
@@ -124,16 +110,12 @@ function getManagedNodeRootDir(): string {
   return path.join(getManagedToolsDir(), MANAGED_NODE_DIR);
 }
 
-export function getManagedNodeInstallDir(
-  version = MANAGED_NODE_VERSION,
-): string {
+export function getManagedNodeInstallDir(version = MANAGED_NODE_VERSION): string {
   return path.join(getManagedNodeRootDir(), version);
 }
 
 function getManagedNodeBinDirForInstallDir(installDir: string): string {
-  return process.platform === "win32"
-    ? installDir
-    : path.join(installDir, "bin");
+  return process.platform === "win32" ? installDir : path.join(installDir, "bin");
 }
 
 function getManagedNodeBinaryPathForInstallDir(installDir: string): string {
@@ -172,18 +154,13 @@ function getManagedNodeVersionInstallDirsSync({
   }
 
   return entries
-    .filter(
-      (entry) => entry.isDirectory() && isManagedNodeVersionDirName(entry.name),
-    )
+    .filter((entry) => entry.isDirectory() && isManagedNodeVersionDirName(entry.name))
     .map((entry) => path.join(getManagedNodeRootDir(), entry.name))
     .filter(
       (installDir) =>
-        !requireBinary ||
-        fs.existsSync(getManagedNodeBinaryPathForInstallDir(installDir)),
+        !requireBinary || fs.existsSync(getManagedNodeBinaryPathForInstallDir(installDir)),
     )
-    .sort((a, b) =>
-      compareManagedNodeVersionNames(path.basename(a), path.basename(b)),
-    );
+    .sort((a, b) => compareManagedNodeVersionNames(path.basename(a), path.basename(b)));
 }
 
 function getActiveManagedNodeInstallDirSync(): string {
@@ -192,16 +169,11 @@ function getActiveManagedNodeInstallDirSync(): string {
     return pinnedInstallDir;
   }
 
-  return (
-    getManagedNodeVersionInstallDirsSync({ requireBinary: true }).at(-1) ??
-    pinnedInstallDir
-  );
+  return getManagedNodeVersionInstallDirsSync({ requireBinary: true }).at(-1) ?? pinnedInstallDir;
 }
 
 export function getManagedNodeBinDir(): string {
-  return getManagedNodeBinDirForInstallDir(
-    getActiveManagedNodeInstallDirSync(),
-  );
+  return getManagedNodeBinDirForInstallDir(getActiveManagedNodeInstallDirSync());
 }
 
 export function getManagedNodeBinDirsForInstalledVersions(): string[] {
@@ -214,9 +186,7 @@ export function getManagedNodeBinDirsForInstalledVersions(): string[] {
   return Array.from(new Set(binDirs));
 }
 
-export function getManagedNodeBinaryPath(
-  installDir = getActiveManagedNodeInstallDirSync(),
-) {
+export function getManagedNodeBinaryPath(installDir = getActiveManagedNodeInstallDirSync()) {
   return getManagedNodeBinaryPathForInstallDir(installDir);
 }
 
@@ -224,9 +194,7 @@ export function getManagedNodeNpmCommand(): string {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
 
-export function withManagedNodePath(
-  env: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
+export function withManagedNodePath(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   return prependPathSegment(sanitizePathEnv(env), getManagedNodeBinDir());
 }
 
@@ -260,21 +228,16 @@ function getManagedNodeArtifact(): ManagedNodeArtifact | null {
 
   if (process.platform === "darwin" || process.platform === "win32") {
     const normalizedArch = os.arch() === "arm64" ? "arm64" : "x64";
-    const key =
-      `${process.platform}-${normalizedArch}` as SupportedManagedNodeKey;
+    const key = `${process.platform}-${normalizedArch}` as SupportedManagedNodeKey;
     return MANAGED_NODE_ARTIFACTS[key] ?? null;
   }
 
   return null;
 }
 
-export async function isManagedNodeInstalled(
-  version = MANAGED_NODE_VERSION,
-): Promise<boolean> {
+export async function isManagedNodeInstalled(version = MANAGED_NODE_VERSION): Promise<boolean> {
   try {
-    await fsp.access(
-      getManagedNodeBinaryPathForInstallDir(getManagedNodeInstallDir(version)),
-    );
+    await fsp.access(getManagedNodeBinaryPathForInstallDir(getManagedNodeInstallDir(version)));
     return true;
   } catch {
     return false;
@@ -303,15 +266,11 @@ export function getNodeVersionAtPath(nodePath: string): Promise<string | null> {
   });
 }
 
-export async function getManagedNodeVersion(
-  version?: string,
-): Promise<string | null> {
+export async function getManagedNodeVersion(version?: string): Promise<string | null> {
   const installDir = version
     ? getManagedNodeInstallDir(version)
     : getActiveManagedNodeInstallDirSync();
-  return getNodeVersionAtPath(
-    getManagedNodeBinaryPathForInstallDir(installDir),
-  );
+  return getNodeVersionAtPath(getManagedNodeBinaryPathForInstallDir(installDir));
 }
 
 async function calculateSha256(filePath: string): Promise<string> {
@@ -382,9 +341,7 @@ function runProcess(
       } else if (code === 0) {
         resolveOnce();
       } else {
-        rejectOnce(
-          new Error(stderr.trim() || `${command} exited with code ${code}`),
-        );
+        rejectOnce(new Error(stderr.trim() || `${command} exited with code ${code}`));
       }
     });
   });
@@ -492,10 +449,7 @@ async function downloadFile({
         if (totalBytes > 0) {
           onProgress({
             phase: "downloading",
-            percent: Math.min(
-              95,
-              Math.round((receivedBytes / totalBytes) * 95),
-            ),
+            percent: Math.min(95, Math.round((receivedBytes / totalBytes) * 95)),
           });
         }
       });
@@ -509,9 +463,7 @@ async function downloadFile({
       });
       (response as unknown as EventEmitter).once("close", () => {
         if (!responseEnded && !settled) {
-          handleError(
-            new Error("Download connection closed before completion."),
-          );
+          handleError(new Error("Download connection closed before completion."));
         }
       });
       response.on("error", handleError);
@@ -607,10 +559,7 @@ async function installFromArchive({
 
   const rootDir = getManagedNodeRootDir();
   const tempExtractDir = path.join(rootDir, "tmp", `extract-${Date.now()}`);
-  const tempInstallDir = path.join(
-    rootDir,
-    `.${MANAGED_NODE_VERSION}-${Date.now()}`,
-  );
+  const tempInstallDir = path.join(rootDir, `.${MANAGED_NODE_VERSION}-${Date.now()}`);
   const finalInstallDir = getManagedNodeInstallDir();
 
   try {
@@ -669,9 +618,7 @@ type ManagedNodeInstallDirSwapOptions = {
 
 function isMissingPathError(error: unknown): boolean {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    (error as NodeJS.ErrnoException).code === "ENOENT"
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT"
   );
 }
 
@@ -704,14 +651,9 @@ export async function swapManagedNodeInstallDir({
     promotedNewInstall = true;
 
     if (movedExistingInstall) {
-      await rm(backupInstallDir, { recursive: true, force: true }).catch(
-        (cleanupError) => {
-          logger.warn(
-            "Failed to remove previous managed Node.js backup:",
-            cleanupError,
-          );
-        },
-      );
+      await rm(backupInstallDir, { recursive: true, force: true }).catch((cleanupError) => {
+        logger.warn("Failed to remove previous managed Node.js backup:", cleanupError);
+      });
     }
   } catch (error) {
     if (movedExistingInstall && !promotedNewInstall) {
@@ -719,34 +661,25 @@ export async function swapManagedNodeInstallDir({
         await rm(finalInstallDir, { recursive: true, force: true });
         await rename(backupInstallDir, finalInstallDir);
       } catch (rollbackError) {
-        logger.error(
-          "Failed to restore previous managed Node.js installation:",
-          rollbackError,
-        );
+        logger.error("Failed to restore previous managed Node.js installation:", rollbackError);
       }
     }
     throw error;
   }
 }
 
-async function getManagedNodeVersionFromDir(
-  installDir: string,
-): Promise<string | null> {
+async function getManagedNodeVersionFromDir(installDir: string): Promise<string | null> {
   return getNodeVersionAtPath(getManagedNodeBinaryPath(installDir));
 }
 
 async function cleanupOldManagedNodeVersions(): Promise<void> {
   const rootDir = getManagedNodeRootDir();
-  const entries = await fsp
-    .readdir(rootDir, { withFileTypes: true })
-    .catch(() => []);
+  const entries = await fsp.readdir(rootDir, { withFileTypes: true }).catch(() => []);
   await Promise.all(
     entries
       .filter(
         (entry) =>
-          entry.isDirectory() &&
-          entry.name.startsWith("v") &&
-          entry.name !== MANAGED_NODE_VERSION,
+          entry.isDirectory() && entry.name.startsWith("v") && entry.name !== MANAGED_NODE_VERSION,
       )
       .map((entry) =>
         fsp
@@ -755,10 +688,7 @@ async function cleanupOldManagedNodeVersions(): Promise<void> {
             force: true,
           })
           .catch((error) => {
-            logger.warn(
-              `Failed to clean up old managed Node.js version ${entry.name}:`,
-              error,
-            );
+            logger.warn(`Failed to clean up old managed Node.js version ${entry.name}:`, error);
           }),
       ),
   );
@@ -786,16 +716,11 @@ function getExpectedSha256(artifact: ManagedNodeArtifact): string {
 export function installManagedNode(
   onProgress: (progress: ManagedNodeInstallProgress) => void,
 ): Promise<string> {
-  if (
-    managedNodeInstallPromise &&
-    managedNodeInstallAbortController?.signal.aborted
-  ) {
+  if (managedNodeInstallPromise && managedNodeInstallAbortController?.signal.aborted) {
     // A cancelled install is still winding down. Joining it would reject with
     // UserCancelled and make this request a silent no-op, so wait for it to
     // settle and start fresh.
-    return managedNodeInstallPromise
-      .catch(() => {})
-      .then(() => installManagedNode(onProgress));
+    return managedNodeInstallPromise.catch(() => {}).then(() => installManagedNode(onProgress));
   }
 
   managedNodeInstallProgressListeners.add(onProgress);
@@ -908,8 +833,7 @@ async function installManagedNodeInternal(
       });
       if (
         IS_TEST_BUILD ||
-        (error instanceof ManagedNodeInstallError &&
-          error.category !== "checksum")
+        (error instanceof ManagedNodeInstallError && error.category !== "checksum")
       ) {
         break;
       }
@@ -922,12 +846,8 @@ async function installManagedNodeInternal(
   if (isManagedNodeInstallCancelledError(lastError)) {
     throw lastError;
   }
-  const message =
-    lastError instanceof Error ? lastError.message : String(lastError);
-  throw new ManagedNodeInstallError(
-    `Could not download managed Node.js: ${message}`,
-    "network",
-  );
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new ManagedNodeInstallError(`Could not download managed Node.js: ${message}`, "network");
 }
 
 export async function removeManagedNode(): Promise<void> {
@@ -939,9 +859,7 @@ export async function maybeUpgradeManagedNode(): Promise<void> {
   const installed = await isManagedNodeInstalled(MANAGED_NODE_VERSION);
   if (!installed) {
     const rootDir = getManagedNodeRootDir();
-    const entries = await fsp
-      .readdir(rootDir, { withFileTypes: true })
-      .catch(() => []);
+    const entries = await fsp.readdir(rootDir, { withFileTypes: true }).catch(() => []);
     const hasOldVersion = entries.some(
       (entry) => entry.isDirectory() && entry.name.startsWith("v"),
     );

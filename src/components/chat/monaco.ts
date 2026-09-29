@@ -149,8 +149,7 @@ export const customDark: editor.IStandaloneThemeData = {
 // "Canceled" unhandled rejection that fails the run. Production, dev, and E2E
 // builds don't set VITEST, so they init normally. (Mirrors the
 // OCTOPUS_STUDIO_SKIP_MANAGED_PNPM_INSTALL harness touchpoint.)
-const IS_VITEST =
-  typeof process !== "undefined" && process.env.VITEST === "true";
+const IS_VITEST = typeof process !== "undefined" && process.env.VITEST === "true";
 
 if (!IS_VITEST) {
   loader.init().then((monaco) => {

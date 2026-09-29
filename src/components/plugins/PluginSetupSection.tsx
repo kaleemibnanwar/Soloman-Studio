@@ -43,15 +43,11 @@ export function PluginSetupSection({
   onSave: (update: McpServerUpdate) => Promise<void>;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
-  const allFilled = inputs.every((input) =>
-    (values[keyOf(input)] ?? "").trim(),
-  );
+  const allFilled = inputs.every((input) => (values[keyOf(input)] ?? "").trim());
   // Only OAuth-client setups need a redirect URI registered at the
   // provider; the port matches the one the connect flow will bind.
   const callbackPort = useOauthCallbackPort();
-  const needsCallbackUrl = inputs.some(
-    (input) => input.kind === "oauthClientId",
-  );
+  const needsCallbackUrl = inputs.some((input) => input.kind === "oauthClientId");
 
   const save = async () => {
     const update: McpServerUpdate = { id: server.id, enabled: true };
@@ -63,8 +59,7 @@ export function PluginSetupSection({
       const value = (values[keyOf(input)] ?? "").trim();
       if (!value) continue;
       if (input.kind === "oauthClientId") update.oauthClientId = value;
-      else if (input.kind === "oauthClientSecret")
-        update.oauthClientSecret = value;
+      else if (input.kind === "oauthClientSecret") update.oauthClientSecret = value;
       else if (input.kind === "header") {
         headers[input.name] = (input.prefix ?? "") + value;
         wroteHeader = true;
@@ -100,9 +95,7 @@ export function PluginSetupSection({
                 autoComplete="off"
                 spellCheck={false}
                 value={values[key] ?? ""}
-                onChange={(e) =>
-                  setValues((prev) => ({ ...prev, [key]: e.target.value }))
-                }
+                onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
               />
             </div>
           );

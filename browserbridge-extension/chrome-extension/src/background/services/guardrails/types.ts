@@ -8,10 +8,10 @@
  */
 export enum ThreatType {
   // Core threats
-  TASK_OVERRIDE = 'task_override',
-  PROMPT_INJECTION = 'prompt_injection',
-  SENSITIVE_DATA = 'sensitive_data',
-  DANGEROUS_ACTION = 'dangerous_action',
+  TASK_OVERRIDE = "task_override",
+  PROMPT_INJECTION = "prompt_injection",
+  SENSITIVE_DATA = "sensitive_data",
+  DANGEROUS_ACTION = "dangerous_action",
 }
 
 /**

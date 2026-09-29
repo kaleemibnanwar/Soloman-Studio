@@ -3,15 +3,26 @@ import {
   Bold,
   Italic,
   Underline,
+  Strikethrough,
   AlignLeft,
   AlignCenter,
   AlignRight,
   AlignJustify,
   List,
+  ListOrdered,
   Plus,
   Trash2,
   Loader2,
   Save,
+  Table as TableIcon,
+  Quote,
+  Minus,
+  ListTree,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Clock,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
@@ -22,6 +33,7 @@ import {
   MiniSelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ipc } from "@/ipc/types";
 import { showError, showSuccess } from "@/lib/toast";
@@ -36,6 +48,7 @@ interface RunLike {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  strike?: boolean;
 }
 
 interface ParagraphLike {
@@ -81,10 +94,11 @@ interface TableCellBlock {
 interface Block {
   id: string;
   sectionIndex: number;
-  kind: "paragraph" | "table" | "other";
+  kind: "paragraph" | "table" | "callout" | "divider" | "other";
   headingLevel?: 1 | 2 | 3 | 4;
   alignment: Alignment;
   bulleted: boolean;
+  numbered?: boolean;
   initialHtml: string;
   raw?: SectionChildLike;
   tableRows?: TableCellBlock[][];
@@ -140,6 +154,7 @@ function runsToHtml(children: (string | RunLike)[] | undefined): string {
       if (r.bold) html = `<strong>${html}</strong>`;
       if (r.italic) html = `<em>${html}</em>`;
       if (r.underline) html = `<u>${html}</u>`;
+      if (r.strike) html = `<s>${html}</s>`;
       return html;
     })
     .join("");
@@ -149,8 +164,7 @@ function paragraphToBlock(paragraph: ParagraphLike, sectionIndex: number): Block
   const headingLevel = paragraph.heading ? HEADING_TO_LEVEL[paragraph.heading] : undefined;
   const alignment = (paragraph.alignment && ALIGN_TO_UI[paragraph.alignment]) || "left";
   const bulleted = !!paragraph.numbering || !!paragraph.bullet;
-  const html =
-    paragraph.text != null ? escapeHtml(paragraph.text) : runsToHtml(paragraph.children);
+  const html = paragraph.text != null ? escapeHtml(paragraph.text) : runsToHtml(paragraph.children);
   return {
     id: newBlockId(),
     sectionIndex,
@@ -166,7 +180,6 @@ function paragraphToHtml(paragraph: ParagraphLike): string {
   return paragraph.text != null ? escapeHtml(paragraph.text) : runsToHtml(paragraph.children);
 }
 
-/** A table cell can hold multiple paragraphs; flattened into one contentEditable, joined by <br>. */
 function cellToBlock(cell: TableCellLike, id: string): TableCellBlock {
   const paragraphs = (cell.children ?? [])
     .map((c) => c.paragraph)
@@ -191,145 +204,43 @@ function tableToBlock(table: TableLike, sectionIndex: number): Block {
   };
 }
 
-function collectText(node: unknown, acc: string[] = []): string[] {
-  if (node == null) return acc;
-  if (typeof node === "string") {
-    acc.push(node);
-    return acc;
-  }
-  if (Array.isArray(node)) {
-    for (const n of node) collectText(n, acc);
-    return acc;
-  }
-  if (typeof node === "object") {
-    const o = node as Record<string, unknown>;
-    if (typeof o.text === "string") acc.push(o.text);
-    for (const key of ["children", "rows", "cells", "paragraph"]) {
-      if (key in o) collectText(o[key], acc);
-    }
-  }
-  return acc;
-}
-
-/** Walks a contentEditable's DOM, tracking bold/italic/underline ancestry, into flat runs. */
-function htmlToRuns(root: HTMLElement): RunLike[] {
-  const runs: RunLike[] = [];
-  const walk = (node: ChildNode, flags: { bold?: boolean; italic?: boolean; underline?: boolean }) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent ?? "";
-      if (text) runs.push({ text, ...flags });
-      return;
-    }
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
-    const el = node as HTMLElement;
-    const tag = el.tagName.toLowerCase();
-    const next = { ...flags };
-    if (tag === "b" || tag === "strong") next.bold = true;
-    if (tag === "i" || tag === "em") next.italic = true;
-    if (tag === "u") next.underline = true;
-    if (tag === "br") return;
-    for (const child of Array.from(el.childNodes)) walk(child, next);
-  };
-  for (const child of Array.from(root.childNodes)) walk(child, {});
-  return runs;
-}
-
-/** Same walk as htmlToRuns, but a <br> becomes a paragraph break (used for table cells, which can hold multiple paragraphs). */
-function htmlToParagraphs(root: HTMLElement): ParagraphLike[] {
-  const runs: RunLike[] = [];
-  const BREAK = { text: "\n" };
-  const walk = (node: ChildNode, flags: { bold?: boolean; italic?: boolean; underline?: boolean }) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent ?? "";
-      if (text) runs.push({ text, ...flags });
-      return;
-    }
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
-    const el = node as HTMLElement;
-    const tag = el.tagName.toLowerCase();
-    if (tag === "br") {
-      runs.push(BREAK);
-      return;
-    }
-    const next = { ...flags };
-    if (tag === "b" || tag === "strong") next.bold = true;
-    if (tag === "i" || tag === "em") next.italic = true;
-    if (tag === "u") next.underline = true;
-    for (const child of Array.from(el.childNodes)) walk(child, next);
-  };
-  for (const child of Array.from(root.childNodes)) walk(child, {});
-
-  const paragraphs: ParagraphLike[] = [];
-  let current: RunLike[] = [];
-  const flush = () => {
-    if (current.length === 0) {
-      paragraphs.push({ text: "" });
-    } else if (current.length === 1 && !current[0].bold && !current[0].italic && !current[0].underline) {
-      paragraphs.push({ text: current[0].text ?? "" });
-    } else {
-      paragraphs.push({ children: current });
-    }
-    current = [];
-  };
-  for (const run of runs) {
-    if (run === BREAK) flush();
-    else current.push(run);
-  }
-  flush();
-  return paragraphs;
-}
-
 function OtherBlockPreview({ raw }: { raw: SectionChildLike }) {
-  const kind = "images" in raw ? "Image" : "Content";
-  const text = collectText(raw).filter(Boolean).join(" ");
   return (
-    <div className="my-2 rounded border border-dashed bg-muted/30 px-3 py-2">
-      <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {kind} (preserved, not editable here)
-      </div>
-      {text && <div className="text-xs text-muted-foreground">{text}</div>}
+    <div className="my-2 rounded border border-dashed border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+      [Embedded document object]
     </div>
   );
 }
 
-/**
- * Rich-text .docx editor: per-paragraph contentEditable blocks (Enter splits a
- * new paragraph, matching block editors like Notion), a toolbar for bold/
- * italic/underline/heading/alignment/bullet list, editable tables (bold/
- * italic/underline per cell; each cell's original width/shading/borders are
- * preserved), and save-back via generateDocx. Other non-paragraph content
- * (images, charts) round-trips untouched but isn't editable here.
- */
 export function DocxEditor({ appId, filePath }: DocxEditorProps) {
   const [document_, setDocument] = useState<{ sections?: SectionLike[] } | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
-  const [inlineState, setInlineState] = useState({ bold: false, italic: false, underline: false });
+  const [showOutline, setShowOutline] = useState(false);
+  const [zoom, setZoom] = useState(100);
 
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const refreshInlineState = () => {
-    const selection = window.getSelection();
-    const anchor = selection?.anchorNode;
-    const withinBlock =
-      anchor && Array.from(blockRefs.current.values()).some((el) => el.contains(anchor));
-    if (!withinBlock) return;
-    setInlineState({
-      bold: document.queryCommandState("bold"),
-      italic: document.queryCommandState("italic"),
-      underline: document.queryCommandState("underline"),
-    });
-  };
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [isStrike, setIsStrike] = useState(false);
 
-  useEffect(() => {
-    document.addEventListener("selectionchange", refreshInlineState);
-    return () => document.removeEventListener("selectionchange", refreshInlineState);
-  }, []);
+  const refreshInlineState = () => {
+    try {
+      setIsBold(document.queryCommandState("bold"));
+      setIsItalic(document.queryCommandState("italic"));
+      setIsUnderline(document.queryCommandState("underline"));
+      setIsStrike(document.queryCommandState("strikethrough"));
+    } catch {
+      // Ignored if queryCommandState fails
+    }
+  };
 
   useEffect(() => {
     if (appId == null) return;
@@ -344,19 +255,20 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
           setError("Couldn't read this file. It may be corrupted or missing.");
           return;
         }
-        const data = result.data as { sections?: SectionLike[] };
-        const sections = data.sections?.length ? data.sections : [{ children: [] }];
+        const doc = result.data as { sections?: SectionLike[] };
+        setDocument(doc);
         const nextBlocks: Block[] = [];
-        sections.forEach((section, sectionIndex) => {
-          for (const child of section.children ?? []) {
+        const sections = doc.sections?.length ? doc.sections : [{ children: [] }];
+        sections.forEach((sec, sIdx) => {
+          (sec.children ?? []).forEach((child) => {
             if (child.paragraph) {
-              nextBlocks.push(paragraphToBlock(child.paragraph, sectionIndex));
+              nextBlocks.push(paragraphToBlock(child.paragraph, sIdx));
             } else if (child.table) {
-              nextBlocks.push(tableToBlock(child.table, sectionIndex));
+              nextBlocks.push(tableToBlock(child.table, sIdx));
             } else {
               nextBlocks.push({
                 id: newBlockId(),
-                sectionIndex,
+                sectionIndex: sIdx,
                 kind: "other",
                 alignment: "left",
                 bulleted: false,
@@ -364,9 +276,8 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
                 raw: child,
               });
             }
-          }
+          });
         });
-        setDocument(data);
         setBlocks(
           nextBlocks.length > 0
             ? nextBlocks
@@ -408,7 +319,33 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
     [blocks, focusedBlockId],
   );
 
-  const applyInline = (cmd: "bold" | "italic" | "underline") => {
+  const docStats = useMemo(() => {
+    let totalWords = 0;
+    let totalChars = 0;
+    for (const b of blocks) {
+      if (b.kind === "paragraph" || b.kind === "callout") {
+        const text = (b.initialHtml || "").replace(/<[^>]*>/g, " ").trim();
+        if (text) {
+          totalWords += text.split(/\s+/).filter(Boolean).length;
+          totalChars += text.length;
+        }
+      }
+    }
+    const readTimeMin = Math.max(1, Math.ceil(totalWords / 200));
+    return { words: totalWords, chars: totalChars, readTimeMin };
+  }, [blocks]);
+
+  const headings = useMemo(() => {
+    return blocks
+      .filter((b) => b.headingLevel != null)
+      .map((b) => ({
+        id: b.id,
+        level: b.headingLevel!,
+        text: (b.initialHtml || "").replace(/<[^>]*>/g, "").trim() || "Untitled Heading",
+      }));
+  }, [blocks]);
+
+  const applyInline = (cmd: "bold" | "italic" | "underline" | "strikethrough") => {
     const el = focusedBlockId ? blockRefs.current.get(focusedBlockId) : null;
     if (!el) return;
     el.focus();
@@ -423,14 +360,14 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
     setDirty(true);
   };
 
-  const insertParagraphAfter = (id: string) => {
+  const insertParagraphAfter = (id: string, customKind: Block["kind"] = "paragraph") => {
     setBlocks((prev) => {
       const index = prev.findIndex((b) => b.id === id);
       const section = prev[index]?.sectionIndex ?? 0;
       const block: Block = {
         id: newBlockId(),
         sectionIndex: section,
-        kind: "paragraph",
+        kind: customKind,
         alignment: "left",
         bulleted: false,
         initialHtml: "<br>",
@@ -438,6 +375,57 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
       const next = [...prev];
       next.splice(index + 1, 0, block);
       setPendingFocusId(block.id);
+      return next;
+    });
+    setDirty(true);
+  };
+
+  const insertTableAfter = (id: string) => {
+    setBlocks((prev) => {
+      const index = prev.findIndex((b) => b.id === id);
+      const section = prev[index]?.sectionIndex ?? 0;
+      const rows: TableCellBlock[][] = [
+        [
+          { id: newBlockId(), initialHtml: "Header 1" },
+          { id: newBlockId(), initialHtml: "Header 2" },
+          { id: newBlockId(), initialHtml: "Header 3" },
+        ],
+        [
+          { id: newBlockId(), initialHtml: "Item 1" },
+          { id: newBlockId(), initialHtml: "Item 2" },
+          { id: newBlockId(), initialHtml: "Item 3" },
+        ],
+      ];
+      const block: Block = {
+        id: newBlockId(),
+        sectionIndex: section,
+        kind: "table",
+        alignment: "left",
+        bulleted: false,
+        initialHtml: "",
+        tableRows: rows,
+      };
+      const next = [...prev];
+      next.splice(index + 1, 0, block);
+      return next;
+    });
+    setDirty(true);
+  };
+
+  const insertDividerAfter = (id: string) => {
+    setBlocks((prev) => {
+      const index = prev.findIndex((b) => b.id === id);
+      const section = prev[index]?.sectionIndex ?? 0;
+      const block: Block = {
+        id: newBlockId(),
+        sectionIndex: section,
+        kind: "divider",
+        alignment: "left",
+        bulleted: false,
+        initialHtml: "",
+      };
+      const next = [...prev];
+      next.splice(index + 1, 0, block);
       return next;
     });
     setDirty(true);
@@ -468,10 +456,11 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
             const originalRow = originalTable.rows?.[r] ?? {};
             const cells = row.map((cellBlock) => {
               const cellEl = blockRefs.current.get(cellBlock.id);
-              const cellChildren = cellEl
-                ? htmlToParagraphs(cellEl).map((paragraph) => ({ paragraph }))
-                : [{ paragraph: { text: "" } }];
-              return { ...cellBlock.raw, children: cellChildren };
+              const text = cellEl ? cellEl.innerText.trim() : "";
+              return {
+                ...cellBlock.raw,
+                children: [{ paragraph: { text } }],
+              };
             });
             return { ...originalRow, cells };
           });
@@ -479,27 +468,22 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
           continue;
         }
 
+        // Paragraphs & Callouts
         const el = blockRefs.current.get(block.id);
-        const runs = el ? htmlToRuns(el) : [];
-        const paragraph: ParagraphLike = {};
-        if (block.headingLevel) paragraph.heading = LEVEL_TO_HEADING[block.headingLevel];
-        const alignValue = UI_TO_ALIGN[block.alignment];
-        if (alignValue) paragraph.alignment = alignValue;
-        if (block.bulleted) paragraph.bullet = { level: 0 };
-
-        if (runs.length === 0) {
-          paragraph.text = "";
-        } else if (runs.length === 1 && !runs[0].bold && !runs[0].italic && !runs[0].underline) {
-          paragraph.text = runs[0].text ?? "";
-        } else {
-          paragraph.children = runs;
-        }
+        const text = el ? el.innerText.trim() : "";
+        const paragraph: ParagraphLike = {
+          text,
+          heading: block.headingLevel ? LEVEL_TO_HEADING[block.headingLevel] : undefined,
+          alignment: UI_TO_ALIGN[block.alignment],
+          bullet: block.bulleted ? { level: 0 } : undefined,
+        };
         children.push({ paragraph });
       }
 
-      const sections = (document_.sections?.length ? document_.sections : [{}]).map(
-        (section, i) => ({ ...section, children: bySection.get(i) ?? [] }),
-      );
+      const sections = (document_.sections ?? [{}]).map((sec, i) => ({
+        ...sec,
+        children: bySection.get(i) ?? [],
+      }));
 
       await ipc.office.writeDocxFile({
         appId,
@@ -507,24 +491,13 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
         document: { ...document_, sections },
       });
       setDirty(false);
-      showSuccess("Saved");
-    } catch (err) {
-      showError(`Failed to save: ${err instanceof Error ? err.message : "Unknown error"}`);
+      showSuccess("Document saved");
+    } catch (e) {
+      showError(`Failed to save: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setSaving(false);
     }
   };
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault();
-        void handleSave();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleSave]);
 
   if (loading) {
     return (
@@ -534,25 +507,34 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
     );
   }
 
-  if (error || !document_) {
+  if (error) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-red-500">
-        {error ?? "Failed to load file"}
+      <div className="flex h-full items-center justify-center text-sm text-destructive">
+        {error}
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
+    <div className="flex h-full min-h-0 flex-col bg-muted/10">
+      {/* Enhanced Word Studio Formatting Toolbar */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-border/60 bg-background px-3 py-1.5 shadow-xs shrink-0">
+        {/* Headings Selector */}
         <Select
-          value={String(focusedBlock?.headingLevel ?? 0)}
-          onValueChange={(v) =>
-            updateFocusedBlock({ headingLevel: v === "0" ? undefined : (Number(v) as 1 | 2 | 3 | 4) })
-          }
+          value={focusedBlock?.headingLevel ? String(focusedBlock.headingLevel) : "0"}
+          onValueChange={(v) => {
+            const level = v === "0" ? undefined : (Number(v) as 1 | 2 | 3 | 4);
+            updateFocusedBlock({ headingLevel: level });
+          }}
         >
-          <MiniSelectTrigger className="h-7 w-28 text-xs">
-            <SelectValue>{(v: string) => HEADING_SELECT_LABELS[v] ?? "Normal"}</SelectValue>
+          <MiniSelectTrigger className="h-7 w-28 text-xs font-medium">
+            <SelectValue>
+              {
+                HEADING_SELECT_LABELS[
+                  focusedBlock?.headingLevel ? String(focusedBlock.headingLevel) : "0"
+                ]
+              }
+            </SelectValue>
           </MiniSelectTrigger>
           <SelectContent>
             <SelectItem value="0">Normal</SelectItem>
@@ -563,28 +545,55 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
           </SelectContent>
         </Select>
 
-        <div className="mx-1 h-5 w-px bg-border" />
-        <Toggle size="sm" pressed={inlineState.bold} onPressedChange={() => applyInline("bold")} title="Bold">
+        <div className="mx-1 h-5 w-px bg-border/60" />
+
+        {/* Inline Formatting */}
+        <Toggle
+          size="sm"
+          pressed={isBold}
+          onPressedChange={() => applyInline("bold")}
+          title="Bold (Ctrl+B)"
+          className="h-7 w-7 p-0"
+        >
           <Bold className="h-3.5 w-3.5" />
         </Toggle>
-        <Toggle size="sm" pressed={inlineState.italic} onPressedChange={() => applyInline("italic")} title="Italic">
+        <Toggle
+          size="sm"
+          pressed={isItalic}
+          onPressedChange={() => applyInline("italic")}
+          title="Italic (Ctrl+I)"
+          className="h-7 w-7 p-0"
+        >
           <Italic className="h-3.5 w-3.5" />
         </Toggle>
         <Toggle
           size="sm"
-          pressed={inlineState.underline}
+          pressed={isUnderline}
           onPressedChange={() => applyInline("underline")}
-          title="Underline"
+          title="Underline (Ctrl+U)"
+          className="h-7 w-7 p-0"
         >
           <Underline className="h-3.5 w-3.5" />
         </Toggle>
+        <Toggle
+          size="sm"
+          pressed={isStrike}
+          onPressedChange={() => applyInline("strikethrough")}
+          title="Strikethrough"
+          className="h-7 w-7 p-0"
+        >
+          <Strikethrough className="h-3.5 w-3.5" />
+        </Toggle>
 
-        <div className="mx-1 h-5 w-px bg-border" />
+        <div className="mx-1 h-5 w-px bg-border/60" />
+
+        {/* Alignment */}
         <Toggle
           size="sm"
           pressed={focusedBlock?.alignment === "left"}
           onPressedChange={() => updateFocusedBlock({ alignment: "left" })}
-          title="Align left"
+          title="Align Left"
+          className="h-7 w-7 p-0"
         >
           <AlignLeft className="h-3.5 w-3.5" />
         </Toggle>
@@ -592,7 +601,8 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
           size="sm"
           pressed={focusedBlock?.alignment === "center"}
           onPressedChange={() => updateFocusedBlock({ alignment: "center" })}
-          title="Align center"
+          title="Align Center"
+          className="h-7 w-7 p-0"
         >
           <AlignCenter className="h-3.5 w-3.5" />
         </Toggle>
@@ -600,7 +610,8 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
           size="sm"
           pressed={focusedBlock?.alignment === "right"}
           onPressedChange={() => updateFocusedBlock({ alignment: "right" })}
-          title="Align right"
+          title="Align Right"
+          className="h-7 w-7 p-0"
         >
           <AlignRight className="h-3.5 w-3.5" />
         </Toggle>
@@ -609,121 +620,311 @@ export function DocxEditor({ appId, filePath }: DocxEditorProps) {
           pressed={focusedBlock?.alignment === "justify"}
           onPressedChange={() => updateFocusedBlock({ alignment: "justify" })}
           title="Justify"
+          className="h-7 w-7 p-0"
         >
           <AlignJustify className="h-3.5 w-3.5" />
         </Toggle>
 
-        <div className="mx-1 h-5 w-px bg-border" />
+        <div className="mx-1 h-5 w-px bg-border/60" />
+
+        {/* Lists & Inserts */}
         <Toggle
           size="sm"
           pressed={!!focusedBlock?.bulleted}
           onPressedChange={(pressed) => updateFocusedBlock({ bulleted: pressed })}
           title="Bullet list"
+          className="h-7 w-7 p-0"
         >
           <List className="h-3.5 w-3.5" />
         </Toggle>
 
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={() => insertTableAfter(focusedBlockId ?? blocks[blocks.length - 1].id)}
+              >
+                <TableIcon size={14} />
+              </Button>
+            }
+          />
+          <TooltipContent>Insert Table</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={() =>
+                  insertParagraphAfter(focusedBlockId ?? blocks[blocks.length - 1].id, "callout")
+                }
+              >
+                <Quote size={14} />
+              </Button>
+            }
+          />
+          <TooltipContent>Insert Callout Container</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={() => insertDividerAfter(focusedBlockId ?? blocks[blocks.length - 1].id)}
+              >
+                <Minus size={14} />
+              </Button>
+            }
+          />
+          <TooltipContent>Insert Horizontal Divider</TooltipContent>
+        </Tooltip>
+
+        {/* Document Stats & Outline */}
         <div className="ml-auto flex items-center gap-2">
-          <span className="truncate font-mono text-xs text-muted-foreground">
-            {filePath}
-            {dirty && " •"}
+          {headings.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 gap-1 px-2 text-[11px] font-medium text-muted-foreground",
+                showOutline && "bg-muted text-foreground",
+              )}
+              onClick={() => setShowOutline((v) => !v)}
+            >
+              <ListTree size={12} />
+              <span>Outline</span>
+            </Button>
+          )}
+
+          <span className="hidden sm:flex items-center gap-1 text-[11px] text-muted-foreground font-mono">
+            {docStats.words} words • ~{docStats.readTimeMin}m
           </span>
-          <Button size="sm" onClick={handleSave} disabled={saving || !dirty}>
+
+          <Button
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={handleSave}
+            disabled={saving || !dirty}
+          >
             {saving ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Save className="mr-1 h-3.5 w-3.5" />
+              <Save className="h-3.5 w-3.5" />
             )}
             Save
           </Button>
         </div>
       </div>
 
-      <div className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-8 py-8">
-        <div className="rounded-lg border bg-background p-10 shadow-sm">
-          {blocks.map((block) =>
-            block.kind === "other" ? (
-              <OtherBlockPreview key={block.id} raw={block.raw!} />
-            ) : block.kind === "table" ? (
-              <table key={block.id} className="my-3 w-full table-fixed border-collapse">
-                <tbody>
-                  {(block.tableRows ?? []).map((row, r) => (
-                    <tr key={r}>
-                      {row.map((cellBlock) => (
-                        <td key={cellBlock.id} className="border align-top">
-                          <div
-                            ref={(el) => {
-                              if (el) blockRefs.current.set(cellBlock.id, el);
-                              else blockRefs.current.delete(cellBlock.id);
-                            }}
-                            contentEditable
-                            suppressContentEditableWarning
-                            dangerouslySetInnerHTML={{ __html: cellBlock.initialHtml }}
-                            onFocus={() => {
-                              setFocusedBlockId(cellBlock.id);
-                              refreshInlineState();
-                            }}
-                            onInput={() => setDirty(true)}
-                            className="min-h-[1.5em] px-2 py-1 text-sm leading-snug outline-none focus:bg-accent/20"
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div key={block.id} className="group relative flex items-start gap-1">
+      {/* Main Document Layout (Outline Drawer + Printable Page Canvas) */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {showOutline && headings.length > 0 && (
+          <div className="w-56 shrink-0 border-r border-border/60 bg-background/50 p-3 overflow-y-auto space-y-1">
+            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pb-1">
+              Document Outline
+            </div>
+            {headings.map((h, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  const el = blockRefs.current.get(h.id);
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className={cn(
+                  "w-full truncate text-left text-xs py-1 px-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1",
+                  h.level === 1 && "font-semibold text-foreground",
+                  h.level === 2 && "pl-3",
+                  h.level >= 3 && "pl-5 text-[11px]",
+                )}
+              >
+                <ChevronRight size={10} className="shrink-0 text-muted-foreground/60" />
+                <span className="truncate">{h.text}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto p-8 flex justify-center">
+          <div className="w-full max-w-3xl rounded-xl border border-border/70 bg-background p-12 shadow-md space-y-3">
+            {blocks.map((block) =>
+              block.kind === "other" ? (
+                <OtherBlockPreview key={block.id} raw={block.raw!} />
+              ) : block.kind === "table" ? (
                 <div
-                  ref={(el) => {
-                    if (el) blockRefs.current.set(block.id, el);
-                    else blockRefs.current.delete(block.id);
-                  }}
-                  contentEditable
-                  suppressContentEditableWarning
-                  dangerouslySetInnerHTML={{ __html: block.initialHtml }}
-                  onFocus={() => {
-                    setFocusedBlockId(block.id);
-                    refreshInlineState();
-                  }}
-                  onInput={() => setDirty(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      insertParagraphAfter(block.id);
-                    }
-                  }}
-                  className={cn(
-                    "min-h-[1.75em] flex-1 rounded px-1 py-0.5 leading-relaxed outline-none focus:bg-accent/20",
-                    block.headingLevel === 1 && "text-3xl font-bold",
-                    block.headingLevel === 2 && "text-2xl font-bold",
-                    block.headingLevel === 3 && "text-xl font-semibold",
-                    block.headingLevel === 4 && "text-lg font-semibold",
-                    block.alignment === "center" && "text-center",
-                    block.alignment === "right" && "text-right",
-                    block.alignment === "justify" && "text-justify",
-                    block.bulleted && "list-disc pl-5 marker:text-muted-foreground [display:list-item]",
-                  )}
-                />
-                <button
-                  type="button"
-                  className="mt-1 hidden shrink-0 text-muted-foreground hover:text-destructive group-hover:block"
-                  onClick={() => deleteBlock(block.id)}
-                  aria-label="Delete paragraph"
+                  key={block.id}
+                  className="my-4 overflow-x-auto rounded-lg border border-border/60"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ),
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="mt-2 h-7 gap-1.5 text-xs text-muted-foreground"
-            onClick={() => insertParagraphAfter(blocks[blocks.length - 1].id)}
-          >
-            <Plus className="h-3.5 w-3.5" /> Paragraph
-          </Button>
+                  <table className="w-full table-fixed border-collapse">
+                    <tbody>
+                      {(block.tableRows ?? []).map((row, r) => (
+                        <tr
+                          key={r}
+                          className={
+                            r === 0
+                              ? "bg-muted/50 font-semibold"
+                              : r % 2 === 1
+                                ? "bg-muted/10"
+                                : "bg-background"
+                          }
+                        >
+                          {row.map((cellBlock) => (
+                            <td key={cellBlock.id} className="border border-border/40 align-top">
+                              <div
+                                ref={(el) => {
+                                  if (el) blockRefs.current.set(cellBlock.id, el);
+                                  else blockRefs.current.delete(cellBlock.id);
+                                }}
+                                contentEditable
+                                suppressContentEditableWarning
+                                dangerouslySetInnerHTML={{ __html: cellBlock.initialHtml }}
+                                onFocus={() => {
+                                  setFocusedBlockId(cellBlock.id);
+                                  refreshInlineState();
+                                }}
+                                onInput={() => setDirty(true)}
+                                className="min-h-[1.5em] px-2.5 py-1.5 text-xs leading-snug outline-none focus:bg-accent/20"
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : block.kind === "divider" ? (
+                <div key={block.id} className="my-4 flex items-center gap-2 group">
+                  <hr className="flex-1 border-t border-border/80" />
+                  <button
+                    type="button"
+                    className="hidden text-muted-foreground hover:text-destructive group-hover:block"
+                    onClick={() => deleteBlock(block.id)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ) : block.kind === "callout" ? (
+                <div
+                  key={block.id}
+                  className="my-3 rounded-lg border border-border/60 border-l-4 border-l-primary bg-primary/5 p-4 flex items-start justify-between group"
+                >
+                  <div
+                    ref={(el) => {
+                      if (el) blockRefs.current.set(block.id, el);
+                      else blockRefs.current.delete(block.id);
+                    }}
+                    contentEditable
+                    suppressContentEditableWarning
+                    dangerouslySetInnerHTML={{ __html: block.initialHtml }}
+                    onFocus={() => {
+                      setFocusedBlockId(block.id);
+                      refreshInlineState();
+                    }}
+                    onInput={() => setDirty(true)}
+                    className="min-h-[1.5em] flex-1 text-xs leading-relaxed outline-none"
+                  />
+                  <button
+                    type="button"
+                    className="hidden text-muted-foreground hover:text-destructive group-hover:block ml-2"
+                    onClick={() => deleteBlock(block.id)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ) : (
+                <div key={block.id} className="group relative flex items-start gap-1">
+                  <div
+                    ref={(el) => {
+                      if (el) blockRefs.current.set(block.id, el);
+                      else blockRefs.current.delete(block.id);
+                    }}
+                    contentEditable
+                    suppressContentEditableWarning
+                    dangerouslySetInnerHTML={{ __html: block.initialHtml }}
+                    onFocus={() => {
+                      setFocusedBlockId(block.id);
+                      refreshInlineState();
+                    }}
+                    onInput={() => setDirty(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        insertParagraphAfter(block.id);
+                      }
+                    }}
+                    className={cn(
+                      "min-h-[1.75em] flex-1 rounded px-1.5 py-0.5 leading-relaxed outline-none focus:bg-accent/20 transition-colors",
+                      block.headingLevel === 1 &&
+                        "text-2xl font-bold text-foreground mt-4 mb-2 tracking-tight",
+                      block.headingLevel === 2 &&
+                        "text-xl font-bold text-foreground mt-3 mb-1.5 tracking-tight",
+                      block.headingLevel === 3 && "text-lg font-semibold text-foreground mt-2 mb-1",
+                      block.headingLevel === 4 &&
+                        "text-base font-semibold text-foreground mt-1.5 mb-1",
+                      !block.headingLevel && "text-xs text-foreground/90 my-1",
+                      block.alignment === "center" && "text-center",
+                      block.alignment === "right" && "text-right",
+                      block.alignment === "justify" && "text-justify",
+                      block.bulleted && "list-disc pl-5 marker:text-primary [display:list-item]",
+                    )}
+                  />
+                  <button
+                    type="button"
+                    className="mt-1 hidden shrink-0 text-muted-foreground hover:text-destructive group-hover:block"
+                    onClick={() => deleteBlock(block.id)}
+                    aria-label="Delete paragraph"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ),
+            )}
+
+            <div className="pt-4 border-t border-border/40 flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => insertParagraphAfter(blocks[blocks.length - 1].id)}
+              >
+                <Plus size={13} /> Paragraph
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => insertTableAfter(blocks[blocks.length - 1].id)}
+              >
+                <TableIcon size={13} /> Table
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => insertParagraphAfter(blocks[blocks.length - 1].id, "callout")}
+              >
+                <Quote size={13} /> Callout Card
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => insertDividerAfter(blocks[blocks.length - 1].id)}
+              >
+                <Minus size={13} /> Divider
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

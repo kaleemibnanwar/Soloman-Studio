@@ -28,10 +28,7 @@ export interface RequestIdentity {
   readonly windowSessionId: string;
 }
 
-export function createRequestIdentity(
-  ids: IdSource,
-  windowSessionId: string,
-): RequestIdentity {
+export function createRequestIdentity(ids: IdSource, windowSessionId: string): RequestIdentity {
   if (windowSessionId.length === 0) {
     throw new Error("A request requires a stable window-session identity");
   }

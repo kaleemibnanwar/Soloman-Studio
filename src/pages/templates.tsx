@@ -19,10 +19,8 @@ const TemplatesPage: React.FC = () => {
     setIsCreateDialogOpen(true);
   };
   // Separate templates into official and community
-  const officialTemplates =
-    templates?.filter((template) => template.isOfficial) || [];
-  const communityTemplates =
-    templates?.filter((template) => !template.isOfficial) || [];
+  const officialTemplates = templates?.filter((template) => template.isOfficial) || [];
+  const communityTemplates = templates?.filter((template) => !template.isOfficial) || [];
 
   return (
     <div className="min-h-screen px-8 py-4">

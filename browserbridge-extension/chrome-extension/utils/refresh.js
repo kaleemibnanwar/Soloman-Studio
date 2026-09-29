@@ -1,14 +1,14 @@
 /* eslint-disable */
 (function () {
-  'use strict';
+  "use strict";
   // This is the custom ID for HMR (chrome-extension/vite.config.mts)
-  const __HMR_ID = 'chrome-extension-hmr';
+  const __HMR_ID = "chrome-extension-hmr";
 
   const LOCAL_RELOAD_SOCKET_PORT = 8081;
   const LOCAL_RELOAD_SOCKET_URL = `ws://localhost:${LOCAL_RELOAD_SOCKET_PORT}`;
 
-  const DO_UPDATE = 'do_update';
-  const DONE_UPDATE = 'done_update';
+  const DO_UPDATE = "do_update";
+  const DONE_UPDATE = "done_update";
 
   class MessageInterpreter {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -27,7 +27,7 @@
     const ws = new WebSocket(LOCAL_RELOAD_SOCKET_URL);
 
     ws.onopen = () => {
-      ws.addEventListener('message', event => {
+      ws.addEventListener("message", (event) => {
         const message = MessageInterpreter.receive(String(event.data));
 
         if (message.type === DO_UPDATE && message.id === id) {
@@ -65,7 +65,7 @@
       !document.hidden && pendingReload && reload();
     }
 
-    document.addEventListener('visibilitychange', reloadWhenTabIsVisible);
+    document.addEventListener("visibilitychange", reloadWhenTabIsVisible);
   }
 
   addRefresh();

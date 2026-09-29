@@ -2,11 +2,7 @@ import { z } from "zod";
 import { defineContract, createClient } from "../contracts/core";
 import { UserSettingsSchema } from "../../lib/schemas";
 
-export const ProviderApiKeyValidationProviderSchema = z.enum([
-  "google",
-  "openrouter",
-  "auto",
-]);
+export const ProviderApiKeyValidationProviderSchema = z.enum(["google", "openrouter", "auto"]);
 
 // =============================================================================
 // Settings Contracts
@@ -84,9 +80,7 @@ export const settingsClient = createClient(settingsContracts);
 // =============================================================================
 
 /** Input type for getUserSettings */
-export type GetUserSettingsInput = z.infer<
-  (typeof settingsContracts)["getUserSettings"]["input"]
->;
+export type GetUserSettingsInput = z.infer<(typeof settingsContracts)["getUserSettings"]["input"]>;
 
 /** Output type for getUserSettings */
 export type GetUserSettingsOutput = z.infer<
@@ -94,9 +88,7 @@ export type GetUserSettingsOutput = z.infer<
 >;
 
 /** Input type for setUserSettings */
-export type SetUserSettingsInput = z.infer<
-  (typeof settingsContracts)["setUserSettings"]["input"]
->;
+export type SetUserSettingsInput = z.infer<(typeof settingsContracts)["setUserSettings"]["input"]>;
 
 /** Output type for setUserSettings */
 export type SetUserSettingsOutput = z.infer<

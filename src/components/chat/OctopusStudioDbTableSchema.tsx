@@ -47,11 +47,7 @@ export function OctopusStudioDbTableSchema({
             ? t("integrations.db.tableSchema")
             : t("integrations.db.tableSchemaProvider", { provider })}
         </OctopusStudioBadge>
-        {table && (
-          <span className="font-medium text-sm text-foreground truncate">
-            {table}
-          </span>
-        )}
+        {table && <span className="font-medium text-sm text-foreground truncate">{table}</span>}
         {isLoading && (
           <OctopusStudioStateIndicator
             state="pending"

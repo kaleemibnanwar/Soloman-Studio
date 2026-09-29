@@ -4,15 +4,8 @@ import { useAtomValue } from "jotai";
 import { hasManuallySelectedChatModeAtom } from "@/atoms/chatAtoms";
 import { ipc, type Chat, type UpdateChatParams } from "@/ipc/types";
 import type { ChatSummary, ModelSelection } from "@/lib/schemas";
-import {
-  getEffectiveDefaultChatMode,
-  type ChatMode,
-  type UserSettings,
-} from "@/lib/schemas";
-import {
-  getUnavailableChatModeReason,
-  type ChatModeFallbackReason,
-} from "@/lib/chatMode";
+import { getEffectiveDefaultChatMode, type ChatMode, type UserSettings } from "@/lib/schemas";
+import { getUnavailableChatModeReason, type ChatModeFallbackReason } from "@/lib/chatMode";
 import { getFreeProCompatibleChatMode } from "@/lib/freeProModel";
 import { queryKeys } from "@/lib/queryKeys";
 import { useSettings } from "./useSettings";
@@ -34,9 +27,7 @@ export function useChatMode(chatId: number | null | undefined) {
   const queryClient = useQueryClient();
   const { settings, envVars, updateSettings } = useSettings();
   const { isQuotaExceeded, isLoading: isQuotaLoading } = useFreeAgentQuota();
-  const hasManuallySelectedChatMode = useAtomValue(
-    hasManuallySelectedChatModeAtom,
-  );
+  const hasManuallySelectedChatMode = useAtomValue(hasManuallySelectedChatModeAtom);
   const activeChatId = chatId ?? null;
 
   const chatQuery = useQuery({
@@ -46,8 +37,7 @@ export function useChatMode(chatId: number | null | undefined) {
   });
 
   const freeAgentQuotaAvailable = isQuotaLoading ? undefined : !isQuotaExceeded;
-  const selectedModel =
-    chatQuery.data?.modelSelection ?? settings?.selectedModel;
+  const selectedModel = chatQuery.data?.modelSelection ?? settings?.selectedModel;
   const effectiveDefaultMode = settings
     ? getFreeProCompatibleChatMode(
         selectedModel ?? settings.selectedModel,
@@ -74,8 +64,7 @@ export function useChatMode(chatId: number | null | undefined) {
     });
   }, [activeChatId, freeAgentQuotaAvailable, settings, storedChatMode]);
 
-  const effectiveMode =
-    activeChatId && fallbackReason ? effectiveDefaultMode : selectedMode;
+  const effectiveMode = activeChatId && fallbackReason ? effectiveDefaultMode : selectedMode;
 
   const updateChatSelectionMutation = useMutation<
     void,
@@ -105,17 +94,13 @@ export function useChatMode(chatId: number | null | undefined) {
       const previousChat = queryClient.getQueryData<Chat>(
         queryKeys.chats.detail({ chatId: activeChatId }),
       );
-      const previousLists =
-        queryClient.getQueriesData<ChatSummary[]>(chatListQueryFilter);
+      const previousLists = queryClient.getQueriesData<ChatSummary[]>(chatListQueryFilter);
 
-      queryClient.setQueryData<Chat>(
-        queryKeys.chats.detail({ chatId: activeChatId }),
-        (old) => (old ? { ...old, ...patch } : old),
+      queryClient.setQueryData<Chat>(queryKeys.chats.detail({ chatId: activeChatId }), (old) =>
+        old ? { ...old, ...patch } : old,
       );
       queryClient.setQueriesData<ChatSummary[]>(chatListQueryFilter, (old) =>
-        old?.map((chat) =>
-          chat.id === activeChatId ? { ...chat, ...patch } : chat,
-        ),
+        old?.map((chat) => (chat.id === activeChatId ? { ...chat, ...patch } : chat)),
       );
 
       return { previousChat, previousLists };

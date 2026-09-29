@@ -2,33 +2,14 @@ import { and, desc, eq, gt } from "drizzle-orm";
 import log from "electron-log";
 import { z } from "zod";
 import { db } from "@/db";
-import {
-  apps,
-  messages,
-  workerProposals,
-  workerRunSteps,
-  workerRuns,
-} from "@/db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { apps, messages, workerProposals, workerRunSteps, workerRuns } from "@/db/schema";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { createChatForApp } from "../utils/chat_creation_utils";
 import { extractJson } from "../utils/extract_json";
-import {
-  readConsensus,
-  writeConsensus,
-  consensusDiff,
-} from "../utils/worker_consensus";
-import {
-  getOctopusStudioAppPath,
-  getChatProjectRootPath,
-} from "../../paths/paths";
+import { readConsensus, writeConsensus, consensusDiff } from "../utils/worker_consensus";
+import { getOctopusStudioAppPath, getChatProjectRootPath } from "../../paths/paths";
 import { readSettings, DEFAULT_SETTINGS } from "../../main/settings";
-import {
-  dispatchScheduledTaskTurn,
-  waitForChatActorIdle,
-} from "./chat_actor_service";
+import { dispatchScheduledTaskTurn, waitForChatActorIdle } from "./chat_actor_service";
 
 const logger = log.scope("worker_run_service");
 
@@ -79,9 +60,7 @@ const ProposalJsonSchema = z.object({
   // Generalized action shape (spec §1: { name, steps, type, target, why, tool }).
   name: z.string().optional(),
   steps: z.array(z.string()).optional(),
-  type: z
-    .enum(["design", "research", "social", "dev", "content", "admin", "other"])
-    .optional(),
+  type: z.enum(["design", "research", "social", "dev", "content", "admin", "other"]).optional(),
   target: z.string().optional(),
   proposedAction: z.string().optional(),
   why: z.string().optional(),
@@ -114,8 +93,7 @@ function extractProposal(report: string): ExtractedProposal {
   if (json) {
     try {
       const parsed = ProposalJsonSchema.parse(JSON.parse(json));
-      const name =
-        parsed.name ?? parsed.proposedAction ?? parsed.summary ?? stripped.slice(0, 120);
+      const name = parsed.name ?? parsed.proposedAction ?? parsed.summary ?? stripped.slice(0, 120);
       return {
         name,
         steps: parsed.steps ?? [],
@@ -416,10 +394,7 @@ async function finalizeProposal(runId: number): Promise<void> {
   const historyLine = `${new Date().toISOString()} — proposed: ${proposal.summary}`;
   writeConsensus(projectPath, { nextAction: proposal.summary, historyLine });
   const after = readConsensus(projectPath);
-  const diff = consensusDiff(
-    before.nextAction || "(none)",
-    after.nextAction || "(none)",
-  );
+  const diff = consensusDiff(before.nextAction || "(none)", after.nextAction || "(none)");
 
   const settings = await readSettings();
   const guardrails = settings.guardrails ?? DEFAULT_SETTINGS.guardrails ?? [];
@@ -428,14 +403,7 @@ async function finalizeProposal(runId: number): Promise<void> {
   await db.insert(workerProposals).values({
     projectId,
     runId,
-    type: proposal.type as
-      | "design"
-      | "research"
-      | "social"
-      | "dev"
-      | "content"
-      | "admin"
-      | "other",
+    type: proposal.type as "design" | "research" | "social" | "dev" | "content" | "admin" | "other",
     target: proposal.target,
     tool: proposal.tool,
     summary: proposal.summary,
@@ -461,10 +429,7 @@ export async function cancelSquadRun(runId: number): Promise<void> {
   if (run.status !== "running") {
     return;
   }
-  await db
-    .update(workerRuns)
-    .set({ cancelRequested: true })
-    .where(eq(workerRuns.id, runId));
+  await db.update(workerRuns).set({ cancelRequested: true }).where(eq(workerRuns.id, runId));
   if (run.chatId != null) {
     // Interrupts the in-flight turn; the loop in runSquad() notices
     // cancelRequested before dispatching the next step regardless.

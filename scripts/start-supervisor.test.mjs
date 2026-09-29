@@ -13,10 +13,7 @@ import {
   unregisterMacElectronApps,
 } from "./start-supervisor.mjs";
 
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const electronExecutable = path.join(
   repoRoot,
   "node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
@@ -25,14 +22,8 @@ const crashpadExecutable = path.join(
   repoRoot,
   "node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Framework.framework/Helpers/chrome_crashpad_handler",
 );
-const linuxSandboxHelper = path.join(
-  repoRoot,
-  "node_modules/electron/dist/chrome-sandbox",
-);
-const forgeCli = path.join(
-  repoRoot,
-  "node_modules/@electron-forge/cli/dist/electron-forge.js",
-);
+const linuxSandboxHelper = path.join(repoRoot, "node_modules/electron/dist/chrome-sandbox");
+const forgeCli = path.join(repoRoot, "node_modules/@electron-forge/cli/dist/electron-forge.js");
 
 const missingFile = () =>
   Object.assign(new Error("ENOENT: no such file or directory"), {
@@ -79,10 +70,7 @@ test("finds detached Crashpad processes for this checkout", () => {
   300  99 ${repoRoot}-zero/node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Framework.framework/Helpers/chrome_crashpad_handler --database=octopusStudio-zero
 `;
 
-  assert.deepEqual(
-    findMacCrashpadPids({ runSync: () => ({ stdout }) }),
-    [200, 201],
-  );
+  assert.deepEqual(findMacCrashpadPids({ runSync: () => ({ stdout }) }), [200, 201]);
 });
 
 test("signals detached development processes individually", () => {
@@ -128,16 +116,7 @@ test("repeated terminal signals cannot interrupt forced cleanup", () => {
   const parentProcess = new EventEmitter();
   parentProcess.execPath = process.execPath;
   parentProcess.env = {};
-  parentProcess.exitCode =     {
-      name: "helper missing, so Chromium uses its namespace sandbox",
-      platform: "linux",
-      statSync: () => {
-        throw missingFile();
-      },
-      expected: false,
-    },
-  ];
-;
+  parentProcess.exitCode = undefined;
   const child = new EventEmitter();
   child.pid = 4321;
   const spawnCalls = [];
@@ -237,13 +216,7 @@ test("forwards the unsandboxed launch to Electron through Forge", () => {
     statSync: statsWith(1000, 0o755),
   });
 
-  assert.deepEqual(args, [
-    forgeCli,
-    "start",
-    "--inspect",
-    "--",
-    "--no-sandbox",
-  ]);
+  assert.deepEqual(args, [forgeCli, "start", "--inspect", "--", "--no-sandbox"]);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /--no-sandbox|unsandboxed/);
   assert.match(warnings[0], new RegExp(linuxSandboxHelper));

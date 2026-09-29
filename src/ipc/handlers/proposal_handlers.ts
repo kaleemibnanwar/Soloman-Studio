@@ -1,9 +1,5 @@
 import { type IpcMainInvokeEvent } from "electron";
-import type {
-  CodeProposal,
-  ProposalResult,
-  ActionProposal,
-} from "../../lib/schemas";
+import type { CodeProposal, ProposalResult, ActionProposal } from "../../lib/schemas";
 import { db } from "../../db";
 import { messages, chats } from "../../db/schema";
 import { desc, eq, and } from "drizzle-orm";
@@ -22,11 +18,7 @@ import {
 } from "../utils/octopus_studio_tag_parser";
 import log from "electron-log";
 import { isServerFunction } from "../../supabase_admin/supabase_utils";
-import {
-  estimateMessagesTokens,
-  estimateTokens,
-  getContextWindow,
-} from "../utils/token_utils";
+import { estimateMessagesTokens, estimateTokens, getContextWindow } from "../utils/token_utils";
 import { extractCodebase } from "../../utils/codebase";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { withLock } from "../utils/lock_utils";
@@ -35,10 +27,7 @@ import { ApproveProposalResult } from "@/ipc/types";
 import { validateChatContext } from "../utils/context_paths_utils";
 import { readSettings } from "@/main/settings";
 import { resolveChatModeForTurn } from "./chat_mode_resolution";
-import {
-  normalizeModelSelection,
-  resolveDefaultModelSelection,
-} from "@/ipc/utils/model_effort";
+import { normalizeModelSelection, resolveDefaultModelSelection } from "@/ipc/utils/model_effort";
 
 const logger = log.scope("proposal_handlers");
 const handle = createLoggedHandler(logger);
@@ -71,9 +60,7 @@ function cleanupExpiredCacheEntries() {
   });
 
   if (expiredCount > 0) {
-    logger.debug(
-      `Cleaned up ${expiredCount} expired codebase token cache entries`,
-    );
+    logger.debug(`Cleaned up ${expiredCount} expired codebase token cache entries`);
   }
 }
 
@@ -151,32 +138,26 @@ const getProposalHandler = async (
         !latestAssistantMessage?.approvalState
       ) {
         const messageId = latestAssistantMessage.id; // Get the message ID
-        logger.debug(
-          `Found latest assistant message (ID: ${messageId}), parsing content...`,
-        );
+        logger.debug(`Found latest assistant message (ID: ${messageId}), parsing content...`);
         const messageContent = latestAssistantMessage.content;
 
         const proposalTitle = getOctopusStudioChatSummaryTag(messageContent);
 
         const proposalWriteFiles = getOctopusStudioWriteTags(messageContent);
-        const proposalSearchReplaceFiles =
-          getOctopusStudioSearchReplaceTags(messageContent);
+        const proposalSearchReplaceFiles = getOctopusStudioSearchReplaceTags(messageContent);
         const proposalRenameFiles = getOctopusStudioRenameTags(messageContent);
         const proposalDeleteFiles = getOctopusStudioDeleteTags(messageContent);
-        const proposalExecuteSqlQueries =
-          getOctopusStudioExecuteSqlTags(messageContent);
+        const proposalExecuteSqlQueries = getOctopusStudioExecuteSqlTags(messageContent);
         const packagesAdded = getOctopusStudioAddDependencyTags(messageContent);
 
         const filesChanged = [
-          ...proposalWriteFiles
-            .concat(proposalSearchReplaceFiles)
-            .map((tag) => ({
-              name: path.basename(tag.path),
-              path: tag.path,
-              summary: tag.description ?? "(no change summary found)", // Generic summary
-              type: "write" as const,
-              isServerFunction: isServerFunction(tag.path),
-            })),
+          ...proposalWriteFiles.concat(proposalSearchReplaceFiles).map((tag) => ({
+            name: path.basename(tag.path),
+            path: tag.path,
+            summary: tag.description ?? "(no change summary found)", // Generic summary
+            type: "write" as const,
+            isServerFunction: isServerFunction(tag.path),
+          })),
           ...proposalRenameFiles.map((tag) => ({
             name: path.basename(tag.to),
             path: tag.to,
@@ -225,21 +206,16 @@ const getProposalHandler = async (
             messageId,
           };
         } else {
-          logger.debug(
-            "No relevant tags found in the latest assistant message content.",
-          );
+          logger.debug("No relevant tags found in the latest assistant message content.");
         }
       }
       const actions: ActionProposal["actions"] = [];
       if (latestAssistantMessage?.content) {
-        const writeTags = getOctopusStudioWriteTags(
-          latestAssistantMessage.content,
-        );
+        const writeTags = getOctopusStudioWriteTags(latestAssistantMessage.content);
         const refactorTarget = writeTags.reduce(
           (largest, tag) => {
             const lineCount = tag.content.split("\n").length;
-            return lineCount > 500 &&
-              (!largest || lineCount > largest.lineCount)
+            return lineCount > 500 && (!largest || lineCount > largest.lineCount)
               ? { path: tag.path, lineCount }
               : largest;
           },
@@ -251,19 +227,14 @@ const getProposalHandler = async (
             path: refactorTarget.path,
           });
         }
-        if (
-          writeTags.length === 0 &&
-          latestAssistantMessage.content.includes("```")
-        ) {
+        if (writeTags.length === 0 && latestAssistantMessage.content.includes("```")) {
           actions.push({
             id: "write-code-properly",
           });
         }
 
         // Check for command tags and add corresponding actions
-        const commandTags = getOctopusStudioCommandTags(
-          latestAssistantMessage.content,
-        );
+        const commandTags = getOctopusStudioCommandTags(latestAssistantMessage.content);
         if (commandTags.includes("rebuild")) {
           actions.push({
             id: "rebuild",
@@ -287,10 +258,7 @@ const getProposalHandler = async (
         with: {
           app: true,
           messages: {
-            orderBy: (messages, { asc }) => [
-              asc(messages.createdAt),
-              asc(messages.id),
-            ],
+            orderBy: (messages, { asc }) => [asc(messages.createdAt), asc(messages.id)],
           },
         },
       });
@@ -316,10 +284,7 @@ const getProposalHandler = async (
               );
 
         const totalTokens = messagesTokenCount + codebaseTokenCount;
-        const contextWindow = Math.min(
-          await getContextWindow(selectedModel),
-          100_000,
-        );
+        const contextWindow = Math.min(await getContextWindow(selectedModel), 100_000);
         logger.debug(
           `Token usage: ${totalTokens}/${contextWindow} (${(totalTokens / contextWindow) * 100}%)`,
         );
@@ -391,9 +356,7 @@ const approveProposalHandler = async (
   });
 
   if (!messageToApprove?.content) {
-    throw new Error(
-      `Assistant message not found for chatId: ${chatId}, messageId: ${messageId}`,
-    );
+    throw new Error(`Assistant message not found for chatId: ${chatId}, messageId: ${messageId}`);
   }
 
   // 2. Process the actions defined in the message content
@@ -430,9 +393,7 @@ const rejectProposalHandler = async (
   _event: IpcMainInvokeEvent,
   { chatId, messageId }: { chatId: number; messageId: number },
 ): Promise<void> => {
-  logger.debug(
-    `IPC: reject-proposal called for chatId: ${chatId}, messageId: ${messageId}`,
-  );
+  logger.debug(`IPC: reject-proposal called for chatId: ${chatId}, messageId: ${messageId}`);
 
   // 1. Verify the message exists and is an assistant message
   const messageToReject = await db.query.messages.findFirst({
@@ -445,16 +406,11 @@ const rejectProposalHandler = async (
   });
 
   if (!messageToReject) {
-    throw new Error(
-      `Assistant message not found for chatId: ${chatId}, messageId: ${messageId}`,
-    );
+    throw new Error(`Assistant message not found for chatId: ${chatId}, messageId: ${messageId}`);
   }
 
   // 2. Update the message's approval state to 'rejected'
-  await db
-    .update(messages)
-    .set({ approvalState: "rejected" })
-    .where(eq(messages.id, messageId));
+  await db.update(messages).set({ approvalState: "rejected" }).where(eq(messages.id, messageId));
 
   logger.debug(`Message ${messageId} marked as rejected.`);
 };

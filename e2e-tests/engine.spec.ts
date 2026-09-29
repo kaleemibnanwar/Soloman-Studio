@@ -22,45 +22,36 @@ testSkipIfWindows("send message to engine - openai gpt-5", async ({ po }) => {
   await po.snapshotServerDump("request");
 });
 
-testSkipIfWindows(
-  "send message to engine - anthropic claude sonnet 4",
-  async ({ po }) => {
-    await po.setUpOctopusStudioPro();
-    // By default, it's using auto which points to Flash 2.5 and doesn't
-    // use engine.
-    await po.modelPicker.selectModel({
-      provider: "Anthropic",
-      model: "Claude Sonnet 4",
-    });
-    await po.sendPrompt("[dump] tc=turbo-edits");
+testSkipIfWindows("send message to engine - anthropic claude sonnet 4", async ({ po }) => {
+  await po.setUpOctopusStudioPro();
+  // By default, it's using auto which points to Flash 2.5 and doesn't
+  // use engine.
+  await po.modelPicker.selectModel({
+    provider: "Anthropic",
+    model: "Claude Sonnet 4",
+  });
+  await po.sendPrompt("[dump] tc=turbo-edits");
 
-    await po.snapshotServerDump("request");
-  },
-);
+  await po.snapshotServerDump("request");
+});
 
-testSkipIfWindows(
-  "smart auto should send message to engine",
-  async ({ po }) => {
-    await po.setUpOctopusStudioPro();
-    await po.sendPrompt("[dump] tc=turbo-edits");
+testSkipIfWindows("smart auto should send message to engine", async ({ po }) => {
+  await po.setUpOctopusStudioPro();
+  await po.sendPrompt("[dump] tc=turbo-edits");
 
-    await po.snapshotServerDump("request");
-    await po.snapshotMessages({ replaceDumpPath: true });
-  },
-);
+  await po.snapshotServerDump("request");
+  await po.snapshotMessages({ replaceDumpPath: true });
+});
 
-testSkipIfWindows(
-  "regular auto should send message to engine",
-  async ({ po }) => {
-    await po.setUpOctopusStudioPro();
-    const proModesDialog = await po.openProModesDialog({
-      location: "home-chat-input-container",
-    });
-    await proModesDialog.setSmartContextMode("off");
-    await proModesDialog.close();
-    await po.sendPrompt("[dump] tc=turbo-edits");
+testSkipIfWindows("regular auto should send message to engine", async ({ po }) => {
+  await po.setUpOctopusStudioPro();
+  const proModesDialog = await po.openProModesDialog({
+    location: "home-chat-input-container",
+  });
+  await proModesDialog.setSmartContextMode("off");
+  await proModesDialog.close();
+  await po.sendPrompt("[dump] tc=turbo-edits");
 
-    await po.snapshotServerDump("request");
-    await po.snapshotMessages({ replaceDumpPath: true });
-  },
-);
+  await po.snapshotServerDump("request");
+  await po.snapshotMessages({ replaceDumpPath: true });
+});

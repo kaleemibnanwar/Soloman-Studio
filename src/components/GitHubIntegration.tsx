@@ -53,9 +53,7 @@ export function GitHubIntegration() {
         disabled={isDisconnecting}
         className="flex items-center gap-2"
       >
-        {isDisconnecting
-          ? t("common:disconnecting")
-          : t("integrations.github.disconnect")}
+        {isDisconnecting ? t("common:disconnecting") : t("integrations.github.disconnect")}
         <Github className="h-4 w-4" />
       </Button>
     </div>

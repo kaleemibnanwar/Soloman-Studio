@@ -22,10 +22,7 @@ interface ScriptPayload {
   output?: string;
 }
 
-export const OctopusStudioScript: React.FC<OctopusStudioScriptProps> = ({
-  node,
-  children,
-}) => {
+export const OctopusStudioScript: React.FC<OctopusStudioScriptProps> = ({ node, children }) => {
   const description: string = node?.properties?.description || "Ran a script";
   const truncated = node?.properties?.truncated === "true";
   const executionMs: string = node?.properties?.executionMs || "";
@@ -49,16 +46,11 @@ export const OctopusStudioScript: React.FC<OctopusStudioScriptProps> = ({
       onClick={() => setExpanded((value) => !value)}
       data-testid="octopus-studio-script-card"
     >
-      <OctopusStudioCardHeader
-        icon={<ScrollText size={15} />}
-        accentColor="amber"
-      >
+      <OctopusStudioCardHeader icon={<ScrollText size={15} />} accentColor="amber">
         <OctopusStudioBadge color="amber">Script</OctopusStudioBadge>
         <span className="text-sm text-foreground truncate">{description}</span>
         {executionMs && (
-          <span className="text-xs text-muted-foreground shrink-0">
-            {executionMs}ms
-          </span>
+          <span className="text-xs text-muted-foreground shrink-0">{executionMs}ms</span>
         )}
         {truncated && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-200 dark:ring-amber-800 shrink-0">
@@ -70,14 +62,8 @@ export const OctopusStudioScript: React.FC<OctopusStudioScriptProps> = ({
         </div>
       </OctopusStudioCardHeader>
       <OctopusStudioCardContent isExpanded={expanded}>
-        <div
-          className="text-xs cursor-text"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <Tabs
-            defaultValue={payload.script ? "script" : "output"}
-            className="gap-2"
-          >
+        <div className="text-xs cursor-text" onClick={(event) => event.stopPropagation()}>
+          <Tabs defaultValue={payload.script ? "script" : "output"} className="gap-2">
             <div className="flex items-center justify-between gap-2">
               <TabsList className="h-8 p-0.5">
                 {payload.script && (
@@ -107,21 +93,16 @@ export const OctopusStudioScript: React.FC<OctopusStudioScriptProps> = ({
             </div>
             <TabsContent value="output" className="mt-0">
               {payload.output?.trim() ? (
-                <CodeHighlight className="language-text">
-                  {payload.output}
-                </CodeHighlight>
+                <CodeHighlight className="language-text">{payload.output}</CodeHighlight>
               ) : (
                 <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-                  Script produced no output. The model may try a different
-                  approach.
+                  Script produced no output. The model may try a different approach.
                 </div>
               )}
             </TabsContent>
             {payload.script && (
               <TabsContent value="script" className="mt-0">
-                <CodeHighlight className="language-js">
-                  {payload.script}
-                </CodeHighlight>
+                <CodeHighlight className="language-js">{payload.script}</CodeHighlight>
               </TabsContent>
             )}
           </Tabs>

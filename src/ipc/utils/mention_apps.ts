@@ -25,9 +25,7 @@ export interface MentionedAppCodebaseEntry extends MentionedAppReference {
  * downstream (e.g., AgentContext.referencedApps Map), so two apps sharing a
  * name would silently collide. Keep the first match and warn.
  */
-function dedupeAppsByName(
-  candidates: (typeof apps.$inferSelect)[],
-): (typeof apps.$inferSelect)[] {
+function dedupeAppsByName(candidates: (typeof apps.$inferSelect)[]): (typeof apps.$inferSelect)[] {
   const dedupedApps: (typeof apps.$inferSelect)[] = [];
   const seenNames = new Set<string>();
   for (const app of candidates) {
@@ -54,8 +52,7 @@ async function resolveMentionedApps(
     return [];
   }
 
-  const appsToSearch =
-    allApps ?? (await db.query.apps.findMany({ where: eq(apps.type, "app") }));
+  const appsToSearch = allApps ?? (await db.query.apps.findMany({ where: eq(apps.type, "app") }));
 
   const mentionedApps = appsToSearch.filter(
     (app) =>
@@ -67,10 +64,7 @@ async function resolveMentionedApps(
   return dedupeAppsByName(mentionedApps);
 }
 
-async function resolveMentionedAppsFromPrompt(
-  prompt: string,
-  excludeCurrentAppId?: number,
-) {
+async function resolveMentionedAppsFromPrompt(prompt: string, excludeCurrentAppId?: number) {
   if (!prompt.includes("@app:")) {
     return [];
   }
@@ -165,8 +159,7 @@ export async function resolveStickyReferencedApps({
   const candidates = persistedAppIds
     .map((id) => appsById.get(id))
     .filter(
-      (app): app is typeof apps.$inferSelect =>
-        app !== undefined && app.id !== excludeCurrentAppId,
+      (app): app is typeof apps.$inferSelect => app !== undefined && app.id !== excludeCurrentAppId,
     );
 
   if (hasNewMention) {
@@ -203,25 +196,15 @@ export async function resolveStickyReferencedApps({
  * Read the sticky referenced-app ids stored on a chat, tolerating rows written
  * before the column existed or by an older shape.
  */
-export function readStoredReferencedAppIds(
-  stored: number[] | null | undefined,
-): number[] {
+export function readStoredReferencedAppIds(stored: number[] | null | undefined): number[] {
   if (!Array.isArray(stored)) {
     return [];
   }
-  return stored.filter(
-    (id): id is number => typeof id === "number" && Number.isInteger(id),
-  );
+  return stored.filter((id): id is number => typeof id === "number" && Number.isInteger(id));
 }
 
-export async function persistReferencedAppIds(
-  chatId: number,
-  appIds: number[],
-): Promise<void> {
-  await db
-    .update(chats)
-    .set({ referencedAppIds: appIds })
-    .where(eq(chats.id, chatId));
+export async function persistReferencedAppIds(chatId: number, appIds: number[]): Promise<void> {
+  await db.update(chats).set({ referencedAppIds: appIds }).where(eq(chats.id, chatId));
 
   // Announce the write immediately. This runs mid-turn, and the stream only
   // invalidates the chat when it terminates, so without this the composer's
@@ -257,10 +240,7 @@ export async function extractMentionedAppsCodebasesFromPrompt(
   prompt: string,
   excludeCurrentAppId?: number,
 ): Promise<MentionedAppCodebaseEntry[]> {
-  const dedupedApps = await resolveMentionedAppsFromPrompt(
-    prompt,
-    excludeCurrentAppId,
-  );
+  const dedupedApps = await resolveMentionedAppsFromPrompt(prompt, excludeCurrentAppId);
 
   return extractCodebasesForApps(dedupedApps);
 }

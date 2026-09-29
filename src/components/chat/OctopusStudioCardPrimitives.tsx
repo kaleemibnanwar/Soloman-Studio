@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  ChevronRight,
-  Loader2,
-  CircleX,
-  CheckCircle2,
-} from "lucide-react";
+import { AlertTriangle, ChevronRight, Loader2, CircleX, CheckCircle2 } from "lucide-react";
 import { CustomTagState } from "./stateTypes";
 
 /**
@@ -41,19 +35,15 @@ const ACCENT_BORDER: Record<OctopusStudioAccentColor, string> = {
 
 const ACCENT_ICON_BG: Record<OctopusStudioAccentColor, string> = {
   blue: "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400",
-  purple:
-    "bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400",
-  violet:
-    "bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400",
+  purple: "bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400",
+  violet: "bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400",
   red: "bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400",
   amber: "bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400",
   green: "bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400",
-  emerald:
-    "bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400",
+  emerald: "bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400",
   teal: "bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400",
   sky: "bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400",
-  indigo:
-    "bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400",
+  indigo: "bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400",
   slate: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
 };
 
@@ -137,16 +127,11 @@ export function OctopusStudioCard({
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
-      aria-expanded={
-        onClick && isExpanded !== undefined ? isExpanded : undefined
-      }
+      aria-expanded={onClick && isExpanded !== undefined ? isExpanded : undefined}
       onKeyDown={
         onClick
           ? (e) => {
-              if (
-                (e.key === "Enter" || e.key === " ") &&
-                e.target === e.currentTarget
-              ) {
+              if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
                 e.preventDefault();
                 onClick();
               }
@@ -198,10 +183,7 @@ interface OctopusStudioBadgeProps {
 /**
  * Small pill badge for labeling card types (e.g. "GREP", "Turbo Edit", "SQL").
  */
-export function OctopusStudioBadge({
-  children,
-  color = "blue",
-}: OctopusStudioBadgeProps) {
+export function OctopusStudioBadge({ children, color = "blue" }: OctopusStudioBadgeProps) {
   return (
     <span
       className={`inline-flex items-center text-[11px] font-semibold px-1.5 py-0.5 rounded-md ring-1 ring-inset ${ACCENT_BADGE[color]}`}
@@ -220,9 +202,7 @@ interface OctopusStudioExpandIconProps {
 /**
  * Animated chevron icon for expand/collapse. Rotates 90 degrees when expanded.
  */
-export function OctopusStudioExpandIcon({
-  isExpanded,
-}: OctopusStudioExpandIconProps) {
+export function OctopusStudioExpandIcon({ isExpanded }: OctopusStudioExpandIconProps) {
   return (
     <ChevronRight
       size={16}
@@ -311,9 +291,7 @@ export function OctopusStudioStateIndicator({
  * Small green checkmark for completed state, useful for status-type cards.
  */
 export function OctopusStudioFinishedIcon() {
-  return (
-    <CheckCircle2 className="size-4 text-green-600 dark:text-green-500 shrink-0" />
-  );
+  return <CheckCircle2 className="size-4 text-green-600 dark:text-green-500 shrink-0" />;
 }
 
 // -- OctopusStudioCardContent --
@@ -345,9 +323,7 @@ export function OctopusStudioCardContent({
   return (
     <div
       className={`grid transition-all duration-200 ease-in-out ${
-        isExpanded
-          ? "grid-rows-[1fr] opacity-100"
-          : "grid-rows-[0fr] opacity-0 pointer-events-none"
+        isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 pointer-events-none"
       } ${className}`}
     >
       <div className="overflow-hidden">
@@ -370,9 +346,7 @@ export function OctopusStudioFilePath({ path }: OctopusStudioFilePathProps) {
   if (!path) return null;
   return (
     <div className="px-3 pb-1">
-      <span className="text-[11px] text-muted-foreground font-mono truncate block">
-        {path}
-      </span>
+      <span className="text-[11px] text-muted-foreground font-mono truncate block">{path}</span>
     </div>
   );
 }
@@ -386,10 +360,6 @@ interface OctopusStudioDescriptionProps {
 /**
  * Description/summary text below the header.
  */
-export function OctopusStudioDescription({
-  children,
-}: OctopusStudioDescriptionProps) {
-  return (
-    <div className="px-3 pb-2 text-xs text-muted-foreground">{children}</div>
-  );
+export function OctopusStudioDescription({ children }: OctopusStudioDescriptionProps) {
+  return <div className="px-3 pb-2 text-xs text-muted-foreground">{children}</div>;
 }

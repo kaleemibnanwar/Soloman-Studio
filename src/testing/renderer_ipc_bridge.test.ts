@@ -2,10 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIpcSuccessEnvelope } from "@/ipc/contracts/core";
-import {
-  installRendererIpcBridge,
-  type RendererIpcBridge,
-} from "./renderer_ipc_bridge";
+import { installRendererIpcBridge, type RendererIpcBridge } from "./renderer_ipc_bridge";
 import type { ElectronMockShared } from "./electron_mock";
 
 type TestIpcRenderer = {
@@ -26,9 +23,8 @@ function createBridge(options?: { validateChannels?: boolean }): {
   const bridge = installRendererIpcBridge(shared, {
     validateChannels: options?.validateChannels ?? false,
   });
-  const ipcRenderer = (
-    window as unknown as { electron: { ipcRenderer: TestIpcRenderer } }
-  ).electron.ipcRenderer;
+  const ipcRenderer = (window as unknown as { electron: { ipcRenderer: TestIpcRenderer } }).electron
+    .ipcRenderer;
   return { bridge, shared, ipcRenderer };
 }
 
@@ -55,10 +51,7 @@ describe("installRendererIpcBridge", () => {
 
     bridge.send("chat:response:end", { chatId: 1 });
     await expect(
-      Promise.race([
-        nextMatch.then(() => "resolved"),
-        Promise.resolve("pending"),
-      ]),
+      Promise.race([nextMatch.then(() => "resolved"), Promise.resolve("pending")]),
     ).resolves.toBe("pending");
 
     bridge.send("other:event", { chatId: 2 });
@@ -81,13 +74,11 @@ describe("installRendererIpcBridge", () => {
     bridge = setup.bridge;
     const { shared, ipcRenderer } = setup;
 
-    shared.ipcHandlers.set("wrapped", (_event, input) =>
-      createIpcSuccessEnvelope({ input }),
-    );
+    shared.ipcHandlers.set("wrapped", (_event, input) => createIpcSuccessEnvelope({ input }));
 
-    await expect(ipcRenderer.invoke("wrapped", { value: 42 })).resolves.toEqual(
-      { input: { value: 42 } },
-    );
+    await expect(ipcRenderer.invoke("wrapped", { value: 42 })).resolves.toEqual({
+      input: { value: 42 },
+    });
 
     const invokeEntry = bridge.lastInvoke("wrapped");
     expect(invokeEntry).toMatchObject({
@@ -102,9 +93,7 @@ describe("installRendererIpcBridge", () => {
       value: "raw",
     });
 
-    expect(rawEnvelope).toEqual(
-      createIpcSuccessEnvelope({ input: { value: "raw" } }),
-    );
+    expect(rawEnvelope).toEqual(createIpcSuccessEnvelope({ input: { value: "raw" } }));
     expect(bridge.lastInvoke("wrapped")?.result).toEqual(rawEnvelope);
     expect(bridge.invokeLog).toHaveLength(2);
   });
@@ -113,9 +102,7 @@ describe("installRendererIpcBridge", () => {
     const setup = createBridge();
     bridge = setup.bridge;
 
-    await expect(
-      setup.ipcRenderer.invokeEnvelope("missing:channel", { id: 123 }),
-    ).rejects.toThrow(
+    await expect(setup.ipcRenderer.invokeEnvelope("missing:channel", { id: 123 })).rejects.toThrow(
       "[renderer-ipc-bridge] no ipcMain handler registered for 'missing:channel'",
     );
 
@@ -151,12 +138,8 @@ describe("installRendererIpcBridge", () => {
     // A handler for a channel outside the contract-derived whitelist: works
     // main-side, but the renderer bridge must reject it like preload does.
     shared.ipcHandlers.set("rogue:channel", () => "ok");
-    expect(() => ipcRenderer.invoke("rogue:channel")).toThrow(
-      "Invalid channel: rogue:channel",
-    );
-    expect(() => ipcRenderer.on("rogue:event", () => {})).toThrow(
-      "Invalid channel: rogue:event",
-    );
+    expect(() => ipcRenderer.invoke("rogue:channel")).toThrow("Invalid channel: rogue:channel");
+    expect(() => ipcRenderer.on("rogue:event", () => {})).toThrow("Invalid channel: rogue:event");
 
     // Whitelisted channels pass validation; a missing handler is still a
     // rejection collected in missingChannels (not a whitelist error).
@@ -185,9 +168,7 @@ describe("installRendererIpcBridge", () => {
       (input as { nested: { value: number } }).nested.value = 999;
       return "done";
     });
-    await expect(
-      ipcRenderer.invoke("mutates:input", rendererArg),
-    ).resolves.toBe("done");
+    await expect(ipcRenderer.invoke("mutates:input", rendererArg)).resolves.toBe("done");
     expect(rendererArg.nested.value).toBe(1);
 
     // Cloned event payloads: main mutating a sent payload after the fact must
@@ -241,9 +222,7 @@ describe("installRendererIpcBridge", () => {
     shared.ipcHandlers.set("first", () => "first-result");
     shared.ipcHandlers.set("second", () => "second-result");
 
-    void ipcRenderer
-      .invokeEnvelope("first")
-      .then(() => ipcRenderer.invokeEnvelope("second"));
+    void ipcRenderer.invokeEnvelope("first").then(() => ipcRenderer.invokeEnvelope("second"));
     await bridge.settleInFlight();
 
     expect(bridge.lastInvoke("second")).toMatchObject({

@@ -39,9 +39,7 @@ export async function readPlanFromDisk(params: {
     planDirForAppPath(params.appPath),
     `${planSlugForChat(params.chatId)}.md`,
   );
-  const { meta, content } = parsePlanFile(
-    await fs.promises.readFile(filePath, "utf-8"),
-  );
+  const { meta, content } = parsePlanFile(await fs.promises.readFile(filePath, "utf-8"));
   return {
     title: meta.title ?? "",
     ...(meta.summary ? { summary: meta.summary } : {}),

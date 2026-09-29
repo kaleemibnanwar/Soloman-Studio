@@ -65,9 +65,7 @@ export function CollectionDetailView({
 
       {memberApps.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <p className="text-muted-foreground text-center">
-            No apps in this collection yet.
-          </p>
+          <p className="text-muted-foreground text-center">No apps in this collection yet.</p>
           <Button size="sm" onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="mr-1 h-4 w-4" />
             Add apps

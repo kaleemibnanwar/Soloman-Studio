@@ -71,9 +71,7 @@
 
       const rect = el.getBoundingClientRect();
       const borderColor = isHighlighted ? "#00ff00" : "#7f22fe";
-      const backgroundColor = isHighlighted
-        ? "rgba(0, 255, 0, 0.05)"
-        : "rgba(127, 34, 254, 0.05)";
+      const backgroundColor = isHighlighted ? "rgba(0, 255, 0, 0.05)" : "rgba(127, 34, 254, 0.05)";
 
       css(overlay, {
         top: `${rect.top + window.scrollY}px`,
@@ -138,11 +136,7 @@
     });
 
     // Update hover overlay if visible
-    if (
-      hoverOverlay &&
-      hoverOverlay.style.display !== "none" &&
-      state.element
-    ) {
+    if (hoverOverlay && hoverOverlay.style.display !== "none" && state.element) {
       const rect = state.element.getBoundingClientRect();
       css(hoverOverlay, {
         top: `${rect.top + window.scrollY}px`,
@@ -155,9 +149,7 @@
     // Send updated coordinates for highlighted or selected component to parent
     if (highlightedElement) {
       // Multi-selector mode: send coordinates for the highlighted component
-      const highlightedItem = overlays.find(
-        ({ el }) => el === highlightedElement,
-      );
+      const highlightedItem = overlays.find(({ el }) => el === highlightedElement);
 
       if (highlightedItem) {
         const rect = highlightedItem.el.getBoundingClientRect();
@@ -207,10 +199,7 @@
       overlays.splice(indicesToRemove[i], 1);
     }
 
-    if (
-      highlightedElement &&
-      highlightedElement.dataset.octopusStudioId === componentId
-    ) {
+    if (highlightedElement && highlightedElement.dataset.octopusStudioId === componentId) {
       highlightedElement = null;
     }
   }
@@ -227,13 +216,7 @@
 
     // Never skip content-bearing elements
     const tag = el.tagName.toLowerCase();
-    if (
-      tag === "img" ||
-      tag === "video" ||
-      tag === "canvas" ||
-      tag === "svg" ||
-      tag === "iframe"
-    ) {
+    if (tag === "img" || tag === "video" || tag === "canvas" || tag === "svg" || tag === "iframe") {
       return el;
     }
 
@@ -260,8 +243,7 @@
 
     // This looks like an overlay — walk up to the parent with a octopusStudio-id
     let parent = el.parentElement;
-    while (parent && !parent.dataset.octopusStudioId)
-      parent = parent.parentElement;
+    while (parent && !parent.dataset.octopusStudioId) parent = parent.parentElement;
 
     return parent || el;
   }
@@ -271,8 +253,7 @@
     if (!componentCoordinates) return false;
 
     // Toolbar is positioned at bottom of component: top = coordinates.top + coordinates.height + 4px
-    const toolbarTop =
-      componentCoordinates.top + componentCoordinates.height + 4;
+    const toolbarTop = componentCoordinates.top + componentCoordinates.height + 4;
     const toolbarLeft = componentCoordinates.left;
     const toolbarHeight = 60;
     // Add some padding to the width since we don't know exact width
@@ -290,9 +271,7 @@
   function isHighlightedComponentChildOfSelected() {
     if (!highlightedElement) return null;
 
-    const highlightedItem = overlays.find(
-      ({ el }) => el === highlightedElement,
-    );
+    const highlightedItem = overlays.find(({ el }) => el === highlightedElement);
     if (!highlightedItem) return null;
 
     // Check if any other selected component contains the highlighted element
@@ -366,9 +345,7 @@
     // Check if mouse is over toolbar - if so, hide the label and treat as if mouse left component
     if (isMouseOverToolbar(e.clientX, e.clientY)) {
       if (currentHoveredElement) {
-        const previousItem = overlays.find(
-          (item) => item.el === currentHoveredElement,
-        );
+        const previousItem = overlays.find((item) => item.el === currentHoveredElement);
         if (previousItem) {
           updateSelectedOverlayLabel(previousItem, false);
         }
@@ -387,11 +364,7 @@
     const parentOfHighlighted = isHighlightedComponentChildOfSelected();
 
     // If hovering over the highlighted component and it has a parent, hide the parent's label
-    if (
-      hoveredItem &&
-      hoveredItem.el === highlightedElement &&
-      parentOfHighlighted
-    ) {
+    if (hoveredItem && hoveredItem.el === highlightedElement && parentOfHighlighted) {
       // Hide the parent component's label
       updateSelectedOverlayLabel(parentOfHighlighted, false);
       // Also clear currentHoveredElement if it's the parent
@@ -402,9 +375,7 @@
     }
 
     if (currentHoveredElement && currentHoveredElement !== el) {
-      const previousItem = overlays.find(
-        (item) => item.el === currentHoveredElement,
-      );
+      const previousItem = overlays.find((item) => item.el === currentHoveredElement);
       if (previousItem) {
         updateSelectedOverlayLabel(previousItem, false);
       }
@@ -475,9 +446,7 @@
 
     // Update only the previously highlighted component
     if (highlightedElement && highlightedElement !== state.element) {
-      const previousItem = overlays.find(
-        (item) => item.el === highlightedElement,
-      );
+      const previousItem = overlays.find((item) => item.el === highlightedElement);
       if (previousItem) {
         css(previousItem.overlay, {
           border: `3px solid #7f22fe`,
@@ -582,8 +551,7 @@
       isProMode = e.data.enabled;
     }
     if (e.data.type === "activate-octopusStudio-component-selector") activate();
-    if (e.data.type === "deactivate-octopusStudio-component-selector")
-      deactivate();
+    if (e.data.type === "deactivate-octopusStudio-component-selector") deactivate();
     if (e.data.type === "activate-octopusStudio-visual-editing") {
       activate();
     }
@@ -591,8 +559,7 @@
       deactivate();
       clearOverlays();
     }
-    if (e.data.type === "clear-octopusStudio-component-overlays")
-      clearOverlays();
+    if (e.data.type === "clear-octopusStudio-component-overlays") clearOverlays();
     if (e.data.type === "update-octopusStudio-overlay-positions") {
       updateAllOverlayPositions();
     }
@@ -613,9 +580,7 @@
       if (Array.isArray(componentIds)) {
         clearOverlays();
         for (const id of componentIds) {
-          const el = document.querySelector(
-            `[data-octopusStudio-id="${CSS.escape(id)}"]`,
-          );
+          const el = document.querySelector(`[data-octopusStudio-id="${CSS.escape(id)}"]`);
           if (el) {
             updateOverlay(el, true);
           }
@@ -685,9 +650,7 @@
       }
 
       // If not found, set up MutationObserver to watch for tagged elements
-      console.debug(
-        "OctopusStudio component selector waiting for tagged elements to appear...",
-      );
+      console.debug("OctopusStudio component selector waiting for tagged elements to appear...");
 
       observer = new MutationObserver((mutations) => {
         // Filter mutations to only process relevant changes

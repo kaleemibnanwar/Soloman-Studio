@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { ipc } from "@/ipc/types";
 import { SpreadsheetGrid } from "./spreadsheet/SpreadsheetGrid";
-import { type SheetState, makeGrid } from "./spreadsheet/types";
+import {
+  type SheetState,
+  makeGrid,
+  ensureMinGrid,
+  DEFAULT_MIN_ROWS,
+  DEFAULT_MIN_COLS,
+} from "./spreadsheet/types";
 import { evaluateWorkbook, formulaValueToDisplayString } from "./spreadsheet/formulaEngine";
 
 interface CsvEditorProps {
@@ -59,24 +65,19 @@ function stringifyCsv(rows: string[][]): string {
   return (
     rows
       .map((row) =>
-        row
-          .map((cell) =>
-            /[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell,
-          )
-          .join(","),
+        row.map((cell) => (/[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell)).join(","),
       )
       .join("\n") + "\n"
   );
 }
 
 function toSheet(rows: string[][]): SheetState {
-  const width = rows.reduce((max, row) => Math.max(max, row.length), 0) || 1;
-  const grid =
+  const width = rows.reduce((max, row) => Math.max(max, row.length), 0) || DEFAULT_MIN_COLS;
+  const rawGrid =
     rows.length > 0
-      ? rows.map((row) =>
-          Array.from({ length: width }, (_, c) => ({ text: row[c] ?? "" })),
-        )
-      : makeGrid(1, 1);
+      ? rows.map((row) => Array.from({ length: width }, (_, c) => ({ text: row[c] ?? "" })))
+      : makeGrid(DEFAULT_MIN_ROWS, DEFAULT_MIN_COLS);
+  const grid = ensureMinGrid(rawGrid);
   return { id: "csv", name: "Sheet1", grid };
 }
 
@@ -135,9 +136,23 @@ export function CsvEditor({ appId, filePath }: CsvEditorProps) {
       onSave={async (sheets) => {
         if (appId == null) return;
         // CSV has no formula format, so save the computed value (matching what's on screen), not the raw "=SUM(...)" text.
-        const computed = evaluateWorkbook(sheets).get(sheets[0].id) ?? sheets[0].grid.map((row) => row.map((cell) => cell.text));
-        const rows = computed.map((row) => row.map(formulaValueToDisplayString));
-        await ipc.app.editAppFile({ appId, filePath, content: stringifyCsv(rows) });
+        const computed =
+          evaluateWorkbook(sheets).get(sheets[0].id) ??
+          sheets[0].grid.map((row) => row.map((cell) => cell.text));
+        const rawRows = computed.map((row) => row.map(formulaValueToDisplayString));
+        let maxR = -1;
+        let maxC = -1;
+        for (let r = 0; r < rawRows.length; r++) {
+          for (let c = 0; c < (rawRows[r]?.length ?? 0); c++) {
+            if (rawRows[r][c]?.trim() !== "") {
+              maxR = Math.max(maxR, r);
+              maxC = Math.max(maxC, c);
+            }
+          }
+        }
+        const trimmedRows =
+          maxR === -1 ? [[""]] : rawRows.slice(0, maxR + 1).map((row) => row.slice(0, maxC + 1));
+        await ipc.app.editAppFile({ appId, filePath, content: stringifyCsv(trimmedRows) });
       }}
     />
   );

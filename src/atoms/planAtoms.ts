@@ -23,9 +23,7 @@ export const planStateAtom = atom<PlanState>({
 // chat (true) or to continue in the current chat (false) when accepting the
 // plan. Read by the plan-handoff machine once the exit_plan event fires so it
 // can route the implementation accordingly.
-export const planAcceptInNewChatByChatIdAtom = atom<Map<number, boolean>>(
-  new Map(),
-);
+export const planAcceptInNewChatByChatIdAtom = atom<Map<number, boolean>>(new Map());
 
 export interface PlanAnnotation {
   id: string;
@@ -39,9 +37,7 @@ export interface PlanAnnotation {
   selectionLength: number;
 }
 
-export const planAnnotationsAtom = atom<Map<number, PlanAnnotation[]>>(
-  new Map(),
-);
+export const planAnnotationsAtom = atom<Map<number, PlanAnnotation[]>>(new Map());
 
 type AnnotationsMap = Map<number, PlanAnnotation[]>;
 
@@ -63,9 +59,7 @@ export function updatePlanAnnotation(
   comment: string,
 ): AnnotationsMap {
   const next = new Map(prev);
-  const list = (next.get(chatId) ?? []).map((a) =>
-    a.id === annotationId ? { ...a, comment } : a,
-  );
+  const list = (next.get(chatId) ?? []).map((a) => (a.id === annotationId ? { ...a, comment } : a));
   next.set(chatId, list);
   return next;
 }
@@ -84,10 +78,7 @@ export function removePlanAnnotation(
   return next;
 }
 
-export function clearPlanAnnotations(
-  prev: AnnotationsMap,
-  chatId: number,
-): AnnotationsMap {
+export function clearPlanAnnotations(prev: AnnotationsMap, chatId: number): AnnotationsMap {
   const next = new Map(prev);
   next.delete(chatId);
   return next;

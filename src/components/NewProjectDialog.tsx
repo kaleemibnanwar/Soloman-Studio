@@ -27,11 +27,7 @@ interface NewProjectDialogProps {
   defaultType?: ProjectType | null;
 }
 
-export function NewProjectDialog({
-  open,
-  onOpenChange,
-  defaultType,
-}: NewProjectDialogProps) {
+export function NewProjectDialog({ open, onOpenChange, defaultType }: NewProjectDialogProps) {
   const navigate = useNavigate();
   const { selectChat } = useSelectChat();
 
@@ -48,9 +44,7 @@ export function NewProjectDialog({
         chooseProgramming();
         return;
       }
-      setType(
-        defaultType !== undefined && defaultType !== null ? defaultType : null,
-      );
+      setType(defaultType !== undefined && defaultType !== null ? defaultType : null);
       setName("");
       setDirectory(null);
       setIsSubmitting(false);
@@ -79,9 +73,7 @@ export function NewProjectDialog({
       if (canceled || !picked) return;
       setDirectory(picked);
     } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to choose directory",
-      );
+      showError(error instanceof Error ? error.message : "Failed to choose directory");
     } finally {
       setPickingDirectory(false);
     }
@@ -104,11 +96,7 @@ export function NewProjectDialog({
       onOpenChange(false);
       selectChat({ chatId, appId });
     } catch (error) {
-      showError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create chat project",
-      );
+      showError(error instanceof Error ? error.message : "Failed to create chat project");
     } finally {
       setIsSubmitting(false);
     }
@@ -123,9 +111,7 @@ export function NewProjectDialog({
           <>
             <DialogHeader>
               <DialogTitle>New project</DialogTitle>
-              <DialogDescription>
-                What kind of project would you like to create?
-              </DialogDescription>
+              <DialogDescription>What kind of project would you like to create?</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-3 py-2">
               <button
@@ -161,8 +147,8 @@ export function NewProjectDialog({
             <DialogHeader>
               <DialogTitle>New chat project</DialogTitle>
               <DialogDescription>
-                Create a codeless workspace. Pick a folder for your documents,
-                or leave it empty to use your octopus-studio-projects folder.
+                Create a codeless workspace. Pick a folder for your documents, or leave it empty to
+                use your octopus-studio-projects folder.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 py-2">
@@ -211,8 +197,8 @@ export function NewProjectDialog({
                       Choose folder
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Optional. If skipped, a folder will be created in your
-                      octopus-studio-projects directory.
+                      Optional. If skipped, a folder will be created in your octopus-studio-projects
+                      directory.
                     </p>
                   </div>
                 )}
@@ -221,23 +207,14 @@ export function NewProjectDialog({
 
             <DialogFooter className="sm:justify-between">
               {defaultType === undefined || defaultType === null ? (
-                <Button
-                  variant="ghost"
-                  disabled={isSubmitting}
-                  onClick={() => setType(null)}
-                >
+                <Button variant="ghost" disabled={isSubmitting} onClick={() => setType(null)}>
                   Back
                 </Button>
               ) : (
                 <div />
               )}
-              <Button
-                onClick={createChatProject}
-                disabled={isSubmitting || !name.trim()}
-              >
-                {isSubmitting && (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                )}
+              <Button onClick={createChatProject} disabled={isSubmitting || !name.trim()}>
+                {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
                 {isSubmitting ? "Creating…" : "Create project"}
               </Button>
             </DialogFooter>

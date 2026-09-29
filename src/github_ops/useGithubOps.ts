@@ -33,10 +33,7 @@ function conflictResolutionClaimId(): string {
   return `github-conflict-resolution:${globalThis.crypto.randomUUID()}`;
 }
 
-export function useGithubOps(
-  appId: number | null,
-  options: { reconcileOnMount?: boolean } = {},
-) {
+export function useGithubOps(appId: number | null, options: { reconcileOnMount?: boolean } = {}) {
   const conflictClaimRef = useRef<string | null>(null);
   const routedAppId = appId ?? 0;
   const remote = useDistributedMachine(
@@ -54,8 +51,7 @@ export function useGithubOps(
           intent = {
             ...event,
             operationId: operationId(),
-            ...((event.op.type === "merge-abort" ||
-              event.op.type === "rebase-abort") &&
+            ...((event.op.type === "merge-abort" || event.op.type === "rebase-abort") &&
             remote.state.activeInvocationRef
               ? { activeInvocationRef: remote.state.activeInvocationRef }
               : {}),
@@ -84,16 +80,11 @@ export function useGithubOps(
         case "GIT_STATE":
         case "CONFLICT_RESOLUTION_STARTED":
         case "CONFLICT_VERIFICATION_FAILED":
-          throw new Error(
-            `${event.type} is a host-only GitHub operation event`,
-          );
+          throw new Error(`${event.type} is a host-only GitHub operation event`);
       }
       try {
         const receipt = await remote.dispatch(intent);
-        if (
-          event.type === "RESOLVE_WITH_AI_STARTED" &&
-          receipt.kind !== "applied"
-        ) {
+        if (event.type === "RESOLVE_WITH_AI_STARTED" && receipt.kind !== "applied") {
           conflictClaimRef.current = null;
         }
         return receipt;
@@ -111,9 +102,7 @@ export function useGithubOps(
       try {
         return await dispatch(event);
       } catch {
-        showError(
-          "GitHub controls are temporarily unavailable. Please try again.",
-        );
+        showError("GitHub controls are temporarily unavailable. Please try again.");
         return undefined;
       }
     },
@@ -207,9 +196,6 @@ export type GithubOpsDispatchReceipt = Awaited<
 
 export function isAppliedGithubOpsReceipt(
   receipt: GithubOpsDispatchReceipt,
-): receipt is Extract<
-  NonNullable<GithubOpsDispatchReceipt>,
-  { kind: "applied" }
-> {
+): receipt is Extract<NonNullable<GithubOpsDispatchReceipt>, { kind: "applied" }> {
   return receipt?.kind === "applied";
 }

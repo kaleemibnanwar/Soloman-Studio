@@ -31,9 +31,8 @@ const remoteMachineDefinitions = [
 
 assertRemoteProtocolV1CompatibilityInventory(remoteMachineDefinitions);
 
-export const remoteMachineManifest = createProductionRemoteMachineManifest(
-  remoteMachineDefinitions,
-);
+export const remoteMachineManifest =
+  createProductionRemoteMachineManifest(remoteMachineDefinitions);
 
 export const remoteMachineTransport = new RemoteMachineTransport({
   host: remoteMachineHost,
@@ -42,9 +41,7 @@ export const remoteMachineTransport = new RemoteMachineTransport({
   clock: systemClock,
   onProtocolMismatch: ({ sender, machineId, expected, received }) => {
     if (!sender.windowSessionId) return;
-    const endpoint = windowRegistry.endpointForSession(
-      sender.windowSessionId as WindowSessionId,
-    );
+    const endpoint = windowRegistry.endpointForSession(sender.windowSessionId as WindowSessionId);
     if (!endpoint || endpoint.isDestroyed()) return;
     endpoint.send("distributed-machine:protocol-mismatch", {
       machineId,

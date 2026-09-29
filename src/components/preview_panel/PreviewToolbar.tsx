@@ -1,9 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import {
-  type PreviewMode,
-  previewModeAtom,
-  selectedAppIdAtom,
-} from "@/atoms/appAtoms";
+import { type PreviewMode, previewModeAtom, selectedAppIdAtom } from "@/atoms/appAtoms";
 import { isChatPanelHiddenAtom, isPreviewOpenAtom } from "@/atoms/viewAtoms";
 import { useCheckProblems } from "@/hooks/useCheckProblems";
 import {
@@ -23,11 +19,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,25 +69,18 @@ const TAB_BASE_CLASSES =
 const problemBadgeClasses =
   "px-1 py-0.5 text-[10px] font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full min-w-[16px] text-center";
 
-export function getVersionDisplayId(
-  versionId: string,
-  versions: readonly Version[],
-): string {
+export function getVersionDisplayId(versionId: string, versions: readonly Version[]): string {
   const versionIndex = versions.findIndex(
     (version) =>
       version.oid === versionId ||
       version.oid.startsWith(versionId) ||
       versionId.startsWith(version.oid),
   );
-  return versionIndex === -1
-    ? versionId.slice(0, 7)
-    : String(versions.length - versionIndex);
+  return versionIndex === -1 ? versionId.slice(0, 7) : String(versions.length - versionIndex);
 }
 
 export function exitVersionEventForState(state: PreviewState): PreviewEvent {
-  return state.type === "viewing-diff"
-    ? { type: "CLOSE_VERSION_DIFF" }
-    : { type: "CLOSE" };
+  return state.type === "viewing-diff" ? { type: "CLOSE_VERSION_DIFF" } : { type: "CLOSE" };
 }
 
 export function VersionDiffContext({
@@ -114,10 +99,7 @@ export function VersionDiffContext({
       data-testid="version-diff-context"
       className="no-app-region-drag flex min-w-fit shrink items-center overflow-hidden rounded-md border border-primary/20 bg-primary/5 text-xs text-muted-foreground"
     >
-      <span
-        data-testid="version-diff-label"
-        className="hidden truncate px-2 py-1.5 @md:inline"
-      >
+      <span data-testid="version-diff-label" className="hidden truncate px-2 py-1.5 @md:inline">
         {versionLabel}
       </span>
       <button
@@ -197,12 +179,9 @@ export const PreviewToolbar = () => {
   const reducedMotion = useReducedMotionPref();
   const [previewMode, setPreviewMode] = useAtom(previewModeAtom);
   const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
-  const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(
-    isChatPanelHiddenAtom,
-  );
+  const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(isChatPanelHiddenAtom);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
-  const { state: previewState, send: sendPreviewEvent } =
-    useVersionPreview(selectedAppId);
+  const { state: previewState, send: sendPreviewEvent } = useVersionPreview(selectedAppId);
   const { versions } = useVersions(selectedAppId);
   const selectedVersionId = diffVersionIdForState(previewState);
   const isVersionSelected = selectedVersionId != null;
@@ -215,22 +194,14 @@ export const PreviewToolbar = () => {
   // Coerce a stale previewMode (e.g. "configure", "problems") to the preview
   // view so the toolbar and rendered panel don't diverge.
   useEffect(() => {
-    if (
-      isVersionSelected &&
-      previewMode !== "preview" &&
-      previewMode !== "code"
-    ) {
+    if (isVersionSelected && previewMode !== "preview" && previewMode !== "code") {
       setPreviewMode("preview");
     }
   }, [isVersionSelected, previewMode, setPreviewMode]);
 
   const problemCount = problemReport ? problemReport.problems.length : 0;
   const displayCount =
-    problemCount === 0
-      ? ""
-      : problemCount > 100
-        ? "100+"
-        : problemCount.toString();
+    problemCount === 0 ? "" : problemCount > 100 ? "100+" : problemCount.toString();
 
   const selectPanel = (panel: PreviewMode) => {
     if (previewMode === panel && isPreviewOpen) {
@@ -243,10 +214,7 @@ export const PreviewToolbar = () => {
     }
   };
 
-  const modeMeta: Record<
-    ToolbarMode,
-    { icon: React.ReactNode; label: string; testId: string }
-  > = {
+  const modeMeta: Record<ToolbarMode, { icon: React.ReactNode; label: string; testId: string }> = {
     preview: {
       icon: <Eye size={16} />,
       label: t("preview.title"),
@@ -284,18 +252,14 @@ export const PreviewToolbar = () => {
     },
   };
 
-  const tabOrder: readonly ToolbarMode[] = isVersionSelected
-    ? VERSION_TAB_ORDER
-    : TAB_ORDER;
+  const tabOrder: readonly ToolbarMode[] = isVersionSelected ? VERSION_TAB_ORDER : TAB_ORDER;
 
   // Overflow needs real pixel widths (labels vary by locale), so an invisible
   // replica of every tab is measured and the visible set computed from that.
   const tabsAreaRef = useRef<HTMLDivElement>(null);
   const measureRefs = useRef(new Map<ToolbarMode, HTMLElement>());
   const overflowMeasureRef = useRef<HTMLDivElement>(null);
-  const [tabWidths, setTabWidths] = useState<Partial<
-    Record<ToolbarMode, number>
-  > | null>(null);
+  const [tabWidths, setTabWidths] = useState<Partial<Record<ToolbarMode, number>> | null>(null);
   const [overflowWidth, setOverflowWidth] = useState(0);
   const [availableWidth, setAvailableWidth] = useState<number | null>(null);
 
@@ -307,9 +271,7 @@ export const PreviewToolbar = () => {
       widths[mode] = Math.ceil(el.getBoundingClientRect().width);
     }
     setTabWidths(widths);
-    setOverflowWidth(
-      Math.ceil(overflowMeasureRef.current?.getBoundingClientRect().width ?? 0),
-    );
+    setOverflowWidth(Math.ceil(overflowMeasureRef.current?.getBoundingClientRect().width ?? 0));
   }, [isVersionSelected, i18n.language]);
 
   useLayoutEffect(() => {
@@ -359,9 +321,7 @@ export const PreviewToolbar = () => {
           <span>{meta.label}</span>
         </span>
         {mode === "problems" && displayCount && (
-          <span
-            className={cn("absolute -top-1 -right-1 z-20", problemBadgeClasses)}
-          >
+          <span className={cn("absolute -top-1 -right-1 z-20", problemBadgeClasses)}>
             {displayCount}
           </span>
         )}
@@ -389,15 +349,11 @@ export const PreviewToolbar = () => {
     );
   };
 
-  const showOverflowProblemBadge =
-    hidden.includes("problems") && !!displayCount;
+  const showOverflowProblemBadge = hidden.includes("problems") && !!displayCount;
 
   return (
     <div className="@container flex items-center gap-2 border-b p-2">
-      <div
-        ref={tabsAreaRef}
-        className="relative flex min-w-0 flex-1 items-center gap-1"
-      >
+      <div ref={tabsAreaRef} className="relative flex min-w-0 flex-1 items-center gap-1">
         {visible.map((mode) => renderTab(mode))}
         {hidden.length > 0 && (
           <DropdownMenu>
@@ -413,12 +369,7 @@ export const PreviewToolbar = () => {
               >
                 <MoreHorizontal size={16} />
                 {showOverflowProblemBadge && (
-                  <span
-                    className={cn(
-                      "absolute -top-1 -right-1",
-                      problemBadgeClasses,
-                    )}
-                  >
+                  <span className={cn("absolute -top-1 -right-1", problemBadgeClasses)}>
                     {displayCount}
                   </span>
                 )}
@@ -437,9 +388,7 @@ export const PreviewToolbar = () => {
                     {meta.icon}
                     <span>{meta.label}</span>
                     {mode === "problems" && displayCount && (
-                      <span className={cn("ml-auto", problemBadgeClasses)}>
-                        {displayCount}
-                      </span>
+                      <span className={cn("ml-auto", problemBadgeClasses)}>{displayCount}</span>
                     )}
                   </DropdownMenuItem>
                 );
@@ -472,10 +421,7 @@ export const PreviewToolbar = () => {
               </div>
             );
           })}
-          <div
-            ref={overflowMeasureRef}
-            className="flex items-center justify-center p-1.5"
-          >
+          <div ref={overflowMeasureRef} className="flex items-center justify-center p-1.5">
             <MoreHorizontal size={16} />
           </div>
         </div>
@@ -487,9 +433,7 @@ export const PreviewToolbar = () => {
           })}
           exitLabel={t("preview.exit")}
           exitAriaLabel={t("preview.exitVersionView")}
-          onExit={() =>
-            sendPreviewEvent(exitVersionEventForState(previewState))
-          }
+          onExit={() => sendPreviewEvent(exitVersionEventForState(previewState))}
         />
       )}
       <div className="flex shrink-0 items-center border-l border-border pl-2">
@@ -505,15 +449,9 @@ export const PreviewToolbar = () => {
               />
             }
           >
-            {isChatPanelHidden ? (
-              <Maximize2 size={16} />
-            ) : (
-              <Minimize2 size={16} />
-            )}
+            {isChatPanelHidden ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </TooltipTrigger>
-          <TooltipContent>
-            {isChatPanelHidden ? "Show chat" : "Hide chat"}
-          </TooltipContent>
+          <TooltipContent>{isChatPanelHidden ? "Show chat" : "Hide chat"}</TooltipContent>
         </Tooltip>
       </div>
     </div>

@@ -16,11 +16,7 @@ import { ipc } from "@/ipc/types";
 import { useSystemPlatform } from "@/hooks/useSystemPlatform";
 import { useUserBudgetInfo } from "@/hooks/useUserBudgetInfo";
 import type { UserBudgetInfo } from "@/ipc/types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChatTabs } from "@/components/chat/ChatTabs";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useQueryClient } from "@tanstack/react-query";
@@ -52,9 +48,7 @@ export const TitleBar = () => {
         // Refetch user budget when OctopusStudio Pro key is set via deep link
         queryClient.invalidateQueries({ queryKey: queryKeys.userBudget.info });
         if (hasArmedPayload) {
-          const refreshedSettings = queryClient.getQueryData<UserSettings>(
-            queryKeys.settings.user,
-          );
+          const refreshedSettings = queryClient.getQueryData<UserSettings>(queryKeys.settings.user);
           resumeFirstPrompt(refreshedSettings);
         } else {
           setIsSuccessDialogOpen(true);
@@ -74,9 +68,7 @@ export const TitleBar = () => {
 
   const selectedApp = apps.find((app) => app.id === selectedAppId);
   const displayText = selectedApp ? selectedApp.name : "Octopus";
-  const tooltipText = selectedApp
-    ? `Manage ${selectedApp.name}`
-    : "No app selected";
+  const tooltipText = selectedApp ? `Manage ${selectedApp.name}` : "No app selected";
 
   const handleAppClick = () => {
     if (selectedApp) {
@@ -106,11 +98,7 @@ export const TitleBar = () => {
                   data-testid="title-bar-app-name-button"
                   data-app-name={selectedApp?.name ?? ""}
                   data-app-path={selectedApp?.path ?? ""}
-                  aria-label={
-                    selectedApp
-                      ? `Manage ${selectedApp.name}`
-                      : "No app selected"
-                  }
+                  aria-label={selectedApp ? `Manage ${selectedApp.name}` : "No app selected"}
                   variant="outline"
                   size="sm"
                   disabled={!selectedApp}
@@ -124,21 +112,13 @@ export const TitleBar = () => {
                 />
               }
             >
-              <img
-                src={logo}
-                alt="Octopus Studio"
-                className="w-5 h-5 shrink-0"
-              />
-              <span className="hidden @2xl:inline max-w-40 truncate">
-                {displayText}
-              </span>
+              <img src={logo} alt="Octopus Studio" className="w-5 h-5 shrink-0" />
+              <span className="hidden @2xl:inline max-w-40 truncate">{displayText}</span>
             </TooltipTrigger>
             <TooltipContent>{tooltipText}</TooltipContent>
           </Tooltip>
           {isOctopusStudioPro && (
-            <OctopusStudioProButton
-              isOctopusStudioProEnabled={isOctopusStudioProEnabled}
-            />
+            <OctopusStudioProButton isOctopusStudioProEnabled={isOctopusStudioProEnabled} />
           )}
         </div>
 
@@ -186,11 +166,7 @@ function WindowsControls() {
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <rect
-            width="12"
-            height="1"
-            fill={isDarkMode ? "#ffffff" : "#000000"}
-          />
+          <rect width="12" height="1" fill={isDarkMode ? "#ffffff" : "#000000"} />
         </svg>
       </button>
       <button
@@ -261,23 +237,13 @@ export function OctopusStudioProButton({
       )}
       size="sm"
     >
-      {isOctopusStudioProEnabled
-        ? userBudget?.isTrial
-          ? "Pro Trial"
-          : "Pro"
-        : "Pro (off)"}
-      {userBudget && isOctopusStudioProEnabled && (
-        <AICreditStatus userBudget={userBudget} />
-      )}
+      {isOctopusStudioProEnabled ? (userBudget?.isTrial ? "Pro Trial" : "Pro") : "Pro (off)"}
+      {userBudget && isOctopusStudioProEnabled && <AICreditStatus userBudget={userBudget} />}
     </Button>
   );
 }
 
-export function AICreditStatus({
-  userBudget,
-}: {
-  userBudget: NonNullable<UserBudgetInfo>;
-}) {
+export function AICreditStatus({ userBudget }: { userBudget: NonNullable<UserBudgetInfo> }) {
   const total = Math.round(userBudget.totalCredits);
   const used = Math.round(userBudget.usedCredits);
   const remaining = Math.max(0, total - used);
@@ -295,13 +261,10 @@ export function AICreditStatus({
       <TooltipContent>
         <div className="flex flex-col gap-0.5 text-xs">
           <p className="font-medium">
-            {remaining.toLocaleString()} of {total.toLocaleString()} credits
-            remaining
+            {remaining.toLocaleString()} of {total.toLocaleString()} credits remaining
           </p>
           {resetDate && <p className="opacity-80">Resets on {resetDate}</p>}
-          <p className="opacity-60">
-            Note: credit status may take a moment to update.
-          </p>
+          <p className="opacity-60">Note: credit status may take a moment to update.</p>
         </div>
       </TooltipContent>
     </Tooltip>

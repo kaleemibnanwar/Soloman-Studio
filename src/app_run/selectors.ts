@@ -29,10 +29,7 @@ export const EMPTY_APP_URL: AppUrlState = {
 };
 
 export function selectRemoteAppUrl(state: AppRunRemoteSnapshot): AppUrlState {
-  if (
-    (state.phase !== "ready" && state.phase !== "reloading") ||
-    state.url === null
-  ) {
+  if ((state.phase !== "ready" && state.phase !== "reloading") || state.url === null) {
     return EMPTY_APP_URL;
   }
   return {
@@ -43,9 +40,7 @@ export function selectRemoteAppUrl(state: AppRunRemoteSnapshot): AppUrlState {
   };
 }
 
-export function selectRemoteAppExit(
-  state: AppRunRemoteSnapshot,
-): AppExit | null {
+export function selectRemoteAppExit(state: AppRunRemoteSnapshot): AppExit | null {
   return state.exit?.timestamp === null || !state.exit
     ? null
     : {

@@ -22,10 +22,7 @@ import {
 import type { TranscribeAudioParams } from "../types/audio";
 import { transcribeWithOctopusStudioEngine } from "../utils/llm_engine_provider";
 import { getOctopusStudioEngineBaseUrl } from "../utils/octopus_studio_engine_url";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export const UserInfoResponseSchema = z.object({
   usedCredits: z.number(),
@@ -41,10 +38,7 @@ const handle = createLoggedHandler(logger);
 const typedHandle = createLoggedTypedHandler(logger);
 
 function validateAudioTranscriptionRequest(input: TranscribeAudioParams) {
-  if (
-    input.audioData.byteLength === 0 ||
-    input.audioData.byteLength > MAX_AUDIO_RECORDING_BYTES
-  ) {
+  if (input.audioData.byteLength === 0 || input.audioData.byteLength > MAX_AUDIO_RECORDING_BYTES) {
     throw new OctopusStudioError(
       `Audio data must be between 1 and ${MAX_AUDIO_RECORDING_BYTES} bytes`,
       OctopusStudioErrorKind.Validation,
@@ -60,10 +54,7 @@ function validateAudioTranscriptionRequest(input: TranscribeAudioParams) {
     trimmedFilename === "." ||
     trimmedFilename === ".."
   ) {
-    throw new OctopusStudioError(
-      "Invalid audio filename",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid audio filename", OctopusStudioErrorKind.Validation);
   }
 
   if (
@@ -95,16 +86,11 @@ function getSubscriptionStatusUrl() {
 
 function getSubscriptionStatusApiKey() {
   const url = getSubscriptionStatusUrl();
-  const fixtureApiKey =
-    process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_FIXTURE_API_KEY;
+  const fixtureApiKey = process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_FIXTURE_API_KEY;
   if (fixtureApiKey) {
     try {
       const hostname = new URL(url).hostname;
-      if (
-        hostname === "127.0.0.1" ||
-        hostname === "localhost" ||
-        hostname === "[::1]"
-      ) {
+      if (hostname === "127.0.0.1" || hostname === "localhost" || hostname === "[::1]") {
         return fixtureApiKey;
       }
     } catch {
@@ -119,10 +105,7 @@ export function parseBillingActionUrl(value: string) {
   try {
     url = new URL(value);
   } catch {
-    throw new OctopusStudioError(
-      "Invalid billing action URL",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid billing action URL", OctopusStudioErrorKind.Validation);
   }
   if (
     url.protocol !== "https:" ||
@@ -131,10 +114,7 @@ export function parseBillingActionUrl(value: string) {
     url.password !== "" ||
     url.port !== ""
   ) {
-    throw new OctopusStudioError(
-      "Invalid billing action URL",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid billing action URL", OctopusStudioErrorKind.Validation);
   }
   return url.toString();
 }
@@ -163,9 +143,7 @@ export function registerProHandlers() {
 
     if (!apiKey) {
       // Expected state for non-Pro users; not an error.
-      logger.debug(
-        "LLM Gateway API key (OctopusStudio Pro) is not configured.",
-      );
+      logger.debug("LLM Gateway API key (OctopusStudio Pro) is not configured.");
       return null;
     }
 
@@ -184,9 +162,7 @@ export function registerProHandlers() {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        logger.error(
-          `Failed to fetch user budget. Status: ${response.status}. Body: ${errorBody}`,
-        );
+        logger.error(`Failed to fetch user budget. Status: ${response.status}. Body: ${errorBody}`);
         return null;
       }
 
@@ -198,8 +174,7 @@ export function registerProHandlers() {
       // Turn user_abc1234 =>  "****1234"
       // Preserve the last 4 characters so we can correlate bug reports
       // with the user.
-      const redactedUserId =
-        data.userId.length > 8 ? "****" + data.userId.slice(-4) : "<redacted>";
+      const redactedUserId = data.userId.length > 8 ? "****" + data.userId.slice(-4) : "<redacted>";
 
       logger.debug("Successfully fetched user budget information.");
 
@@ -236,9 +211,7 @@ export function registerProHandlers() {
         },
       });
       if (!response.ok) {
-        logger.warn(
-          `Failed to fetch subscription status. Status: ${response.status}`,
-        );
+        logger.warn(`Failed to fetch subscription status. Status: ${response.status}`);
         return null;
       }
       return SubscriptionStatusSchema.parse(await response.json());
@@ -257,40 +230,37 @@ export function registerProHandlers() {
     await shell.openExternal(url);
   });
 
-  typedHandle(
-    audioContracts.transcribeAudio,
-    async (_event, input: TranscribeAudioParams) => {
-      const settings = readSettings();
-      const apiKey = settings.providerSettings?.auto?.apiKey?.value;
+  typedHandle(audioContracts.transcribeAudio, async (_event, input: TranscribeAudioParams) => {
+    const settings = readSettings();
+    const apiKey = settings.providerSettings?.auto?.apiKey?.value;
 
-      if (!apiKey || !settings.enableOctopusStudioPro) {
-        throw new OctopusStudioError(
-          "OctopusStudio Pro is not enabled. Voice-to-text requires a Pro subscription.",
-          OctopusStudioErrorKind.Auth,
-        );
-      }
-
-      validateAudioTranscriptionRequest(input);
-
-      const audioBuffer = Buffer.from(
-        input.audioData.buffer,
-        input.audioData.byteOffset,
-        input.audioData.byteLength,
+    if (!apiKey || !settings.enableOctopusStudioPro) {
+      throw new OctopusStudioError(
+        "OctopusStudio Pro is not enabled. Voice-to-text requires a Pro subscription.",
+        OctopusStudioErrorKind.Auth,
       );
+    }
 
-      const text = await transcribeWithOctopusStudioEngine(
-        audioBuffer,
-        input.filename,
-        input.requestId,
-        {
-          apiKey,
-          baseURL: getOctopusStudioEngineBaseUrl(),
-          octopusStudioOptions: {},
-          settings,
-        },
-      );
+    validateAudioTranscriptionRequest(input);
 
-      return { text };
-    },
-  );
+    const audioBuffer = Buffer.from(
+      input.audioData.buffer,
+      input.audioData.byteOffset,
+      input.audioData.byteLength,
+    );
+
+    const text = await transcribeWithOctopusStudioEngine(
+      audioBuffer,
+      input.filename,
+      input.requestId,
+      {
+        apiKey,
+        baseURL: getOctopusStudioEngineBaseUrl(),
+        octopusStudioOptions: {},
+        settings,
+      },
+    );
+
+    return { text };
+  });
 }

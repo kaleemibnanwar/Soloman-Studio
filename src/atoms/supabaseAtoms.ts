@@ -12,6 +12,4 @@ export const lastLogTimestampAtom = atom<Record<string, number>>({});
  * about one app's generated client, and dismissing it for one app says nothing
  * about another.
  */
-export const dismissedLegacySupabaseKeyAppIdsAtom = atom<ReadonlySet<number>>(
-  new Set<number>(),
-);
+export const dismissedLegacySupabaseKeyAppIdsAtom = atom<ReadonlySet<number>>(new Set<number>());

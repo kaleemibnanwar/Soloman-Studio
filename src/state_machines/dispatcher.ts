@@ -1,11 +1,6 @@
 import { SnapshotStore } from "./snapshot_store";
 import { validateTransitionResult } from "./transition_validation";
-import type {
-  DispatchContext,
-  IgnoreReason,
-  TransitionObserver,
-  TransitionResult,
-} from "./types";
+import type { DispatchContext, IgnoreReason, TransitionObserver, TransitionResult } from "./types";
 
 export type DispatcherErrorStage =
   | "transition"
@@ -51,12 +46,8 @@ export interface DispatchTicket<State, Reason extends IgnoreReason> {
 interface PendingDispatch<State, Event> {
   readonly event: Event;
   readonly dispatchContext?: DispatchContext;
-  readonly onSettled?: (
-    outcome: DispatchTicketOutcome<State, IgnoreReason>,
-  ) => void;
-  readonly settle: (
-    outcome: DispatchTicketOutcome<State, IgnoreReason>,
-  ) => void;
+  readonly onSettled?: (outcome: DispatchTicketOutcome<State, IgnoreReason>) => void;
+  readonly settle: (outcome: DispatchTicketOutcome<State, IgnoreReason>) => void;
 }
 
 export interface ReservedCommandBatch<Command> {
@@ -95,14 +86,8 @@ export interface TransactionalDispatcherOptions<
   Outcome = never,
 > {
   initialState: State;
-  transition(
-    state: State,
-    event: Event,
-  ): TransitionResult<State, Command, Reason, Outcome>;
-  runCommand(
-    command: Command,
-    emit: (event: Event) => void,
-  ): void | Promise<void>;
+  transition(state: State, event: Event): TransitionResult<State, Command, Reason, Outcome>;
+  runCommand(command: Command, emit: (event: Event) => void): void | Promise<void>;
   scheduler: CommandScheduler<Command>;
   /**
    * Runs after validation and reservation but immediately before commit.
@@ -122,10 +107,7 @@ export interface TransactionalDispatcherOptions<
    * commit. Failures are isolated and cannot roll back the transition.
    */
   publishOutcome?: TransitionOutcomePublisher<Outcome>;
-  mapUnexpectedCommandError?(
-    command: Command,
-    error: unknown,
-  ): Event | undefined;
+  mapUnexpectedCommandError?(command: Command, error: unknown): Event | undefined;
   reportError?(error: DispatcherError<Command>): void;
 }
 
@@ -164,9 +146,7 @@ export class TransactionalDispatcher<
       options.publishOutcome?.constructor.name === "AsyncFunction" ||
       options.publishOutcome?.publishBatch?.constructor.name === "AsyncFunction"
     ) {
-      throw new Error(
-        "Transition outcome publisher must be synchronous and non-thenable",
-      );
+      throw new Error("Transition outcome publisher must be synchronous and non-thenable");
     }
     this.store = new SnapshotStore(options.initialState);
   }
@@ -190,11 +170,9 @@ export class TransactionalDispatcher<
     dispatchContext?: DispatchContext,
   ): DispatchTicket<State, Reason> => {
     let settle!: (outcome: DispatchTicketOutcome<State, Reason>) => void;
-    const settled = new Promise<DispatchTicketOutcome<State, Reason>>(
-      (resolve) => {
-        settle = resolve;
-      },
-    );
+    const settled = new Promise<DispatchTicketOutcome<State, Reason>>((resolve) => {
+      settle = resolve;
+    });
     const ticket = { settled };
     if (!this.accepting) {
       settle({ kind: "disposed" });
@@ -206,8 +184,7 @@ export class TransactionalDispatcher<
       onSettled: onSettled as
         | ((outcome: DispatchTicketOutcome<State, IgnoreReason>) => void)
         | undefined,
-      settle: (outcome) =>
-        settle(outcome as DispatchTicketOutcome<State, Reason>),
+      settle: (outcome) => settle(outcome as DispatchTicketOutcome<State, Reason>),
     });
     if (this.processing) return ticket;
     this.processing = true;
@@ -274,9 +251,7 @@ export class TransactionalDispatcher<
     onSettled,
     settle,
   }: PendingDispatch<State, Event>): void {
-    const settleCurrent = (
-      outcome: DispatchTicketOutcome<State, Reason>,
-    ): void => {
+    const settleCurrent = (outcome: DispatchTicketOutcome<State, Reason>): void => {
       onSettled?.(outcome);
       settle(outcome);
     };
@@ -427,9 +402,7 @@ export class TransactionalDispatcher<
     if (!this.options.publishOutcome) return;
     if (this.options.publishOutcome.publishBatch) {
       try {
-        this.rejectThenableOutcomePublication(
-          this.options.publishOutcome.publishBatch(outcomes),
-        );
+        this.rejectThenableOutcomePublication(this.options.publishOutcome.publishBatch(outcomes));
       } catch (error) {
         this.report({ stage: "outcome", error });
       }
@@ -437,9 +410,7 @@ export class TransactionalDispatcher<
     }
     for (const outcome of outcomes) {
       try {
-        this.rejectThenableOutcomePublication(
-          this.options.publishOutcome(outcome),
-        );
+        this.rejectThenableOutcomePublication(this.options.publishOutcome(outcome));
       } catch (error) {
         this.report({ stage: "outcome", error });
       }
@@ -448,8 +419,7 @@ export class TransactionalDispatcher<
 
   private rejectThenableOutcomePublication(published: unknown): void {
     if (
-      ((typeof published === "object" && published !== null) ||
-        typeof published === "function") &&
+      ((typeof published === "object" && published !== null) || typeof published === "function") &&
       "then" in published
     ) {
       void Promise.resolve(published).catch((error) => {
@@ -457,9 +427,7 @@ export class TransactionalDispatcher<
       });
       this.report({
         stage: "outcome",
-        error: new Error(
-          "Transition outcome publisher must be synchronous and non-thenable",
-        ),
+        error: new Error("Transition outcome publisher must be synchronous and non-thenable"),
       });
     }
   }
@@ -475,10 +443,7 @@ export class TransactionalDispatcher<
 
   private report(error: DispatcherError<Command>): void {
     if (!this.options.reportError) {
-      console.error(
-        `State-machine dispatcher ${error.stage} failure:`,
-        error.error,
-      );
+      console.error(`State-machine dispatcher ${error.stage} failure:`, error.error);
       return;
     }
     try {

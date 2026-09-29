@@ -10,18 +10,14 @@ export const MigrationMigrateParamsSchema = z.object({
   migrationId: z.string().uuid(),
 });
 
-export type MigrationMigrateParams = z.infer<
-  typeof MigrationMigrateParamsSchema
->;
+export type MigrationMigrateParams = z.infer<typeof MigrationMigrateParamsSchema>;
 
 export const MigrationMigrateResponseSchema = z.object({
   success: z.boolean(),
   noChanges: z.boolean().optional(),
 });
 
-export type MigrationMigrateResponse = z.infer<
-  typeof MigrationMigrateResponseSchema
->;
+export type MigrationMigrateResponse = z.infer<typeof MigrationMigrateResponseSchema>;
 
 export const DestructiveStatementReasonSchema = z.enum([
   "drop_table",
@@ -32,9 +28,7 @@ export const DestructiveStatementReasonSchema = z.enum([
   "schema_hazard",
 ]);
 
-export type DestructiveStatementReason = z.infer<
-  typeof DestructiveStatementReasonSchema
->;
+export type DestructiveStatementReason = z.infer<typeof DestructiveStatementReasonSchema>;
 
 export const DestructiveStatementSchema = z.object({
   index: z.number(),
@@ -47,9 +41,7 @@ export const MigrationPreviewParamsSchema = z.object({
   appId: z.number(),
 });
 
-export type MigrationPreviewParams = z.infer<
-  typeof MigrationPreviewParamsSchema
->;
+export type MigrationPreviewParams = z.infer<typeof MigrationPreviewParamsSchema>;
 
 export const MigrationPreviewResponseSchema = z.object({
   migrationId: z.string().uuid(),
@@ -59,9 +51,7 @@ export const MigrationPreviewResponseSchema = z.object({
   destructiveStatements: z.array(DestructiveStatementSchema),
 });
 
-export type MigrationPreviewResponse = z.infer<
-  typeof MigrationPreviewResponseSchema
->;
+export type MigrationPreviewResponse = z.infer<typeof MigrationPreviewResponseSchema>;
 
 // =============================================================================
 // Migration Contracts

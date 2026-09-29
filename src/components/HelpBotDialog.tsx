@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ipc } from "@/ipc/types";
 import { v4 as uuidv4 } from "uuid";
@@ -169,9 +164,7 @@ export function HelpBotDialog({ isOpen, onClose }: HelpBotDialogProps) {
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
               <div className="flex items-start gap-2">
-                <div className="text-destructive text-sm font-medium">
-                  Error:
-                </div>
+                <div className="text-destructive text-sm font-medium">Error:</div>
                 <div className="text-destructive text-sm flex-1">{error}</div>
                 <button
                   onClick={() => setError(null)}
@@ -189,8 +182,8 @@ export function HelpBotDialog({ isOpen, onClose }: HelpBotDialogProps) {
                   Ask a question about using OctopusStudio.
                 </div>
                 <div className="text-xs text-muted-foreground/70 bg-muted/50 rounded-md p-3">
-                  This conversation may be logged and used to improve the
-                  product. Please do not put any sensitive information in here.
+                  This conversation may be logged and used to improve the product. Please do not put
+                  any sensitive information in here.
                 </div>
               </div>
             ) : (
@@ -206,9 +199,7 @@ export function HelpBotDialog({ isOpen, onClose }: HelpBotDialogProps) {
                     ) : (
                       <div className="text-left">
                         {streaming && i === messages.length - 1 && (
-                          <LoadingBlock
-                            isStreaming={streaming && i === messages.length - 1}
-                          />
+                          <LoadingBlock isStreaming={streaming && i === messages.length - 1} />
                         )}
 
                         {m.content && (

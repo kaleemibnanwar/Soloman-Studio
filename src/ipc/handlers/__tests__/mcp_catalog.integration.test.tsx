@@ -11,15 +11,12 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import { ipc } from "@/ipc/types";
 import { clearMcpCatalogCacheForTests } from "@/ipc/shared/remote_mcp_catalog";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { mcpServers } from "@/db/schema";
-import { decryptFromString } from "@/ipc/utils/mcp_oauth_provider";
+import { decryptFromString } from "@/ipc/mcp/mcp_oauth_provider";
 
 describe("Plugins catalog (integration)", () => {
   let harness: HybridChatHarness;
@@ -38,16 +35,11 @@ describe("Plugins catalog (integration)", () => {
       { env: { ...process.env, PORT: "0" }, stdio: "pipe" },
     );
     mcpPort = await new Promise<number>((resolve, reject) => {
-      const timeout = setTimeout(
-        () => reject(new Error("MCP server start timeout")),
-        10_000,
-      );
+      const timeout = setTimeout(() => reject(new Error("MCP server start timeout")), 10_000);
       let buffer = "";
       mcpServerProcess.stdout?.on("data", (data: Buffer) => {
         buffer += data.toString();
-        const match = buffer.match(
-          /HTTP MCP server running on http:\/\/localhost:(\d+)\/mcp/,
-        );
+        const match = buffer.match(/HTTP MCP server running on http:\/\/localhost:(\d+)\/mcp/);
         if (match) {
           clearTimeout(timeout);
           resolve(Number(match[1]));
@@ -72,9 +64,7 @@ describe("Plugins catalog (integration)", () => {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify(catalogPayload));
     });
-    await new Promise<void>((resolve) =>
-      catalogServer.listen(0, "127.0.0.1", resolve),
-    );
+    await new Promise<void>((resolve) => catalogServer.listen(0, "127.0.0.1", resolve));
     const address = catalogServer.address();
     if (typeof address === "object" && address) {
       process.env.OCTOPUS_STUDIO_MCP_CATALOG_URL = `http://127.0.0.1:${address.port}/`;
@@ -107,9 +97,7 @@ describe("Plugins catalog (integration)", () => {
   it("adds a catalog entry with one click and discovers its tools", async () => {
     harness.mountSurface({ route: "/settings" });
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Browse catalog" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Browse catalog" }));
     const card = await screen.findByTestId("catalog-card");
     expect(card.textContent).toContain("Integration Open Server");
 
@@ -155,9 +143,7 @@ describe("Plugins catalog (integration)", () => {
     // Navigating back remounts Settings, closing the catalog modal;
     // reopen it and re-find the card (the earlier reference is detached)
     // to confirm it is addable again.
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Browse catalog" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Browse catalog" }));
     await waitFor(async () => {
       const readdable = await screen.findByTestId("catalog-card");
       within(readdable).getByRole("button", { name: "Add" });
@@ -191,9 +177,7 @@ describe("Plugins catalog (integration)", () => {
         }),
       );
     });
-    await new Promise<void>((resolve) =>
-      featuredServer.listen(0, "127.0.0.1", resolve),
-    );
+    await new Promise<void>((resolve) => featuredServer.listen(0, "127.0.0.1", resolve));
     const previousUrl = process.env.OCTOPUS_STUDIO_MCP_CATALOG_URL;
     try {
       const address = featuredServer.address();
@@ -206,9 +190,7 @@ describe("Plugins catalog (integration)", () => {
       const view = harness.mountSurface({ route: "/settings" });
       const scope = within(view.container);
 
-      fireEvent.click(
-        await scope.findByRole("button", { name: "Browse catalog" }),
-      );
+      fireEvent.click(await scope.findByRole("button", { name: "Browse catalog" }));
 
       // The catalog dialog is portaled to document.body, outside
       // view.container, so its content is found via the unscoped screen —
@@ -216,16 +198,12 @@ describe("Plugins catalog (integration)", () => {
       // test, so it can't collide with another mount's leftover DOM.
       const featuredSection = await screen.findByTestId("catalog-featured");
       within(featuredSection).getByText("Integration Featured Server");
-      expect(
-        within(featuredSection).queryByText("Integration Plain Server"),
-      ).toBeNull();
+      expect(within(featuredSection).queryByText("Integration Plain Server")).toBeNull();
 
       // The featured entry is still listed under its category, so it
       // renders twice; the plain entry only once.
       await waitFor(() => {
-        expect(
-          screen.getAllByText("Integration Featured Server"),
-        ).toHaveLength(2);
+        expect(screen.getAllByText("Integration Featured Server")).toHaveLength(2);
       });
       expect(screen.getAllByText("Integration Plain Server")).toHaveLength(1);
     } finally {
@@ -253,9 +231,9 @@ describe("Plugins catalog (integration)", () => {
     try {
       // A stdio add with no reviewed config never went through consent, so
       // it is rejected.
-      await expect(
-        ipc.mcp.addFromCatalog({ slug: "integration-stdio" }),
-      ).rejects.toThrow(/changed/i);
+      await expect(ipc.mcp.addFromCatalog({ slug: "integration-stdio" })).rejects.toThrow(
+        /changed/i,
+      );
       expect(await ipc.mcp.listServers()).toHaveLength(0);
 
       // A config that differs from the served entry (as if the catalog
@@ -411,10 +389,7 @@ describe("Plugins catalog (integration)", () => {
       // renderer: it isn't on the returned server, and the stored value
       // is not the plaintext but decrypts back to it.
       expect(updated).not.toHaveProperty("oauthClientSecret");
-      const [row] = await db
-        .select()
-        .from(mcpServers)
-        .where(eq(mcpServers.id, created.id));
+      const [row] = await db.select().from(mcpServers).where(eq(mcpServers.id, created.id));
       expect(row.oauthClientSecret).not.toBe("secret-xyz");
       expect(decryptFromString(row.oauthClientSecret!)).toBe("secret-xyz");
     } finally {

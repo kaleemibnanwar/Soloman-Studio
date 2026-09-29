@@ -29,11 +29,7 @@ interface ImportProjectDialogProps {
   defaultType?: ImportType | null;
 }
 
-export function ImportProjectDialog({
-  open,
-  onOpenChange,
-  defaultType,
-}: ImportProjectDialogProps) {
+export function ImportProjectDialog({ open, onOpenChange, defaultType }: ImportProjectDialogProps) {
   const { selectChat } = useSelectChat();
 
   const [type, setType] = useState<ImportType | null>(null);
@@ -50,9 +46,7 @@ export function ImportProjectDialog({
         chooseProgramming();
         return;
       }
-      setType(
-        defaultType !== undefined && defaultType !== null ? defaultType : null,
-      );
+      setType(defaultType !== undefined && defaultType !== null ? defaultType : null);
       setName("");
       setDirectory(null);
       setIsSubmitting(false);
@@ -83,9 +77,7 @@ export function ImportProjectDialog({
         setName(base);
       }
     } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to choose directory",
-      );
+      showError(error instanceof Error ? error.message : "Failed to choose directory");
     } finally {
       setPickingDirectory(false);
     }
@@ -113,11 +105,7 @@ export function ImportProjectDialog({
       onOpenChange(false);
       selectChat({ chatId, appId });
     } catch (error) {
-      showError(
-        error instanceof Error
-          ? error.message
-          : "Failed to create chat project",
-      );
+      showError(error instanceof Error ? error.message : "Failed to create chat project");
     } finally {
       setIsSubmitting(false);
     }
@@ -133,9 +121,7 @@ export function ImportProjectDialog({
             <>
               <DialogHeader>
                 <DialogTitle>Import project</DialogTitle>
-                <DialogDescription>
-                  What kind of project are you importing?
-                </DialogDescription>
+                <DialogDescription>What kind of project are you importing?</DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3 py-2">
                 <button
@@ -145,9 +131,7 @@ export function ImportProjectDialog({
                 >
                   <Code2 className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">
-                      Programming project
-                    </div>
+                    <div className="text-sm font-medium">Programming project</div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       Import a local folder or a GitHub repository.
                     </div>
@@ -196,9 +180,7 @@ export function ImportProjectDialog({
                     <div className="flex items-center justify-between gap-2 rounded-md border p-3">
                       <div className="min-w-0 flex-1 overflow-hidden">
                         <p className="text-sm font-medium mb-1">Folder</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {directory}
-                        </p>
+                        <p className="truncate text-xs text-muted-foreground">{directory}</p>
                       </div>
                       <Button
                         variant="ghost"
@@ -226,23 +208,14 @@ export function ImportProjectDialog({
 
               <DialogFooter className="sm:justify-between">
                 {defaultType === undefined || defaultType === null ? (
-                  <Button
-                    variant="ghost"
-                    disabled={isSubmitting}
-                    onClick={() => setType(null)}
-                  >
+                  <Button variant="ghost" disabled={isSubmitting} onClick={() => setType(null)}>
                     Back
                   </Button>
                 ) : (
                   <div />
                 )}
-                <Button
-                  onClick={createChatProject}
-                  disabled={isSubmitting || !directory}
-                >
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  )}
+                <Button onClick={createChatProject} disabled={isSubmitting || !directory}>
+                  {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
                   {isSubmitting ? "Importing…" : "Import project"}
                 </Button>
               </DialogFooter>

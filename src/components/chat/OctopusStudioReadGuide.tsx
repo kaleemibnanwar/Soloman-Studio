@@ -21,10 +21,7 @@ interface OctopusStudioReadGuideProps {
   children: React.ReactNode;
 }
 
-export function OctopusStudioReadGuide({
-  node,
-  children,
-}: OctopusStudioReadGuideProps) {
+export function OctopusStudioReadGuide({ node, children }: OctopusStudioReadGuideProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { t } = useTranslation("chat");
   const { name, state } = node.properties;
@@ -38,14 +35,9 @@ export function OctopusStudioReadGuide({
       isExpanded={isExpanded}
       onClick={() => setIsExpanded(!isExpanded)}
     >
-      <OctopusStudioCardHeader
-        icon={<BookOpen size={15} />}
-        accentColor="indigo"
-      >
+      <OctopusStudioCardHeader icon={<BookOpen size={15} />} accentColor="indigo">
         <OctopusStudioBadge color="indigo">{t("guide")}</OctopusStudioBadge>
-        {name && (
-          <span className="text-sm text-foreground truncate">{name}</span>
-        )}
+        {name && <span className="text-sm text-foreground truncate">{name}</span>}
         {isLoading && <OctopusStudioStateIndicator state="pending" />}
         {isAborted && <OctopusStudioStateIndicator state="aborted" />}
         <div className="ml-auto">

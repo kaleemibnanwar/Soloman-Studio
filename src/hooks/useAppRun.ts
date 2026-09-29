@@ -21,8 +21,7 @@ export function useAppRunState(appId: number | null): AppRunRemoteSnapshot {
     [appId, manager],
   );
   const getSnapshot = useCallback(
-    () =>
-      appId === null ? NO_APP_RUN_REMOTE_SNAPSHOT : manager.getSnapshot(appId),
+    () => (appId === null ? NO_APP_RUN_REMOTE_SNAPSHOT : manager.getSnapshot(appId)),
     [appId, manager],
   );
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

@@ -4,10 +4,7 @@ import { eq, isNotNull } from "drizzle-orm";
 
 import { db } from "../../db";
 import { apps } from "../../db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { IS_TEST_BUILD } from "@/ipc/utils/test_utils";
 import { fetchWithRetry } from "@/ipc/utils/retryWithRateLimit";
 import { appOperationCoordinator } from "@/ipc/services/app_operation_coordinator";
@@ -41,8 +38,7 @@ export interface RlsCheckResult {
   unverified?: boolean;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Conservative identifier guard for table/column names we interpolate into SQL.
 const SAFE_IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 // Common columns that scope a row to its owning auth user. Used for best-effort
@@ -81,9 +77,7 @@ const SECRET_KEY_PREFIX = "sb_secret_";
  * legacy tier — silently un-migrating it. The prefix alone already proves the
  * format; `type` only breaks ties below it.
  */
-function pickSecretKey(
-  keys: readonly SupabaseApiKey[],
-): SupabaseApiKey | undefined {
+function pickSecretKey(keys: readonly SupabaseApiKey[]): SupabaseApiKey | undefined {
   return (
     keys.find((key) => key.api_key?.startsWith(SECRET_KEY_PREFIX)) ??
     keys.find((key) => key.type === "secret") ??
@@ -174,9 +168,7 @@ function adminHeaders(key: AdminKey): Record<string, string> {
  *
  * Throws `OctopusStudioError` if the app isn't connected to a Supabase project/org.
  */
-export async function createTempTestUser(
-  appData: AppRow,
-): Promise<TempTestUser> {
+export async function createTempTestUser(appData: AppRow): Promise<TempTestUser> {
   const projectId = appData.supabaseProjectId;
   const organizationSlug = appData.supabaseOrganizationSlug;
   if (!projectId) {
@@ -324,10 +316,7 @@ export async function deleteTempTestUser(appData: AppRow): Promise<boolean> {
     return true;
   }
   if (IS_TEST_BUILD) {
-    await db
-      .update(apps)
-      .set({ supabaseTestUserId: null })
-      .where(eq(apps.id, appData.id));
+    await db.update(apps).set({ supabaseTestUserId: null }).where(eq(apps.id, appData.id));
     return true;
   }
 
@@ -346,10 +335,7 @@ export async function deleteTempTestUser(appData: AppRow): Promise<boolean> {
     userId,
   });
   if (deleted) {
-    await db
-      .update(apps)
-      .set({ supabaseTestUserId: null })
-      .where(eq(apps.id, appData.id));
+    await db.update(apps).set({ supabaseTestUserId: null }).where(eq(apps.id, appData.id));
   }
   return deleted;
 }
@@ -362,10 +348,7 @@ export async function deleteTempTestUser(appData: AppRow): Promise<boolean> {
  */
 export async function reconcileOrphanTestUsers(): Promise<void> {
   try {
-    const rows = await db
-      .select()
-      .from(apps)
-      .where(isNotNull(apps.supabaseTestUserId));
+    const rows = await db.select().from(apps).where(isNotNull(apps.supabaseTestUserId));
     if (rows.length === 0) {
       return;
     }
@@ -386,9 +369,7 @@ export async function reconcileOrphanTestUsers(): Promise<void> {
           () => deleteTempTestUser(appData),
         );
       } catch (error) {
-        logger.warn(
-          `Failed to reconcile orphaned test user for app ${appData.id}: ${error}`,
-        );
+        logger.warn(`Failed to reconcile orphaned test user for app ${appData.id}: ${error}`);
       }
     }
   } catch (error) {
@@ -432,9 +413,7 @@ WHERE n.nspname = 'public' AND c.relkind = 'r';`;
       .map((row) => String(row.table_name));
     return { tablesWithoutRls };
   } catch (error) {
-    logger.warn(
-      `Could not verify Row-Level Security for ${projectId}: ${error}`,
-    );
+    logger.warn(`Could not verify Row-Level Security for ${projectId}: ${error}`);
     return { tablesWithoutRls: [], unverified: true };
   }
 }
@@ -457,9 +436,7 @@ async function cleanUpRowsOwnedBy({
 }): Promise<void> {
   if (!UUID_RE.test(userId)) {
     // The id comes from Supabase, but never interpolate a non-UUID into SQL.
-    logger.warn(
-      `Refusing to clean up rows for non-UUID test user "${userId}".`,
-    );
+    logger.warn(`Refusing to clean up rows for non-UUID test user "${userId}".`);
     return;
   }
   try {
@@ -562,8 +539,5 @@ async function deleteUserBestEffort({
 }
 
 async function persistTestUserId(appId: number, userId: string): Promise<void> {
-  await db
-    .update(apps)
-    .set({ supabaseTestUserId: userId })
-    .where(eq(apps.id, appId));
+  await db.update(apps).set({ supabaseTestUserId: userId }).where(eq(apps.id, appId));
 }

@@ -4,23 +4,12 @@ import type {
   WindowOpenHandlerResponse,
 } from "electron";
 
-const RELEASE_NOTES_ORIGINS = new Set([
-  "https://octopusStudio.sh",
-  "https://www.octopusStudio.sh",
-]);
-const RESERVED_FRAME_NAMES = new Set([
-  "_parent",
-  "_self",
-  "_top",
-  "_unfencedtop",
-]);
+const RELEASE_NOTES_ORIGINS = new Set(["https://octopusStudio.sh", "https://www.octopusStudio.sh"]);
+const RESERVED_FRAME_NAMES = new Set(["_parent", "_self", "_top", "_unfencedtop"]);
 const TRUE_FEATURE_VALUES = new Set(["1", "true", "yes"]);
 const FALSE_FEATURE_VALUES = new Set(["0", "false", "no"]);
 
-type WindowOpenDetails = Pick<
-  HandlerDetails,
-  "features" | "frameName" | "referrer" | "url"
->;
+type WindowOpenDetails = Pick<HandlerDetails, "features" | "frameName" | "referrer" | "url">;
 
 export function isAllowedMainWindowNavigation(
   targetUrl: string,
@@ -56,8 +45,7 @@ export function shouldBlockMainWindowNavigation(
   packagedRendererUrl: string,
 ): boolean {
   return (
-    isMainFrame &&
-    !isAllowedMainWindowNavigation(targetUrl, devServerUrl, packagedRendererUrl)
+    isMainFrame && !isAllowedMainWindowNavigation(targetUrl, devServerUrl, packagedRendererUrl)
   );
 }
 
@@ -96,10 +84,7 @@ function requestsUnsafePopupPreferences(features: string): boolean {
     ) {
       return true;
     }
-    if (
-      ["contextisolation", "sandbox", "websecurity"].includes(name) &&
-      value !== true
-    ) {
+    if (["contextisolation", "sandbox", "websecurity"].includes(name) && value !== true) {
       return true;
     }
   }
@@ -115,10 +100,7 @@ function isHttpUrl(url: string): boolean {
   }
 }
 
-function isPreviewReferrer(
-  referrerUrl: string,
-  devServerUrl: string | undefined,
-): boolean {
+function isPreviewReferrer(referrerUrl: string, devServerUrl: string | undefined): boolean {
   if (!isHttpUrl(referrerUrl)) {
     return false;
   }
@@ -184,8 +166,7 @@ export function getWindowOpenHandlerResponse(
 export function securePreviewPopupOptions(
   options: BrowserWindowConstructorOptions,
 ): BrowserWindowConstructorOptions {
-  const { preload: _privilegedPreload, ...inheritedPreferences } =
-    options.webPreferences ?? {};
+  const { preload: _privilegedPreload, ...inheritedPreferences } = options.webPreferences ?? {};
   return {
     ...options,
     webPreferences: {

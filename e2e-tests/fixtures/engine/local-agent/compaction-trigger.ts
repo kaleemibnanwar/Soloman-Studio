@@ -6,8 +6,7 @@ import type { LocalAgentFixture } from "../../../../testing/fake-llm-server/loca
  * perform compaction before processing.
  */
 export const fixture: LocalAgentFixture = {
-  description:
-    "Response with high token usage to trigger compaction on next message",
+  description: "Response with high token usage to trigger compaction on next message",
   turns: [
     {
       text: "I've completed the initial analysis of the codebase. Here are the findings.",

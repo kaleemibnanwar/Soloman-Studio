@@ -12,10 +12,7 @@ import { createTypedHandler } from "./base";
 import { registerTrustedIpcHandler } from "./trusted_handle";
 import { systemContracts } from "../types/system";
 import { IS_TEST_BUILD } from "../utils/test_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { safeSend } from "@/ipc/utils/safe_sender";
 import { getPathEnvKey } from "@/ipc/utils/path_env";
 import {
@@ -59,9 +56,7 @@ async function reloadNodePath() {
     // Re-read PATH from the registry: spawning a child (e.g. `cmd /c echo
     // %PATH%`) can never observe PATH entries an installer added while OctopusStudio
     // was running, because children inherit this process's stale copy.
-    const refreshedPath = await readRefreshedWindowsPath(
-      process.env.PATH ?? "",
-    );
+    const refreshedPath = await readRefreshedWindowsPath(process.env.PATH ?? "");
     if (refreshedPath) {
       process.env[pathKey] = refreshedPath;
     }
@@ -104,10 +99,7 @@ function formatInstallFailureReason(error: unknown): string {
   const detailLines = (details ?? "")
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(
-      (line) =>
-        line && !BRAILLE_SPINNER_PATTERN.test(line) && /[a-z0-9]/iu.test(line),
-    );
+    .filter((line) => line && !BRAILLE_SPINNER_PATTERN.test(line) && /[a-z0-9]/iu.test(line));
   const reason = (detailLines.at(-1) || message).trim();
 
   if (!reason) {
@@ -157,10 +149,7 @@ async function installManagedPnpm(): Promise<string> {
   // Verify via `node pnpm.cjs` rather than the pnpm.cmd shim: node is a real
   // executable, so the space-containing script path survives Windows argument
   // quoting that breaks for cmd.exe batch invocations.
-  const result = await runCommand("node", [
-    getManagedPnpmCliScriptPath(),
-    "--version",
-  ]);
+  const result = await runCommand("node", [getManagedPnpmCliScriptPath(), "--version"]);
   const pnpmVersion = result.stdout.trim();
   if (!pnpmVersion) {
     throw new Error("pnpm installed, but its version could not be verified");
@@ -212,17 +201,13 @@ function scheduleManagedPnpmInstall(currentPnpmVersion: string | null): void {
       `Existing pnpm ${currentPnpmVersion} is older than ${PNPM_MINIMUM_RELEASE_AGE_VERSION}; installing OctopusStudio-managed pnpm in the background.`,
     );
   } else {
-    logger.info(
-      "pnpm not found; installing OctopusStudio-managed pnpm in the background.",
-    );
+    logger.info("pnpm not found; installing OctopusStudio-managed pnpm in the background.");
   }
 
   void getManagedPnpmInstallPromise()
     .then((managedPnpmVersion) => {
       managedPnpmImplicitInstallFailed = false;
-      logger.info(
-        `Installed OctopusStudio-managed pnpm ${managedPnpmVersion}.`,
-      );
+      logger.info(`Installed OctopusStudio-managed pnpm ${managedPnpmVersion}.`);
     })
     .catch((error) => {
       managedPnpmImplicitInstallFailed = true;
@@ -234,9 +219,7 @@ async function getPnpmVersionAndScheduleInstall(): Promise<string | null> {
   const pnpmSupport = await getPnpmMinimumReleaseAgeSupport();
   const currentPnpmVersion = pnpmSupport.version ?? null;
   if (pnpmSupport.available && pnpmSupport.minimumReleaseAgeSupported) {
-    logger.info(
-      `Using existing pnpm ${currentPnpmVersion}; no managed install needed.`,
-    );
+    logger.info(`Using existing pnpm ${currentPnpmVersion}; no managed install needed.`);
     return currentPnpmVersion;
   }
 
@@ -298,9 +281,7 @@ function removePathSegmentsFromEnv(
   });
 }
 
-function getSystemNodeProbeEnv(
-  customNodePath?: string | null,
-): NodeJS.ProcessEnv {
+function getSystemNodeProbeEnv(customNodePath?: string | null): NodeJS.ProcessEnv {
   return removePathSegmentsFromEnv(process.env, [
     ...getManagedNodeBinDirsForInstalledVersions(),
     customNodePath,
@@ -360,8 +341,7 @@ async function getResolvedNodeStatus(nodeDownloadUrl: string) {
       env: systemEnv,
     });
     const systemNodePath = await getSystemNodePath(systemEnv);
-    systemNodeTooOld =
-      !!systemNodeVersion && !isUsableSystemNodeVersion(systemNodeVersion);
+    systemNodeTooOld = !!systemNodeVersion && !isUsableSystemNodeVersion(systemNodeVersion);
 
     // Intended behavior: when the user selects System, a managed runtime on
     // disk is not used as a fallback. Managed is only active when selected.
@@ -373,10 +353,7 @@ async function getResolvedNodeStatus(nodeDownloadUrl: string) {
       source = "managed";
       nodeVersion = managedNodeVersion;
       nodePath = getManagedNodeBinaryPath();
-    } else if (
-      systemNodeVersion &&
-      isUsableSystemNodeVersion(systemNodeVersion)
-    ) {
+    } else if (systemNodeVersion && isUsableSystemNodeVersion(systemNodeVersion)) {
       source = "system";
       nodeVersion = systemNodeVersion;
       nodePath = systemNodePath;
@@ -386,9 +363,7 @@ async function getResolvedNodeStatus(nodeDownloadUrl: string) {
     }
   }
 
-  const pnpmVersion = nodeVersion
-    ? await getPnpmVersionAndScheduleInstall()
-    : null;
+  const pnpmVersion = nodeVersion ? await getPnpmVersionAndScheduleInstall() : null;
 
   return {
     nodeVersion,
@@ -466,12 +441,7 @@ export function registerNodeHandlers() {
   }
 
   createTypedHandler(systemContracts.getNodejsStatus, async () => {
-    logger.debug(
-      "handling ipc: nodejs-status for platform:",
-      platform(),
-      "and arch:",
-      arch(),
-    );
+    logger.debug("handling ipc: nodejs-status for platform:", platform(), "and arch:", arch());
 
     const nodeDownloadUrl = getNodeDownloadUrl();
     const devNodejsStatus = process.env.OCTOPUS_STUDIO_DEV_NODEJS_STATUS;
@@ -479,8 +449,7 @@ export function registerNodeHandlers() {
     if (process.env.NODE_ENV === "development" && devNodejsStatus) {
       logger.log("Using dev Node.js status override:", devNodejsStatus);
       if (devNodejsStatus === "missing") {
-        const managedNodeStatus =
-          await getSelectedManagedNodeStatus(nodeDownloadUrl);
+        const managedNodeStatus = await getSelectedManagedNodeStatus(nodeDownloadUrl);
         if (managedNodeStatus) {
           return managedNodeStatus;
         }
@@ -520,9 +489,7 @@ export function registerNodeHandlers() {
       const settings = readSettings();
       if (settings.nodeRuntimePreference === "managed") {
         const managedNodeInstalled = await isManagedNodeInstalled();
-        const managedNodeVersion = managedNodeInstalled
-          ? await getManagedNodeVersion()
-          : null;
+        const managedNodeVersion = managedNodeInstalled ? await getManagedNodeVersion() : null;
         if (managedNodeInstalled && managedNodeVersion) {
           return {
             nodeVersion: managedNodeVersion,
@@ -579,8 +546,7 @@ export function registerNodeHandlers() {
       }
       sendTelemetryEvent("managed_node_install", {
         status: "failed",
-        failure_category:
-          error instanceof ManagedNodeInstallError ? error.category : "unknown",
+        failure_category: error instanceof ManagedNodeInstallError ? error.category : "unknown",
       });
       throw error;
     }

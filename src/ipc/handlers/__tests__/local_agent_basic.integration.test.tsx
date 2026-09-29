@@ -12,11 +12,8 @@ import {
   deleteAppBlueprintForChat,
   getAppBlueprintForChat,
 } from "@/ipc/handlers/app_blueprint_handlers";
-import { ensureGitLineEndingPolicy } from "@/ipc/utils/git_utils";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { ensureGitLineEndingPolicy } from "@/ipc/git/git_utils";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local-agent basic flows (integration)", () => {
@@ -42,10 +39,7 @@ describe("local-agent basic flows (integration)", () => {
     await harness?.dispose();
   });
 
-  async function createMinimalApp(options: {
-    name: string;
-    needsAppBlueprint?: boolean;
-  }) {
+  async function createMinimalApp(options: { name: string; needsAppBlueprint?: boolean }) {
     appCounter += 1;
     const fixtureAppDir = path.join(
       process.cwd(),
@@ -62,13 +56,7 @@ describe("local-agent basic flows (integration)", () => {
     const git = (...args: string[]) =>
       execFileSync(
         "git",
-        [
-          "-c",
-          "user.email=test@example.com",
-          "-c",
-          "user.name=Test User",
-          ...args,
-        ],
+        ["-c", "user.email=test@example.com", "-c", "user.name=Test User", ...args],
         { cwd: appDir, stdio: "pipe" },
       );
     git("init");
@@ -98,9 +86,7 @@ describe("local-agent basic flows (integration)", () => {
   // error in one test doesn't also fail every later test in the file.
   let errorEventsBaseline = 0;
   function allErrorEvents() {
-    return harness.bridge.sentEvents.filter(
-      (e) => e.channel === "chat:response:error",
-    );
+    return harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
   }
   function errorEvents() {
     return allErrorEvents().slice(errorEventsBaseline);
@@ -119,21 +105,14 @@ describe("local-agent basic flows (integration)", () => {
     send();
 
     await waitFor(
-      () =>
-        expect(
-          screen.getByText(/updated the title from 'Minimal imported app'/i),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/updated the title from 'Minimal imported app'/i)).toBeTruthy(),
       { timeout: 20_000 },
     );
     await harness.waitForStreamEnd(app.chatId);
 
     expect(
-      fs
-        .readFileSync(path.join(app.appDir, "src/App.tsx"), "utf8")
-        .replace(/\r\n/g, "\n"),
-    ).toBe(
-      "const App = () => <div>UPDATED imported app</div>;\n\nexport default App;\n",
-    );
+      fs.readFileSync(path.join(app.appDir, "src/App.tsx"), "utf8").replace(/\r\n/g, "\n"),
+    ).toBe("const App = () => <div>UPDATED imported app</div>;\n\nexport default App;\n");
     const storedMessages = await harness.db.query.messages.findMany({
       where: eq(messages.chatId, app.chatId),
       orderBy: [asc(messages.id)],
@@ -154,12 +133,12 @@ describe("local-agent basic flows (integration)", () => {
 
     await harness.waitForStreamEnd(app.chatId);
 
-    expect(
-      fs.readFileSync(path.join(app.appDir, "src/utils/math.ts"), "utf8"),
-    ).toContain("export function add");
-    expect(
-      fs.readFileSync(path.join(app.appDir, "src/utils/string.ts"), "utf8"),
-    ).toContain("export function capitalize");
+    expect(fs.readFileSync(path.join(app.appDir, "src/utils/math.ts"), "utf8")).toContain(
+      "export function add",
+    );
+    expect(fs.readFileSync(path.join(app.appDir, "src/utils/string.ts"), "utf8")).toContain(
+      "export function capitalize",
+    );
     expect(errorEvents()).toHaveLength(0);
   }, 60_000);
 
@@ -179,9 +158,7 @@ describe("local-agent basic flows (integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
 
     await harness.waitForStreamEnd(app.chatId);
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "Submit" })).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Submit" })).toBeNull());
     const responseInvoke = harness.bridge.lastInvoke("user-input:respond");
     expect(responseInvoke?.args[0]).toMatchObject({
       response: {
@@ -199,17 +176,12 @@ describe("local-agent basic flows (integration)", () => {
     });
     harness.mount({ chatId: app.chatId, appId: app.appId });
 
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/app-blueprint-rename",
-      { chatId: app.chatId },
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/app-blueprint-rename", {
+      chatId: app.chatId,
+    });
     send();
 
-    await screen.findByRole(
-      "button",
-      { name: "Approve Plan" },
-      { timeout: 20_000 },
-    );
+    await screen.findByRole("button", { name: "Approve Plan" }, { timeout: 20_000 });
     await harness.waitForStreamEnd(app.chatId);
     const followUpEnd = harness.waitForNextStreamEnd(app.chatId);
     const approveButton = await screen.findByRole(
@@ -248,10 +220,9 @@ describe("local-agent basic flows (integration)", () => {
     // Draft the blueprint through the real streamed path (write_app_blueprint ->
     // app-blueprint:update + <octopus-studio-app-blueprint> assistant message) instead of
     // seeding state + a hand-inserted message + a synthetic bridge send.
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/app-blueprint-rename",
-      { chatId: app.chatId },
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/app-blueprint-rename", {
+      chatId: app.chatId,
+    });
     send();
 
     await screen.findByTestId("app-blueprint-template-select", undefined, {
@@ -267,23 +238,19 @@ describe("local-agent basic flows (integration)", () => {
     // once the official template list loads.
     await waitFor(() =>
       expect(
-        (
-          screen.getByTestId(
-            "app-blueprint-template-select",
-          ) as HTMLSelectElement
-        ).querySelector('option[value="next"]'),
+        (screen.getByTestId("app-blueprint-template-select") as HTMLSelectElement).querySelector(
+          'option[value="next"]',
+        ),
       ).not.toBeNull(),
     );
-    const templateSelect = screen.getByTestId(
-      "app-blueprint-template-select",
-    ) as HTMLSelectElement;
+    const templateSelect = screen.getByTestId("app-blueprint-template-select") as HTMLSelectElement;
     fireEvent.change(templateSelect, { target: { value: "next" } });
-    await waitFor(() =>
-      expect(getAppBlueprintForChat(app.chatId)?.templateId).toBe("next"),
-    );
-    expect(
-      harness.bridge.lastInvoke("app-blueprint:edit-field")?.args[0],
-    ).toEqual({ chatId: app.chatId, field: "templateId", value: "next" });
+    await waitFor(() => expect(getAppBlueprintForChat(app.chatId)?.templateId).toBe("next"));
+    expect(harness.bridge.lastInvoke("app-blueprint:edit-field")?.args[0]).toEqual({
+      chatId: app.chatId,
+      field: "templateId",
+      value: "next",
+    });
     expect(getAppBlueprintForChat(app.chatId)?.templateId).toBe("next");
     deleteAppBlueprintForChat(app.chatId);
     expect(errorEvents()).toHaveLength(0);

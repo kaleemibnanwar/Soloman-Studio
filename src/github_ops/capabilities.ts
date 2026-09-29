@@ -20,12 +20,9 @@ export interface GithubOpsCapabilities {
 }
 
 /** Pure domain policy for interactive controls backed by github_ops events. */
-export function selectGithubOpsCapabilities(
-  state: GithubOpsState,
-): GithubOpsCapabilities {
+export function selectGithubOpsCapabilities(state: GithubOpsState): GithubOpsCapabilities {
   const isIdle = state.type === "idle";
-  const isActionableConflict =
-    state.type === "conflicted" && state.resolution === undefined;
+  const isActionableConflict = state.type === "conflicted" && state.resolution === undefined;
   const isStableConflictRecovery =
     state.type === "conflicted" &&
     (state.resolution === undefined ||
@@ -38,22 +35,16 @@ export function selectGithubOpsCapabilities(
     canContinueRebase: state.type === "rebase-paused",
     canSafeForcePush: state.type === "rebase-paused",
     canForcePush:
-      isIdle &&
-      state.banner?.kind === "error" &&
-      state.banner.code === "NON_FAST_FORWARD",
+      isIdle && state.banner?.kind === "error" && state.banner.code === "NON_FAST_FORWARD",
     canRebaseAndSync:
-      isIdle &&
-      state.banner?.kind === "error" &&
-      state.banner.code === "DIVERGENT_BRANCHES",
+      isIdle && state.banner?.kind === "error" && state.banner.code === "DIVERGENT_BRANCHES",
     canResolveConflicts: isActionableConflict,
     canCancelSync: isStableConflictRecovery,
-    canContinueSync:
-      state.type === "conflicted" && state.resolution === "ready-to-sync",
+    canContinueSync: state.type === "conflicted" && state.resolution === "ready-to-sync",
     canRetryConflictVerification:
       state.type === "conflicted" && state.resolution === "verification-failed",
     canMutateBranches: isIdle,
-    canSwitchBranches:
-      isIdle || isStableConflictRecovery || state.type === "rebase-paused",
+    canSwitchBranches: isIdle || isStableConflictRecovery || state.type === "rebase-paused",
     canConfirmBlockedSwitch: state.type === "switch-blocked",
     canDismissBlockedSwitch: state.type === "switch-blocked",
     canConnectRepository: isIdle,

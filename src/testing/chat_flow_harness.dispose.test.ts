@@ -19,10 +19,7 @@ vi.mock("electron", async () => {
 });
 
 import { getActiveStreamCount } from "@/ipc/handlers/chat_stream_handlers";
-import {
-  setupChatFlowHarness,
-  type ChatFlowHarness,
-} from "@/testing/chat_flow_harness";
+import { setupChatFlowHarness, type ChatFlowHarness } from "@/testing/chat_flow_harness";
 
 describe("chat flow harness disposal", () => {
   let harness: ChatFlowHarness | undefined;
@@ -66,25 +63,16 @@ describe("chat flow harness disposal", () => {
       .insert(chats)
       .values({ appId: secondaryApp.id })
       .returning();
-    remoteMachineHost.localRef(
-      chatStreamDefinition,
-      chatStreamKey(secondaryChat.id),
-    );
+    remoteMachineHost.localRef(chatStreamDefinition, chatStreamKey(secondaryChat.id));
 
     expect(
-      remoteMachineHost.peek(
-        chatStreamDefinition.id,
-        chatStreamKey(secondaryChat.id),
-      ),
+      remoteMachineHost.peek(chatStreamDefinition.id, chatStreamKey(secondaryChat.id)),
     ).toBeDefined();
 
     await harness.dispose();
 
     expect(
-      remoteMachineHost.peek(
-        chatStreamDefinition.id,
-        chatStreamKey(secondaryChat.id),
-      ),
+      remoteMachineHost.peek(chatStreamDefinition.id, chatStreamKey(secondaryChat.id)),
     ).toBeUndefined();
   });
 });

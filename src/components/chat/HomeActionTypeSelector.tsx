@@ -1,10 +1,5 @@
 import { useAtom } from "jotai";
-import {
-  MessageCircle,
-  Lightbulb,
-  FolderPlus,
-  CheckIcon,
-} from "lucide-react";
+import { MessageCircle, Lightbulb, FolderPlus, CheckIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,15 +35,10 @@ export function HomeActionTypeSelector() {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-48" align="start">
         {OPTIONS.map((opt) => (
-          <DropdownMenuItem
-            key={opt.value}
-            onClick={() => setActionType(opt.value)}
-          >
+          <DropdownMenuItem key={opt.value} onClick={() => setActionType(opt.value)}>
             <opt.icon className="size-3.5" />
             <span>{opt.label}</span>
-            {opt.value === actionType && (
-              <CheckIcon className="ml-auto size-3.5 text-primary" />
-            )}
+            {opt.value === actionType && <CheckIcon className="ml-auto size-3.5 text-primary" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

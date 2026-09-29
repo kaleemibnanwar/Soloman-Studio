@@ -573,21 +573,9 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   }),
 }));
 
-// --- Skills: saved, reusable instruction sets the agent can discover and load
-// on demand (short description always cheap to see; full instructions only
-// fetched when actually needed). Global — not scoped to any app/project. ---
-export const skills = sqliteTable("skills", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull().unique(),
-  description: text("description").notNull(),
-  instructions: text("instructions").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+// --- Skills are now stored as files under `{userData}/skills/` (see
+// `src/ipc/utils/skill_store.ts`), not in the DB. The legacy `skills` table is
+// migrated and dropped at startup by `src/ipc/utils/skill_migration.ts`. ---
 
 // --- Workers: persona squads that dispatch real chat turns against a project ---
 export const workerPersonas = sqliteTable("worker_personas", {
@@ -718,7 +706,7 @@ export const agentTasks = sqliteTable("agent_tasks", {
   chatId: integer("chat_id").references(() => chats.id, { onDelete: "set null" }),
   description: text("description").notNull(),
   role: text("role", {
-    enum: ["explorer", "coder", "tester", "debugger", "reviewer"],
+    enum: ["explorer", "executor", "tester", "debugger", "reviewer", "architect", "verifier"],
   }).notNull(),
   // Task ids this task depends on (DAG edges).
   dependencies: text("dependencies", { mode: "json" }).$type<string[]>().notNull(),
@@ -729,7 +717,7 @@ export const agentTasks = sqliteTable("agent_tasks", {
   outputBudget: integer("output_budget").notNull(),
   executionBudget: integer("execution_budget").notNull(),
   status: text("status", {
-    enum: ["pending", "running", "completed", "failed"],
+    enum: ["pending", "running", "completed", "failed", "partial", "blocked"],
   })
     .notNull()
     .default("pending"),

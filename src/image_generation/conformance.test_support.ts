@@ -4,13 +4,16 @@ import {
 } from "@/distributed_machines/testing/machine_conformance";
 import type { ImageGenerationEvent, ImageGenerationStatus } from "./state";
 
-const imageGenerationStateVariants = defineVariantInventory<
-  ImageGenerationStatus | "empty"
->()(["empty", "pending", "cancelling", "success", "error", "cancelled"]);
+const imageGenerationStateVariants = defineVariantInventory<ImageGenerationStatus | "empty">()([
+  "empty",
+  "pending",
+  "cancelling",
+  "success",
+  "error",
+  "cancelled",
+]);
 
-const imageGenerationEventVariants = defineVariantInventory<
-  ImageGenerationEvent["type"]
->()([
+const imageGenerationEventVariants = defineVariantInventory<ImageGenerationEvent["type"]>()([
   "SUBMIT",
   "CANCEL_REQUESTED",
   "JOB_SUCCEEDED",
@@ -29,8 +32,7 @@ export const imageGenerationConformance = defineMachineConformance({
   exclusions: [
     {
       tier: "T3",
-      reason:
-        "Image-generation jobs intentionally remain in-memory in the current runtime.",
+      reason: "Image-generation jobs intentionally remain in-memory in the current runtime.",
     },
     {
       tier: "T4",

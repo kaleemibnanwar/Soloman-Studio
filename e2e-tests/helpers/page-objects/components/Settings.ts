@@ -23,15 +23,11 @@ export class Settings {
   }
 
   async toggleSandboxScriptExecution() {
-    await this.page
-      .getByRole("switch", { name: "Enable sandbox script execution" })
-      .click();
+    await this.page.getByRole("switch", { name: "Enable sandbox script execution" }).click();
   }
 
   async toggleCloudSandboxExperiment() {
-    await this.page
-      .getByRole("switch", { name: "Enable Cloud Sandbox" })
-      .click();
+    await this.page.getByRole("switch", { name: "Enable Cloud Sandbox" }).click();
   }
 
   async toggleEnableSelectAppFromHomeChatInput() {
@@ -47,9 +43,7 @@ export class Settings {
   }
 
   async enableChatEventNotifications() {
-    await expect(
-      this.page.getByRole("heading", { level: 1, name: "Settings" }),
-    ).toBeVisible();
+    await expect(this.page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
     const label = this.page.getByText("Enable notifications", { exact: true });
 
@@ -67,9 +61,7 @@ export class Settings {
 
   async changeReleaseChannel(channel: "stable" | "beta") {
     await this.page.getByRole("combobox", { name: "Release Channel" }).click();
-    await this.page
-      .getByRole("option", { name: channel === "stable" ? "Stable" : "Beta" })
-      .click();
+    await this.page.getByRole("option", { name: channel === "stable" ? "Stable" : "Beta" }).click();
   }
 
   async changeRuntimeMode(mode: "host" | "docker" | "cloud") {
@@ -117,10 +109,7 @@ export class Settings {
 
     const diffLines: string[] = [];
 
-    const allKeys = new Set([
-      ...Object.keys(beforeSettings),
-      ...Object.keys(afterSettings),
-    ]);
+    const allKeys = new Set([...Object.keys(beforeSettings), ...Object.keys(afterSettings)]);
 
     // Sort keys for deterministic output
     const sortedKeys = Array.from(allKeys).sort();
@@ -147,9 +136,7 @@ export class Settings {
       const formatValue = (val: unknown, marker: "+" | "-") => {
         const displayVal = key in redactedKeys ? redactedKeys[key] : val;
         const lines = JSON.stringify(displayVal, null, 2).split("\n");
-        return lines
-          .map((line, i) => (i === 0 ? line : `${marker}   ${line}`))
-          .join("\n");
+        return lines.map((line, i) => (i === 0 ? line : `${marker}   ${line}`)).join("\n");
       };
 
       if (!beforeExists && afterExists) {
@@ -177,13 +164,9 @@ export class Settings {
   async setUpTestProvider() {
     await this.page.getByText("Add custom providerConnect to").click();
     // Fill out provider dialog
-    await this.page
-      .getByRole("textbox", { name: "Provider ID" })
-      .fill("testing");
+    await this.page.getByRole("textbox", { name: "Provider ID" }).fill("testing");
     await this.page.getByRole("textbox", { name: "Display Name" }).click();
-    await this.page
-      .getByRole("textbox", { name: "Display Name" })
-      .fill("test-provider");
+    await this.page.getByRole("textbox", { name: "Display Name" }).fill("test-provider");
     await this.page.getByText("API Base URLThe base URL for").click();
     await this.page
       .getByRole("textbox", { name: "API Base URL" })
@@ -212,13 +195,7 @@ export class Settings {
     await expect(dialog).toBeHidden({ timeout: 10_000 });
   }
 
-  async addCustomTestModel({
-    name,
-    contextWindow,
-  }: {
-    name: string;
-    contextWindow?: number;
-  }) {
+  async addCustomTestModel({ name, contextWindow }: { name: string; contextWindow?: number }) {
     await this.page.getByRole("heading", { name: "test-provider" }).click();
     await this.page.getByRole("button", { name: "Add Custom Model" }).click();
     const dialog = this.page.getByRole("dialog", { name: "Add Custom Model" });
@@ -246,9 +223,7 @@ export class Settings {
 
   async setUpTestProviderApiKey() {
     // Fill in a test API key for the custom provider
-    await this.page
-      .getByPlaceholder(/Enter new.*API Key here/)
-      .fill("test-api-key-12345");
+    await this.page.getByPlaceholder(/Enter new.*API Key here/).fill("test-api-key-12345");
     await this.page.getByRole("button", { name: "Save Key" }).click();
     // Wait for the key to be saved
     await expect(this.page.getByText(/test.+2345/)).toBeVisible();
@@ -260,9 +235,7 @@ export class Settings {
       .filter({ hasText: /^OctopusStudioNeeds Setup$/ })
       .nth(1)
       .click();
-    await this.page
-      .getByRole("textbox", { name: "Set OctopusStudio API Key" })
-      .click();
+    await this.page.getByRole("textbox", { name: "Set OctopusStudio API Key" }).click();
     await this.page
       .getByRole("textbox", { name: "Set OctopusStudio API Key" })
       .fill("testOctopusStudiokey");

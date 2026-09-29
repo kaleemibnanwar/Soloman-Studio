@@ -18,12 +18,9 @@ export function registerThemesHandlers() {
     // noop
   });
 
-  createTypedHandler(
-    templateContracts.getThemeGenerationModelOptions,
-    async () => {
-      return [];
-    },
-  );
+  createTypedHandler(templateContracts.getThemeGenerationModelOptions, async () => {
+    return [];
+  });
 
   createTypedHandler(templateContracts.createCustomTheme, async () => {
     return null as any;

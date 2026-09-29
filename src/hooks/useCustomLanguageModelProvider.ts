@@ -6,10 +6,7 @@ import {
 } from "@/ipc/types";
 import { showError } from "@/lib/toast";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export function useCustomLanguageModelProvider() {
   const queryClient = useQueryClient();
@@ -19,10 +16,7 @@ export function useCustomLanguageModelProvider() {
       params: CreateCustomLanguageModelProviderParams,
     ): Promise<LanguageModelProvider> => {
       if (!params.id.trim()) {
-        throw new OctopusStudioError(
-          "Provider ID is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("Provider ID is required", OctopusStudioErrorKind.Validation);
       }
       if (!params.name.trim()) {
         throw new OctopusStudioError(
@@ -31,10 +25,7 @@ export function useCustomLanguageModelProvider() {
         );
       }
       if (!params.apiBaseUrl.trim()) {
-        throw new OctopusStudioError(
-          "API base URL is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("API base URL is required", OctopusStudioErrorKind.Validation);
       }
 
       return ipc.languageModel.createCustomProvider({
@@ -60,10 +51,7 @@ export function useCustomLanguageModelProvider() {
       params: CreateCustomLanguageModelProviderParams,
     ): Promise<LanguageModelProvider> => {
       if (!params.id.trim()) {
-        throw new OctopusStudioError(
-          "Provider ID is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("Provider ID is required", OctopusStudioErrorKind.Validation);
       }
       if (!params.name.trim()) {
         throw new OctopusStudioError(
@@ -72,10 +60,7 @@ export function useCustomLanguageModelProvider() {
         );
       }
       if (!params.apiBaseUrl.trim()) {
-        throw new OctopusStudioError(
-          "API base URL is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("API base URL is required", OctopusStudioErrorKind.Validation);
       }
 
       return ipc.languageModel.editCustomProvider({
@@ -99,10 +84,7 @@ export function useCustomLanguageModelProvider() {
   const deleteProviderMutation = useMutation({
     mutationFn: async (providerId: string): Promise<void> => {
       if (!providerId) {
-        throw new OctopusStudioError(
-          "Provider ID is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("Provider ID is required", OctopusStudioErrorKind.Validation);
       }
 
       return ipc.languageModel.deleteCustomProvider({ providerId });
@@ -142,8 +124,6 @@ export function useCustomLanguageModelProvider() {
     isEditing: editProviderMutation.isPending,
     isDeleting: deleteProviderMutation.isPending,
     error:
-      createProviderMutation.error ||
-      editProviderMutation.error ||
-      deleteProviderMutation.error,
+      createProviderMutation.error || editProviderMutation.error || deleteProviderMutation.error,
   };
 }

@@ -1,20 +1,9 @@
-import {
-  lazy,
-  Suspense,
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import { lazy, Suspense, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { selectAtom } from "jotai/utils";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
-import {
-  chatMessagesByIdAtom,
-  scrollToBottomRequestedChatIdsAtom,
-} from "../atoms/chatAtoms";
+import { chatMessagesByIdAtom, scrollToBottomRequestedChatIdsAtom } from "../atoms/chatAtoms";
 import { ipc } from "@/ipc/types";
 
 import { ChatHeader } from "./chat/ChatHeader";
@@ -25,11 +14,7 @@ import { FreeAgentQuotaBanner } from "./chat/FreeAgentQuotaBanner";
 import { NotificationBanner } from "./chat/NotificationBanner";
 import { SupabaseLegacyKeyBanner } from "./chat/SupabaseLegacyKeyBanner";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ArrowDown } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { useFreeAgentQuota } from "@/hooks/useFreeAgentQuota";
@@ -41,20 +26,10 @@ import { useReducedMotionPref } from "@/hooks/useReducedMotion";
 import { useLoadApps } from "@/hooks/useLoadApps";
 import { useVersionPreview } from "@/hooks/useVersionPreview";
 import { useChatStreamState } from "@/hooks/useChatStream";
-import {
-  useChatStreamManager,
-  useStreamFinished,
-} from "@/chat_stream/ChatStreamProvider";
-import {
-  isStreamActive,
-  selectStreamError,
-  streamInvocationRef,
-} from "@/chat_stream/transition";
+import { useChatStreamManager, useStreamFinished } from "@/chat_stream/ChatStreamProvider";
+import { isStreamActive, selectStreamError, streamInvocationRef } from "@/chat_stream/transition";
 import { automaticChatScrollReason } from "./chatPanelScroll";
-import {
-  useChatMessages,
-  useChatMessagesLoaded,
-} from "@/hooks/useChatMessages";
+import { useChatMessages, useChatMessagesLoaded } from "@/hooks/useChatMessages";
 
 const TerminalPanel = lazy(() => import("./chat/TerminalPanel"));
 
@@ -64,18 +39,12 @@ interface ChatPanelProps {
   onTogglePreview: () => void;
 }
 
-export function ChatPanel({
-  chatId,
-  isPreviewOpen,
-  onTogglePreview,
-}: ChatPanelProps) {
+export function ChatPanel({ chatId, isPreviewOpen, onTogglePreview }: ChatPanelProps) {
   const { t } = useTranslation("chat");
   const messages = useChatMessages(chatId);
   const messagesLoaded = useChatMessagesLoaded(chatId);
   const setMessagesById = useSetAtom(chatMessagesByIdAtom);
-  const setScrollToBottomRequestedChatIds = useSetAtom(
-    scrollToBottomRequestedChatIdsAtom,
-  );
+  const setScrollToBottomRequestedChatIds = useSetAtom(scrollToBottomRequestedChatIdsAtom);
   // Subscribe only to whether THIS chat has a pending scroll request, not to the
   // whole Set. Otherwise adding/removing any other chat id re-fires the
   // scroll-to-bottom effect for the visible chat (running its double-RAF
@@ -89,9 +58,7 @@ export function ChatPanel({
       [chatId],
     ),
   );
-  const [terminalOpenByChatId, setTerminalOpenByChatId] = useAtom(
-    terminalOpenByChatIdAtom,
-  );
+  const [terminalOpenByChatId, setTerminalOpenByChatId] = useAtom(terminalOpenByChatIdAtom);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const { apps } = useLoadApps();
   const currentApp = apps.find((app) => app.id === selectedAppId);
@@ -121,17 +88,14 @@ export function ChatPanel({
   const isAtBottomRef = useRef(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = "smooth"): boolean => {
-      const messagesEnd = messagesEndRef.current;
-      if (!messagesEnd) {
-        return false;
-      }
-      messagesEnd.scrollIntoView({ behavior });
-      return true;
-    },
-    [],
-  );
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth"): boolean => {
+    const messagesEnd = messagesEndRef.current;
+    if (!messagesEnd) {
+      return false;
+    }
+    messagesEnd.scrollIntoView({ behavior });
+    return true;
+  }, []);
 
   // Called by Virtuoso's atBottomStateChange (production) or scroll handler (test mode).
   // Pure position-based: no timeouts, no debounce.
@@ -150,9 +114,7 @@ export function ChatPanel({
   // Scroll to bottom when a new stream starts (user sent a message)
   const streamOperationId = streamInvocationRef(streamState)?.operationId ?? "";
   const streamError = selectStreamError(streamState);
-  const isTerminalOpen = chatId
-    ? (terminalOpenByChatId.get(chatId) ?? false)
-    : false;
+  const isTerminalOpen = chatId ? (terminalOpenByChatId.get(chatId) ?? false) : false;
 
   // Track previous chatId to detect chat switches
   const prevChatIdRef = useRef<number | undefined>(undefined);
@@ -173,8 +135,7 @@ export function ChatPanel({
     prevStreamOperationIdRef.current = streamOperationId;
 
     if (isChatSwitch) {
-      pendingInitialScrollChatIdRef.current =
-        messages.length === 0 ? chatId : undefined;
+      pendingInitialScrollChatIdRef.current = messages.length === 0 ? chatId : undefined;
     } else if (reason === "initial-messages-loaded") {
       pendingInitialScrollChatIdRef.current = undefined;
     }
@@ -195,11 +156,7 @@ export function ChatPanel({
   }, [chatId, streamOperationId, messages.length, scrollToBottom]);
 
   useEffect(() => {
-    if (
-      chatId == null ||
-      !messagesLoaded ||
-      !isScrollToBottomRequestedForChat
-    ) {
+    if (chatId == null || !messagesLoaded || !isScrollToBottomRequestedForChat) {
       return;
     }
 
@@ -380,11 +337,7 @@ export function ChatPanel({
       return next;
     });
     requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLButtonElement>(
-          '[data-testid="toggle-terminal-button"]',
-        )
-        ?.focus();
+      document.querySelector<HTMLButtonElement>('[data-testid="toggle-terminal-button"]')?.focus();
     });
   }, [chatId, setTerminalOpenByChatId]);
 
@@ -420,12 +373,8 @@ export function ChatPanel({
                 <motion.div
                   key="chat"
                   className="absolute inset-0 flex min-h-0 flex-col"
-                  initial={
-                    reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }
-                  }
-                  animate={
-                    reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
-                  }
+                  initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
+                  animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
                   exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
                   transition={chatLayerTransition}
                 >
@@ -460,9 +409,7 @@ export function ChatPanel({
                   </div>
                   {showFreeAgentQuotaBanner && (
                     <FreeAgentQuotaBanner
-                      onSwitchToBuildMode={() =>
-                        void setChatMode("build").catch(() => {})
-                      }
+                      onSwitchToBuildMode={() => void setChatMode("build").catch(() => {})}
                     />
                   )}
                   <SupabaseLegacyKeyBanner appId={selectedAppId} />

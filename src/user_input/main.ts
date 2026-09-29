@@ -38,18 +38,14 @@ async function dispatchDueFollowUpInMain(
     userInputRegistry
       .getPending()
       .some(
-        (pending) =>
-          pending.status === "due" &&
-          pending.descriptor.requestId === command.requestId,
+        (pending) => pending.status === "due" && pending.descriptor.requestId === command.requestId,
       );
   await dispatchDueFollowUp(command, {
     isStillDue,
     waitForChatActorIdle,
     dispatchUserInputFollowUp,
-    followUpDispatched: (requestId) =>
-      userInputRegistry.followUpDispatched(requestId),
-    followUpRejected: (requestId) =>
-      userInputRegistry.followUpRejected(requestId),
+    followUpDispatched: (requestId) => userInputRegistry.followUpDispatched(requestId),
+    followUpRejected: (requestId) => userInputRegistry.followUpRejected(requestId),
   });
 }
 

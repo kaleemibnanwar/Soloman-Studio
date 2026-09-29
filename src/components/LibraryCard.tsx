@@ -1,7 +1,4 @@
-import {
-  useUpdateCustomTheme,
-  useDeleteCustomTheme,
-} from "@/hooks/useCustomThemes";
+import { useUpdateCustomTheme, useDeleteCustomTheme } from "@/hooks/useCustomThemes";
 import type { PromptItem } from "@/hooks/usePrompts";
 import { Badge } from "@/components/ui/badge";
 import { Palette, FileText } from "lucide-react";
@@ -58,10 +55,7 @@ export function LibraryCard({
       data-testid={`library-${item.type}-card`}
       className="border rounded-lg p-4 bg-(--background-lightest) relative"
     >
-      <Badge
-        variant="outline"
-        className={cn("absolute top-3 right-3 gap-1", config.badgeClass)}
-      >
+      <Badge variant="outline" className={cn("absolute top-3 right-3 gap-1", config.badgeClass)}>
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
@@ -72,11 +66,7 @@ export function LibraryCard({
               <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
               <h3 className="text-lg font-semibold truncate">{title}</h3>
             </div>
-            {description && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {description}
-              </p>
-            )}
+            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
             {slug && (
               <p className="text-xs text-muted-foreground mt-1">
                 Use <code className="font-mono">/{slug}</code> in chat
@@ -159,11 +149,7 @@ function PromptActions({
 }) {
   return (
     <>
-      <CreateOrEditPromptDialog
-        mode="edit"
-        prompt={prompt}
-        onUpdatePrompt={onUpdate}
-      />
+      <CreateOrEditPromptDialog mode="edit" prompt={prompt} onUpdatePrompt={onUpdate} />
       <DeleteConfirmationDialog
         itemName={prompt.title}
         itemType="Prompt"

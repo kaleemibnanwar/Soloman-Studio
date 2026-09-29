@@ -2,10 +2,7 @@
  * Utility for prettifying server dump data for snapshot comparisons.
  */
 
-import {
-  BUILD_SYSTEM_POSTFIX,
-  BUILD_SYSTEM_PREFIX,
-} from "@/prompts/system_prompt";
+import { BUILD_SYSTEM_POSTFIX, BUILD_SYSTEM_PREFIX } from "@/prompts/system_prompt";
 
 export interface PrettifyDumpOptions {
   onlyLastMessage?: boolean;

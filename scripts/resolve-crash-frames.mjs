@@ -70,9 +70,7 @@ function usageError(message) {
 // Frame fields come from CLI args or a CSV export and are used as URL
 // and cache path segments. Only allow plain file names.
 function safePathSegment(segment) {
-  return (
-    /^[A-Za-z0-9()., _-]+$/.test(segment) && segment !== "." && segment !== ".."
-  );
+  return /^[A-Za-z0-9()., _-]+$/.test(segment) && segment !== "." && segment !== "..";
 }
 
 // Returns why the frame cannot be used, or null when it is valid.
@@ -225,10 +223,7 @@ async function ensureSymbols(debugFile, debugId) {
       fs.mkdirSync(path.dirname(cached), { recursive: true });
       // Download to a partial file and rename after success, so an
       // interrupted download is never cached as complete.
-      await pipeline(
-        Readable.fromWeb(response.body),
-        fs.createWriteStream(partial),
-      );
+      await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(partial));
       fs.renameSync(partial, cached);
       return cached;
     }

@@ -1,10 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import {
-  $getRoot,
-  $createParagraphNode,
-  $createTextNode,
-  EditorState,
-} from "lexical";
+import { $getRoot, $createParagraphNode, $createTextNode, EditorState } from "lexical";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -47,33 +42,46 @@ const beautifulMentionsTheme: BeautifulMentionsTheme = {
 };
 
 // Custom menu item component
-const CustomMenuItem = forwardRef<
-  HTMLLIElement,
-  BeautifulMentionsMenuItemProps
->(({ selected, item, ...props }, ref) => {
-  const isPrompt = item.data?.type === "prompt";
-  const isSkill = item.data?.type === "skill";
-  const isApp = item.data?.type === "app";
-  const isHistory = item.data?.type === "history";
-  const isMedia = item.data?.type === "media";
-  const label = isSkill
-    ? "Skill"
-    : isPrompt
-      ? "Prompt"
-      : isApp
-        ? "App"
-        : isHistory
-          ? ""
-          : isMedia
-            ? "Media"
-            : "File";
-  const value = (item as any)?.value;
+const CustomMenuItem = forwardRef<HTMLLIElement, BeautifulMentionsMenuItemProps>(
+  ({ selected, item, ...props }, ref) => {
+    const isPrompt = item.data?.type === "prompt";
+    const isSkill = item.data?.type === "skill";
+    const isApp = item.data?.type === "app";
+    const isHistory = item.data?.type === "history";
+    const isMedia = item.data?.type === "media";
+    const label = isSkill
+      ? "Skill"
+      : isPrompt
+        ? "Prompt"
+        : isApp
+          ? "App"
+          : isHistory
+            ? ""
+            : isMedia
+              ? "Media"
+              : "File";
+    const value = (item as any)?.value;
 
-  // For history items, show full text without label
-  if (isHistory) {
+    // For history items, show full text without label
+    if (isHistory) {
+      return (
+        <li
+          className={`m-0 px-3 py-2 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis ${
+            selected
+              ? "bg-accent text-accent-foreground"
+              : "bg-popover text-popover-foreground hover:bg-accent/50"
+          }`}
+          {...props}
+          ref={ref}
+        >
+          <span className="truncate text-sm">{value}</span>
+        </li>
+      );
+    }
+
     return (
       <li
-        className={`m-0 px-3 py-2 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis ${
+        className={`m-0 flex items-center px-3 py-2 cursor-pointer whitespace-nowrap ${
           selected
             ? "bg-accent text-accent-foreground"
             : "bg-popover text-popover-foreground hover:bg-accent/50"
@@ -81,40 +89,26 @@ const CustomMenuItem = forwardRef<
         {...props}
         ref={ref}
       >
-        <span className="truncate text-sm">{value}</span>
+        <div className="flex items-center space-x-2 min-w-0">
+          <span
+            className={`px-2 py-0.5 text-xs font-medium rounded-md flex-shrink-0 ${
+              isSkill || isPrompt
+                ? "bg-purple-500 text-white"
+                : isApp
+                  ? "bg-primary text-primary-foreground"
+                  : isMedia
+                    ? "bg-amber-500 text-white"
+                    : "bg-blue-600 text-white"
+            }`}
+          >
+            {label}
+          </span>
+          <span className="truncate text-sm">{value}</span>
+        </div>
       </li>
     );
-  }
-
-  return (
-    <li
-      className={`m-0 flex items-center px-3 py-2 cursor-pointer whitespace-nowrap ${
-        selected
-          ? "bg-accent text-accent-foreground"
-          : "bg-popover text-popover-foreground hover:bg-accent/50"
-      }`}
-      {...props}
-      ref={ref}
-    >
-      <div className="flex items-center space-x-2 min-w-0">
-        <span
-          className={`px-2 py-0.5 text-xs font-medium rounded-md flex-shrink-0 ${
-            isSkill || isPrompt
-              ? "bg-purple-500 text-white"
-              : isApp
-                ? "bg-primary text-primary-foreground"
-                : isMedia
-                  ? "bg-amber-500 text-white"
-                  : "bg-blue-600 text-white"
-          }`}
-        >
-          {label}
-        </span>
-        <span className="truncate text-sm">{value}</span>
-      </div>
-    </li>
-  );
-});
+  },
+);
 
 // Custom menu component
 function CustomMenu({ loading: _loading, ...props }: any) {
@@ -149,11 +143,8 @@ function EnterKeyPlugin({
       KEY_ENTER_COMMAND,
       (event: KeyboardEvent) => {
         // Check if mentions menu is open by looking for our custom menu element
-        const mentionsMenu = document.querySelector(
-          '[data-mentions-menu="true"]',
-        );
-        const hasVisibleItems =
-          mentionsMenu && mentionsMenu.children.length > 0;
+        const mentionsMenu = document.querySelector('[data-mentions-menu="true"]');
+        const hasVisibleItems = mentionsMenu && mentionsMenu.children.length > 0;
 
         if (hasVisibleItems) {
           // If mentions menu is open with items, let the mentions plugin handle the Enter key
@@ -240,9 +231,7 @@ function ExternalValueSyncPlugin({
           if (textBefore) paragraph.append($createTextNode(textBefore));
         }
         if (match[1]) {
-          const { appName, trailingDots } = splitAppMentionTrailingDots(
-            match[1],
-          );
+          const { appName, trailingDots } = splitAppMentionTrailingDots(match[1]);
           paragraph.append($createBeautifulMentionNode("@", appName));
           if (trailingDots) {
             paragraph.append($createTextNode(trailingDots));
@@ -348,7 +337,7 @@ export function LexicalChatInput({
     const savedSkillItems = (skills || []).map((s) => ({
       value: s.name,
       type: "skill",
-      id: s.id,
+      id: s.name,
     }));
     result["/"] = [...savedSkillItems, ...promptSkillItems];
 
@@ -367,11 +356,7 @@ export function LexicalChatInput({
       if (excludeCurrentApp && app.name === currentAppName) return false;
 
       // Exclude already mentioned apps (case-insensitive comparison)
-      if (
-        alreadyMentioned.some(
-          (mentioned) => mentioned.toLowerCase() === app.name.toLowerCase(),
-        )
-      )
+      if (alreadyMentioned.some((mentioned) => mentioned.toLowerCase() === app.name.toLowerCase()))
         return false;
 
       return true;
@@ -394,9 +379,7 @@ export function LexicalChatInput({
     }));
 
     // Build media mention items from the current app's media files only
-    const currentAppMedia = mediaApps.find(
-      (app) => app.appId === selectedAppId,
-    );
+    const currentAppMedia = mediaApps.find((app) => app.appId === selectedAppId);
     const mediaItems = (currentAppMedia?.files ?? []).map((file) => ({
       value: file.fileName,
       type: "media",
@@ -453,9 +436,7 @@ export function LexicalChatInput({
         // Short-circuit if there's no "@" symbol in the text
         if (textContent.includes("@")) {
           // Convert media mentions : @filename -> @media:filename
-          const currentAppMediaFiles = mediaApps.find(
-            (app) => app.appId === selectedAppId,
-          );
+          const currentAppMediaFiles = mediaApps.find((app) => app.appId === selectedAppId);
           if (currentAppMediaFiles) {
             // Sort files by name length descending so longer names are matched
             // first, preventing prefix collisions (e.g. "cat.png copy.png" vs "cat.png").
@@ -463,10 +444,7 @@ export function LexicalChatInput({
               (a, b) => b.fileName.length - a.fileName.length,
             );
             for (const file of sortedFiles) {
-              const escaped = file.fileName.replace(
-                /[.*+?^${}()|[\]\\]/g,
-                "\\$&",
-              );
+              const escaped = file.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
               const mediaRegex = new RegExp(`@(${escaped})(?![\\w-])`, "g");
               textContent = textContent.replace(
                 mediaRegex,
@@ -487,10 +465,7 @@ export function LexicalChatInput({
           }
 
           for (const fullPath of appFiles || []) {
-            const escapedDisplay = fullPath.replace(
-              /[.*+?^${}()|[\]\\]/g,
-              "\\$&",
-            );
+            const escapedDisplay = fullPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const fileRegex = new RegExp(`@(${escapedDisplay})(?![\\w-])`, "g");
             textContent = textContent.replace(fileRegex, `@file:${fullPath}`);
           }
@@ -530,15 +505,10 @@ export function LexicalChatInput({
         <OnChangePlugin onChange={handleEditorChange} />
         <HistoryPlugin />
         <EditableStatePlugin editable={!disabled} />
-        <EnterKeyPlugin
-          onSubmit={onSubmit}
-          disableSendButton={disableSendButton}
-        />
+        <EnterKeyPlugin onSubmit={onSubmit} disableSendButton={disableSendButton} />
         <ExternalValueSyncPlugin
           value={value}
-          promptsById={Object.fromEntries(
-            (prompts || []).map((p) => [p.id, p.title]),
-          )}
+          promptsById={Object.fromEntries((prompts || []).map((p) => [p.id, p.title]))}
         />
         <HistoryNavigation
           messageHistory={messageHistory}

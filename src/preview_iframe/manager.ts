@@ -14,11 +14,7 @@ export class PreviewIframeManager {
   constructor(readonly commands: PreviewIframeCommandAdapter) {
     this.host = new KeyedControllerHost(
       (appId) =>
-        new PreviewIframeController(
-          appId,
-          commands,
-          createTraceObserver("preview_iframe", appId),
-        ),
+        new PreviewIframeController(appId, commands, createTraceObserver("preview_iframe", appId)),
     );
   }
 

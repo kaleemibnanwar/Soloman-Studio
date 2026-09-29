@@ -1,6 +1,1 @@
-export type CustomTagState =
-  | "pending"
-  | "finished"
-  | "warning"
-  | "aborted"
-  | "error";
+export type CustomTagState = "pending" | "finished" | "warning" | "aborted" | "error";

@@ -9,13 +9,9 @@ export function getExtraRevertedCommits({
   targetOid: string;
   ownCommitHashes: string[];
 }): Version[] | null {
-  const targetIndex = versions.findIndex(
-    (version) => version.oid === targetOid,
-  );
+  const targetIndex = versions.findIndex((version) => version.oid === targetOid);
   if (targetIndex === -1) return null;
 
   const ownCommits = new Set(ownCommitHashes);
-  return versions
-    .slice(0, targetIndex)
-    .filter((version) => !ownCommits.has(version.oid));
+  return versions.slice(0, targetIndex).filter((version) => !ownCommits.has(version.oid));
 }

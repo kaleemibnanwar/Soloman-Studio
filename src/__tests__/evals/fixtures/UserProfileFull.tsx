@@ -1,19 +1,8 @@
 // UserProfileFull.tsx — full-featured user profile page component
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  fetchUser,
-  updateUser,
-  uploadAvatar,
-  fetchUserActivity,
-} from "../services/userService";
+import { fetchUser, updateUser, uploadAvatar, fetchUserActivity } from "../services/userService";
 import type { User, ActivityItem } from "../types";
 
 interface UserProfileFullProps {
@@ -57,8 +46,7 @@ interface ActivityState {
 
 function formatStatValue(value: number | string, unit?: string): string {
   if (typeof value === "number") {
-    const formatted =
-      value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(value);
+    const formatted = value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(value);
     return unit ? `${formatted} ${unit}` : formatted;
   }
   return value;
@@ -190,8 +178,7 @@ export function UserProfile({
     setAvatar({ url: null, uploading: false, error: null, previewUrl: null });
   }, []);
 
-  const avatarDisplayUrl =
-    avatar.previewUrl ?? avatar.url ?? "/default-avatar.png";
+  const avatarDisplayUrl = avatar.previewUrl ?? avatar.url ?? "/default-avatar.png";
 
   const renderAvatarBadge = useCallback(() => {
     if (avatar.uploading) {
@@ -338,9 +325,7 @@ export function UserProfile({
     return (
       <div key={index} className="stat-card">
         <div className="stat-card__label">{card.label}</div>
-        <div className="stat-card__value">
-          {formatStatValue(card.value, card.unit)}
-        </div>
+        <div className="stat-card__value">{formatStatValue(card.value, card.unit)}</div>
         <div className={`stat-card__change ${getChangeClass(card.change)}`}>
           {formatChangePercent(card.change)}
         </div>
@@ -373,8 +358,7 @@ export function UserProfile({
     return (
       <div className="stats-summary">
         <p>
-          Total activity: <strong>{totalCommits}</strong> commits this{" "}
-          {stats.period}.
+          Total activity: <strong>{totalCommits}</strong> commits this {stats.period}.
         </p>
       </div>
     );
@@ -436,14 +420,10 @@ export function UserProfile({
     (item: ActivityItem) => {
       return (
         <div key={item.id} className="activity-item">
-          <span className="activity-item__icon">
-            {getActivityIcon(item.type)}
-          </span>
+          <span className="activity-item__icon">{getActivityIcon(item.type)}</span>
           <div className="activity-item__content">
             <p className="activity-item__description">{item.description}</p>
-            <span className="activity-item__time">
-              {formatActivityDate(item.timestamp)}
-            </span>
+            <span className="activity-item__time">{formatActivityDate(item.timestamp)}</span>
             {item.metadata?.pr && (
               <a
                 className="activity-item__link"
@@ -602,11 +582,7 @@ export function UserProfile({
             </div>
             {saveError && <p className="form-error">{saveError}</p>}
             <div className="form-actions">
-              <button
-                type="submit"
-                disabled={saving}
-                className="btn btn--primary"
-              >
+              <button type="submit" disabled={saving} className="btn btn--primary">
                 {saving ? "Saving…" : "Save Changes"}
               </button>
               <button

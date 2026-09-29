@@ -11,19 +11,16 @@ export const appOutputInterests = new HighVolumeWindowInterests<AppOutput>(
   100,
 );
 
-export const chatChunkInterests =
-  new HighVolumeWindowInterests<ChatResponseChunk>(
-    windowRegistry,
-    "chat:response:chunk",
-    0,
-    "individual",
-  );
+export const chatChunkInterests = new HighVolumeWindowInterests<ChatResponseChunk>(
+  windowRegistry,
+  "chat:response:chunk",
+  0,
+  "individual",
+);
 
 export function ensureProducerInterest(
   sender: WebContents,
-  interest:
-    | { kind: "app-output"; appId: number }
-    | { kind: "chat-chunk"; chatId: number },
+  interest: { kind: "app-output"; appId: number } | { kind: "chat-chunk"; chatId: number },
 ): void {
   windowRegistry.ensureRegistered(sender);
   if (interest.kind === "app-output") {
@@ -33,10 +30,7 @@ export function ensureProducerInterest(
   }
 }
 
-export function sendChatChunk(
-  sender: WebContents,
-  payload: ChatResponseChunk,
-): void {
+export function sendChatChunk(sender: WebContents, payload: ChatResponseChunk): void {
   if (!Number.isInteger(sender.id) || sender.isDestroyed()) {
     safeSend(sender, "chat:response:chunk", payload);
   } else {
@@ -49,10 +43,7 @@ export function sendChatChunk(
   chatChunkInterests.sendImmediate(interest, payload, "chat:response:chunk");
 }
 
-export function releaseChatProducerInterest(
-  sender: WebContents,
-  chatId: number,
-): void {
+export function releaseChatProducerInterest(sender: WebContents, chatId: number): void {
   if (!Number.isInteger(sender.id)) return;
   chatChunkInterests.releaseLive(sender.id, {
     kind: "chat-chunk",

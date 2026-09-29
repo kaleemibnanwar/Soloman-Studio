@@ -14,9 +14,7 @@ export interface VersionPreviewProjection {
 const projectionCache = new WeakMap<PreviewState, VersionPreviewProjection>();
 
 /** Pure domain policy for interactive controls backed by version events. */
-export function selectVersionPreviewCapabilities(
-  state: PreviewState,
-): VersionPreviewCapabilities {
+export function selectVersionPreviewCapabilities(state: PreviewState): VersionPreviewCapabilities {
   switch (state.type) {
     case "viewing-diff":
     case "browsing":
@@ -63,9 +61,7 @@ export function selectVersionPreviewCapabilities(
 }
 
 /** Reference-stable view consumed by version-preview UI. */
-export function projectVersionPreview(
-  state: PreviewState,
-): VersionPreviewProjection {
+export function projectVersionPreview(state: PreviewState): VersionPreviewProjection {
   const cached = projectionCache.get(state);
   if (cached) return cached;
   const projection = {

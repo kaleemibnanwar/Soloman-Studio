@@ -1,13 +1,13 @@
-import { type ProviderConfig, type ModelConfig, ProviderTypeEnum } from '@extension/storage';
-import { ChatOpenAI, AzureChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { ChatXAI } from '@langchain/xai';
-import { ChatGroq } from '@langchain/groq';
-import { ChatCerebras } from '@langchain/cerebras';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { ChatOllama } from '@langchain/ollama';
-import { ChatDeepSeek } from '@langchain/deepseek';
+import { type ProviderConfig, type ModelConfig, ProviderTypeEnum } from "@extension/storage";
+import { ChatOpenAI, AzureChatOpenAI } from "@langchain/openai";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatXAI } from "@langchain/xai";
+import { ChatGroq } from "@langchain/groq";
+import { ChatCerebras } from "@langchain/cerebras";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { ChatOllama } from "@langchain/ollama";
+import { ChatDeepSeek } from "@langchain/deepseek";
 
 const maxTokens = 1024 * 4;
 
@@ -27,24 +27,27 @@ class ChatLlama extends ChatOpenAI {
       if (response?.completion_message?.content?.text) {
         // Transform Llama API response to OpenAI format
         const transformedResponse = {
-          id: response.id || 'llama-response',
-          object: 'chat.completion',
+          id: response.id || "llama-response",
+          object: "chat.completion",
           created: Date.now(),
           model: request.model,
           choices: [
             {
               index: 0,
               message: {
-                role: 'assistant',
+                role: "assistant",
                 content: response.completion_message.content.text,
               },
-              finish_reason: response.completion_message.stop_reason || 'stop',
+              finish_reason: response.completion_message.stop_reason || "stop",
             },
           ],
           usage: {
-            prompt_tokens: response.metrics?.find((m: any) => m.metric === 'num_prompt_tokens')?.value || 0,
-            completion_tokens: response.metrics?.find((m: any) => m.metric === 'num_completion_tokens')?.value || 0,
-            total_tokens: response.metrics?.find((m: any) => m.metric === 'num_total_tokens')?.value || 0,
+            prompt_tokens:
+              response.metrics?.find((m: any) => m.metric === "num_prompt_tokens")?.value || 0,
+            completion_tokens:
+              response.metrics?.find((m: any) => m.metric === "num_completion_tokens")?.value || 0,
+            total_tokens:
+              response.metrics?.find((m: any) => m.metric === "num_total_tokens")?.value || 0,
           },
         };
 
@@ -62,12 +65,13 @@ class ChatLlama extends ChatOpenAI {
 // O series models or GPT-5 models that support reasoning
 function isOpenAIReasoningModel(modelName: string): boolean {
   let modelNameWithoutProvider = modelName;
-  if (modelName.startsWith('openai/')) {
+  if (modelName.startsWith("openai/")) {
     modelNameWithoutProvider = modelName.substring(7);
   }
   return (
-    modelNameWithoutProvider.startsWith('o') ||
-    (modelNameWithoutProvider.startsWith('gpt-5') && !modelNameWithoutProvider.startsWith('gpt-5-chat'))
+    modelNameWithoutProvider.startsWith("o") ||
+    (modelNameWithoutProvider.startsWith("gpt-5") &&
+      !modelNameWithoutProvider.startsWith("gpt-5-chat"))
   );
 }
 
@@ -75,20 +79,21 @@ function isOpenAIReasoningModel(modelName: string): boolean {
 function isAnthropicOpusModel(modelName: string): boolean {
   // Extract the model name without provider prefix if present
   let modelNameWithoutProvider = modelName;
-  if (modelName.startsWith('anthropic/')) {
+  if (modelName.startsWith("anthropic/")) {
     modelNameWithoutProvider = modelName.substring(10);
   }
-  return modelNameWithoutProvider.startsWith('claude-opus');
+  return modelNameWithoutProvider.startsWith("claude-opus");
 }
 
 // check if a model is sonnet-4-5 or haiku-4-5
 function isAnthropic4_5Model(modelName: string): boolean {
   let modelNameWithoutProvider = modelName;
-  if (modelName.startsWith('anthropic/')) {
+  if (modelName.startsWith("anthropic/")) {
     modelNameWithoutProvider = modelName.substring(10);
   }
   return (
-    modelNameWithoutProvider.startsWith('claude-sonnet-4-5') || modelNameWithoutProvider.startsWith('claude-haiku-4-5')
+    modelNameWithoutProvider.startsWith("claude-sonnet-4-5") ||
+    modelNameWithoutProvider.startsWith("claude-haiku-4-5")
   );
 }
 
@@ -105,7 +110,7 @@ function createOpenAIChatModel(
     configuration?: Record<string, unknown>;
     modelKwargs?: {
       max_completion_tokens: number;
-      reasoning_effort?: 'none' | 'minimal' | 'low' | 'medium' | 'high';
+      reasoning_effort?: "none" | "minimal" | "low" | "medium" | "high";
     };
     topP?: number;
     temperature?: number;
@@ -138,8 +143,8 @@ function createOpenAIChatModel(
     // Add reasoning_effort parameter for o-series models if specified
     if (modelConfig.reasoningEffort) {
       // if it's gpt-5.1, we need to convert minimal to none, it doesn't support minimal
-      if (modelConfig.modelName.includes('gpt-5.1') && modelConfig.reasoningEffort === 'minimal') {
-        args.modelKwargs.reasoning_effort = 'none';
+      if (modelConfig.modelName.includes("gpt-5.1") && modelConfig.reasoningEffort === "minimal") {
+        args.modelKwargs.reasoning_effort = "none";
       } else {
         args.modelKwargs.reasoning_effort = modelConfig.reasoningEffort;
       }
@@ -156,24 +161,34 @@ function createOpenAIChatModel(
 function extractInstanceNameFromUrl(url: string): string | null {
   try {
     const parsedUrl = new URL(url);
-    const hostnameParts = parsedUrl.hostname.split('.');
+    const hostnameParts = parsedUrl.hostname.split(".");
     // Expecting format like instance-name.openai.azure.com
-    if (hostnameParts.length >= 4 && hostnameParts[1] === 'openai' && hostnameParts[2] === 'azure') {
+    if (
+      hostnameParts.length >= 4 &&
+      hostnameParts[1] === "openai" &&
+      hostnameParts[2] === "azure"
+    ) {
       return hostnameParts[0];
     }
   } catch (e) {
-    console.error('Error parsing Azure endpoint URL:', e);
+    console.error("Error parsing Azure endpoint URL:", e);
   }
   return null;
 }
 
 // Function to check if a provider ID is an Azure provider
 function isAzureProvider(providerId: string): boolean {
-  return providerId === ProviderTypeEnum.AzureOpenAI || providerId.startsWith(`${ProviderTypeEnum.AzureOpenAI}_`);
+  return (
+    providerId === ProviderTypeEnum.AzureOpenAI ||
+    providerId.startsWith(`${ProviderTypeEnum.AzureOpenAI}_`)
+  );
 }
 
 // Function to create an Azure OpenAI chat model
-function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: ModelConfig): BaseChatModel {
+function createAzureChatModel(
+  providerConfig: ProviderConfig,
+  modelConfig: ModelConfig,
+): BaseChatModel {
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
 
@@ -186,7 +201,7 @@ function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: Model
     !providerConfig.apiKey
   ) {
     throw new Error(
-      'Azure configuration is incomplete. Endpoint, Deployment Name, API Version, and API Key are required. Please check settings.',
+      "Azure configuration is incomplete. Endpoint, Deployment Name, API Version, and API Key are required. Please check settings.",
     );
   }
 
@@ -227,7 +242,9 @@ function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: Model
           modelKwargs: {
             max_completion_tokens: maxTokens,
             // Add reasoning_effort parameter for Azure o-series models if specified
-            ...(modelConfig.reasoningEffort ? { reasoning_effort: modelConfig.reasoningEffort } : {}),
+            ...(modelConfig.reasoningEffort
+              ? { reasoning_effort: modelConfig.reasoningEffort }
+              : {}),
           },
         }
       : {
@@ -242,7 +259,10 @@ function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: Model
 }
 
 // create a chat model based on the agent name, the model name and provider
-export function createChatModel(providerConfig: ProviderConfig, modelConfig: ModelConfig): BaseChatModel {
+export function createChatModel(
+  providerConfig: ProviderConfig,
+  modelConfig: ModelConfig,
+): BaseChatModel {
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
 
@@ -333,8 +353,8 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       } = {
         model: modelConfig.modelName,
         // required but ignored by ollama
-        apiKey: providerConfig.apiKey === '' ? 'ollama' : providerConfig.apiKey,
-        baseUrl: providerConfig.baseUrl ?? 'http://localhost:11434',
+        apiKey: providerConfig.apiKey === "" ? "ollama" : providerConfig.apiKey,
+        baseUrl: providerConfig.baseUrl ?? "http://localhost:11434",
         topP,
         temperature,
         maxTokens,
@@ -348,11 +368,11 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
     }
     case ProviderTypeEnum.OpenRouter: {
       // Call the helper function, passing OpenRouter headers via the third argument
-      console.log('[createChatModel] Calling createOpenAIChatModel for OpenRouter');
+      console.log("[createChatModel] Calling createOpenAIChatModel for OpenRouter");
       return createOpenAIChatModel(providerConfig, modelConfig, {
         headers: {
-          'HTTP-Referer': 'https://nanobrowser.ai',
-          'X-Title': 'Nanobrowser',
+          "HTTP-Referer": "https://nanobrowser.ai",
+          "X-Title": "Nanobrowser",
         },
       });
     }

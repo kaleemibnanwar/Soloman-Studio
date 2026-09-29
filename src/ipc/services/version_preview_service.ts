@@ -3,10 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { db } from "@/db";
 import { apps } from "@/db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type { VersionCommandResult } from "@/ipc/types";
 import { getOctopusStudioAppPath } from "@/paths/paths";
 import type { PreviewCommand, RestoreRecovery } from "@/version_preview/state";
@@ -14,7 +11,7 @@ import {
   getCurrentCommitHash,
   getGitUncommittedFilesWithStatus,
   gitCurrentBranch,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 import { versionPreviewHandlerService } from "../handlers/version_handlers";
 import { versionPreviewPresentationService } from "./version_preview_presentation_service";
 
@@ -30,12 +27,7 @@ export class VersionPreviewService {
     command: Extract<
       PreviewCommand,
       {
-        type:
-          | "checkout"
-          | "return"
-          | "switch-branch"
-          | "restore"
-          | "restore-to-message";
+        type: "checkout" | "return" | "switch-branch" | "restore" | "restore-to-message";
       }
     >,
     operationId?: string,
@@ -114,10 +106,7 @@ export class VersionPreviewService {
           where: eq(apps.id, appId),
         });
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
         const appPath = getOctopusStudioAppPath(app.path);
         // Chat projects (and any app without a git repo) have no branch.
@@ -143,10 +132,7 @@ export class VersionPreviewService {
           where: eq(apps.id, appId),
         });
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
         const appPath = getOctopusStudioAppPath(app.path);
         // Chat projects (and any app without a git repo) have nothing to
@@ -188,10 +174,7 @@ export class VersionPreviewService {
 
   assertAcceptingOperations(appId: number): void {
     if (this.resetFenceCount > 0 || this.deletionFences.has(appId)) {
-      throw new OctopusStudioError(
-        "The app is being deleted",
-        OctopusStudioErrorKind.Precondition,
-      );
+      throw new OctopusStudioError("The app is being deleted", OctopusStudioErrorKind.Precondition);
     }
   }
 
@@ -220,10 +203,7 @@ export class VersionPreviewService {
   }
 
   private async prepareRestore(
-    command: Extract<
-      PreviewCommand,
-      { type: "restore" | "restore-to-message" }
-    >,
+    command: Extract<PreviewCommand, { type: "restore" | "restore-to-message" }>,
     onRestoreProgress?: (progress: RestoreRecovery) => void,
   ): Promise<void> {
     if (!onRestoreProgress) {
@@ -237,10 +217,7 @@ export class VersionPreviewService {
       where: eq(apps.id, command.appId),
     });
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
     const appPath = getOctopusStudioAppPath(app.path);
     const [preRestoreHead, currentBranch] = await Promise.all([
@@ -254,24 +231,17 @@ export class VersionPreviewService {
     ]);
     onRestoreProgress({
       preRestoreHead,
-      preRestoreBranch:
-        currentBranch && currentBranch !== NO_BRANCH ? currentBranch : null,
+      preRestoreBranch: currentBranch && currentBranch !== NO_BRANCH ? currentBranch : null,
       targetHead: command.type === "restore" ? command.versionId : null,
       nextStep: "preparing",
     });
   }
 
-  trackLifecycle<Result>(
-    appId: number,
-    promise: Promise<Result>,
-  ): Promise<Result> {
+  trackLifecycle<Result>(appId: number, promise: Promise<Result>): Promise<Result> {
     return this.track(appId, promise);
   }
 
-  private track<Result>(
-    appId: number,
-    promise: Promise<Result>,
-  ): Promise<Result> {
+  private track<Result>(appId: number, promise: Promise<Result>): Promise<Result> {
     let pending = this.pendingByApp.get(appId);
     if (!pending) {
       pending = new Set();

@@ -2,12 +2,13 @@ import { registerAppHandlers } from "./handlers/app_handlers";
 import { registerChatHandlers } from "./handlers/chat_handlers";
 import { registerTaskHandlers } from "./handlers/task_handlers";
 import { registerSkillHandlers } from "./handlers/skill_handlers";
+import { registerFileManagerHandlers } from "./handlers/file_manager_handlers";
 import { registerWorkerHandlers } from "./handlers/worker_handlers";
 import { registerWorkerProposalHandlers } from "./handlers/worker_proposal_handlers";
 import { registerSymlinkHandlers } from "./handlers/symlink_handlers";
 import { registerGoogleDriveHandlers } from "./handlers/google_drive_handlers";
 import { registerWorkerPlanningHandlers } from "./handlers/worker_planning_handlers";
-import { registerAgentTaskHandlers } from "./handlers/agent_task_handlers";
+import { registerAgentTaskHandlers } from "./agent/task_handlers";
 import { registerOfficeHandlers } from "./handlers/office_handlers";
 import { registerChatStreamHandlers } from "./handlers/chat_stream_handlers";
 import { registerSettingsHandlers } from "./handlers/settings_handlers";
@@ -68,7 +69,7 @@ import { registerImageGenerationHandlers } from "./handlers/image_generation_han
 import { registerChatProjectHandlers } from "./handlers/chat_project_handlers";
 import { registerThemesHandlers } from "./handlers/themes_handlers";
 import { registerVisualEditingHandlers } from "./handlers/visual_editing_handlers";
-import { registerAgentToolHandlers } from "./handlers/agent_tool_handlers";
+import { registerAgentToolHandlers } from "./agent/tool_handlers";
 
 export function registerIpcHandlers() {
   // Register all IPC handlers by category
@@ -76,6 +77,7 @@ export function registerIpcHandlers() {
   registerChatHandlers();
   registerTaskHandlers();
   registerSkillHandlers();
+  registerFileManagerHandlers();
   registerWorkerHandlers();
   registerWorkerProposalHandlers();
   registerSymlinkHandlers();

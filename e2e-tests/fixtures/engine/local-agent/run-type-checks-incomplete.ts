@@ -1,8 +1,7 @@
 import type { LocalAgentFixture } from "../../../../testing/fake-llm-server/localAgentTypes";
 
 export const fixture: LocalAgentFixture = {
-  description:
-    "Make the TypeScript configuration invalid, then run a scoped type check",
+  description: "Make the TypeScript configuration invalid, then run a scoped type check",
   turns: [
     {
       text: "I'll update the TypeScript configuration for this test.",
@@ -12,8 +11,7 @@ export const fixture: LocalAgentFixture = {
           args: {
             file_path: "tsconfig.app.json",
             old_string: '    "baseUrl": ".",',
-            new_string:
-              '    "baseUrl": ".",\n    "definitelyInvalidCompilerOption": true,',
+            new_string: '    "baseUrl": ".",\n    "definitelyInvalidCompilerOption": true,',
           },
         },
       ],

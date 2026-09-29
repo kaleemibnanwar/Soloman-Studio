@@ -1,17 +1,17 @@
-import 'webextension-polyfill';
+import "webextension-polyfill";
 import {
   type BrowserContextConfig,
   type BrowserState,
   DEFAULT_BROWSER_CONTEXT_CONFIG,
   type TabInfo,
   URLNotAllowedError,
-} from './views';
-import Page, { build_initial_state } from './page';
-import { createLogger } from '@src/background/log';
-import { isUrlAllowed } from './util';
-import { analytics } from '../services/analytics';
+} from "./views";
+import Page, { build_initial_state } from "./page";
+import { createLogger } from "@src/background/log";
+import { isUrlAllowed } from "./util";
+import { analytics } from "../services/analytics";
 
-const logger = createLogger('BrowserContext');
+const logger = createLogger("BrowserContext");
 export default class BrowserContext {
   private _config: BrowserContextConfig;
   private _currentTabId: number | null = null;
@@ -36,12 +36,12 @@ export default class BrowserContext {
 
   private async _getOrCreatePage(tab: chrome.tabs.Tab, forceUpdate = false): Promise<Page> {
     if (!tab.id) {
-      throw new Error('Tab ID is not available');
+      throw new Error("Tab ID is not available");
     }
 
     const existingPage = this._attachedPages.get(tab.id);
     if (existingPage) {
-      logger.info('getOrCreatePage', tab.id, 'already attached');
+      logger.info("getOrCreatePage", tab.id, "already attached");
       if (!forceUpdate) {
         return existingPage;
       }
@@ -49,8 +49,8 @@ export default class BrowserContext {
       await existingPage.detachPuppeteer();
       this._attachedPages.delete(tab.id);
     }
-    logger.info('getOrCreatePage', tab.id, 'creating new page');
-    return new Page(tab.id, tab.url || '', tab.title || '', this._config);
+    logger.info("getOrCreatePage", tab.id, "creating new page");
+    return new Page(tab.id, tab.url || "", tab.title || "", this._config);
   }
 
   public async cleanup(): Promise<void> {
@@ -67,12 +67,12 @@ export default class BrowserContext {
   public async attachPage(page: Page): Promise<boolean> {
     // check if page is already attached
     if (this._attachedPages.has(page.tabId)) {
-      logger.info('attachPage', page.tabId, 'already attached');
+      logger.info("attachPage", page.tabId, "already attached");
       return true;
     }
 
     if (await page.attachPuppeteer()) {
-      logger.info('attachPage', page.tabId, 'attached');
+      logger.info("attachPage", page.tabId, "attached");
       // add page to managed pages
       this._attachedPages.set(page.tabId, page);
       return true;
@@ -100,13 +100,13 @@ export default class BrowserContext {
         const newTab = await chrome.tabs.create({ url: this._config.homePageUrl });
         if (!newTab.id) {
           // this should rarely happen
-          throw new Error('No tab ID available');
+          throw new Error("No tab ID available");
         }
         activeTab = newTab;
       } else {
         activeTab = tab;
       }
-      logger.info('active tab', activeTab.id, activeTab.url, activeTab.title);
+      logger.info("active tab", activeTab.id, activeTab.url, activeTab.title);
       const page = await this._getOrCreatePage(activeTab);
       await this.attachPage(page);
       this._currentTabId = activeTab.id || null;
@@ -133,7 +133,7 @@ export default class BrowserContext {
    */
   public async getAllTabIds(): Promise<Set<number>> {
     const tabs = await chrome.tabs.query({ currentWindow: true });
-    return new Set(tabs.map(tab => tab.id).filter(id => id !== undefined));
+    return new Set(tabs.map((tab) => tab.id).filter((id) => id !== undefined));
   }
 
   /**
@@ -155,7 +155,7 @@ export default class BrowserContext {
     const promises: Promise<void>[] = [];
 
     if (waitForUpdate) {
-      const updatePromise = new Promise<void>(resolve => {
+      const updatePromise = new Promise<void>((resolve) => {
         let hasUrl = false;
         let hasTitle = false;
         let isComplete = false;
@@ -165,7 +165,7 @@ export default class BrowserContext {
 
           if (changeInfo.url) hasUrl = true;
           if (changeInfo.title) hasTitle = true;
-          if (changeInfo.status === 'complete') isComplete = true;
+          if (changeInfo.status === "complete") isComplete = true;
 
           // Resolve when we have all the information we need
           if (hasUrl && hasTitle && isComplete) {
@@ -176,10 +176,10 @@ export default class BrowserContext {
         chrome.tabs.onUpdated.addListener(onUpdatedHandler);
 
         // Check current state
-        chrome.tabs.get(tabId).then(tab => {
+        chrome.tabs.get(tabId).then((tab) => {
           if (tab.url) hasUrl = true;
           if (tab.title) hasTitle = true;
-          if (tab.status === 'complete') isComplete = true;
+          if (tab.status === "complete") isComplete = true;
 
           if (hasUrl && hasTitle && isComplete) {
             chrome.tabs.onUpdated.removeListener(onUpdatedHandler);
@@ -191,7 +191,7 @@ export default class BrowserContext {
     }
 
     if (waitForActivation) {
-      const activatedPromise = new Promise<void>(resolve => {
+      const activatedPromise = new Promise<void>((resolve) => {
         const onActivatedHandler = (activeInfo: chrome.tabs.TabActiveInfo) => {
           if (activeInfo.tabId === tabId) {
             chrome.tabs.onActivated.removeListener(onActivatedHandler);
@@ -201,7 +201,7 @@ export default class BrowserContext {
         chrome.tabs.onActivated.addListener(onActivatedHandler);
 
         // Check current state
-        chrome.tabs.get(tabId).then(tab => {
+        chrome.tabs.get(tabId).then((tab) => {
           if (tab.active) {
             chrome.tabs.onActivated.removeListener(onActivatedHandler);
             resolve();
@@ -212,14 +212,17 @@ export default class BrowserContext {
     }
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Tab operation timed out after ${timeoutMs} ms`)), timeoutMs),
+      setTimeout(
+        () => reject(new Error(`Tab operation timed out after ${timeoutMs} ms`)),
+        timeoutMs,
+      ),
     );
 
     await Promise.race([Promise.all(promises), timeoutPromise]);
   }
 
   public async switchTab(tabId: number): Promise<Page> {
-    logger.info('switchTab', tabId);
+    logger.info("switchTab", tabId);
 
     await chrome.tabs.update(tabId, { active: true });
     await this.waitForTabEvents(tabId, { waitForUpdate: false });
@@ -268,7 +271,7 @@ export default class BrowserContext {
     // Create the new tab
     const tab = await chrome.tabs.create({ url, active: true });
     if (!tab.id) {
-      throw new Error('No tab ID available');
+      throw new Error("No tab ID available");
     }
     // Wait for tab events
     await this.waitForTabEvents(tab.id);
@@ -320,7 +323,10 @@ export default class BrowserContext {
     return tabInfos;
   }
 
-  public async getCachedState(useVision = false, cacheClickableElementsHashes = false): Promise<BrowserState> {
+  public async getCachedState(
+    useVision = false,
+    cacheClickableElementsHashes = false,
+  ): Promise<BrowserState> {
     const currentPage = await this.getCurrentPage();
 
     let pageState = !currentPage ? build_initial_state() : currentPage.getCachedState();
@@ -336,7 +342,10 @@ export default class BrowserContext {
     return browserState;
   }
 
-  public async getState(useVision = false, cacheClickableElementsHashes = false): Promise<BrowserState> {
+  public async getState(
+    useVision = false,
+    cacheClickableElementsHashes = false,
+  ): Promise<BrowserState> {
     const currentPage = await this.getCurrentPage();
 
     const pageState = !currentPage

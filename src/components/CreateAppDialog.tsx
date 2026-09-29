@@ -28,19 +28,14 @@ interface CreateAppDialogProps {
   template: Template | undefined;
 }
 
-export function CreateAppDialog({
-  open,
-  onOpenChange,
-  template,
-}: CreateAppDialogProps) {
+export function CreateAppDialog({ open, onOpenChange, template }: CreateAppDialogProps) {
   const { t } = useTranslation(["home", "common"]);
   const [appName, setAppName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createApp } = useCreateApp();
   const trimmedAppName = appName.trim();
   const debouncedAppName = useDebounce(trimmedAppName, 150);
-  const { data: nameCheckResult, isLoading: isCheckingName } =
-    useCheckName(debouncedAppName);
+  const { data: nameCheckResult, isLoading: isCheckingName } = useCheckName(debouncedAppName);
   const { data: folderPreview } = useAppFolderPreview(debouncedAppName);
   const { selectChat } = useSelectChat();
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,11 +75,7 @@ export function CreateAppDialog({
   const queryMatchesInput = debouncedAppName === trimmedAppName;
   const nameExists = queryMatchesInput && nameCheckResult?.exists;
   const canSubmit =
-    isNameValid &&
-    queryMatchesInput &&
-    !isCheckingName &&
-    !nameExists &&
-    !isSubmitting;
+    isNameValid && queryMatchesInput && !isCheckingName && !nameExists && !isSubmitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,9 +100,7 @@ export function CreateAppDialog({
                 disabled={isSubmitting}
               />
               {nameExists && (
-                <p className="text-sm text-red-500">
-                  {t("home:appNameAlreadyExists")}
-                </p>
+                <p className="text-sm text-red-500">{t("home:appNameAlreadyExists")}</p>
               )}
               {!nameExists &&
                 queryMatchesInput &&
@@ -140,9 +129,7 @@ export function CreateAppDialog({
               disabled={!canSubmit}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? t("common:creating") : t("home:createApp")}
             </Button>
           </DialogFooter>

@@ -1,5 +1,4 @@
-const GENERATED_AI_RULES_PROMPT =
-  '- paragraph: "[[AI_RULES_GENERATION_PROMPT]]"';
+const GENERATED_AI_RULES_PROMPT = '- paragraph: "[[AI_RULES_GENERATION_PROMPT]]"';
 
 function isMoreIndented(line: string, baseIndent: number) {
   if (!line.trim()) {
@@ -23,10 +22,7 @@ function normalizeTextLine(line: string) {
   }
 
   const versionMatch = trimmed.match(/Version (\d+):/);
-  if (
-    versionMatch &&
-    (/files changed/.test(trimmed) || /wrote \d+ file\(s\)/.test(trimmed))
-  ) {
+  if (versionMatch && (/files changed/.test(trimmed) || /wrote \d+ file\(s\)/.test(trimmed))) {
     return `${indent}- text: "[[Version ${versionMatch[1]}: files changed]]"`;
   }
 
@@ -35,12 +31,8 @@ function normalizeTextLine(line: string) {
 
 function parseButtonLine(
   line: string,
-):
-  | { indent: string; name: string; quoteKey: boolean; state: string }
-  | undefined {
-  const quotedMatch = line.match(
-    /^(\s*)- 'button "((?:\\.|[^"])*)"(\s+\[[^\]]+\])?'(?::\s*)?$/,
-  );
+): { indent: string; name: string; quoteKey: boolean; state: string } | undefined {
+  const quotedMatch = line.match(/^(\s*)- 'button "((?:\\.|[^"])*)"(\s+\[[^\]]+\])?'(?::\s*)?$/);
   if (quotedMatch) {
     return {
       indent: quotedMatch[1],
@@ -52,9 +44,7 @@ function parseButtonLine(
     };
   }
 
-  const match = line.match(
-    /^(\s*)- button "((?:\\.|[^"])*)"(\s+\[[^\]]+\])?(?::\s*)?$/,
-  );
+  const match = line.match(/^(\s*)- button "((?:\\.|[^"])*)"(\s+\[[^\]]+\])?(?::\s*)?$/);
   if (match) {
     return {
       indent: match[1],
@@ -76,10 +66,7 @@ function formatButtonLine({
 }) {
   name = name.replace(/\b\d+ms\b/g, "[[duration]]");
   name = name.replace(/\s+log Copy .+$/g, "");
-  name = name.replace(
-    /^(M pnpm-lock\.yaml) \+\d+(?: -\d+)?$/,
-    "$1 [[diff-stats]]",
-  );
+  name = name.replace(/^(M pnpm-lock\.yaml) \+\d+(?: -\d+)?$/, "$1 [[diff-stats]]");
 
   if (name.includes(":") || name.includes("'")) {
     return `${indent}- 'button "${name.replace(/'/g, "''")}"${state}'`;

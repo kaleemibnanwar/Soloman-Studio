@@ -22,7 +22,5 @@ export function runDeepLinkWindowReadinessCommand(
 }
 
 function assertNever(value: never): never {
-  throw new Error(
-    `Unhandled deep-link window readiness command: ${String(value)}`,
-  );
+  throw new Error(`Unhandled deep-link window readiness command: ${String(value)}`);
 }

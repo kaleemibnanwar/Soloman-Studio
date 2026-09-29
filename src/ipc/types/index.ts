@@ -31,10 +31,7 @@ export { appContracts } from "./app";
 export { chatContracts, chatStreamContract } from "./chat";
 export { agentContracts, agentEvents } from "./agent";
 export { githubContracts, gitContracts } from "./github";
-export {
-  connectionFlowContracts,
-  connectionFlowEvents,
-} from "./connection_flow";
+export { connectionFlowContracts, connectionFlowEvents } from "./connection_flow";
 export { mcpContracts } from "./mcp";
 export { vercelContracts } from "./vercel";
 export { supabaseContracts } from "./supabase";
@@ -63,10 +60,7 @@ export { freeAgentQuotaContracts } from "./free_agent_quota";
 export { freeModelQuotaContracts } from "./free_model_quota";
 export { audioContracts } from "./audio";
 export { mediaContracts } from "./media";
-export {
-  imageGenerationContracts,
-  imageGenerationEvents,
-} from "./image_generation";
+export { imageGenerationContracts, imageGenerationEvents } from "./image_generation";
 export { appBlueprintContracts, appBlueprintEvents } from "./app_blueprint";
 export { appCollectionContracts } from "./app_collections";
 export { terminalContracts } from "./terminal";
@@ -75,14 +69,8 @@ export { taskContracts } from "./task";
 export { workerContracts } from "./worker";
 export { userInputContracts, userInputEvents } from "./user_input";
 export { firstPromptSendContracts } from "./first_prompt";
-export {
-  windowInfrastructureContracts,
-  windowInfrastructureEvents,
-} from "./window_infrastructure";
-export {
-  distributedMachineContracts,
-  distributedMachineEvents,
-} from "./distributed_machines";
+export { windowInfrastructureContracts, windowInfrastructureEvents } from "./window_infrastructure";
+export { distributedMachineContracts, distributedMachineEvents } from "./distributed_machines";
 
 // =============================================================================
 // Client Exports
@@ -93,10 +81,7 @@ export { appClient } from "./app";
 export { chatClient, chatStreamClient } from "./chat";
 export { agentClient, agentEventClient } from "./agent";
 export { githubClient, gitClient } from "./github";
-export {
-  connectionFlowClient,
-  connectionFlowEventClient,
-} from "./connection_flow";
+export { connectionFlowClient, connectionFlowEventClient } from "./connection_flow";
 export { mcpClient } from "./mcp";
 export { vercelClient } from "./vercel";
 export { supabaseClient } from "./supabase";
@@ -120,10 +105,7 @@ export { freeAgentQuotaClient } from "./free_agent_quota";
 export { freeModelQuotaClient } from "./free_model_quota";
 export { audioClient } from "./audio";
 export { mediaClient } from "./media";
-export {
-  imageGenerationClient,
-  imageGenerationEventClient,
-} from "./image_generation";
+export { imageGenerationClient, imageGenerationEventClient } from "./image_generation";
 export { appBlueprintClient, appBlueprintEventClient } from "./app_blueprint";
 export { appCollectionClient } from "./app_collections";
 export { terminalClient } from "./terminal";
@@ -133,11 +115,7 @@ export { skillClient } from "./skill";
 export { workerClient } from "./worker";
 export { workerProposalClient } from "./worker_proposal";
 export { symlinkContracts, symlinkClient } from "./symlink";
-export {
-  googleDriveContracts,
-  googleDriveClient,
-  type DriveSyncSummary,
-} from "./google_drive";
+export { googleDriveContracts, googleDriveClient, type DriveSyncSummary } from "./google_drive";
 export { workerPlanningClient } from "./worker_planning";
 export { agentTaskClient } from "./agent_task";
 export { officeClient } from "./office";
@@ -147,10 +125,7 @@ export {
   windowInfrastructureClient,
   windowInfrastructureEventClient,
 } from "./window_infrastructure";
-export {
-  distributedMachineClient,
-  distributedMachineEventClient,
-} from "./distributed_machines";
+export { distributedMachineClient, distributedMachineEventClient } from "./distributed_machines";
 export {
   recordingClient,
   recordingContracts,
@@ -288,10 +263,7 @@ export type {
 } from "./neon";
 
 // Migration types
-export type {
-  MigrationMigrateParams,
-  MigrationMigrateResponse,
-} from "./migration";
+export type { MigrationMigrateParams, MigrationMigrateResponse } from "./migration";
 
 // System types
 export type {
@@ -328,11 +300,7 @@ export type {
 } from "./language-model";
 
 // Prompt types
-export type {
-  PromptDto,
-  CreatePromptParamsDto,
-  UpdatePromptParamsDto,
-} from "./prompts";
+export type { PromptDto, CreatePromptParamsDto, UpdatePromptParamsDto } from "./prompts";
 
 // Template types
 export type {
@@ -383,12 +351,7 @@ export type {
 export type { SecurityReviewResult } from "./security";
 
 // Misc types
-export type {
-  SessionDebugBundle,
-  DeepLinkData,
-  AppOutput,
-  EnvVar,
-} from "./misc";
+export type { SessionDebugBundle, DeepLinkData, AppOutput, EnvVar } from "./misc";
 
 // Free agent quota types
 export type { FreeAgentQuotaStatus } from "./free_agent_quota";
@@ -471,11 +434,7 @@ export {
   ChatResponseEndSchema,
 } from "./chat";
 
-export {
-  AgentTodoSchema,
-  AgentTodosUpdateSchema,
-  AgentToolSchema,
-} from "./agent";
+export { AgentTodoSchema, AgentTodosUpdateSchema, AgentToolSchema } from "./agent";
 
 export { SubscriptionStatusSchema, UserBudgetInfoSchema } from "./system";
 
@@ -488,6 +447,7 @@ import { appClient } from "./app";
 import { chatClient, chatStreamClient } from "./chat";
 import { taskClient } from "./task";
 import { skillClient } from "./skill";
+import { fileManagerClient } from "./file_manager";
 import { workerClient } from "./worker";
 import { workerProposalClient } from "./worker_proposal";
 import { symlinkClient } from "./symlink";
@@ -498,10 +458,7 @@ import { officeClient } from "./office";
 import { chatProjectClient } from "./chat_project";
 import { agentClient, agentEventClient } from "./agent";
 import { githubClient, gitClient } from "./github";
-import {
-  connectionFlowClient,
-  connectionFlowEventClient,
-} from "./connection_flow";
+import { connectionFlowClient, connectionFlowEventClient } from "./connection_flow";
 import { mcpClient } from "./mcp";
 import { vercelClient } from "./vercel";
 import { supabaseClient } from "./supabase";
@@ -525,10 +482,7 @@ import { freeAgentQuotaClient } from "./free_agent_quota";
 import { freeModelQuotaClient } from "./free_model_quota";
 import { audioClient } from "./audio";
 import { mediaClient } from "./media";
-import {
-  imageGenerationClient,
-  imageGenerationEventClient,
-} from "./image_generation";
+import { imageGenerationClient, imageGenerationEventClient } from "./image_generation";
 import { appBlueprintClient, appBlueprintEventClient } from "./app_blueprint";
 import { appCollectionClient } from "./app_collections";
 import { terminalClient } from "./terminal";
@@ -540,10 +494,7 @@ import {
   windowInfrastructureClient,
   windowInfrastructureEventClient,
 } from "./window_infrastructure";
-import {
-  distributedMachineClient,
-  distributedMachineEventClient,
-} from "./distributed_machines";
+import { distributedMachineClient, distributedMachineEventClient } from "./distributed_machines";
 
 /**
  * Unified IPC client with all domains organized by namespace.
@@ -571,6 +522,7 @@ export const ipc = {
   chat: chatClient,
   task: taskClient,
   skill: skillClient,
+  fileManager: fileManagerClient,
   worker: workerClient,
   workerProposal: workerProposalClient,
   symlink: symlinkClient,

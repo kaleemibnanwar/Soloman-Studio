@@ -3,21 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { apps, chats } from "@/db/schema";
 import { readSettings, writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 type TestApp = {
@@ -28,13 +19,7 @@ type TestApp = {
 
 const execFileAsync = promisify(execFile);
 
-const fixtureAppDir = path.join(
-  process.cwd(),
-  "e2e-tests",
-  "fixtures",
-  "import-app",
-  "minimal",
-);
+const fixtureAppDir = path.join(process.cwd(), "e2e-tests", "fixtures", "import-app", "minimal");
 
 function git(appDir: string, ...args: string[]): string {
   return execFileSync(
@@ -111,10 +96,7 @@ describe("Git collaboration actions (integration)", () => {
     git(appDir, "add", "-A");
     git(appDir, "commit", "-m", "init");
 
-    const [appRow] = await harness.db
-      .insert(apps)
-      .values({ name, path: appDir })
-      .returning();
+    const [appRow] = await harness.db.insert(apps).values({ name, path: appDir }).returning();
     await harness.db.insert(chats).values({ appId: appRow.id });
     return { appId: appRow.id, name, appDir };
   }
@@ -130,17 +112,13 @@ describe("Git collaboration actions (integration)", () => {
   }
 
   async function connectGitHub(app: TestApp) {
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Connect to GitHub" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Connect to GitHub" }));
 
     await screen.findByText("FAKE-CODE");
     await screen.findByText("https://github.com/login/device");
     await waitFor(
       () => {
-        expect(readSettings().githubAccessToken?.value).toBe(
-          "fake_access_token_12345",
-        );
+        expect(readSettings().githubAccessToken?.value).toBe("fake_access_token_12345");
       },
       { timeout: 15_000 },
     );
@@ -151,12 +129,9 @@ describe("Git collaboration actions (integration)", () => {
   }
 
   async function createRepoThroughConnector(repoName: string) {
-    fireEvent.change(
-      await screen.findByTestId("github-create-repo-name-input"),
-      {
-        target: { value: repoName },
-      },
-    );
+    fireEvent.change(await screen.findByTestId("github-create-repo-name-input"), {
+      target: { value: repoName },
+    });
     await screen.findByText("Repository name is available!", undefined, {
       timeout: 10_000,
     });
@@ -202,9 +177,7 @@ describe("Git collaboration actions (integration)", () => {
     fireEvent.click(trigger);
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
     await waitFor(() => {
-      expect(
-        document.querySelector('[data-slot="dropdown-menu-content"]'),
-      ).toBeTruthy();
+      expect(document.querySelector('[data-slot="dropdown-menu-content"]')).toBeTruthy();
     });
   }
 
@@ -249,10 +222,7 @@ describe("Git collaboration actions (integration)", () => {
     git(appDir, "commit", "-m", "Add conflict file");
 
     git(appDir, "checkout", "-b", "feature-conflict");
-    fs.writeFileSync(
-      conflictFilePath,
-      "Line 1\nLine 2 Modified Feature\nLine 3",
-    );
+    fs.writeFileSync(conflictFilePath, "Line 1\nLine 2 Modified Feature\nLine 3");
     git(appDir, "add", conflictFile);
     git(appDir, "commit", "-m", "Modify on feature");
 
@@ -273,17 +243,9 @@ describe("Git collaboration actions (integration)", () => {
       timeout: 15_000,
     });
     await mergeBranch("feature-conflict");
-    await screen.findByRole(
-      "button",
-      { name: "Resolve with AI" },
-      { timeout: 15_000 },
-    );
-    expect(
-      screen.getAllByText(`Resolve 1 conflict to finish merging.`),
-    ).toHaveLength(1);
-    expect(
-      screen.queryByText("Merge conflicts detected while syncing to GitHub."),
-    ).toBeNull();
+    await screen.findByRole("button", { name: "Resolve with AI" }, { timeout: 15_000 });
+    expect(screen.getAllByText(`Resolve 1 conflict to finish merging.`)).toHaveLength(1);
+    expect(screen.queryByText("Merge conflicts detected while syncing to GitHub.")).toBeNull();
     return conflict;
   }
 
@@ -298,34 +260,20 @@ describe("Git collaboration actions (integration)", () => {
     const remoteClone = path.join(appsRoot, `${slug(app.name)}-remote`);
     const remoteUrl = git(app.appDir, "remote", "get-url", "origin").trim();
     await gitNetwork(appsRoot, "clone", remoteUrl, remoteClone);
-    fs.writeFileSync(
-      path.join(remoteClone, conflictFile),
-      "Line 1\nLine 2 Modified Main\nLine 3",
-    );
+    fs.writeFileSync(path.join(remoteClone, conflictFile), "Line 1\nLine 2 Modified Main\nLine 3");
     git(remoteClone, "add", conflictFile);
     git(remoteClone, "commit", "-m", "Modify conflict fixture remotely");
     await gitNetwork(remoteClone, "push", "origin", "main");
 
-    fs.writeFileSync(
-      conflictFilePath,
-      "Line 1\nLine 2 Modified Feature\nLine 3",
-    );
+    fs.writeFileSync(conflictFilePath, "Line 1\nLine 2 Modified Feature\nLine 3");
     git(app.appDir, "add", conflictFile);
     git(app.appDir, "commit", "-m", "Modify conflict fixture locally");
 
     cleanup();
     await mountAppDetails(app);
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Sync to GitHub" }),
-    );
-    await screen.findByRole(
-      "button",
-      { name: "Resolve with AI" },
-      { timeout: 15_000 },
-    );
-    expect(
-      screen.getByText("Resolve 1 conflict to continue syncing."),
-    ).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Sync to GitHub" }));
+    await screen.findByRole("button", { name: "Resolve with AI" }, { timeout: 15_000 });
+    expect(screen.getByText("Resolve 1 conflict to continue syncing.")).toBeTruthy();
     return { conflictFilePath };
   }
 
@@ -344,12 +292,8 @@ describe("Git collaboration actions (integration)", () => {
 
     await waitFor(
       () => {
-        expect(fs.readFileSync(conflictFilePath, "utf-8")).not.toMatch(
-          /<<<<<<<|=======|>>>>>>>/,
-        );
-        expect(fs.existsSync(path.join(app.appDir, ".git", "MERGE_HEAD"))).toBe(
-          false,
-        );
+        expect(fs.readFileSync(conflictFilePath, "utf-8")).not.toMatch(/<<<<<<<|=======|>>>>>>>/);
+        expect(fs.existsSync(path.join(app.appDir, ".git", "MERGE_HEAD"))).toBe(false);
       },
       { timeout: 30_000 },
     );
@@ -359,9 +303,9 @@ describe("Git collaboration actions (integration)", () => {
     await mountAppDetails(app);
     await waitFor(
       () => {
-        expect(
-          screen.getByTestId("github-connected-repo").textContent,
-        ).toContain("Conflicts resolved");
+        expect(screen.getByTestId("github-connected-repo").textContent).toContain(
+          "Conflicts resolved",
+        );
       },
       { timeout: 15_000 },
     );
@@ -370,9 +314,7 @@ describe("Git collaboration actions (integration)", () => {
       { name: "Continue to Sync" },
       { timeout: 15_000 },
     );
-    expect(
-      screen.queryByRole("button", { name: "Resolve with AI" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Resolve with AI" })).toBeNull();
 
     await harness.github.clearPushEvents();
     fireEvent.click(continueButton);
@@ -383,9 +325,7 @@ describe("Git collaboration actions (integration)", () => {
     );
     await harness.bridge.settleInFlight();
     expect(await harness.github.pushEvents()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ operation: "push", branch: "main" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ operation: "push", branch: "main" })]),
     );
     await gitNetwork(app.appDir, "fetch", "origin", "main");
     expect(git(app.appDir, "branch", "--show-current").trim()).toBe("main");
@@ -405,9 +345,7 @@ describe("Git collaboration actions (integration)", () => {
     );
     await startConflictMerge(app);
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Cancel merge" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel merge" }));
     await waitFor(
       () => {
         expect(
@@ -415,9 +353,7 @@ describe("Git collaboration actions (integration)", () => {
             name: "Resolve with AI",
           }),
         ).toBeNull();
-        expect(fs.existsSync(path.join(app.appDir, ".git", "MERGE_HEAD"))).toBe(
-          false,
-        );
+        expect(fs.existsSync(path.join(app.appDir, ".git", "MERGE_HEAD"))).toBe(false);
       },
       { timeout: 15_000 },
     );

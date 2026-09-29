@@ -19,8 +19,7 @@ export function MultiWindowExperimentSwitch() {
         <Label htmlFor="enable-multi-window">Enable multiple windows</Label>
       </div>
       <p className="text-[13px] leading-relaxed text-muted-foreground">
-        Show the experimental &quot;Open in New Window&quot; action in app
-        context menus.
+        Show the experimental &quot;Open in New Window&quot; action in app context menus.
       </p>
     </div>
   );

@@ -88,10 +88,7 @@ export class KeyedAdmissionGate<Key, Event> {
     this.assertOpen();
     const entry = this.entry(options.key);
     if (entry.fence) {
-      throw new KeyedAdmissionGateError(
-        "fence-active",
-        "A fence is already active for this key",
-      );
+      throw new KeyedAdmissionGateError("fence-active", "A fence is already active for this key");
     }
 
     const record: FenceRecord<Event> = {
@@ -111,8 +108,7 @@ export class KeyedAdmissionGate<Key, Event> {
       generation: record.generation,
       seal: () => this.seal(options.key, record),
       commit: () => this.commit(options.key, record),
-      abort: (abortOptions) =>
-        this.abort(options.key, record, abortOptions?.requestResync),
+      abort: (abortOptions) => this.abort(options.key, record, abortOptions?.requestResync),
       release: () => this.release(options.key, record),
     };
   }
@@ -141,10 +137,7 @@ export class KeyedAdmissionGate<Key, Event> {
     const entry = this.entries.get(key);
     this.assertCurrentGeneration(entry, generation);
     const fence = entry?.fence;
-    if (
-      fence?.phase === "draining" &&
-      this.isAllowedDuringDrain(fence, event)
-    ) {
+    if (fence?.phase === "draining" && this.isAllowedDuringDrain(fence, event)) {
       this.assertFenceStillDraining(key, fence);
       this.assertCurrentGeneration(this.entries.get(key), generation);
       return;
@@ -165,10 +158,7 @@ export class KeyedAdmissionGate<Key, Event> {
     this.assertOpen();
     const entry = this.entries.get(key);
     const fence = entry?.fence;
-    if (
-      fence?.phase === "draining" &&
-      generation === fence.previousGeneration
-    ) {
+    if (fence?.phase === "draining" && generation === fence.previousGeneration) {
       if (!this.isAllowedDuringDrain(fence, event)) {
         throw new KeyedAdmissionGateError(
           "dispatch-blocked",
@@ -197,15 +187,9 @@ export class KeyedAdmissionGate<Key, Event> {
     const admitted =
       generation === entry.generation ||
       (fence?.phase === "draining" && generation === fence.previousGeneration);
-    if (
-      !admitted ||
-      fence?.phase === "sealed" ||
-      fence?.phase === "committed"
-    ) {
+    if (!admitted || fence?.phase === "sealed" || fence?.phase === "committed") {
       throw new KeyedAdmissionGateError(
-        generation === entry.generation
-          ? "dispatch-blocked"
-          : "stale-generation",
+        generation === entry.generation ? "dispatch-blocked" : "stale-generation",
         "The continuation generation is no longer admitted",
       );
     }
@@ -300,18 +284,13 @@ export class KeyedAdmissionGate<Key, Event> {
     return record.sealing;
   }
 
-  private async finishSeal(
-    key: Key,
-    record: FenceRecord<Event>,
-  ): Promise<void> {
+  private async finishSeal(key: Key, record: FenceRecord<Event>): Promise<void> {
     // Remain draining while enrolled cleanup produces its required terminal
     // events. Each loop includes work synchronously enrolled by the previous
     // continuation before publishing the sealed linearization point.
     while (record.tracked.size > 0) {
       await Promise.race([
-        Promise.allSettled(
-          [...record.tracked].map((continuation) => continuation.settled),
-        ),
+        Promise.allSettled([...record.tracked].map((continuation) => continuation.settled)),
         record.sealCancellation?.promise,
       ]);
       if (record.sealFailure) throw record.sealFailure;
@@ -336,11 +315,7 @@ export class KeyedAdmissionGate<Key, Event> {
     return true;
   }
 
-  private abort(
-    key: Key,
-    record: FenceRecord<Event>,
-    requestResync?: () => void,
-  ): boolean {
+  private abort(key: Key, record: FenceRecord<Event>, requestResync?: () => void): boolean {
     const entry = this.entries.get(key);
     if (entry?.fence !== record) return false;
     if (record.phase === "committed") {
@@ -389,10 +364,7 @@ export class KeyedAdmissionGate<Key, Event> {
 
   private assertOpen(): void {
     if (!this.disposed) return;
-    throw new KeyedAdmissionGateError(
-      "gate-disposed",
-      "The keyed admission gate is disposed",
-    );
+    throw new KeyedAdmissionGateError("gate-disposed", "The keyed admission gate is disposed");
   }
 
   private createGeneration(): KeyedAdmissionGeneration {
@@ -407,10 +379,7 @@ export class KeyedAdmissionGate<Key, Event> {
     generation: KeyedAdmissionGeneration,
   ): void {
     if ((entry?.generation ?? this.defaultGeneration) === generation) return;
-    throw new KeyedAdmissionGateError(
-      "stale-generation",
-      "The keyed admission generation changed",
-    );
+    throw new KeyedAdmissionGateError("stale-generation", "The keyed admission generation changed");
   }
 
   private throwDispatchBlocked(fence: FenceRecord<Event> | undefined): void {
@@ -431,18 +400,13 @@ export class KeyedAdmissionGate<Key, Event> {
     );
   }
 
-  private isAllowedDuringDrain(
-    fence: FenceRecord<Event>,
-    event: Event,
-  ): boolean {
+  private isAllowedDuringDrain(fence: FenceRecord<Event>, event: Event): boolean {
     try {
       return fence.allowDuringDrain(event);
     } catch (cause) {
-      throw new KeyedAdmissionGateError(
-        "dispatch-blocked",
-        "The drain admission policy failed",
-        { cause },
-      );
+      throw new KeyedAdmissionGateError("dispatch-blocked", "The drain admission policy failed", {
+        cause,
+      });
     }
   }
 }

@@ -34,9 +34,5 @@
     // "noFallthroughCasesInSwitch": true,
     // "noUncheckedSideEffectImports": true
   },
-  "include": [
-    "src",
-    "packages/ts-pg-schema-diff/src",
-    "packages/pg-schema-classifier/src"
-  ]
+  "include": ["src", "packages/ts-pg-schema-diff/src", "packages/pg-schema-classifier/src"]
 }

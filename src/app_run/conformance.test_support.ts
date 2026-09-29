@@ -39,8 +39,7 @@ export const appRunConformance = defineMachineConformance({
   exclusions: [
     {
       tier: "T3",
-      reason:
-        "The existing app-run actor declares restartPersistence=ephemeral.",
+      reason: "The existing app-run actor declares restartPersistence=ephemeral.",
     },
     {
       tier: "T4",
@@ -54,8 +53,7 @@ export const appRunConformance = defineMachineConformance({
     },
     {
       id: "request-runtime-identity-separation",
-      description:
-        "Request operation IDs remain distinct from reused runtime invocation identity.",
+      description: "Request operation IDs remain distinct from reused runtime invocation identity.",
     },
     {
       id: "settle-every-pending-operation",

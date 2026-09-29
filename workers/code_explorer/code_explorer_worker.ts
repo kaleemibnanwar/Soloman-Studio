@@ -100,9 +100,7 @@ function compilerVersion(candidate: unknown): string {
   return "unknown";
 }
 
-export function getMissingCodeExplorerCompilerApis(
-  candidate: unknown,
-): string[] {
+export function getMissingCodeExplorerCompilerApis(candidate: unknown): string[] {
   if (typeof candidate !== "object" || candidate === null) {
     return ["module"];
   }
@@ -208,11 +206,7 @@ export async function processCodeExplorer(
 ): Promise<CodeExplorerWorkerOutput> {
   try {
     const compiler = loadCachedTypeScript(input.appPath);
-    const output = await processCodeExplorerWithTypeScript(
-      compiler.module,
-      input,
-      compiler,
-    );
+    const output = await processCodeExplorerWithTypeScript(compiler.module, input, compiler);
     if (!output.success && compiler.source === "bundled-ts6") {
       return {
         success: false,
@@ -261,10 +255,7 @@ function getBundledCompilerNotes(
   const shownDiagnostics = built.configDiagnostics
     .slice(0, MAX_CONFIG_DIAGNOSTICS_IN_NOTE)
     .map((diagnostic) => {
-      const configPath = path.relative(
-        built.index.appPath,
-        diagnostic.tsconfigPath,
-      );
+      const configPath = path.relative(built.index.appPath, diagnostic.tsconfigPath);
       const message = diagnostic.message.replaceAll("\n", " ").slice(0, 240);
       return `${configPath || path.basename(diagnostic.tsconfigPath)} TS${diagnostic.code}: ${message}`;
     });
@@ -415,16 +406,11 @@ function isCacheFresh(
     appPath: input.appPath,
     tsconfigPath: input.tsconfigPath,
   });
-  return (
-    fileSetFingerprint(currentFileSet.rootFileNames) ===
-    cached.fileSetFingerprint
-  );
+  return fileSetFingerprint(currentFileSet.rootFileNames) === cached.fileSetFingerprint;
 }
 
 function fileSetFingerprint(fileNames: string[]): string {
-  return [...new Set(fileNames.map((fileName) => path.resolve(fileName)))]
-    .sort()
-    .join("\0");
+  return [...new Set(fileNames.map((fileName) => path.resolve(fileName)))].sort().join("\0");
 }
 
 function newestMtimeMs(paths: string[]): number {
@@ -445,16 +431,11 @@ function newestMtimeMs(paths: string[]): number {
 // typings for it live in the `electron` module, which isn't part of this
 // worker's tsconfig, so declare the minimal surface we use.
 interface UtilityProcessParentPort {
-  on(
-    event: "message",
-    listener: (messageEvent: { data: CodeExplorerHostRequest }) => void,
-  ): void;
+  on(event: "message", listener: (messageEvent: { data: CodeExplorerHostRequest }) => void): void;
   postMessage(message: CodeExplorerHostResponse): void;
 }
 
-const parentPort = (
-  process as unknown as { parentPort?: UtilityProcessParentPort }
-).parentPort;
+const parentPort = (process as unknown as { parentPort?: UtilityProcessParentPort }).parentPort;
 
 // Handle messages from the main process. Requests are correlated by
 // requestId; the actual indexing/search work is synchronous, so concurrent

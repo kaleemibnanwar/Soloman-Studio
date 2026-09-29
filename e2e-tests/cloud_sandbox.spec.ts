@@ -1,35 +1,32 @@
 import { expect } from "@playwright/test";
 import { test, testSkipIfWindows, Timeout } from "./helpers/test_helper";
 
-testSkipIfWindows(
-  "cloud sandbox runtime mode runs previews",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
+testSkipIfWindows("cloud sandbox runtime mode runs previews", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
 
-    await po.navigation.goToSettingsTab();
-    await po.page.getByRole("button", { name: "Experiments" }).click();
-    await po.settings.toggleCloudSandboxExperiment();
-    await po.settings.changeRuntimeMode("cloud");
-    expect(po.settings.recordSettings()).toMatchObject({
-      runtimeMode2: "cloud",
-    });
+  await po.navigation.goToSettingsTab();
+  await po.page.getByRole("button", { name: "Experiments" }).click();
+  await po.settings.toggleCloudSandboxExperiment();
+  await po.settings.changeRuntimeMode("cloud");
+  expect(po.settings.recordSettings()).toMatchObject({
+    runtimeMode2: "cloud",
+  });
 
-    await po.navigation.goToAppsTab();
-    await po.sendPrompt("hi");
+  await po.navigation.goToAppsTab();
+  await po.sendPrompt("hi");
 
-    // Cloud sandbox provisioning can be slow; retry the visibility check to
-    // avoid flakes when the iframe takes slightly longer than EXTRA_LONG.
-    await expect(async () => {
-      await po.previewPanel.expectPreviewIframeIsVisible(Timeout.SHORT);
-    }).toPass({ timeout: Timeout.EXTRA_LONG * 2 });
-    await expect(po.previewPanel.getCloudBadge()).toBeVisible({
-      timeout: Timeout.LONG,
-    });
-    await expect(
-      po.previewPanel.getPreviewIframeElement().contentFrame().locator("body"),
-    ).toContainText("Cloud Sandbox Preview", { timeout: Timeout.LONG });
-  },
-);
+  // Cloud sandbox provisioning can be slow; retry the visibility check to
+  // avoid flakes when the iframe takes slightly longer than EXTRA_LONG.
+  await expect(async () => {
+    await po.previewPanel.expectPreviewIframeIsVisible(Timeout.SHORT);
+  }).toPass({ timeout: Timeout.EXTRA_LONG * 2 });
+  await expect(po.previewPanel.getCloudBadge()).toBeVisible({
+    timeout: Timeout.LONG,
+  });
+  await expect(
+    po.previewPanel.getPreviewIframeElement().contentFrame().locator("body"),
+  ).toContainText("Cloud Sandbox Preview", { timeout: Timeout.LONG });
+});
 
 test.skip("cloud sandbox undo restores the remote snapshot", async ({ po }) => {
   await po.setUp({ autoApprove: true });
@@ -39,8 +36,7 @@ test.skip("cloud sandbox undo restores the remote snapshot", async ({ po }) => {
   await po.settings.toggleCloudSandboxExperiment();
   await po.settings.changeRuntimeMode("cloud");
 
-  const getIframe = () =>
-    po.previewPanel.getPreviewIframeElement().contentFrame();
+  const getIframe = () => po.previewPanel.getPreviewIframeElement().contentFrame();
   const getCloudSnapshotDigest = async () => {
     const digestText = await getIframe()
       .getByTestId("cloud-snapshot-digest")
@@ -53,26 +49,17 @@ test.skip("cloud sandbox undo restores the remote snapshot", async ({ po }) => {
   };
   const getCurrentAppId = async () => {
     const result = await po.page.evaluate(async () => {
-      return (window as any).electron.ipcRenderer.invoke(
-        "list-apps",
-        undefined,
-      );
+      return (window as any).electron.ipcRenderer.invoke("list-apps", undefined);
     });
     return result.apps[0].id as number;
   };
   const getCloudSyncRevision = async (appId: number) => {
     const status = await po.page.evaluate(async (id) => {
-      return (window as any).electron.ipcRenderer.invoke(
-        "get-cloud-sandbox-status",
-        { appId: id },
-      );
+      return (window as any).electron.ipcRenderer.invoke("get-cloud-sandbox-status", { appId: id });
     }, appId);
     return status?.syncRevision ?? 0;
   };
-  const waitForCloudSyncRevisionToAdvance = async (
-    appId: number,
-    revision: number,
-  ) => {
+  const waitForCloudSyncRevisionToAdvance = async (appId: number, revision: number) => {
     await expect(async () => {
       expect(await getCloudSyncRevision(appId)).toBeGreaterThan(revision);
     }).toPass({ timeout: Timeout.EXTRA_LONG });
@@ -89,9 +76,7 @@ test.skip("cloud sandbox undo restores the remote snapshot", async ({ po }) => {
     }).toPass({ timeout: Timeout.EXTRA_LONG });
     return revision;
   };
-  const refreshPreviewAndReadDigest = async (
-    assertDigest?: (digest: string) => void,
-  ) => {
+  const refreshPreviewAndReadDigest = async (assertDigest?: (digest: string) => void) => {
     await po.previewPanel.clickPreviewRefresh();
     let digest = "";
     await expect(async () => {

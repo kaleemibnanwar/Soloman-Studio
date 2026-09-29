@@ -21,14 +21,8 @@ import { useThemes } from "@/hooks/useThemes";
 import { useLoadApp } from "@/hooks/useLoadApp";
 import { useRunApp } from "@/hooks/useRunApp";
 import { ipc } from "@/ipc/types";
-import {
-  sanitizeAppDisplayName,
-  slugifyAppFolderName,
-} from "@/shared/app_names";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { sanitizeAppDisplayName, slugifyAppFolderName } from "@/shared/app_names";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type {
   AppBlueprintEditableField,
   AppBlueprintVisualEditableField,
@@ -44,10 +38,7 @@ import { AppBlueprintNameConflictDialog } from "./AppBlueprintNameConflictDialog
 import type { CustomTagState } from "./stateTypes";
 
 function isNameConflictError(error: unknown): boolean {
-  return (
-    error instanceof OctopusStudioError &&
-    error.kind === OctopusStudioErrorKind.Conflict
-  );
+  return error instanceof OctopusStudioError && error.kind === OctopusStudioErrorKind.Conflict;
 }
 
 interface OctopusStudioAppBlueprintCardProps {
@@ -64,9 +55,9 @@ interface OctopusStudioAppBlueprintCardProps {
   };
 }
 
-export const OctopusStudioAppBlueprintCard: React.FC<
-  OctopusStudioAppBlueprintCardProps
-> = ({ node }) => {
+export const OctopusStudioAppBlueprintCard: React.FC<OctopusStudioAppBlueprintCardProps> = ({
+  node,
+}) => {
   const props = node.properties;
   const chatId = useAtomValue(selectedChatIdAtom);
   const appBlueprintState = useAtomValue(appBlueprintStateAtom);
@@ -81,28 +72,18 @@ export const OctopusStudioAppBlueprintCard: React.FC<
   const { themes } = useThemes();
   const { customThemes } = useCustomThemes();
 
-  const isApproved = chatId
-    ? appBlueprintState.approvedChatIds.has(chatId)
-    : false;
+  const isApproved = chatId ? appBlueprintState.approvedChatIds.has(chatId) : false;
   const planData = chatId ? appBlueprintState.plansByChatId.get(chatId) : null;
-  const isTimedOut = chatId
-    ? appBlueprintState.timedOutChatIds.has(chatId)
-    : false;
+  const isTimedOut = chatId ? appBlueprintState.timedOutChatIds.has(chatId) : false;
   // Use atom data if available, fall back to XML attributes. Preserve
   // intentionally empty user edits (e.g. cleared app name) by checking for
   // live plan data presence rather than truthiness of individual fields.
-  const appName =
-    planData != null ? planData.appName : (props["app-name"] ?? "");
-  const templateId =
-    planData != null ? planData.templateId : (props.template ?? "react");
-  const themeId =
-    planData != null ? planData.themeId : (props.theme ?? "default");
+  const appName = planData != null ? planData.appName : (props["app-name"] ?? "");
+  const templateId = planData != null ? planData.templateId : (props.template ?? "react");
+  const themeId = planData != null ? planData.themeId : (props.theme ?? "default");
   const designDirection =
-    planData != null
-      ? planData.designDirection
-      : (props["design-direction"] ?? "");
-  const primaryColor =
-    planData != null ? planData.primaryColor : (props["primary-color"] ?? "");
+    planData != null ? planData.designDirection : (props["design-direction"] ?? "");
+  const primaryColor = planData != null ? planData.primaryColor : (props["primary-color"] ?? "");
   const userPrompt = planData?.userPrompt || "";
   const attachments = planData?.attachments || [];
   const visuals = planData?.visuals || [];
@@ -159,11 +140,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
   }, [primaryColor]);
 
   const handleVisualEdit = useCallback(
-    (
-      visualId: string,
-      field: AppBlueprintVisualEditableField,
-      value: string,
-    ) => {
+    (visualId: string, field: AppBlueprintVisualEditableField, value: string) => {
       if (!chatId || isApproved) return;
 
       // Update local state immediately
@@ -182,12 +159,10 @@ export const OctopusStudioAppBlueprintCard: React.FC<
       });
 
       // Persist to main process
-      void ipc.appBlueprint
-        .editVisual({ chatId, visualId, field, value })
-        .catch((error) => {
-          console.error("Failed to persist visual edit:", error);
-          showError("Could not save visual changes. Please try again.");
-        });
+      void ipc.appBlueprint.editVisual({ chatId, visualId, field, value }).catch((error) => {
+        console.error("Failed to persist visual edit:", error);
+        showError("Could not save visual changes. Please try again.");
+      });
     },
     [chatId, isApproved, setAppBlueprintState],
   );
@@ -277,24 +252,22 @@ export const OctopusStudioAppBlueprintCard: React.FC<
       });
 
       // Persist to main process
-      void ipc.appBlueprint
-        .removeVisual({ chatId, visualId })
-        .catch((error) => {
-          console.error("Failed to remove visual:", error);
-          showError("Could not remove visual. Please try again.");
-          // Roll back
-          setAppBlueprintState((prev) => {
-            const nextPlans = new Map(prev.plansByChatId);
-            const existing = nextPlans.get(chatId);
-            if (existing) {
-              nextPlans.set(chatId, {
-                ...existing,
-                visuals: [...existing.visuals, removedVisual],
-              });
-            }
-            return { ...prev, plansByChatId: nextPlans };
-          });
+      void ipc.appBlueprint.removeVisual({ chatId, visualId }).catch((error) => {
+        console.error("Failed to remove visual:", error);
+        showError("Could not remove visual. Please try again.");
+        // Roll back
+        setAppBlueprintState((prev) => {
+          const nextPlans = new Map(prev.plansByChatId);
+          const existing = nextPlans.get(chatId);
+          if (existing) {
+            nextPlans.set(chatId, {
+              ...existing,
+              visuals: [...existing.visuals, removedVisual],
+            });
+          }
+          return { ...prev, plansByChatId: nextPlans };
         });
+      });
     },
     [chatId, isApproved, appBlueprintState, setAppBlueprintState],
   );
@@ -344,8 +317,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
       // into the blueprint so the agent builds under the corrected name. Guard
       // on `typeof string` so an accidental event arg (e.g. onClick passing the
       // MouseEvent) can never be mistaken for an override.
-      const override =
-        typeof overrideAppName === "string" ? overrideAppName.trim() : "";
+      const override = typeof overrideAppName === "string" ? overrideAppName.trim() : "";
       const effectiveAppName = override || plan.appName;
 
       // Set the in-progress guard before any await so a slow name-persist can't
@@ -385,11 +357,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
         const recordApplyError = (message: string, error: unknown) => {
           console.error(message, error);
           const detail =
-            error instanceof Error
-              ? error.message
-              : typeof error === "string"
-                ? error
-                : undefined;
+            error instanceof Error ? error.message : typeof error === "string" ? error : undefined;
           applyErrors.push(detail ? `${message} (${detail})` : message);
         };
 
@@ -402,10 +370,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
             try {
               currentApp = await ipc.app.getApp(selectedAppId);
             } catch (error) {
-              recordApplyError(
-                "Could not load the app before applying the app blueprint.",
-                error,
-              );
+              recordApplyError("Could not load the app before applying the app blueprint.", error);
             }
           }
 
@@ -417,8 +382,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
             const desiredName = sanitizeAppDisplayName(effectiveAppName);
             const desiredFolder = slugifyAppFolderName(desiredName);
             const currentFolder =
-              currentApp.path.split(/[\\/]/).filter(Boolean).pop() ??
-              currentApp.path;
+              currentApp.path.split(/[\\/]/).filter(Boolean).pop() ?? currentApp.path;
             const folderChanged = desiredFolder !== currentFolder;
             const nameChanged = desiredName !== currentApp.name;
             if (nameChanged || folderChanged) {
@@ -523,10 +487,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
                 removeNodeModules: true,
               });
             } catch (error) {
-              recordApplyError(
-                "Could not restart the app after the template change.",
-                error,
-              );
+              recordApplyError("Could not restart the app after the template change.", error);
             }
           }
 
@@ -578,9 +539,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
         const visualsSummary =
           plan.visuals.length > 0
             ? plan.visuals
-                .map(
-                  (v) => `- ${v.type}: ${v.description}\n  Prompt: ${v.prompt}`,
-                )
+                .map((v) => `- ${v.type}: ${v.description}\n  Prompt: ${v.prompt}`)
                 .join("\n")
             : "No visuals planned";
 
@@ -607,10 +566,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
         try {
           await streamMessage({ chatId, prompt: followUpPrompt });
         } catch (error) {
-          console.error(
-            "Failed to send app blueprint follow-up message:",
-            error,
-          );
+          console.error("Failed to send app blueprint follow-up message:", error);
           const followUpError =
             "Blueprint approved, but the follow-up message could not be sent. You can type your next message to continue building.";
           setApprovalError(followUpError);
@@ -623,9 +579,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
           nextApproved.delete(chatId);
           return { ...prev, approvedChatIds: nextApproved };
         });
-        setApprovalError(
-          "Failed to approve the app blueprint. Please try again.",
-        );
+        setApprovalError("Failed to approve the app blueprint. Please try again.");
         showError("Failed to approve the app blueprint. Please try again.");
       } finally {
         setIsApproving(false);
@@ -660,20 +614,13 @@ export const OctopusStudioAppBlueprintCard: React.FC<
     <div
       aria-busy={!isReady}
       className={`my-4 border rounded-lg overflow-hidden transition-colors bg-card ${
-        !isReady
-          ? "border-primary/60"
-          : isApproved
-            ? "border-emerald-500/30"
-            : "border-primary/20"
+        !isReady ? "border-primary/60" : isApproved ? "border-emerald-500/30" : "border-primary/20"
       }`}
     >
       {/* Header */}
       <div className="px-4 py-3 flex items-center justify-between border-b border-border/50">
         <div className="flex items-center gap-2">
-          <Sparkles
-            className={`text-primary ${!isReady ? "animate-pulse" : ""}`}
-            size={18}
-          />
+          <Sparkles className={`text-primary ${!isReady ? "animate-pulse" : ""}`} size={18} />
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             App Blueprint
           </span>
@@ -733,9 +680,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
               aria-label="Edit app name"
               title={isApproved ? undefined : "Edit app name"}
               className={`group inline-flex items-center gap-1 text-lg font-semibold text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-sm ${
-                !isApproved
-                  ? "hover:text-primary cursor-text transition-colors"
-                  : ""
+                !isApproved ? "hover:text-primary cursor-text transition-colors" : ""
               }`}
               onClick={() => {
                 if (!isApproved) {
@@ -763,10 +708,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
             <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               Prompt
             </div>
-            <AppBlueprintUserPrompt
-              prompt={userPrompt}
-              attachments={attachments}
-            />
+            <AppBlueprintUserPrompt prompt={userPrompt} attachments={attachments} />
           </div>
         )}
 
@@ -780,8 +722,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
             </div>
             {isApproved ? (
               <span className="text-sm text-foreground/80">
-                {templates?.find((t) => t.id === templateId)?.title ??
-                  templateId}
+                {templates?.find((t) => t.id === templateId)?.title ?? templateId}
               </span>
             ) : (
               <select
@@ -865,9 +806,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
                       style={{ backgroundColor: primaryColor }}
                     />
                   )}
-                  <span className="text-sm text-foreground/80 font-mono">
-                    {primaryColor}
-                  </span>
+                  <span className="text-sm text-foreground/80 font-mono">{primaryColor}</span>
                 </>
               ) : (
                 <>
@@ -939,9 +878,7 @@ export const OctopusStudioAppBlueprintCard: React.FC<
       </div>
 
       {/* Footer */}
-      <div
-        className={`px-4 py-3 border-t border-border/50 flex gap-3 items-start justify-between`}
-      >
+      <div className={`px-4 py-3 border-t border-border/50 flex gap-3 items-start justify-between`}>
         {isApproved ? (
           <>
             {approvalError && (

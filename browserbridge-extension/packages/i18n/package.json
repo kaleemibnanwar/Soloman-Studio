@@ -1,14 +1,14 @@
 {
   "name": "@extension/i18n",
   "version": "0.1.13",
-  "description": "chrome extension - internationalization",
   "private": true,
-  "sideEffects": false,
+  "description": "chrome extension - internationalization",
   "files": [
     "dist/**"
   ],
-  "types": "index.ts",
+  "sideEffects": false,
   "main": "./dist/index.js",
+  "types": "index.ts",
   "scripts": {
     "clean:bundle": "rimraf dist",
     "clean:node_modules": "pnpx rimraf node_modules",
@@ -23,7 +23,7 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@extension/tsconfig": "workspace:*",
-    "@extension/hmr": "workspace:*"
+    "@extension/hmr": "workspace:*",
+    "@extension/tsconfig": "workspace:*"
   }
 }

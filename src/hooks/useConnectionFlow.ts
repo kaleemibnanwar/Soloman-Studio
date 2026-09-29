@@ -19,10 +19,7 @@ import {
   type ConnectionFlowProvider,
   type ConnectionFlowState,
 } from "@/connection_flow/state";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 type FlowSnapshot = Record<ConnectionFlowProvider, ConnectionFlowState>;
 
@@ -72,21 +69,14 @@ export function mergeConnectionFlowSnapshots(
 
 function mergeSnapshot(states: FlowSnapshot): void {
   const next = mergeConnectionFlowSnapshots(snapshot, states);
-  if (
-    CONNECTION_FLOW_PROVIDERS.some(
-      (provider) => next[provider] !== snapshot[provider],
-    )
-  ) {
+  if (CONNECTION_FLOW_PROVIDERS.some((provider) => next[provider] !== snapshot[provider])) {
     snapshot = next;
     emit();
   }
 }
 
 function isRevisionConflict(error: unknown): boolean {
-  return (
-    error instanceof OctopusStudioError &&
-    error.kind === OctopusStudioErrorKind.Conflict
-  );
+  return error instanceof OctopusStudioError && error.kind === OctopusStudioErrorKind.Conflict;
 }
 
 async function refreshSnapshot(): Promise<void> {

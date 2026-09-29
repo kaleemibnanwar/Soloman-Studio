@@ -29,16 +29,12 @@ export const OctopusStudioDelete: React.FC<OctopusStudioDeleteProps> = ({
     <OctopusStudioCard accentColor="red" state={state}>
       <OctopusStudioCardHeader icon={<Trash2 size={15} />} accentColor="red">
         {fileName && (
-          <span className="font-medium text-sm text-foreground truncate">
-            {fileName}
-          </span>
+          <span className="font-medium text-sm text-foreground truncate">{fileName}</span>
         )}
         <OctopusStudioBadge color="red">Delete</OctopusStudioBadge>
       </OctopusStudioCardHeader>
       <OctopusStudioFilePath path={path} />
-      {children && (
-        <OctopusStudioDescription>{children}</OctopusStudioDescription>
-      )}
+      {children && <OctopusStudioDescription>{children}</OctopusStudioDescription>}
     </OctopusStudioCard>
   );
 };

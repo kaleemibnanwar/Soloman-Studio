@@ -2,15 +2,9 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import log from "electron-log/main";
-import { spawnStreaming } from "./spawn_streaming";
-import {
-  PNPM_INSTALL_POLICY_ARGS,
-  getPackageManagerCommandEnv,
-} from "./socket_firewall";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { spawnStreaming } from "../process/spawn_streaming";
+import { PNPM_INSTALL_POLICY_ARGS, getPackageManagerCommandEnv } from "./socket_firewall";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   clearNodeModuleCache,
   getNodeModuleEntryPath,
@@ -80,8 +74,7 @@ export const TEST_BASE_URL_ENV = "OCTOPUS_STUDIO_TEST_BASE_URL";
  * name and is selected explicitly with `--config` on every run, so OctopusStudio never
  * has to rename, back up, or overwrite a config it doesn't own.
  */
-export const OCTOPUS_STUDIO_CONFIG_FILENAME =
-  "playwright-octopusStudio.config.ts";
+export const OCTOPUS_STUDIO_CONFIG_FILENAME = "playwright-octopusStudio.config.ts";
 
 // Every config filename Playwright auto-resolves — an app with any of these
 // owns its own config, so its bare `playwright test` script is not ours.
@@ -161,14 +154,10 @@ export function detectSystemBrowserChannel(): BrowserChannel | null {
   };
 
   if (platform === "darwin") {
-    if (
-      exists("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
-    ) {
+    if (exists("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")) {
       return "chrome";
     }
-    if (
-      exists("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge")
-    ) {
+    if (exists("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge")) {
       return "msedge";
     }
     return null;
@@ -176,15 +165,12 @@ export function detectSystemBrowserChannel(): BrowserChannel | null {
 
   if (platform === "win32") {
     const programFiles = process.env["PROGRAMFILES"] || "C:\\Program Files";
-    const programFilesX86 =
-      process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)";
+    const programFilesX86 = process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)";
     const localAppData = process.env["LOCALAPPDATA"] || "";
     const chromeCandidates = [
       path.join(programFiles, "Google/Chrome/Application/chrome.exe"),
       path.join(programFilesX86, "Google/Chrome/Application/chrome.exe"),
-      localAppData
-        ? path.join(localAppData, "Google/Chrome/Application/chrome.exe")
-        : "",
+      localAppData ? path.join(localAppData, "Google/Chrome/Application/chrome.exe") : "",
     ].filter(Boolean);
     if (chromeCandidates.some(exists)) return "chrome";
     const edgeCandidates = [
@@ -208,9 +194,7 @@ export function detectSystemBrowserChannel(): BrowserChannel | null {
 }
 
 export function isPlaywrightInstalled(appPath: string): boolean {
-  return fs.existsSync(
-    path.join(appPath, "node_modules", "@playwright", "test", "package.json"),
-  );
+  return fs.existsSync(path.join(appPath, "node_modules", "@playwright", "test", "package.json"));
 }
 
 /**
@@ -221,22 +205,13 @@ export function isPlaywrightInstalled(appPath: string): boolean {
  * dir — the marker is how we avoid re-running the (idempotent but slow) install
  * on every run.
  */
-const BROWSER_MARKER = path.join(
-  "node_modules",
-  ".octopus-studio-playwright-chromium-installed",
-);
+const BROWSER_MARKER = path.join("node_modules", ".octopus-studio-playwright-chromium-installed");
 
 function playwrightPackageVersion(appPath: string): string | null {
   try {
     const packageJson = JSON.parse(
       fs.readFileSync(
-        path.join(
-          appPath,
-          "node_modules",
-          "@playwright",
-          "test",
-          "package.json",
-        ),
+        path.join(appPath, "node_modules", "@playwright", "test", "package.json"),
         "utf8",
       ),
     ) as { version?: unknown };
@@ -249,13 +224,9 @@ function playwrightPackageVersion(appPath: string): string | null {
 function chromiumExecutablePath(appPath: string): string | null {
   try {
     const requireFromApp = createRequire(path.join(appPath, "package.json"));
-    const packageJsonPath = resolveNodeModulePackageJsonPathSync(appPath, [
-      "playwright",
-    ]);
+    const packageJsonPath = resolveNodeModulePackageJsonPathSync(appPath, ["playwright"]);
     const realPackageRootPath = fs.realpathSync(path.dirname(packageJsonPath));
-    const entryPath = fs.realpathSync(
-      getNodeModuleEntryPath(packageJsonPath, "index.js"),
-    );
+    const entryPath = fs.realpathSync(getNodeModuleEntryPath(packageJsonPath, "index.js"));
     clearNodeModuleCache(realPackageRootPath, requireFromApp.cache);
     const playwright = requireFromApp(entryPath) as {
       chromium?: { executablePath?: () => string };
@@ -306,10 +277,7 @@ function markBrowserInstalled(appPath: string): void {
       playwrightVersion: playwrightPackageVersion(appPath),
       executablePath: chromiumExecutablePath(appPath),
     };
-    fs.writeFileSync(
-      path.join(appPath, BROWSER_MARKER),
-      `${JSON.stringify(marker, null, 2)}\n`,
-    );
+    fs.writeFileSync(path.join(appPath, BROWSER_MARKER), `${JSON.stringify(marker, null, 2)}\n`);
   } catch (err) {
     logger.warn(`Failed to write browser marker: ${err}`);
   }
@@ -338,10 +306,7 @@ function readOctopusStudioConfigText(appPath: string): string | null {
 /** True when OctopusStudio's config drives a system browser via `channel`. */
 function configUsesChannel(appPath: string): boolean {
   const text = readOctopusStudioConfigText(appPath);
-  return (
-    text != null &&
-    /(?:^|[,{ \t\r\n])(?:channel|["']channel["'])\s*:/.test(text)
-  );
+  return text != null && /(?:^|[,{ \t\r\n])(?:channel|["']channel["'])\s*:/.test(text);
 }
 
 /** True when OctopusStudio's config is still pure template output (safe to rewrite). */
@@ -350,14 +315,8 @@ function isOctopusStudioGeneratedConfig(appPath: string): boolean {
   return text != null && text.includes(OCTOPUS_STUDIO_CONFIG_SENTINEL);
 }
 
-function writePlaywrightConfig(
-  appPath: string,
-  channel: BrowserChannel | null,
-): void {
-  fs.writeFileSync(
-    octopusStudioConfigPath(appPath),
-    buildPlaywrightConfig(channel),
-  );
+function writePlaywrightConfig(appPath: string, channel: BrowserChannel | null): void {
+  fs.writeFileSync(octopusStudioConfigPath(appPath), buildPlaywrightConfig(channel));
   logger.info(
     `Wrote ${OCTOPUS_STUDIO_CONFIG_FILENAME} (${channel ? `channel: ${channel}` : "bundled chromium"})`,
   );
@@ -377,13 +336,8 @@ function migrateConfigTestDir(appPath: string): void {
   const legacy = 'testDir: "./tests"';
   const current = `testDir: "./${E2E_TEST_DIR}"`;
   if (text && text.includes(legacy)) {
-    fs.writeFileSync(
-      octopusStudioConfigPath(appPath),
-      text.replace(legacy, current),
-    );
-    logger.info(
-      `Migrated ${OCTOPUS_STUDIO_CONFIG_FILENAME} testDir to ./${E2E_TEST_DIR}`,
-    );
+    fs.writeFileSync(octopusStudioConfigPath(appPath), text.replace(legacy, current));
+    logger.info(`Migrated ${OCTOPUS_STUDIO_CONFIG_FILENAME} testDir to ./${E2E_TEST_DIR}`);
   }
 }
 
@@ -417,9 +371,7 @@ function ensureTestScript(appPath: string): void {
       logger.info("Added test script to package.json");
     } else if (
       pkg.scripts.test === "playwright test" &&
-      !PLAYWRIGHT_CONFIG_FILENAMES.some((name) =>
-        fs.existsSync(path.join(appPath, name)),
-      )
+      !PLAYWRIGHT_CONFIG_FILENAMES.some((name) => fs.existsSync(path.join(appPath, name)))
     ) {
       // Migrate the old OctopusStudio-generated bare script, but only when the app has
       // no Playwright config of its own. A bare `playwright test` alongside a
@@ -489,10 +441,7 @@ export async function ensurePlaywrightBootstrap({
       timeoutMs: 5 * 60 * 1000,
     });
     if (installDep.aborted) {
-      throw new OctopusStudioError(
-        "Test setup cancelled.",
-        OctopusStudioErrorKind.Precondition,
-      );
+      throw new OctopusStudioError("Test setup cancelled.", OctopusStudioErrorKind.Precondition);
     }
     if (installDep.code !== 0) {
       throw new OctopusStudioError(
@@ -517,11 +466,7 @@ export async function ensurePlaywrightBootstrap({
     // Upgrade a bundled config to the system browser when one is now available,
     // so existing apps stop needing the big download. Skipped once the sentinel
     // is gone: the user has made the file their own.
-    if (
-      !usesChannel &&
-      detectedChannel &&
-      isOctopusStudioGeneratedConfig(appPath)
-    ) {
+    if (!usesChannel && detectedChannel && isOctopusStudioGeneratedConfig(appPath)) {
       writePlaywrightConfig(appPath, detectedChannel);
       usesChannel = true;
       onOutput?.(
@@ -553,10 +498,7 @@ export async function ensurePlaywrightBootstrap({
       timeoutMs: 10 * 60 * 1000,
     });
     if (installBrowser.aborted) {
-      throw new OctopusStudioError(
-        "Test setup cancelled.",
-        OctopusStudioErrorKind.Precondition,
-      );
+      throw new OctopusStudioError("Test setup cancelled.", OctopusStudioErrorKind.Precondition);
     }
     if (installBrowser.code !== 0) {
       throw new OctopusStudioError(

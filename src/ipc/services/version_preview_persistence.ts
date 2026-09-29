@@ -37,12 +37,8 @@ const persistedFallbackSchema = z.discriminatedUnion("type", [
       session: persistedSessionSchema,
     })
     .strict(),
-  z
-    .object({ type: z.literal("browsing"), session: persistedSessionSchema })
-    .strict(),
-  z
-    .object({ type: z.literal("previewing"), session: persistedSessionSchema })
-    .strict(),
+  z.object({ type: z.literal("browsing"), session: persistedSessionSchema }).strict(),
+  z.object({ type: z.literal("previewing"), session: persistedSessionSchema }).strict(),
   z
     .object({
       type: z.literal("recovery-required"),
@@ -93,9 +89,7 @@ const persistedStateSchema = z.discriminatedUnion("type", [
       session: persistedSessionSchema,
     })
     .strict(),
-  z
-    .object({ type: z.literal("previewing"), session: persistedSessionSchema })
-    .strict(),
+  z.object({ type: z.literal("previewing"), session: persistedSessionSchema }).strict(),
   z
     .object({
       type: z.literal("restoring"),
@@ -104,9 +98,7 @@ const persistedStateSchema = z.discriminatedUnion("type", [
       restoreRecovery: restoreRecoverySchema.optional(),
     })
     .strict(),
-  z
-    .object({ type: z.literal("returning"), session: persistedSessionSchema })
-    .strict(),
+  z.object({ type: z.literal("returning"), session: persistedSessionSchema }).strict(),
   z
     .object({
       type: z.literal("switching-branch"),
@@ -283,11 +275,7 @@ class VersionPreviewPersistence {
     }
   }
 
-  checkpointRestore(
-    appId: number,
-    state: PreviewState,
-    restoreRecovery: RestoreRecovery,
-  ): void {
+  checkpointRestore(appId: number, state: PreviewState, restoreRecovery: RestoreRecovery): void {
     if (state.type !== "restoring") {
       throw new Error("Restore recovery checkpoint requires restoring state");
     }
@@ -345,11 +333,7 @@ class VersionPreviewPersistence {
     fs.mkdirSync(directory, { recursive: true });
     const target = persistencePath(appId);
     const temp = `${target}.tmp`;
-    fs.writeFileSync(
-      temp,
-      JSON.stringify({ version: 3, state: persistedState }),
-      "utf8",
-    );
+    fs.writeFileSync(temp, JSON.stringify({ version: 3, state: persistedState }), "utf8");
     fs.renameSync(temp, target);
   }
 }

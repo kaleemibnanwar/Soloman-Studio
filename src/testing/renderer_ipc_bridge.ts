@@ -80,9 +80,7 @@ export interface InstallRendererIpcBridgeOptions {
 
 /** Mirrors preload.ts's dynamic terminal-stream allowance exactly. */
 function isValidDynamicReceiveChannel(channel: string): boolean {
-  return (
-    channel.startsWith("terminal:data:") || channel.startsWith("terminal:exit:")
-  );
+  return channel.startsWith("terminal:data:") || channel.startsWith("terminal:exit:");
 }
 
 export interface RendererIpcBridge {
@@ -149,8 +147,7 @@ export function installRendererIpcBridge(
   const sentEvents: RendererIpcBridgeEvent[] = [];
   const invokeLog: RendererIpcBridgeInvokeLogEntry[] = [];
   const inFlight = new Map<Promise<unknown>, RendererIpcBridgeInvokeLogEntry>();
-  const dispatchWrapper =
-    options.wrapDispatch ?? ((dispatch: () => void) => dispatch());
+  const dispatchWrapper = options.wrapDispatch ?? ((dispatch: () => void) => dispatch());
   const validateChannels = options.validateChannels ?? true;
 
   // Same checks preload.ts performs, throwing the same error, so a channel
@@ -291,9 +288,7 @@ export function installRendererIpcBridge(
     }
     let promise: Promise<unknown>;
     try {
-      promise = Promise.resolve(
-        handler(fakeEvent, ...(clonedArgs as [unknown])),
-      ).then((result) =>
+      promise = Promise.resolve(handler(fakeEvent, ...(clonedArgs as [unknown]))).then((result) =>
         cloneAcrossBoundary(result, `invoke ${channel} result`),
       );
     } catch (error) {
@@ -325,8 +320,7 @@ export function installRendererIpcBridge(
       invokeRaw(channel, ...args).then((response) =>
         isIpcInvokeEnvelope(response) ? unwrapIpcEnvelope(response) : response,
       ),
-    invokeEnvelope: (channel: string, ...args: unknown[]) =>
-      invokeRaw(channel, ...args),
+    invokeEnvelope: (channel: string, ...args: unknown[]) => invokeRaw(channel, ...args),
     send: (channel: string, ...args: unknown[]) => sendToMain(channel, ...args),
     on: (channel: string, listener: Listener) => {
       if (!isValidReceiveChannel(channel)) {
@@ -362,9 +356,7 @@ export function installRendererIpcBridge(
     },
   };
 
-  (
-    globalThis as unknown as { window: { electron?: unknown } }
-  ).window.electron = electron;
+  (globalThis as unknown as { window: { electron?: unknown } }).window.electron = electron;
 
   const once = (
     channel: string,
@@ -378,11 +370,7 @@ export function installRendererIpcBridge(
         reject,
         timer: setTimeout(() => {
           removeOnceWaiter(channel, waiter);
-          reject(
-            new Error(
-              `[renderer-ipc-bridge] timed out waiting for event '${channel}'`,
-            ),
-          );
+          reject(new Error(`[renderer-ipc-bridge] timed out waiting for event '${channel}'`));
         }, timeoutMs),
       };
 
@@ -391,10 +379,7 @@ export function installRendererIpcBridge(
       onceWaiters.set(channel, waiters);
     });
 
-  const waitForBatchOrTimeout = (
-    batch: Promise<unknown>[],
-    timeoutMs: number,
-  ): Promise<boolean> =>
+  const waitForBatchOrTimeout = (batch: Promise<unknown>[], timeoutMs: number): Promise<boolean> =>
     new Promise((resolve) => {
       const timer = setTimeout(() => resolve(false), timeoutMs);
       void Promise.allSettled(batch).then(() => {
@@ -429,10 +414,7 @@ export function installRendererIpcBridge(
         throw settleTimeoutError(timeoutMs);
       }
       if (inFlight.size > 0) {
-        const didSettle = await waitForBatchOrTimeout(
-          Array.from(inFlight.keys()),
-          remainingMs,
-        );
+        const didSettle = await waitForBatchOrTimeout(Array.from(inFlight.keys()), remainingMs);
         if (!didSettle && inFlight.size > 0) {
           throw settleTimeoutError(timeoutMs);
         }
@@ -453,9 +435,7 @@ export function installRendererIpcBridge(
     onceWaiters.clear();
   };
 
-  const lastInvoke = (
-    channel: string,
-  ): RendererIpcBridgeInvokeLogEntry | undefined => {
+  const lastInvoke = (channel: string): RendererIpcBridgeInvokeLogEntry | undefined => {
     for (let i = invokeLog.length - 1; i >= 0; i--) {
       if (invokeLog[i].channel === channel) {
         return invokeLog[i];
@@ -472,16 +452,14 @@ export function installRendererIpcBridge(
     invokeLog,
     once,
     lastInvoke,
-    eventCount: (channel: string) =>
-      sentEvents.filter((event) => event.channel === channel).length,
+    eventCount: (channel: string) => sentEvents.filter((event) => event.channel === channel).length,
     settleInFlight,
     get pendingCount() {
       return inFlight.size;
     },
     uninstall: () => {
       clearOnceWaiters();
-      const win = (globalThis as unknown as { window: { electron?: unknown } })
-        .window;
+      const win = (globalThis as unknown as { window: { electron?: unknown } }).window;
       if (win.electron === electron) {
         delete win.electron;
       }

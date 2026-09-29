@@ -27,10 +27,7 @@ async function getServerTime(): Promise<number> {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      SERVER_TIME_TIMEOUT_MS,
-    );
+    const timeoutId = setTimeout(() => controller.abort(), SERVER_TIME_TIMEOUT_MS);
 
     const response = await fetch("https://api.octopusStudio.sh/health", {
       method: "HEAD",
@@ -43,21 +40,15 @@ async function getServerTime(): Promise<number> {
     if (dateHeader) {
       const serverTime = new Date(dateHeader).getTime();
       if (!isNaN(serverTime)) {
-        logger.debug(
-          `Server time fetched: ${new Date(serverTime).toISOString()}`,
-        );
+        logger.debug(`Server time fetched: ${new Date(serverTime).toISOString()}`);
         return serverTime;
       }
     }
 
-    logger.warn(
-      "Server response missing valid Date header, falling back to local time",
-    );
+    logger.warn("Server response missing valid Date header, falling back to local time");
     return Date.now();
   } catch (error) {
-    logger.warn(
-      `Failed to fetch server time, falling back to local time: ${error}`,
-    );
+    logger.warn(`Failed to fetch server time, falling back to local time: ${error}`);
     return Date.now();
   }
 }
@@ -72,33 +63,23 @@ export { FREE_AGENT_QUOTA_LIMIT };
 export const QUOTA_WINDOW_MS = 23 * 60 * 60 * 1000;
 
 export function registerFreeAgentQuotaHandlers() {
-  createTypedHandler(
-    freeAgentQuotaContracts.getFreeAgentQuotaStatus,
-    async () => {
-      return getFreeAgentQuotaStatus();
-    },
-  );
+  createTypedHandler(freeAgentQuotaContracts.getFreeAgentQuotaStatus, async () => {
+    return getFreeAgentQuotaStatus();
+  });
 
   // Test-only handler to simulate time passing for quota tests
   if (IS_TEST_BUILD) {
-    registerTrustedIpcHandler(
-      "test:simulateQuotaTimeElapsed",
-      async (_event, hoursAgo: number) => {
-        const secondsAgo = hoursAgo * 60 * 60;
-        const newTimestamp = Math.floor(Date.now() / 1000) - secondsAgo;
+    registerTrustedIpcHandler("test:simulateQuotaTimeElapsed", async (_event, hoursAgo: number) => {
+      const secondsAgo = hoursAgo * 60 * 60;
+      const newTimestamp = Math.floor(Date.now() / 1000) - secondsAgo;
 
-        db.$client
-          .prepare(
-            `UPDATE messages SET created_at = ? WHERE using_free_agent_mode_quota = 1`,
-          )
-          .run(newTimestamp);
+      db.$client
+        .prepare(`UPDATE messages SET created_at = ? WHERE using_free_agent_mode_quota = 1`)
+        .run(newTimestamp);
 
-        logger.log(
-          `[TEST] Simulated ${hoursAgo} hours elapsed for quota messages`,
-        );
-        return { success: true };
-      },
-    );
+      logger.log(`[TEST] Simulated ${hoursAgo} hours elapsed for quota messages`);
+      return { success: true };
+    });
   }
 }
 
@@ -107,9 +88,7 @@ export function registerFreeAgentQuotaHandlers() {
  * This should be called BEFORE starting the agent stream to prevent race conditions.
  * If the stream fails, call unmarkMessageAsUsingFreeAgentQuota to refund the quota.
  */
-export async function markMessageAsUsingFreeAgentQuota(
-  messageId: number,
-): Promise<void> {
+export async function markMessageAsUsingFreeAgentQuota(messageId: number): Promise<void> {
   await db
     .update(messages)
     .set({ usingFreeAgentModeQuota: true })
@@ -123,9 +102,7 @@ export async function markMessageAsUsingFreeAgentQuota(
  * This should be called when an agent stream fails or is aborted to avoid
  * penalizing users for unsuccessful requests.
  */
-export async function unmarkMessageAsUsingFreeAgentQuota(
-  messageId: number,
-): Promise<void> {
+export async function unmarkMessageAsUsingFreeAgentQuota(messageId: number): Promise<void> {
   await db
     .update(messages)
     .set({ usingFreeAgentModeQuota: false })

@@ -17,9 +17,7 @@ const PRIORITY: Record<PackageManagerWarningKind, number> = {
 };
 
 class WarningSnapshot {
-  private readonly store = new SnapshotStore<PackageManagerWarning | undefined>(
-    undefined,
-  );
+  private readonly store = new SnapshotStore<PackageManagerWarning | undefined>(undefined);
 
   constructor(private readonly appId: number) {}
 

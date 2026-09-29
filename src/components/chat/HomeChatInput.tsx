@@ -7,11 +7,7 @@ import {
   MicOff,
   Loader2,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 import { useSettings } from "@/hooks/useSettings";
 import { homeChatInputValueAtom, homeSelectedAppAtom } from "@/atoms/chatAtoms";
@@ -58,11 +54,10 @@ export function HomeChatInput({
     [disabled, setInputValue],
   );
 
-  const { isEnabled, isRecording, isTranscribing, toggleRecording } =
-    useVoiceToText({
-      onTranscription: handleTranscription,
-      onError: (message) => showError(message),
-    });
+  const { isEnabled, isRecording, isTranscribing, toggleRecording } = useVoiceToText({
+    onTranscription: handleTranscription,
+    onError: (message) => showError(message),
+  });
 
   const [appSearchOpen, setAppSearchOpen] = useState(false);
   const { apps } = useLoadApps();
@@ -176,10 +171,7 @@ export function HomeChatInput({
           />
 
           {/* Attachments list */}
-          <AttachmentsList
-            attachments={attachments}
-            onRemove={removeAttachment}
-          />
+          <AttachmentsList attachments={attachments} onRemove={removeAttachment} />
 
           {/* Drag and drop overlay */}
           <DragDropOverlay isDraggingOver={isDraggingOver} />
@@ -222,12 +214,8 @@ export function HomeChatInput({
                     }
                     className={cn(
                       "px-2 py-2 mb-0.5 text-muted-foreground rounded-lg transition-colors duration-150 cursor-pointer disabled:cursor-default disabled:opacity-30",
-                      isRecording &&
-                        "text-red-500 hover:text-red-600 animate-pulse",
-                      !isRecording &&
-                        !isTranscribing &&
-                        isEnabled &&
-                        "hover:text-primary",
+                      isRecording && "text-red-500 hover:text-red-600 animate-pulse",
+                      !isRecording && !isTranscribing && isEnabled && "hover:text-primary",
                       !isEnabled && "opacity-40",
                     )}
                   />
@@ -264,9 +252,7 @@ export function HomeChatInput({
                 >
                   <StopCircleIcon size={20} />
                 </TooltipTrigger>
-                <TooltipContent>
-                  Cancel generation (unavailable here)
-                </TooltipContent>
+                <TooltipContent>Cancel generation (unavailable here)</TooltipContent>
               </Tooltip>
             ) : (
               <Tooltip>
@@ -274,10 +260,7 @@ export function HomeChatInput({
                   render={
                     <button
                       onClick={handleCustomSubmit}
-                      disabled={
-                        disabled ||
-                        (!inputValue.trim() && attachments.length === 0)
-                      }
+                      disabled={disabled || (!inputValue.trim() && attachments.length === 0)}
                       aria-label="Send message"
                       className={cn(
                         "px-2.5 py-2 mb-0.5 mr-1 rounded-md transition-colors duration-150",
@@ -338,18 +321,13 @@ export function HomeChatInput({
                     )}
                   </TooltipTrigger>
                   <TooltipContent>
-                    {selectedApp
-                      ? "Change selected app"
-                      : "Select an existing app"}
+                    {selectedApp ? "Change selected app" : "Select an existing app"}
                   </TooltipContent>
                 </Tooltip>
               )}
             </div>
 
-            <AuxiliaryActionsMenu
-              onFileSelect={handleFileSelect}
-              hideContextFilesPicker
-            />
+            <AuxiliaryActionsMenu onFileSelect={handleFileSelect} hideContextFilesPicker />
           </div>
         </div>
       </div>

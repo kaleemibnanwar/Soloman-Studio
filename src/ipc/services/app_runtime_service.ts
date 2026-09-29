@@ -12,10 +12,7 @@ import { getAppPort, getAppProxyPort } from "../../../shared/ports";
 import { db } from "@/db";
 import { apps } from "@/db/schema";
 import { readSettings } from "@/main/settings";
-import {
-  shouldShowPnpmMinimumReleaseAgeWarning,
-  type RuntimeMode2,
-} from "@/lib/schemas";
+import { shouldShowPnpmMinimumReleaseAgeWarning, type RuntimeMode2 } from "@/lib/schemas";
 import type { AppRuntimeOutput } from "@/ipc/types/app_runtime";
 import type { AppRunInvocationRef } from "@/app_run/state";
 import {
@@ -24,10 +21,7 @@ import {
   invocationRegistryKey,
   sameInvocationRef,
 } from "@/state_machines/invocation_ref";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { addLog, clearLogs } from "@/lib/log_store";
 import { getOctopusStudioAppPath } from "@/paths/paths";
 import { startProxy } from "@/ipc/utils/start_proxy_server";
@@ -49,7 +43,7 @@ import {
   runningApps,
   stopAppByInfo,
   type RunningAppInfo,
-} from "@/ipc/utils/process_manager";
+} from "@/ipc/process/process_manager";
 import {
   appOperationCoordinator,
   readAppResource,
@@ -409,16 +403,14 @@ export async function ensureProxyForRunningApp({
   }
   if (
     invocationRef &&
-    (!appInfo.invocationRef ||
-      !sameInvocationRef(appInfo.invocationRef, invocationRef))
+    (!appInfo.invocationRef || !sameInvocationRef(appInfo.invocationRef, invocationRef))
   ) {
     // Producer callbacks are bound to their spawned process's ref. Reject an
     // old callback before it can terminate or replace the current proxy.
     return;
   }
 
-  const proxyAuthToken =
-    mode === "cloud" ? appInfo.cloudPreviewAuthToken : undefined;
+  const proxyAuthToken = mode === "cloud" ? appInfo.cloudPreviewAuthToken : undefined;
 
   if (
     appInfo.proxyWorker &&
@@ -559,10 +551,7 @@ async function executeAppLocalNode({
   if (!spawnedProcess.pid) {
     let errorOutput = "";
     let spawnErr: any | null = null;
-    spawnedProcess.stderr?.on(
-      "data",
-      (data) => (errorOutput += data.toString()),
-    );
+    spawnedProcess.stderr?.on("data", (data) => (errorOutput += data.toString()));
     await new Promise<void>((resolve) => {
       spawnedProcess.once("error", (err) => {
         spawnErr = err;
@@ -576,9 +565,7 @@ async function executeAppLocalNode({
       spawnErr?.errno ? `errno=${spawnErr.errno}` : null,
       spawnErr?.syscall ? `syscall=${spawnErr.syscall}` : null,
       spawnErr?.path ? `path=${spawnErr.path}` : null,
-      spawnErr?.spawnargs
-        ? `spawnargs=${JSON.stringify(spawnErr.spawnargs)}`
-        : null,
+      spawnErr?.spawnargs ? `spawnargs=${JSON.stringify(spawnErr.spawnargs)}` : null,
     ]
       .filter(Boolean)
       .join(", ");
@@ -714,8 +701,7 @@ export function registerCloudSandboxSyncUpdateListener(): void {
       return;
     }
 
-    const recoveredMessage =
-      "Cloud sandbox sync recovered. Local changes are uploading again.";
+    const recoveredMessage = "Cloud sandbox sync recovered. Local changes are uploading again.";
 
     addLog({
       level: "info",
@@ -783,16 +769,12 @@ function listenToProcess({
     if (!onPnpmIgnoredBuildsFailure) {
       return;
     }
-    processOutput = (processOutput + message).slice(
-      -MAX_PROCESS_OUTPUT_TAIL_LENGTH,
-    );
+    processOutput = (processOutput + message).slice(-MAX_PROCESS_OUTPUT_TAIL_LENGTH);
   };
   spawnedProcess.stdout?.on("data", async (data) => {
     const message = util.stripVTControlCharacters(data.toString());
     appendProcessOutput(message);
-    logger.debug(
-      `App ${appId} (PID: ${spawnedProcess.pid}) stdout: ${message}`,
-    );
+    logger.debug(`App ${appId} (PID: ${spawnedProcess.pid}) stdout: ${message}`);
 
     addLog({
       level: "info",
@@ -824,9 +806,7 @@ function listenToProcess({
         appId,
       });
 
-      const urlMatch = message.match(
-        /(https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]):\d+\/?)/,
-      );
+      const urlMatch = message.match(/(https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]):\d+\/?)/);
       if (urlMatch) {
         const originalUrl = preferredOriginalUrl ?? urlMatch[1];
         // The dev-server URL appearing means the install phase completed
@@ -850,9 +830,7 @@ function listenToProcess({
   spawnedProcess.stderr?.on("data", async (data) => {
     const message = util.stripVTControlCharacters(data.toString());
     appendProcessOutput(message);
-    logger.error(
-      `App ${appId} (PID: ${spawnedProcess.pid}) stderr: ${message}`,
-    );
+    logger.error(`App ${appId} (PID: ${spawnedProcess.pid}) stderr: ${message}`);
 
     addLog({
       level: "error",
@@ -882,19 +860,12 @@ function listenToProcess({
           return;
         }
 
-        if (
-          code !== 0 &&
-          onPnpmIgnoredBuildsFailure &&
-          isPnpmIgnoredBuildsError(processOutput)
-        ) {
+        if (code !== 0 && onPnpmIgnoredBuildsFailure && isPnpmIgnoredBuildsError(processOutput)) {
           let retried = false;
           try {
             retried = await onPnpmIgnoredBuildsFailure(processOutput);
           } catch (error) {
-            logger.warn(
-              `Failed to self-heal pnpm ignored builds for app ${appId}:`,
-              error,
-            );
+            logger.warn(`Failed to self-heal pnpm ignored builds for app ${appId}:`, error);
           }
           if (retried) {
             return;
@@ -914,19 +885,14 @@ function listenToProcess({
       } catch (error) {
         // The close handler is a critical lifecycle point; never let an
         // unexpected error leave a stale runningApps entry behind.
-        logger.error(
-          `Unexpected error in close handler for app ${appId}:`,
-          error,
-        );
+        logger.error(`Unexpected error in close handler for app ${appId}:`, error);
         removeAppIfCurrentProcess(appId, spawnedProcess);
       }
     })();
   });
 
   spawnedProcess.on("error", (err) => {
-    logger.error(
-      `Error in app ${appId} (PID: ${spawnedProcess.pid}) process: ${err.message}`,
-    );
+    logger.error(`Error in app ${appId} (PID: ${spawnedProcess.pid}) process: ${err.message}`);
     removeAppIfCurrentProcess(appId, spawnedProcess);
   });
 }
@@ -1025,9 +991,7 @@ async function executeAppInDocker({
       stopContainer.on("error", () => resolve());
     });
   } catch (error) {
-    logger.info(
-      `Docker container ${containerName} not found. Ignoring error: ${error}`,
-    );
+    logger.info(`Docker container ${containerName} not found. Ignoring error: ${error}`);
   }
 
   const dockerfilePath = path.join(appPath, "Dockerfile.octopusStudio");
@@ -1051,14 +1015,7 @@ RUN npm install -g pnpm
 
   const buildProcess = spawn(
     "docker",
-    [
-      "build",
-      "-f",
-      "Dockerfile.octopusStudio",
-      "-t",
-      `octopus-studio-app-${appId}`,
-      ".",
-    ],
+    ["build", "-f", "Dockerfile.octopusStudio", "-t", `octopus-studio-app-${appId}`, "."],
     {
       cwd: appPath,
       stdio: "pipe",
@@ -1139,9 +1096,7 @@ RUN npm install -g pnpm
       spawnErr?.errno ? `errno=${spawnErr.errno}` : null,
       spawnErr?.syscall ? `syscall=${spawnErr.syscall}` : null,
       spawnErr?.path ? `path=${spawnErr.path}` : null,
-      spawnErr?.spawnargs
-        ? `spawnargs=${JSON.stringify(spawnErr.spawnargs)}`
-        : null,
+      spawnErr?.spawnargs ? `spawnargs=${JSON.stringify(spawnErr.spawnargs)}` : null,
     ]
       .filter(Boolean)
       .join(", ");
@@ -1275,9 +1230,7 @@ async function executeAppInCloud({
   const resolvedPreviewUrl = previewUrl;
   const resolvedPreviewAuthToken = previewAuthToken;
   if (!sandboxId || !resolvedPreviewUrl || !resolvedPreviewAuthToken) {
-    throw new Error(
-      "Cloud sandbox startup returned incomplete preview credentials.",
-    );
+    throw new Error("Cloud sandbox startup returned incomplete preview credentials.");
   }
 
   const cloudLogAbortController = new AbortController();
@@ -1360,10 +1313,7 @@ export function startCloudSandboxLogStream(input: {
             }),
         );
       } catch (error) {
-        logger.warn(
-          "Failed to record ignored pnpm builds from cloud sandbox logs:",
-          error,
-        );
+        logger.warn("Failed to record ignored pnpm builds from cloud sandbox logs:", error);
       }
     })();
   };
@@ -1597,10 +1547,7 @@ const MAX_RUNTIME_CANCELLATION_TOMBSTONES = 1_000;
  */
 export class AppRuntimeService {
   private readonly externalClaims = new Map<string, ExternalAppRuntimeClaim>();
-  private readonly externalClaimsByApp = new Map<
-    number,
-    Map<string, ExternalAppRuntimeClaim>
-  >();
+  private readonly externalClaimsByApp = new Map<number, Map<string, ExternalAppRuntimeClaim>>();
   private readonly cancellationTombstones = new CancellationTombstones(
     MAX_RUNTIME_CANCELLATION_TOMBSTONES,
   );
@@ -1639,10 +1586,7 @@ export class AppRuntimeService {
         logger.error(`Error running app ${appId}:`, error);
         if (!processStarted) {
           const latest = this.dependencies.getRunningApp(appId);
-          if (
-            latest &&
-            latest.processId === this.dependencies.getProcessCounter()
-          ) {
+          if (latest && latest.processId === this.dependencies.getProcessCounter()) {
             this.dependencies.deleteRunningApp(appId);
           }
         }
@@ -1669,11 +1613,7 @@ export class AppRuntimeService {
       const appPath = this.dependencies.resolveAppPath(app.path);
       const appInfo = this.dependencies.getRunningApp(appId);
 
-      if (
-        appInfo?.mode === "cloud" &&
-        appInfo.cloudSandboxId &&
-        !recreateSandbox
-      ) {
+      if (appInfo?.mode === "cloud" && appInfo.cloudSandboxId && !recreateSandbox) {
         await this.restartCloudSandboxInPlace({
           appId,
           appPath,
@@ -1687,9 +1627,7 @@ export class AppRuntimeService {
       }
 
       if (appInfo) {
-        logger.log(
-          `Stopping app ${appId} (processId ${appInfo.processId}) before restart`,
-        );
+        logger.log(`Stopping app ${appId} (processId ${appInfo.processId}) before restart`);
         await this.dependencies.stopProcess(appId, appInfo);
       } else {
         logger.log(`App ${appId} not running. Proceeding to start.`);
@@ -1703,9 +1641,7 @@ export class AppRuntimeService {
           try {
             await this.dependencies.removeDockerVolumes(appId);
           } catch (error) {
-            logger.warn(
-              `Failed to remove Docker volumes for app ${appId}. Continuing: ${error}`,
-            );
+            logger.warn(`Failed to remove Docker volumes for app ${appId}. Continuing: ${error}`);
           }
         }
       }
@@ -1718,9 +1654,7 @@ export class AppRuntimeService {
   }
 
   async stop(appId: number): Promise<void> {
-    logger.log(
-      `Attempting to stop app ${appId}. Current running apps: ${runningApps.size}`,
-    );
+    logger.log(`Attempting to stop app ${appId}. Current running apps: ${runningApps.size}`);
     return this.dependencies.runSerialized(appId, "stop", async () => {
       const appInfo = this.dependencies.getRunningApp(appId);
       if (!appInfo) {
@@ -1729,10 +1663,7 @@ export class AppRuntimeService {
       }
 
       const { process, processId } = appInfo;
-      if (
-        process &&
-        (process.exitCode !== null || process.signalCode !== null)
-      ) {
+      if (process && (process.exitCode !== null || process.signalCode !== null)) {
         this.dependencies.deleteRunningApp(appId);
         return;
       }
@@ -1743,10 +1674,7 @@ export class AppRuntimeService {
           this.dependencies.removeCurrentProcess(appId, process);
         }
       } catch (error) {
-        logger.error(
-          `Error stopping app ${appId} (processId ${processId}):`,
-          error,
-        );
+        logger.error(`Error stopping app ${appId} (processId ${processId}):`, error);
         if (process) {
           this.dependencies.removeCurrentProcess(appId, process);
         } else if (appInfo.mode !== "cloud") {
@@ -1764,10 +1692,7 @@ export class AppRuntimeService {
     this.dependencies.clearLogs(appId);
   }
 
-  waitForReady(
-    appId: number,
-    options: { timeoutMs?: number } = {},
-  ): Promise<void> {
+  waitForReady(appId: number, options: { timeoutMs?: number } = {}): Promise<void> {
     return this.dependencies.waitForReady(appId, options.timeoutMs);
   }
 
@@ -1784,8 +1709,7 @@ export class AppRuntimeService {
   claimExternalLifecycle(
     options: ExternalAppRuntimeLifecycleOptions,
   ): ExternalAppRuntimeClaim | undefined {
-    const invocationRef =
-      options.invocationRef ?? this.createExternalLifecycleRef(options.appId);
+    const invocationRef = options.invocationRef ?? this.createExternalLifecycleRef(options.appId);
     if (this.cancellationTombstones.has(invocationRef)) {
       return undefined;
     }
@@ -1823,11 +1747,8 @@ export class AppRuntimeService {
     }
   }
 
-  async executeExternalLifecycle(
-    options: ExternalAppRuntimeLifecycleOptions,
-  ): Promise<void> {
-    const invocationRef =
-      options.invocationRef ?? this.createExternalLifecycleRef(options.appId);
+  async executeExternalLifecycle(options: ExternalAppRuntimeLifecycleOptions): Promise<void> {
+    const invocationRef = options.invocationRef ?? this.createExternalLifecycleRef(options.appId);
     if (options.abortSignal?.aborted) {
       this.cancelExternalLifecycle(invocationRef);
       throw new OctopusStudioError(
@@ -1887,10 +1808,7 @@ export class AppRuntimeService {
   private async requireApp(appId: number): Promise<RuntimeAppRecord> {
     const app = await this.dependencies.findApp(appId);
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
     return app;
   }
@@ -1953,13 +1871,8 @@ export class AppRuntimeService {
     error?: unknown,
     runtimeMayBeLive = false,
   ): void {
-    const active = this.externalClaims.get(
-      invocationRegistryKey(claim.invocationRef),
-    );
-    if (
-      active !== claim ||
-      this.cancellationTombstones.has(claim.invocationRef)
-    ) {
+    const active = this.externalClaims.get(invocationRegistryKey(claim.invocationRef));
+    if (active !== claim || this.cancellationTombstones.has(claim.invocationRef)) {
       return;
     }
     claim.output.send({

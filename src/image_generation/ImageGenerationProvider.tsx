@@ -30,9 +30,5 @@ export function ImageGenerationProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  return (
-    <ImageGenerationRequestScopeProvider>
-      {children}
-    </ImageGenerationRequestScopeProvider>
-  );
+  return <ImageGenerationRequestScopeProvider>{children}</ImageGenerationRequestScopeProvider>;
 }

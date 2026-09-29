@@ -5,87 +5,75 @@ import { eq, and, like, desc } from "drizzle-orm";
 import { createTypedHandler } from "./base";
 import { securityContracts } from "../types/security";
 import type { SecurityFinding } from "../types/security";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { createChatForApp } from "../utils/chat_creation_utils";
 import log from "electron-log";
 
 const logger = log.scope("security_handlers");
 
 export function registerSecurityHandlers() {
-  createTypedHandler(
-    securityContracts.getLatestSecurityReview,
-    async (_, appId) => {
-      if (!appId) {
-        throw new OctopusStudioError(
-          "App ID is required",
-          OctopusStudioErrorKind.Validation,
-        );
-      }
+  createTypedHandler(securityContracts.getLatestSecurityReview, async (_, appId) => {
+    if (!appId) {
+      throw new OctopusStudioError("App ID is required", OctopusStudioErrorKind.Validation);
+    }
 
-      // Query for the most recent message with security findings
-      // Use database filtering instead of loading all data into memory
-      const result = await db
-        .select({
-          content: messages.content,
-          createdAt: messages.createdAt,
-          chatId: messages.chatId,
-        })
-        .from(messages)
-        .innerJoin(chats, eq(messages.chatId, chats.id))
-        .where(
-          and(
-            eq(chats.appId, appId),
-            eq(messages.role, "assistant"),
-            like(messages.content, "%<octopus-studio-security-finding%"),
-          ),
-        )
-        .orderBy(desc(messages.createdAt), desc(messages.id))
-        .limit(1);
-
-      if (result.length === 0) {
-        throw new OctopusStudioError(
-          "No security review found for this app",
-          OctopusStudioErrorKind.NotFound,
-        );
-      }
-
-      const message = result[0];
-      const findings = parseSecurityFindings(message.content);
-
-      if (findings.length === 0) {
-        throw new OctopusStudioError(
-          "No security review found for this app",
-          OctopusStudioErrorKind.NotFound,
-        );
-      }
-
-      const existingFixChats = await db.query.security_fix_chats.findMany({
-        where: and(
-          eq(security_fix_chats.appId, appId),
-          eq(security_fix_chats.reviewChatId, message.chatId),
+    // Query for the most recent message with security findings
+    // Use database filtering instead of loading all data into memory
+    const result = await db
+      .select({
+        content: messages.content,
+        createdAt: messages.createdAt,
+        chatId: messages.chatId,
+      })
+      .from(messages)
+      .innerJoin(chats, eq(messages.chatId, chats.id))
+      .where(
+        and(
+          eq(chats.appId, appId),
+          eq(messages.role, "assistant"),
+          like(messages.content, "%<octopus-studio-security-finding%"),
         ),
-        columns: { findingKey: true, fixChatId: true },
-      });
-      const fixChatIdByFindingKey = new Map(
-        existingFixChats.map(({ findingKey, fixChatId }) => [
-          findingKey,
-          fixChatId,
-        ]),
-      );
+      )
+      .orderBy(desc(messages.createdAt), desc(messages.id))
+      .limit(1);
 
-      return {
-        findings: findings.map((finding) => ({
-          ...finding,
-          fixChatId: fixChatIdByFindingKey.get(computeFindingKey([finding])),
-        })),
-        timestamp: message.createdAt.toISOString(),
-        chatId: message.chatId,
-      };
-    },
-  );
+    if (result.length === 0) {
+      throw new OctopusStudioError(
+        "No security review found for this app",
+        OctopusStudioErrorKind.NotFound,
+      );
+    }
+
+    const message = result[0];
+    const findings = parseSecurityFindings(message.content);
+
+    if (findings.length === 0) {
+      throw new OctopusStudioError(
+        "No security review found for this app",
+        OctopusStudioErrorKind.NotFound,
+      );
+    }
+
+    const existingFixChats = await db.query.security_fix_chats.findMany({
+      where: and(
+        eq(security_fix_chats.appId, appId),
+        eq(security_fix_chats.reviewChatId, message.chatId),
+      ),
+      columns: { findingKey: true, fixChatId: true },
+    });
+    const fixChatIdByFindingKey = new Map(
+      existingFixChats.map(({ findingKey, fixChatId }) => [findingKey, fixChatId]),
+    );
+
+    return {
+      findings: findings.map((finding) => ({
+        ...finding,
+        fixChatId: fixChatIdByFindingKey.get(computeFindingKey([finding])),
+      })),
+      timestamp: message.createdAt.toISOString(),
+      chatId: message.chatId,
+    };
+  });
 
   createTypedHandler(
     securityContracts.getOrCreateSecurityFixChat,
@@ -192,13 +180,7 @@ function computeFindingKey(findings: SecurityFinding[]): string {
   const hashes = findings
     .map((finding) =>
       createHash("sha256")
-        .update(
-          JSON.stringify([
-            finding.title.trim(),
-            finding.level,
-            finding.description.trim(),
-          ]),
-        )
+        .update(JSON.stringify([finding.title.trim(), finding.level, finding.description.trim()]))
         .digest("hex"),
     )
     .sort();

@@ -14,28 +14,20 @@ const RESYNC_TIMEOUT_MS = 10_000;
  * Falls back to the DB version otherwise, including when live content is longer
  * but has a wrong prefix (corrupted base that caused the patch failure).
  */
-export function mergeResyncMessages(
-  dbMessages: Message[],
-  prevMessages: Message[],
-): Message[] {
+export function mergeResyncMessages(dbMessages: Message[], prevMessages: Message[]): Message[] {
   return dbMessages.map((dbMsg) => {
     const live = prevMessages.find((m) => m.id === dbMsg.id);
     if (!live) return dbMsg;
     const dbContent = dbMsg.content ?? "";
     const liveContent = live.content ?? "";
-    if (
-      liveContent.length > dbContent.length &&
-      liveContent.startsWith(dbContent)
-    ) {
+    if (liveContent.length > dbContent.length && liveContent.startsWith(dbContent)) {
       return live;
     }
     return dbMsg;
   });
 }
 
-type SetMessagesById = (
-  update: (prev: Map<number, Message[]>) => Map<number, Message[]>,
-) => void;
+type SetMessagesById = (update: (prev: Map<number, Message[]>) => Map<number, Message[]>) => void;
 
 /**
  * Fetches the latest DB snapshot for a chat and writes it into the atom.
@@ -96,8 +88,7 @@ export function triggerResync(
     ipc.chat.getChat(chatId),
     new Promise<never>((_, reject) => {
       timeoutId = setTimeout(
-        () =>
-          reject(new Error(`resync timed out after ${RESYNC_TIMEOUT_MS}ms`)),
+        () => reject(new Error(`resync timed out after ${RESYNC_TIMEOUT_MS}ms`)),
         RESYNC_TIMEOUT_MS,
       );
     }),
@@ -110,24 +101,17 @@ export function triggerResync(
       setMessagesById((prev) => {
         const prevMessages = prev.get(chatId);
         // A newer stream added messages while the fetch was in flight; skip.
-        if (prevMessages && prevMessages.length > chat.messages.length)
-          return prev;
+        if (prevMessages && prevMessages.length > chat.messages.length) return prev;
         const next = new Map(prev);
         next.set(
           chatId,
-          prevMessages
-            ? mergeResyncMessages(chat.messages, prevMessages)
-            : chat.messages,
+          prevMessages ? mergeResyncMessages(chat.messages, prevMessages) : chat.messages,
         );
         return next;
       });
     })
     .catch((err) => {
-      console.warn(
-        "[CHAT] Streaming resync fetch failed for chat",
-        chatId,
-        err,
-      );
+      console.warn("[CHAT] Streaming resync fetch failed for chat", chatId, err);
     })
     .finally(() => {
       clearTimeout(timeoutId);

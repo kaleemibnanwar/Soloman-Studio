@@ -22,8 +22,7 @@ export function AutoUpdateSwitch() {
         onCheckedChange={(checked) => {
           updateSettings({ enableAutoUpdate: checked });
           toast("Auto-update settings changed", {
-            description:
-              "You will need to restart OctopusStudio for your settings to take effect.",
+            description: "You will need to restart OctopusStudio for your settings to take effect.",
             action: {
               label: "Restart OctopusStudio",
               onClick: () => {

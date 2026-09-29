@@ -59,11 +59,7 @@ function buildAssertionsPrompt(
  * the user ends up, not just the tab they started on. The same goes for the
  * post-stop review: its parked draft is reachable from nowhere else.
  */
-export function RecordingBannerHost({
-  recorder,
-}: {
-  recorder: TestRecorderController;
-}) {
+export function RecordingBannerHost({ recorder }: { recorder: TestRecorderController }) {
   const annotatorMode = useAtomValue(annotatorModeAtom);
   const previewMode = useAtomValue(previewModeAtom);
 
@@ -78,11 +74,7 @@ export function RecordingBannerHost({
   return <ActiveRecordingBanner recorder={recorder} />;
 }
 
-function ActiveRecordingBanner({
-  recorder,
-}: {
-  recorder: TestRecorderController;
-}) {
+function ActiveRecordingBanner({ recorder }: { recorder: TestRecorderController }) {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const selectedChatId = useAtomValue(selectedChatIdAtom);
   const { streamMessage } = useStreamChat();
@@ -103,11 +95,7 @@ function ActiveRecordingBanner({
       return;
     }
     const requestAppId = selectedAppId;
-    const prompt = buildAssertionsPrompt(
-      draft.testName,
-      draft.draftId,
-      recorder.draftSteps,
-    );
+    const prompt = buildAssertionsPrompt(draft.testName, draft.draftId, recorder.draftSteps);
     // The recording travels in the message, so a long enough one can't be sent
     // at all — 5,000 actions is the recorder's cap and a single `fill` carries
     // up to 10,000 characters of value. `streamMessage` would refuse it anyway,
@@ -143,8 +131,7 @@ function ActiveRecordingBanner({
       // above: a turn about a recording the user has since discarded and
       // replaced must not stop the spinner belonging to its replacement.
       onSettled: () => {
-        if (requestAppId != null)
-          recorder.clearAwaitingAssertions(requestAppId, draft.draftId);
+        if (requestAppId != null) recorder.clearAwaitingAssertions(requestAppId, draft.draftId);
       },
     });
     showInfo("Sent to chat — asking the AI for assertions…");
@@ -162,10 +149,7 @@ function ActiveRecordingBanner({
 
   return (
     <>
-      <RecordingBanner
-        recorder={recorder}
-        onGenerateAssertions={handleGenerateAssertions}
-      />
+      <RecordingBanner recorder={recorder} onGenerateAssertions={handleGenerateAssertions} />
       <AgentModeRequiredDialog
         open={assertionsNeedAgentMode}
         onOpenChange={setAssertionsNeedAgentMode}

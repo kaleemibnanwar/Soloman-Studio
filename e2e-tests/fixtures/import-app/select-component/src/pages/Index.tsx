@@ -28,8 +28,7 @@ const Index = () => {
           Launch Your Next Project
         </h1>
         <p className="text-xl text-muted-foreground mb-8 text-center max-w-xl">
-          A simple, modern landing page template built with React, shadcn/ui,
-          and Tailwind CSS.
+          A simple, modern landing page template built with React, shadcn/ui, and Tailwind CSS.
         </p>
         <Button size="lg" className="px-8 py-6 text-lg">
           Get Started
@@ -46,9 +45,7 @@ const Index = () => {
                 className="flex flex-col items-center text-center bg-card rounded-lg p-6 shadow-sm"
               >
                 {feature.icon}
-                <h3 className="text-lg font-semibold mb-2 text-foreground">
-                  {feature.title}
-                </h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}

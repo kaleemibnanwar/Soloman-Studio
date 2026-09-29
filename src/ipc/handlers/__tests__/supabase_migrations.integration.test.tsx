@@ -11,10 +11,7 @@ import { execFileSync } from "node:child_process";
 import { screen, waitFor } from "@testing-library/react";
 
 import { readSettings, writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { isIpcInvokeEnvelope, unwrapIpcEnvelope } from "@/ipc/contracts/core";
 import type { ApproveProposalResult, ProposalResult } from "@/ipc/types";
@@ -31,25 +28,19 @@ function makeEvent(sink: SentEvent[] = []) {
       mainFrame: frame,
       isDestroyed: () => false,
       isCrashed: () => false,
-      send: (channel: string, payload: unknown) =>
-        sink.push({ channel, payload }),
+      send: (channel: string, payload: unknown) => sink.push({ channel, payload }),
     },
     senderFrame: frame,
   };
 }
 
-async function invoke<T = unknown>(
-  channel: string,
-  params?: unknown,
-): Promise<T> {
+async function invoke<T = unknown>(channel: string, params?: unknown): Promise<T> {
   const handler = h.ipcHandlers.get(channel);
   if (!handler) {
     throw new Error(`No handler registered for ${channel}`);
   }
   const response = await handler(makeEvent(), params);
-  return (
-    isIpcInvokeEnvelope(response) ? unwrapIpcEnvelope(response) : response
-  ) as T;
+  return (isIpcInvokeEnvelope(response) ? unwrapIpcEnvelope(response) : response) as T;
 }
 
 describe("supabase migrations (integration)", () => {
@@ -76,9 +67,7 @@ describe("supabase migrations (integration)", () => {
     send();
     await harness.waitForStreamEnd(harness.chatId, 60_000);
     expect(
-      harness.bridge.sentEvents.filter(
-        (event) => event.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((event) => event.channel === "chat:response:error"),
     ).toHaveLength(0);
   }
 
@@ -120,10 +109,7 @@ describe("supabase migrations (integration)", () => {
     let files = migrationFiles();
     expect(files[0]).toMatch(/0000_create_users_table\.sql/);
     expect(
-      fs.readFileSync(
-        path.join(harness.appDir, "supabase", "migrations", files[0]),
-        "utf8",
-      ),
+      fs.readFileSync(path.join(harness.appDir, "supabase", "migrations", files[0]), "utf8"),
     ).toBe("CREATE TABLE users (id serial primary key);");
     expect(gitStatus()).toBe("");
 
@@ -139,23 +125,17 @@ describe("supabase migrations (integration)", () => {
       content: "DROP TABLE users;",
       description: undefined,
     });
-    const approvalResult = await invoke<ApproveProposalResult>(
-      "approve-proposal",
-      {
-        chatId: harness.chatId,
-        messageId: proposalResult.messageId,
-      },
-    );
+    const approvalResult = await invoke<ApproveProposalResult>("approve-proposal", {
+      chatId: harness.chatId,
+      messageId: proposalResult.messageId,
+    });
     expect(approvalResult.success).toBe(true);
     await waitFor(() => expect(migrationFiles()).toHaveLength(2));
 
     files = migrationFiles();
     expect(files[1]).toMatch(/0001_\w+_\w+_\w+\.sql/);
     expect(
-      fs.readFileSync(
-        path.join(harness.appDir, "supabase", "migrations", files[1]),
-        "utf8",
-      ),
+      fs.readFileSync(path.join(harness.appDir, "supabase", "migrations", files[1]), "utf8"),
     ).toBe("DROP TABLE users;");
   }, 60_000);
 });

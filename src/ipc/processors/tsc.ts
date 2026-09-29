@@ -2,19 +2,13 @@ import { createHash } from "node:crypto";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type { Problem, ProblemReport } from "@/ipc/types";
 import log from "electron-log";
 import { getTypeScriptCachePath } from "@/paths/paths";
 import { getPackageManagerCommandEnv } from "@/ipc/utils/socket_firewall";
 import { prependPathSegment } from "@/ipc/utils/managed_tools";
-import {
-  runBufferedProcess,
-  type BufferedProcessResult,
-} from "@/ipc/utils/buffered_process";
+import { runBufferedProcess, type BufferedProcessResult } from "@/ipc/process/buffered_process";
 import {
   isMissingPathError,
   resolveTypeScriptPackageJsonPath,
@@ -25,9 +19,7 @@ export { isMissingPathError } from "../../../shared/node_module_resolution";
 
 const logger = log.scope("tsc");
 
-export type TypeCheckPreconditionKind =
-  | "typescript-not-found"
-  | "tsconfig-not-found";
+export type TypeCheckPreconditionKind = "typescript-not-found" | "tsconfig-not-found";
 
 export class TypeCheckPreconditionError extends OctopusStudioError {
   readonly typeCheckKind: TypeCheckPreconditionKind;
@@ -68,15 +60,12 @@ export function getTypeCheckPreconditionKind(
     return error.typeCheckKind;
   }
 
-  const message =
-    error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
 
   return getStringMatchedTypeCheckPreconditionKind(message);
 }
 
-async function packageJsonDeclaresTypeScript(
-  appPath: string,
-): Promise<boolean> {
+async function packageJsonDeclaresTypeScript(appPath: string): Promise<boolean> {
   try {
     const raw = await fs.readFile(path.join(appPath, "package.json"), "utf8");
     const parsed = JSON.parse(raw) as {
@@ -125,18 +114,13 @@ export async function getTypeCheckPreconditionGuidance({
     : "Type checking is unavailable: this project does not use TypeScript (no `typescript` entry in package.json). Add TypeScript to enable type checking.";
 }
 
-export function toProblemReportError(
-  error: unknown,
-  errorKind?: TypeCheckPreconditionKind,
-): Error {
+export function toProblemReportError(error: unknown, errorKind?: TypeCheckPreconditionKind): Error {
   if (error instanceof OctopusStudioError) {
     return error;
   }
 
-  const message =
-    error instanceof Error ? error.message : String(error ?? "Unknown error");
-  const typeCheckKind =
-    errorKind ?? getStringMatchedTypeCheckPreconditionKind(message);
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const typeCheckKind = errorKind ?? getStringMatchedTypeCheckPreconditionKind(message);
 
   if (typeCheckKind) {
     return new TypeCheckPreconditionError(typeCheckKind, message, {
@@ -181,10 +165,7 @@ function getPathApi(filePath: string): typeof path.posix | typeof path.win32 {
   return isWindowsPath(filePath) ? path.win32 : path.posix;
 }
 
-function isTypeScriptConfigDiagnostic(
-  problem: ParsedDiagnostic,
-  configPath: string,
-): boolean {
+function isTypeScriptConfigDiagnostic(problem: ParsedDiagnostic, configPath: string): boolean {
   const pathApi = getPathApi(problem.absoluteFilePath);
   const normalizedProblemPath = pathApi.normalize(problem.absoluteFilePath);
   const normalizedConfigPath = pathApi.normalize(configPath);
@@ -200,9 +181,7 @@ function isTypeScriptConfigDiagnostic(
     return true;
   }
 
-  return /^tsconfig(?:\..+)?\.json$/i.test(
-    pathApi.basename(normalizedProblemPath),
-  );
+  return /^tsconfig(?:\..+)?\.json$/i.test(pathApi.basename(normalizedProblemPath));
 }
 
 function isPathInside(rootPath: string, candidatePath: string): boolean {
@@ -210,9 +189,7 @@ function isPathInside(rootPath: string, candidatePath: string): boolean {
   const relative = pathApi.relative(rootPath, candidatePath);
   return (
     relative === "" ||
-    (!relative.startsWith(`..${pathApi.sep}`) &&
-      relative !== ".." &&
-      !pathApi.isAbsolute(relative))
+    (!relative.startsWith(`..${pathApi.sep}`) && relative !== ".." && !pathApi.isAbsolute(relative))
   );
 }
 
@@ -233,9 +210,7 @@ function parseTypeScriptDiagnosticsDetailed(
     const match = rawLine.match(/^(.*)\((\d+),(\d+)\): error TS(\d+):\s*(.*)$/);
     if (match) {
       const reportedPath = match[1];
-      const pathApi = getPathApi(
-        isWindowsPath(reportedPath) ? reportedPath : appPath,
-      );
+      const pathApi = getPathApi(isWindowsPath(reportedPath) ? reportedPath : appPath);
       const absoluteFilePath = pathApi.isAbsolute(reportedPath)
         ? pathApi.normalize(reportedPath)
         : pathApi.resolve(appPath, reportedPath);
@@ -288,9 +263,7 @@ function parseTypeScriptDiagnosticsDetailed(
 
   if (problems.length === 0) {
     if (skippedLines.length > 0) {
-      throw new Error(
-        `Unrecognized TypeScript diagnostic output: ${skippedLines[0]}`,
-      );
+      throw new Error(`Unrecognized TypeScript diagnostic output: ${skippedLines[0]}`);
     }
     throw new Error("TypeScript exited with no parseable file diagnostics");
   }
@@ -303,14 +276,10 @@ export function parseTypeScriptDiagnostics(
   appPath: string,
   configPath?: string,
 ): ParsedDiagnostic[] {
-  return parseTypeScriptDiagnosticsDetailed(output, appPath, configPath)
-    .problems;
+  return parseTypeScriptDiagnosticsDetailed(output, appPath, configPath).problems;
 }
 
-async function addSnippets(
-  problems: ParsedDiagnostic[],
-  appPath: string,
-): Promise<ProblemReport> {
+async function addSnippets(problems: ParsedDiagnostic[], appPath: string): Promise<ProblemReport> {
   const withSnippets = await Promise.all(
     problems.map(async ({ absoluteFilePath, ...problem }) => {
       if (!isPathInside(appPath, absoluteFilePath)) {
@@ -318,9 +287,7 @@ async function addSnippets(
       }
 
       try {
-        const lines = (await fs.readFile(absoluteFilePath, "utf8")).split(
-          /\r?\n/,
-        );
+        const lines = (await fs.readFile(absoluteFilePath, "utf8")).split(/\r?\n/);
         const lineIndex = problem.line - 1;
         if (lineIndex < 0 || lineIndex >= lines.length) {
           return problem;
@@ -329,9 +296,7 @@ async function addSnippets(
         if (lineIndex > 0) {
           snippetLines.push(lines[lineIndex - 1]);
         }
-        snippetLines.push(
-          `${lines[lineIndex]} // <-- TypeScript compiler error here`,
-        );
+        snippetLines.push(`${lines[lineIndex]} // <-- TypeScript compiler error here`);
         if (lineIndex + 1 < lines.length) {
           snippetLines.push(lines[lineIndex + 1]);
         }
@@ -445,10 +410,7 @@ async function runCli(
   });
 }
 
-async function getTypeScriptVersion(
-  cli: TypeScriptCli,
-  appPath: string,
-): Promise<string> {
+async function getTypeScriptVersion(cli: TypeScriptCli, appPath: string): Promise<string> {
   const realEntryPath = await fs.realpath(cli.entryPath);
   const stats = await fs.stat(realEntryPath);
   const cacheKey = `${realEntryPath}:${stats.mtimeMs}`;
@@ -471,9 +433,7 @@ async function getTypeScriptVersion(
   }
   const match = result.stdout.trim().match(/^Version\s+(.+)$/);
   if (!match) {
-    throw new Error(
-      `Unexpected output from local TypeScript --version: ${result.stdout.trim()}`,
-    );
+    throw new Error(`Unexpected output from local TypeScript --version: ${result.stdout.trim()}`);
   }
   versionCache.set(cacheKey, match[1]);
   return match[1];
@@ -488,17 +448,11 @@ function getBuildInfoPath({
   configPath: string;
   version: string;
 }): string {
-  const key = createHash("sha256")
-    .update(`${appPath}\0${configPath}\0${version}`)
-    .digest("hex");
+  const key = createHash("sha256").update(`${appPath}\0${configPath}\0${version}`).digest("hex");
   return path.join(getTypeScriptCachePath(), `${key}.tsbuildinfo`);
 }
 
-export async function runTypeScriptCheck({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<ProblemReport> {
+export async function runTypeScriptCheck({ appPath }: { appPath: string }): Promise<ProblemReport> {
   return typescriptUtilityProcessScheduler.runExclusive("tsc", async () => {
     try {
       const cli = await resolveTypeScriptCli(appPath);
@@ -544,9 +498,7 @@ export async function runTypeScriptCheck({
         );
       }
       if (result.stdoutTruncated || result.stderrTruncated) {
-        throw new Error(
-          `TypeScript diagnostic output exceeded ${TSC_MAX_OUTPUT_BYTES} bytes`,
-        );
+        throw new Error(`TypeScript diagnostic output exceeded ${TSC_MAX_OUTPUT_BYTES} bytes`);
       }
       if (result.code === 0) {
         return { problems: [], outcome: "passed" };
@@ -556,15 +508,9 @@ export async function runTypeScriptCheck({
       }
 
       const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
-      const parsed = parseTypeScriptDiagnosticsDetailed(
-        output,
-        appPath,
-        configPath,
-      );
+      const parsed = parseTypeScriptDiagnosticsDetailed(output, appPath, configPath);
       if (parsed.skippedLines.length > 0) {
-        const preview = parsed.skippedLines
-          .slice(0, 3)
-          .map((line) => line.slice(0, 300));
+        const preview = parsed.skippedLines.slice(0, 3).map((line) => line.slice(0, 300));
         logger.warn(
           `Ignored ${parsed.skippedLines.length} unrecognized line(s) after parsing TypeScript diagnostics:`,
           preview,

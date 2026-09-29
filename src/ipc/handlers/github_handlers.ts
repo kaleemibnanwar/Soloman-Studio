@@ -21,14 +21,11 @@ import {
   GitStateError,
   GIT_ERROR_CODES,
   isMissingRemoteBranchError,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 import { gitService } from "../services/git_service";
 import * as schema from "../../db/schema";
 import fs from "node:fs";
-import {
-  getOctopusStudioAppPath,
-  isAppLocationAccessible,
-} from "../../paths/paths";
+import { getOctopusStudioAppPath, isAppLocationAccessible } from "../../paths/paths";
 import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
@@ -39,21 +36,12 @@ import path from "node:path";
 import { createTypedHandler } from "./base";
 import { githubContracts } from "../types/github";
 import type { CloneRepoParams, CloneRepoResult } from "../types/github";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import {
-  sanitizeAppDisplayName,
-  slugifyAppFolderName,
-} from "@/shared/app_names";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { sanitizeAppDisplayName, slugifyAppFolderName } from "@/shared/app_names";
 import { slugifyAppPath } from "@/shared/slugify";
 import { resolveUniqueFolderName } from "../utils/app_name_resolution";
 import { withLock } from "../utils/lock_utils";
-import {
-  isComponentTaggerUpgradeNeeded,
-  applyComponentTagger,
-} from "../utils/app_upgrade_utils";
+import { isComponentTaggerUpgradeNeeded, applyComponentTagger } from "../utils/app_upgrade_utils";
 import {
   connectionFlowRegistry,
   registerConnectionFlowProvider,
@@ -100,15 +88,11 @@ function getGitHubAccessTokenUrl() {
 }
 
 function getGitHubApiBase() {
-  return isGitHubTestBuild()
-    ? `${getGitHubTestServerBase()}/github/api`
-    : "https://api.github.com";
+  return isGitHubTestBuild() ? `${getGitHubTestServerBase()}/github/api` : "https://api.github.com";
 }
 
 function getGitHubGitBase() {
-  return isGitHubTestBuild()
-    ? `${getGitHubTestServerBase()}/github/git`
-    : "https://github.com";
+  return isGitHubTestBuild() ? `${getGitHubTestServerBase()}/github/git` : "https://github.com";
 }
 
 const GITHUB_SCOPES = "repo,user,workflow"; // Define the scopes needed
@@ -178,10 +162,7 @@ export async function prepareLocalBranch({
 }) {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
   const appPath = getOctopusStudioAppPath(app.path);
   const targetBranch = branch || "main";
@@ -233,8 +214,7 @@ export async function prepareLocalBranch({
       try {
         const commitHash = await gitService.stageAllAndCommit({
           path: appPath,
-          message:
-            "chore: auto-commit local changes before connecting to GitHub",
+          message: "chore: auto-commit local changes before connecting to GitHub",
         });
         logger.info(
           `[GitHub Handler] Auto-committed local changes (${commitHash}) before preparing branch '${targetBranch}'.`,
@@ -290,8 +270,7 @@ export async function prepareLocalBranch({
     logger.error("[GitHub Handler] Failed to prepare local branch:", gitError);
     if (gitError instanceof OctopusStudioError) throw gitError;
     const errorMessage =
-      gitError?.message ||
-      "Failed to prepare local branch for the connected repository.";
+      gitError?.message || "Failed to prepare local branch for the connected repository.";
     throw new Error(errorMessage);
   }
 }
@@ -403,9 +382,7 @@ async function pollForAccessToken(invocationRef: ConnectionFlowInvocationRef) {
           );
           break;
         default:
-          logger.error(
-            `Unknown GitHub error: ${data.error_description || data.error}`,
-          );
+          logger.error(`Unknown GitHub error: ${data.error_description || data.error}`);
           connectionFlowRegistry.fail(
             "github",
             invocationRef,
@@ -483,9 +460,7 @@ async function startGithubDeviceFlow({
     });
     if (!res.ok) {
       const errData = (await res.json()) as any;
-      throw new Error(
-        `GitHub API Error: ${errData.error_description || res.statusText}`,
-      );
+      throw new Error(`GitHub API Error: ${errData.error_description || res.statusText}`);
     }
     const data = (await res.json()) as {
       device_code: string;
@@ -506,23 +481,16 @@ async function startGithubDeviceFlow({
 
     // The flow may have been cancelled while the device code request was in
     // flight; markPrepared is then ignored by the machine and we stand down.
-    const prepared = connectionFlowRegistry.markPrepared(
-      "github",
-      invocationRef,
-      {
-        userCode: data.user_code,
-        verificationUri: data.verification_uri,
-      },
-    );
+    const prepared = connectionFlowRegistry.markPrepared("github", invocationRef, {
+      userCode: data.user_code,
+      verificationUri: data.verification_uri,
+    });
     if (!prepared) {
       cleanupDeviceFlow(invocationRef);
       return;
     }
 
-    record.timeoutId = setTimeout(
-      () => pollForAccessToken(invocationRef),
-      record.interval * 1000,
-    );
+    record.timeoutId = setTimeout(() => pollForAccessToken(invocationRef), record.interval * 1000);
   } catch (error: any) {
     logger.error("Error initiating GitHub device flow:", error);
     connectionFlowRegistry.fail(
@@ -543,28 +511,20 @@ async function handleListGithubRepos(): Promise<
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with GitHub.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
     }
 
     // Fetch user's repositories
-    const response = await fetch(
-      `${getGitHubApiBase()}/user/repos?per_page=100&sort=updated`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
+    const response = await fetch(`${getGitHubApiBase()}/user/repos?per_page=100&sort=updated`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = (await response.json()) as any;
-      throw new Error(
-        `GitHub API error: ${errorData.message || response.statusText}`,
-      );
+      throw new Error(`GitHub API error: ${errorData.message || response.statusText}`);
     }
 
     const repos = (await response.json()) as any[];
@@ -590,28 +550,20 @@ async function handleGetRepoBranches(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with GitHub.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
     }
 
     // Fetch repository branches
-    const response = await fetch(
-      `${getGitHubApiBase()}/repos/${owner}/${repo}/branches`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
+    const response = await fetch(`${getGitHubApiBase()}/repos/${owner}/${repo}/branches`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = (await response.json()) as any;
-      throw new Error(
-        `GitHub API error: ${errorData.message || response.statusText}`,
-      );
+      throw new Error(`GitHub API error: ${errorData.message || response.statusText}`);
     }
 
     const branches = (await response.json()) as any[];
@@ -670,22 +622,14 @@ async function handleIsRepoAvailable(
 // --- GitHub Create Repo Handler ---
 export async function handleCreateRepo(
   event: IpcMainInvokeEvent,
-  {
-    org,
-    repo,
-    appId,
-    branch,
-  }: { org: string; repo: string; appId: number; branch?: string },
+  { org, repo, appId, branch }: { org: string; repo: string; appId: number; branch?: string },
 ): Promise<void> {
   const app = await db.query.apps.findFirst({
     columns: { id: true },
     where: eq(apps.id, appId),
   });
   if (!app) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
 
   // Normalize the repo name to match GitHub's automatic normalization
@@ -696,10 +640,7 @@ export async function handleCreateRepo(
   const settings = readSettings();
   const accessToken = settings.githubAccessToken?.value;
   if (!accessToken) {
-    throw new OctopusStudioError(
-      "Not authenticated with GitHub.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
   }
   // If org is empty, create for the authenticated user
   let owner = org;
@@ -758,8 +699,7 @@ export async function handleCreateRepo(
       logger.error("Failed to parse GitHub API error response:", {
         status: res.status,
         statusText: res.statusText,
-        jsonError:
-          jsonError instanceof Error ? jsonError.message : String(jsonError),
+        jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
       });
       errorMessage = `GitHub API error: ${res.status} ${res.statusText}`;
     }
@@ -792,40 +732,27 @@ export async function handleCreateRepo(
 // --- GitHub Connect to Existing Repo Handler ---
 export async function handleConnectToExistingRepo(
   event: IpcMainInvokeEvent,
-  {
-    owner,
-    repo,
-    branch,
-    appId,
-  }: { owner: string; repo: string; branch: string; appId: number },
+  { owner, repo, branch, appId }: { owner: string; repo: string; branch: string; appId: number },
 ): Promise<void> {
   try {
     // Get access token from settings
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with GitHub.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
     }
 
     // Verify the repository exists and user has access
-    const repoResponse = await fetch(
-      `${getGitHubApiBase()}/repos/${owner}/${repo}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
+    const repoResponse = await fetch(`${getGitHubApiBase()}/repos/${owner}/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
       },
-    );
+    });
 
     if (!repoResponse.ok) {
       const errorData = (await repoResponse.json()) as { message?: string };
-      throw new Error(
-        `Repository not found or access denied: ${errorData.message}`,
-      );
+      throw new Error(`Repository not found or access denied: ${errorData.message}`);
     }
 
     // Set up remote URL before preparing branch (credentials are never
@@ -866,10 +793,7 @@ export async function handlePushToGithub(
   const settings = readSettings();
   const accessToken = settings.githubAccessToken?.value;
   if (!accessToken) {
-    throw new OctopusStudioError(
-      "Not authenticated with GitHub.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
   }
 
   // Get app info from DB
@@ -957,10 +881,7 @@ export async function handleRebaseFromGithub(
   const settings = readSettings();
   const accessToken = settings.githubAccessToken?.value;
   if (!accessToken) {
-    throw new OctopusStudioError(
-      "Not authenticated with GitHub.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
@@ -1035,10 +956,7 @@ async function handleListCollaborators(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with GitHub.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
@@ -1060,9 +978,7 @@ async function handleListCollaborators(
     );
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to list collaborators: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`Failed to list collaborators: ${response.status} ${response.statusText}`);
     }
 
     const collaborators = (await response.json()) as any[];
@@ -1086,10 +1002,7 @@ async function handleInviteCollaborator(
     // Validate username
     const trimmedUsername = username.trim();
     if (!trimmedUsername) {
-      throw new OctopusStudioError(
-        "Username cannot be empty.",
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError("Username cannot be empty.", OctopusStudioErrorKind.External);
     }
     if (trimmedUsername.length > 39) {
       throw new OctopusStudioError(
@@ -1116,10 +1029,7 @@ async function handleInviteCollaborator(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with GitHub.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
@@ -1148,8 +1058,7 @@ async function handleInviteCollaborator(
     if (!response.ok) {
       const data = (await response.json()) as { message?: string };
       throw new Error(
-        data.message ||
-          `Failed to invite collaborator: ${response.status} ${response.statusText}`,
+        data.message || `Failed to invite collaborator: ${response.status} ${response.statusText}`,
       );
     }
   } catch (err: any) {
@@ -1167,10 +1076,7 @@ async function handleRemoveCollaborator(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with GitHub.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
@@ -1195,8 +1101,7 @@ async function handleRemoveCollaborator(
     if (!response.ok) {
       const data = (await response.json()) as { message?: string };
       throw new Error(
-        data.message ||
-          `Failed to remove collaborator: ${response.status} ${response.statusText}`,
+        data.message || `Failed to remove collaborator: ${response.status} ${response.statusText}`,
       );
     }
   } catch (err: any) {
@@ -1230,10 +1135,7 @@ export async function handleDisconnectGithubRepo(
   });
 
   if (!app) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
 
   // Update app in database to remove GitHub repo, org, and branch
@@ -1251,13 +1153,7 @@ async function handleCloneRepoFromUrl(
   event: IpcMainInvokeEvent,
   params: CloneRepoParams,
 ): Promise<CloneRepoResult> {
-  const {
-    url,
-    installCommand,
-    startCommand,
-    appName,
-    optimizeForOctopusStudio = true,
-  } = params;
+  const { url, installCommand, startCommand, appName, optimizeForOctopusStudio = true } = params;
   try {
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
@@ -1265,30 +1161,24 @@ async function handleCloneRepoFromUrl(
     const match = url.match(urlPattern);
     if (!match) {
       return {
-        error:
-          "Invalid GitHub URL. Expected format: https://github.com/owner/repo.git",
+        error: "Invalid GitHub URL. Expected format: https://github.com/owner/repo.git",
       };
     }
     const [, owner, repoName] = match;
     if (accessToken) {
-      const repoResponse = await fetch(
-        `${getGitHubApiBase()}/repos/${owner}/${repoName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: "application/vnd.github+json",
-          },
+      const repoResponse = await fetch(`${getGitHubApiBase()}/repos/${owner}/${repoName}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
         },
-      );
+      });
       if (!repoResponse.ok) {
         return {
           error: "Repository not found or you do not have access to it.",
         };
       }
     }
-    const finalAppName = sanitizeAppDisplayName(
-      appName && appName.trim() ? appName : repoName,
-    );
+    const finalAppName = sanitizeAppDisplayName(appName && appName.trim() ? appName : repoName);
     return await withLock(`github-import-name:${finalAppName}`, async () => {
       const existingApp = await db.query.apps.findFirst({
         where: eq(apps.name, finalAppName),
@@ -1298,9 +1188,7 @@ async function handleCloneRepoFromUrl(
         return { error: `An app named "${finalAppName}" already exists.` };
       }
 
-      const folderName = await resolveUniqueFolderName(
-        slugifyAppFolderName(finalAppName),
-      );
+      const folderName = await resolveUniqueFolderName(slugifyAppFolderName(finalAppName));
       const appPath = getOctopusStudioAppPath(folderName);
 
       if (!isAppLocationAccessible(appPath)) {
@@ -1322,8 +1210,7 @@ async function handleCloneRepoFromUrl(
       } catch (cloneErr) {
         logger.error("[GitHub Handler] Clone failed:", cloneErr);
         return {
-          error:
-            "Failed to clone repository. Please check the URL and try again.",
+          error: "Failed to clone repository. Please check the URL and try again.",
         };
       }
       const aiRulesPath = path.join(appPath, "AI_RULES.md");
@@ -1348,9 +1235,7 @@ async function handleCloneRepoFromUrl(
       if (optimizeForOctopusStudio && isComponentTaggerUpgradeNeeded(appPath)) {
         try {
           await applyComponentTagger(appPath, { installDependencies: false });
-          logger.log(
-            `Automatically applied component tagger upgrade for ${owner}/${repoName}`,
-          );
+          logger.log(`Automatically applied component tagger upgrade for ${owner}/${repoName}`);
         } catch (upgradeError) {
           // Auto-upgrade  Failures are logged but don't block import.
           // User will be notified via warning toast to manually upgrade if needed.
@@ -1381,8 +1266,7 @@ async function handleCloneRepoFromUrl(
     logger.error("[GitHub Handler] Unexpected error in clone flow:", err);
     return {
       error:
-        (err instanceof Error && err.message) ||
-        "An unexpected error occurred during cloning.",
+        (err instanceof Error && err.message) || "An unexpected error occurred during cloning.",
     };
   }
 }
@@ -1417,33 +1301,21 @@ export function registerGithubHandlers() {
     return handleIsRepoAvailable(event, params);
   });
 
-  createTypedHandler(
-    githubContracts.listCollaborators,
-    async (event, params) => {
-      return handleListCollaborators(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.listCollaborators, async (event, params) => {
+    return handleListCollaborators(event, params);
+  });
 
-  createTypedHandler(
-    githubContracts.inviteCollaborator,
-    async (event, params) => {
-      return handleInviteCollaborator(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.inviteCollaborator, async (event, params) => {
+    return handleInviteCollaborator(event, params);
+  });
 
-  createTypedHandler(
-    githubContracts.removeCollaborator,
-    async (event, params) => {
-      return handleRemoveCollaborator(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.removeCollaborator, async (event, params) => {
+    return handleRemoveCollaborator(event, params);
+  });
 
-  createTypedHandler(
-    githubContracts.cloneRepoFromUrl,
-    async (event, params) => {
-      return handleCloneRepoFromUrl(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.cloneRepoFromUrl, async (event, params) => {
+    return handleCloneRepoFromUrl(event, params);
+  });
 }
 
 export async function updateAppGithubRepo({

@@ -6,9 +6,7 @@ import { SnapshotStore } from "@/state_machines/snapshot_store";
 const EMPTY_ENTRIES: readonly ConsoleEntry[] = [];
 
 class PreviewConsoleBuffer {
-  private readonly store = new SnapshotStore<readonly ConsoleEntry[]>(
-    EMPTY_ENTRIES,
-  );
+  private readonly store = new SnapshotStore<readonly ConsoleEntry[]>(EMPTY_ENTRIES);
 
   getSnapshot = this.store.getSnapshot;
   subscribe = this.store.subscribe;
@@ -23,9 +21,7 @@ class PreviewConsoleBuffer {
 
   append(appId: number, entries: readonly ConsoleEntry[]): void {
     if (entries.length === 0) return;
-    this.store.setState(
-      createPreviewConsoleTail(appId, this.store.getSnapshot(), entries),
-    );
+    this.store.setState(createPreviewConsoleTail(appId, this.store.getSnapshot(), entries));
   }
 
   dispose(): void {

@@ -6,10 +6,7 @@ import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useLoadApp } from "@/hooks/useLoadApp";
 import { getCompletedIntegrationProvider } from "@/components/chat/octopusStudioAddIntegrationUtils";
 import { getUserInputReadModel } from "@/user_input/read_model";
-import {
-  usePendingIntegrations,
-  useRespondingRequestIds,
-} from "@/user_input/hooks";
+import { usePendingIntegrations, useRespondingRequestIds } from "@/user_input/hooks";
 
 /**
  * Shared continue logic for the integration setup flow. Request lifecycle
@@ -22,40 +19,26 @@ export function useIntegrationContinue() {
   const userInputReadModel = getUserInputReadModel({ store });
   const pendingIntegrationMap = usePendingIntegrations();
   const respondingRequestIds = useRespondingRequestIds();
-  const setIntegrationProviderSelection = useSetAtom(
-    integrationProviderSelectionAtom,
-  );
+  const setIntegrationProviderSelection = useSetAtom(integrationProviderSelectionAtom);
   const setPreviewMode = useSetAtom(previewModeAtom);
   const { app } = useLoadApp(selectedAppId);
 
-  const pendingIntegration =
-    chatId != null ? pendingIntegrationMap.get(chatId) : undefined;
+  const pendingIntegration = chatId != null ? pendingIntegrationMap.get(chatId) : undefined;
   const provider = pendingIntegration?.provider;
   const completedProvider = getCompletedIntegrationProvider(app);
-  const canContinue =
-    !!pendingIntegration && !!provider && completedProvider === provider;
+  const canContinue = !!pendingIntegration && !!provider && completedProvider === provider;
   const isSubmitting =
-    pendingIntegration != null &&
-    respondingRequestIds.has(pendingIntegration.requestId);
+    pendingIntegration != null && respondingRequestIds.has(pendingIntegration.requestId);
 
   const handleContinue = useCallback(async () => {
-    if (
-      chatId == null ||
-      !pendingIntegration ||
-      !provider ||
-      !canContinue ||
-      isSubmitting
-    ) {
+    if (chatId == null || !pendingIntegration || !provider || !canContinue || isSubmitting) {
       return;
     }
-    const responded = await userInputReadModel.respond(
-      pendingIntegration.requestId,
-      {
-        kind: "integration",
-        provider,
-        completed: true,
-      },
-    );
+    const responded = await userInputReadModel.respond(pendingIntegration.requestId, {
+      kind: "integration",
+      provider,
+      completed: true,
+    });
     if (!responded) return;
     setIntegrationProviderSelection((prev) => {
       if (!prev.has(pendingIntegration.requestId)) return prev;

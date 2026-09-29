@@ -48,9 +48,13 @@ function formatResult(raw: string): {
   }
 }
 
-export const OctopusStudioMcpToolCall: React.FC<
-  OctopusStudioMcpToolCallProps
-> = ({ node, children, resultContent, state, isError }) => {
+export const OctopusStudioMcpToolCall: React.FC<OctopusStudioMcpToolCallProps> = ({
+  node,
+  children,
+  resultContent,
+  state,
+  isError,
+}) => {
   const { t } = useTranslation("chat");
   const serverName: string = node?.properties?.serverName || "";
   const toolName: string = node?.properties?.toolName || "";
@@ -60,15 +64,9 @@ export const OctopusStudioMcpToolCall: React.FC<
   const merged = state !== undefined;
   const raw = typeof children === "string" ? children : String(children ?? "");
 
-  const prettyInput = useMemo(
-    () => (expanded ? prettyJson(raw) : ""),
-    [expanded, raw],
-  );
+  const prettyInput = useMemo(() => (expanded ? prettyJson(raw) : ""), [expanded, raw]);
   const result = useMemo(
-    () =>
-      expanded && resultContent !== undefined
-        ? formatResult(resultContent)
-        : null,
+    () => (expanded && resultContent !== undefined ? formatResult(resultContent) : null),
     [expanded, resultContent],
   );
 
@@ -80,9 +78,7 @@ export const OctopusStudioMcpToolCall: React.FC<
       onClick={() => setExpanded((v) => !v)}
     >
       <OctopusStudioCardHeader icon={<Wrench size={15} />} accentColor="blue">
-        <OctopusStudioBadge color="blue">
-          {merged ? "Tool" : "Tool Call"}
-        </OctopusStudioBadge>
+        <OctopusStudioBadge color="blue">{merged ? "Tool" : "Tool Call"}</OctopusStudioBadge>
         {serverName && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-200 dark:ring-blue-800">
             {serverName}
@@ -117,19 +113,11 @@ export const OctopusStudioMcpToolCall: React.FC<
       <OctopusStudioCardContent isExpanded={expanded}>
         {merged ? (
           <>
-            <div className="text-[11px] font-semibold text-muted-foreground mb-1">
-              Input
-            </div>
-            <CodeHighlight className="language-json">
-              {prettyInput}
-            </CodeHighlight>
-            <div className="text-[11px] font-semibold text-muted-foreground mt-3 mb-1">
-              Result
-            </div>
+            <div className="text-[11px] font-semibold text-muted-foreground mb-1">Input</div>
+            <CodeHighlight className="language-json">{prettyInput}</CodeHighlight>
+            <div className="text-[11px] font-semibold text-muted-foreground mt-3 mb-1">Result</div>
             {result ? (
-              <CodeHighlight className={`language-${result.language}`}>
-                {result.text}
-              </CodeHighlight>
+              <CodeHighlight className={`language-${result.language}`}>{result.text}</CodeHighlight>
             ) : resultContent !== undefined ? (
               <CodeHighlight className="language-json">{""}</CodeHighlight>
             ) : (

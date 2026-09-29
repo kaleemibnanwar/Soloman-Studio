@@ -1,8 +1,7 @@
 import type { LocalAgentFixture } from "../../../../testing/fake-llm-server/localAgentTypes";
 
 export const fixture: LocalAgentFixture = {
-  description:
-    "Change a shared TypeScript module used by one Supabase function",
+  description: "Change a shared TypeScript module used by one Supabase function",
   turns: [
     {
       text: "I'll update the shared Supabase helper.",

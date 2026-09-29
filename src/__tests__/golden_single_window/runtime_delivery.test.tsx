@@ -52,9 +52,7 @@ vi.mock("@/ipc/types", async (importOriginal) => {
       events: {
         ...original.ipc.events,
         imageGeneration: {
-          onPresentation: (
-            listener: NonNullable<typeof mocks.imagePresentationListener>,
-          ) => {
+          onPresentation: (listener: NonNullable<typeof mocks.imagePresentationListener>) => {
             mocks.imagePresentationListener = listener;
             return () => {
               mocks.imagePresentationListener = undefined;
@@ -111,19 +109,14 @@ function makeRunWrapper() {
   const previewErrors = new DeferredPreviewErrorFacade();
   const packageWarnings = new PackageManagerWarningStore();
   const connection = new TestAppRunRemoteConnection();
-  const manager = new AppRunRemoteManager(
-    createSequentialIdSource(),
-    connection,
-  );
+  const manager = new AppRunRemoteManager(createSequentialIdSource(), connection);
   store.set(selectedAppIdAtom, 7);
   function Wrapper({ children }: PropsWithChildren) {
     return (
       <Provider store={store}>
         <PreviewErrorFacadeProvider facade={previewErrors}>
           <PackageManagerWarningProvider manager={packageWarnings}>
-            <AppRunRemoteProvider manager={manager}>
-              {children}
-            </AppRunRemoteProvider>
+            <AppRunRemoteProvider manager={manager}>{children}</AppRunRemoteProvider>
           </PackageManagerWarningProvider>
         </PreviewErrorFacadeProvider>
       </Provider>
@@ -177,9 +170,7 @@ describe("golden single-window: runtime presentation delivery", () => {
     // Protects the Phase B interest-keyed console fan-out.
     expect(connection.dispatches).toHaveLength(1);
     expect(
-      manager.previewConsole
-        .getSnapshot(7)
-        .filter((entry) => entry.message === "first line"),
+      manager.previewConsole.getSnapshot(7).filter((entry) => entry.message === "first line"),
     ).toEqual([expect.objectContaining({ timestamp: 123 })]);
     hook.unmount();
   });

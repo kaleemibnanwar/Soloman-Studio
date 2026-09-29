@@ -1,9 +1,4 @@
-export const APP_FRAMEWORK_TYPES = [
-  "nextjs",
-  "vite",
-  "vite-nitro",
-  "other",
-] as const;
+export const APP_FRAMEWORK_TYPES = ["nextjs", "vite", "vite-nitro", "other"] as const;
 export type AppFrameworkType = (typeof APP_FRAMEWORK_TYPES)[number];
 
 export const NEXTJS_CONFIG_FILES = [
@@ -34,16 +29,11 @@ export function isNeonSupportedFramework({
   frameworkType?: AppFrameworkType | null;
 }): boolean {
   if (frameworkType) {
-    return (
-      frameworkType === "nextjs" ||
-      frameworkType === "vite" ||
-      frameworkType === "vite-nitro"
-    );
+    return frameworkType === "nextjs" || frameworkType === "vite" || frameworkType === "vite-nitro";
   }
 
   if (!files) return false;
   return files.some(
-    (file) =>
-      NEXTJS_CONFIG_FILES.includes(file) || VITE_CONFIG_FILES.includes(file),
+    (file) => NEXTJS_CONFIG_FILES.includes(file) || VITE_CONFIG_FILES.includes(file),
   );
 }

@@ -7,16 +7,9 @@ import type {
   ScreenshotState,
 } from "./state";
 
-type Result = TransitionResult<
-  ScreenshotState,
-  ScreenshotCommand,
-  ScreenshotIgnoreReason
->;
+type Result = TransitionResult<ScreenshotState, ScreenshotCommand, ScreenshotIgnoreReason>;
 
-function transitionTo(
-  state: ScreenshotState,
-  commands: readonly ScreenshotCommand[] = [],
-): Result {
+function transitionTo(state: ScreenshotState, commands: readonly ScreenshotCommand[] = []): Result {
   return { kind: "applied", state, commands };
 }
 
@@ -82,11 +75,7 @@ function captureRequested(
         ? startSettling(state, source, settleToken)
         : waitForIframe(state, source, settleToken);
     case "pending":
-      if (
-        !state.selectorReady &&
-        state.source === source &&
-        state.queuedSource === null
-      ) {
+      if (!state.selectorReady && state.source === source && state.queuedSource === null) {
         return ignore(state, "request-already-current");
       }
       return state.selectorReady
@@ -294,10 +283,7 @@ function appHidden(state: ScreenshotState): Result {
   }
 }
 
-export function transition(
-  state: ScreenshotState,
-  event: ScreenshotEvent,
-): Result {
+export function transition(state: ScreenshotState, event: ScreenshotEvent): Result {
   switch (event.type) {
     case "CAPTURE_REQUESTED":
       return captureRequested(state, event.source, event.settleToken);
@@ -308,16 +294,10 @@ export function transition(
     case "APP_HIDDEN":
       return appHidden(state);
     case "SETTLE_ELAPSED":
-      if (
-        state.status !== "waitingSelectorReady" &&
-        state.status !== "settling"
-      ) {
+      if (state.status !== "waitingSelectorReady" && state.status !== "settling") {
         return ignore(state, "capture-not-active");
       }
-      if (
-        state.settleToken !== undefined &&
-        event.settleToken !== state.settleToken
-      ) {
+      if (state.settleToken !== undefined && event.settleToken !== state.settleToken) {
         return ignore(state, "stale-request");
       }
       return transitionTo(
@@ -334,10 +314,7 @@ export function transition(
         ],
       );
     case "COMMIT_RESOLVED":
-      if (
-        state.status !== "resolvingCommit" ||
-        event.requestId !== state.requestId
-      ) {
+      if (state.status !== "resolvingCommit" || event.requestId !== state.requestId) {
         return ignore(state, "stale-request");
       }
       return transitionTo(
@@ -355,10 +332,7 @@ export function transition(
         ],
       );
     case "RESPONSE":
-      if (
-        state.status !== "awaitingResponse" ||
-        event.requestId !== state.requestId
-      ) {
+      if (state.status !== "awaitingResponse" || event.requestId !== state.requestId) {
         return ignore(state, "stale-request");
       }
       if (!event.ok || !event.dataUrl) {
@@ -385,8 +359,7 @@ export function transition(
     case "SAVE_FAILED":
       if (event.requestId !== undefined) {
         if (
-          (state.status !== "resolvingCommit" &&
-            state.status !== "awaitingResponse") ||
+          (state.status !== "resolvingCommit" && state.status !== "awaitingResponse") ||
           event.requestId !== state.requestId
         ) {
           return ignore(state, "stale-request");
@@ -411,7 +384,5 @@ function scheduleSettle(settleToken?: string): ScreenshotCommand {
 }
 
 function assertNever(value: never): never {
-  throw new Error(
-    `Unexpected screenshot machine value: ${JSON.stringify(value)}`,
-  );
+  throw new Error(`Unexpected screenshot machine value: ${JSON.stringify(value)}`);
 }

@@ -1,8 +1,4 @@
-import type {
-  ChatResponseChunk,
-  ChatResponseEnd,
-  ChatStreamParams,
-} from "@/ipc/types";
+import type { ChatResponseChunk, ChatResponseEnd, ChatStreamParams } from "@/ipc/types";
 
 /** Wire names used by the main-to-renderer chat stream protocol. */
 export const CHAT_STREAM_WIRE_EVENTS = {
@@ -63,13 +59,10 @@ export const CHAT_STREAM_PER_GENERATION_EMISSION_CONTRACT =
   "cancel is the sole cancelled-end sender; late and duplicate handler terminals are legal" as const;
 
 /** I1: admission never fires while a covering chat or app barrier is held. */
-export const CHAT_STREAM_INVARIANT_I1 =
-  "atomic barrier-respecting admission" as const;
+export const CHAT_STREAM_INVARIANT_I1 = "atomic barrier-respecting admission" as const;
 /** I2: only cancellation emits `wasCancelled`, and aborted finalization emits no transport end. */
 export const CHAT_STREAM_INVARIANT_I2 = "cancelled-end sole sender" as const;
 /** I3: early cancellation notification cannot admit a stream through a held barrier. */
-export const CHAT_STREAM_INVARIANT_I3 =
-  "early-notify admission safety" as const;
+export const CHAT_STREAM_INVARIANT_I3 = "early-notify admission safety" as const;
 /** I4: released barriers leave no counts or parked admission waiters at quiescence. */
-export const CHAT_STREAM_INVARIANT_I4 =
-  "barrier hygiene at quiescence" as const;
+export const CHAT_STREAM_INVARIANT_I4 = "barrier hygiene at quiescence" as const;

@@ -40,14 +40,11 @@ export function registerChatModeClassifierHandlers() {
         ...getTestFetchOption(),
       });
 
-      const classifierModel = await resolveBuiltinModelAlias(
-        "octopusStudio/help-bot/default",
-      );
+      const classifierModel = await resolveBuiltinModelAlias("octopusStudio/help-bot/default");
       if (!classifierModel || classifierModel.providerId !== "openai") {
-        logger.warn(
-          "mode classifier alias did not resolve to an OpenAI model",
-          { resolvedProviderId: classifierModel?.providerId },
-        );
+        logger.warn("mode classifier alias did not resolve to an OpenAI model", {
+          resolvedProviderId: classifierModel?.providerId,
+        });
         return { mode: null };
       }
 
@@ -55,6 +52,7 @@ export function registerChatModeClassifierHandlers() {
         model: provider.responses(classifierModel.apiName),
         system: SYSTEM_PROMPT,
         prompt: prompt.slice(0, MAX_PROMPT_CHARS),
+        temperature: 0,
         maxRetries: 1,
         abortSignal: AbortSignal.timeout(CLASSIFY_TIMEOUT_MS),
       });

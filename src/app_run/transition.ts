@@ -147,9 +147,7 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
       ) {
         return ignore(state, "stale-operation");
       }
-      const commands: RunCommand[] = [
-        { type: "clearError", appId: state.appId },
-      ];
+      const commands: RunCommand[] = [{ type: "clearError", appId: state.appId }];
       if (state.pendingUrl) {
         // applyUrl bumps the reload token, which also covers the
         // restart/rebuild "always reload on settle" behavior.
@@ -180,9 +178,7 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
       ) {
         return ignore(state, "stale-operation");
       }
-      const commands: RunCommand[] = [
-        { type: "setError", appId: state.appId, error: event.error },
-      ];
+      const commands: RunCommand[] = [{ type: "setError", appId: state.appId, error: event.error }];
       if (state.operation !== "run") {
         // Restart/rebuild always reload the iframe when the IPC settles,
         // success or failure (previously the `finally` block).
@@ -234,16 +230,11 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
           invocationRef: state.invocationRef,
           error: event.error,
         },
-        commands: [
-          { type: "setError", appId: state.appId, error: event.error },
-        ],
+        commands: [{ type: "setError", appId: state.appId, error: event.error }],
       };
 
     case "PROXY_READY":
-      if (
-        state.type !== "idle" &&
-        !sameInvocationRef(state.invocationRef, event.invocationRef)
-      ) {
+      if (state.type !== "idle" && !sameInvocationRef(state.invocationRef, event.invocationRef)) {
         return ignore(state, "stale-operation");
       }
       switch (state.type) {
@@ -263,22 +254,14 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
         case "ready":
           return {
             kind: "applied",
-            state: sameRunUrl(state.url, event.url)
-              ? state
-              : { ...state, url: event.url },
-            commands: [
-              { type: "applyUrl", appId: state.appId, url: event.url },
-            ],
+            state: sameRunUrl(state.url, event.url) ? state : { ...state, url: event.url },
+            commands: [{ type: "applyUrl", appId: state.appId, url: event.url }],
           };
         case "reloading":
           return {
             kind: "applied",
-            state: sameRunUrl(state.url, event.url)
-              ? state
-              : { ...state, url: event.url },
-            commands: [
-              { type: "applyUrl", appId: state.appId, url: event.url },
-            ],
+            state: sameRunUrl(state.url, event.url) ? state : { ...state, url: event.url },
+            commands: [{ type: "applyUrl", appId: state.appId, url: event.url }],
           };
         case "stopping":
           // A proxy line while stopping is stale by construction; applying
@@ -298,9 +281,7 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
               invocationRef: event.invocationRef,
               url: event.url,
             },
-            commands: [
-              { type: "applyUrl", appId: event.appId, url: event.url },
-            ],
+            commands: [{ type: "applyUrl", appId: event.appId, url: event.url }],
           };
         default:
           return assertNever(state);
@@ -308,8 +289,7 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
 
     case "HMR_DETECTED":
     case "MANUAL_RELOAD": {
-      const reason: ReloadReason =
-        event.type === "HMR_DETECTED" ? "hmr" : "manual";
+      const reason: ReloadReason = event.type === "HMR_DETECTED" ? "hmr" : "manual";
       if (state.type === "ready") {
         return {
           kind: "applied",
@@ -358,10 +338,7 @@ export function transition(state: RunState, event: RunEvent): TransitionResult {
       };
 
     case "APP_EXIT":
-      if (
-        state.type !== "idle" &&
-        !sameInvocationRef(state.invocationRef, event.invocationRef)
-      ) {
+      if (state.type !== "idle" && !sameInvocationRef(state.invocationRef, event.invocationRef)) {
         return ignore(state, "stale-operation");
       }
       if (

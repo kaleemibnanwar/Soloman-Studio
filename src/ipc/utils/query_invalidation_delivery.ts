@@ -6,8 +6,5 @@ export function publishQueryInvalidations(
   scopes: readonly QueryInvalidationScope[],
   origin?: WebContents,
 ): void {
-  queryInvalidationBus.publish(
-    scopes,
-    origin === undefined ? {} : { originEndpoint: origin },
-  );
+  queryInvalidationBus.publish(scopes, origin === undefined ? {} : { originEndpoint: origin });
 }

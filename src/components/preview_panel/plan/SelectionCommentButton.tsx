@@ -2,11 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSetAtom } from "jotai";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  addPlanAnnotation,
-  planAnnotationsAtom,
-  type PlanAnnotation,
-} from "@/atoms/planAtoms";
+import { addPlanAnnotation, planAnnotationsAtom, type PlanAnnotation } from "@/atoms/planAtoms";
 import {
   ANNOTATION_MARK_SELECTOR,
   getPlanSelectionSnapshot,
@@ -36,8 +32,7 @@ export const SelectionCommentButton: React.FC<SelectionCommentButtonProps> = ({
   chatAnnotations,
 }) => {
   const setAnnotations = useSetAtom(planAnnotationsAtom);
-  const [floatingButton, setFloatingButton] =
-    useState<FloatingButtonState | null>(null);
+  const [floatingButton, setFloatingButton] = useState<FloatingButtonState | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [commentText, setCommentText] = useState("");
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -63,11 +58,7 @@ export const SelectionCommentButton: React.FC<SelectionCommentButtonProps> = ({
 
     const processSelection = () => {
       const selection = window.getSelection();
-      if (
-        !selection ||
-        selection.rangeCount === 0 ||
-        selection.toString().trim().length === 0
-      ) {
+      if (!selection || selection.rangeCount === 0 || selection.toString().trim().length === 0) {
         clearState();
         return;
       }
@@ -98,14 +89,8 @@ export const SelectionCommentButton: React.FC<SelectionCommentButtonProps> = ({
       const rect = getSelectionCommentAnchorRect(range);
       const formWidth = 288; // w-72
       const estimatedFormHeight = 150;
-      const x = Math.max(
-        8,
-        Math.min(rect.right + 4, window.innerWidth - formWidth - 8),
-      );
-      const y = Math.max(
-        8,
-        Math.min(rect.top - 4, window.innerHeight - estimatedFormHeight - 8),
-      );
+      const x = Math.max(8, Math.min(rect.right + 4, window.innerWidth - formWidth - 8));
+      const y = Math.max(8, Math.min(rect.top - 4, window.innerHeight - estimatedFormHeight - 8));
       setShowForm(false);
       setCommentText("");
       setFloatingButton({
@@ -144,11 +129,7 @@ export const SelectionCommentButton: React.FC<SelectionCommentButtonProps> = ({
       selectionChangeTimer = setTimeout(() => {
         selectionChangeTimer = null;
         const selection = window.getSelection();
-        if (
-          !selection ||
-          selection.rangeCount === 0 ||
-          selection.toString().trim().length === 0
-        ) {
+        if (!selection || selection.rangeCount === 0 || selection.toString().trim().length === 0) {
           return;
         }
         const range = selection.getRangeAt(0);
@@ -286,11 +267,7 @@ export const SelectionCommentButton: React.FC<SelectionCommentButtonProps> = ({
               <Button variant="ghost" size="sm" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={!commentText.trim()}
-              >
+              <Button size="sm" onClick={handleSubmit} disabled={!commentText.trim()}>
                 Add Comment
               </Button>
             </div>

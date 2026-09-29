@@ -4,10 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { SkippableBanner } from "./SkippableBanner";
 import { dismissedLegacySupabaseKeyAppIdsAtom } from "@/atoms/supabaseAtoms";
-import {
-  useLegacySupabaseKey,
-  useSwitchToPublishableKey,
-} from "@/hooks/useLegacySupabaseKey";
+import { useLegacySupabaseKey, useSwitchToPublishableKey } from "@/hooks/useLegacySupabaseKey";
 import { useLoadApp } from "@/hooks/useLoadApp";
 import { useSettings } from "@/hooks/useSettings";
 import { isSupabaseConnected } from "@/lib/schemas";
@@ -29,9 +26,7 @@ export function SupabaseLegacyKeyBanner({ appId }: { appId: number | null }) {
   const { t } = useTranslation("home");
   const { settings } = useSettings();
   const { app } = useLoadApp(appId);
-  const [dismissedAppIds, setDismissedAppIds] = useAtom(
-    dismissedLegacySupabaseKeyAppIdsAtom,
-  );
+  const [dismissedAppIds, setDismissedAppIds] = useAtom(dismissedLegacySupabaseKeyAppIdsAtom);
 
   const projectId = app?.supabaseProjectId ?? null;
   const isConnected = isSupabaseConnected(settings) && !!projectId;
@@ -53,10 +48,7 @@ export function SupabaseLegacyKeyBanner({ appId }: { appId: number | null }) {
   // disconnecting Supabase would otherwise leave a cached `true` on screen
   // offering a migration there is no longer a token to perform.
   const showBanner =
-    appId != null &&
-    isConnected &&
-    !isDismissed &&
-    legacyKeyQuery.data?.hasLegacyKey === true;
+    appId != null && isConnected && !isDismissed && legacyKeyQuery.data?.hasLegacyKey === true;
 
   const handleDismiss = () => {
     if (appId == null) return;
@@ -87,8 +79,7 @@ export function SupabaseLegacyKeyBanner({ appId }: { appId: number | null }) {
 
   // Scoped to this app: a switch still in flight for a different app must not
   // put this one's button in a pending state.
-  const isSwitching =
-    switchKey.isPending && switchKey.variables?.appId === appId;
+  const isSwitching = switchKey.isPending && switchKey.variables?.appId === appId;
 
   return (
     <SkippableBanner

@@ -4,12 +4,7 @@ import { testSkipIfWindows } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 
 testSkipIfWindows("mcp - oauth connects and calls a tool", async ({ po }) => {
-  const fakePath = path.join(
-    __dirname,
-    "..",
-    "testing",
-    "fake-oauth-mcp-server.mjs",
-  );
+  const fakePath = path.join(__dirname, "..", "testing", "fake-oauth-mcp-server.mjs");
   const port = 4002;
   const base = `http://localhost:${port}`;
 
@@ -60,9 +55,7 @@ testSkipIfWindows("mcp - oauth connects and calls a tool", async ({ po }) => {
     await po.navigation.goToPluginsTab();
     await po.plugins.openAddPluginDialog();
 
-    await po.page
-      .getByRole("textbox", { name: "My MCP Server" })
-      .fill("testing-mcp-server");
+    await po.page.getByRole("textbox", { name: "My MCP Server" }).fill("testing-mcp-server");
     await po.page.getByTestId("mcp-transport-select").selectOption("http");
     await po.page.getByPlaceholder("http://localhost:3000").fill(`${base}/mcp`);
     await po.plugins.submitAddPluginDialog();
@@ -94,111 +87,95 @@ testSkipIfWindows("mcp - oauth connects and calls a tool", async ({ po }) => {
 
 // Manual (non-DCR) variant: fake server requires pre-registered
 // client_id + client_secret typed into the Advanced accordion.
-testSkipIfWindows(
-  "mcp - oauth manual (non-DCR) connects and calls a tool",
-  async ({ po }) => {
-    const fakePath = path.join(
-      __dirname,
-      "..",
-      "testing",
-      "fake-oauth-mcp-server.mjs",
-    );
-    const port = 4003;
-    const base = `http://localhost:${port}`;
-    const clientId = "preregistered-client";
-    const clientSecret = "preregistered-secret";
+testSkipIfWindows("mcp - oauth manual (non-DCR) connects and calls a tool", async ({ po }) => {
+  const fakePath = path.join(__dirname, "..", "testing", "fake-oauth-mcp-server.mjs");
+  const port = 4003;
+  const base = `http://localhost:${port}`;
+  const clientId = "preregistered-client";
+  const clientSecret = "preregistered-secret";
 
-    const fake = spawn("node", [fakePath], {
-      env: {
-        ...process.env,
-        PORT: String(port),
-        FAKE_DCR: "0",
-        FAKE_CLIENT_ID: clientId,
-        FAKE_CLIENT_SECRET: clientSecret,
-      },
-      stdio: "pipe",
-    });
+  const fake = spawn("node", [fakePath], {
+    env: {
+      ...process.env,
+      PORT: String(port),
+      FAKE_DCR: "0",
+      FAKE_CLIENT_ID: clientId,
+      FAKE_CLIENT_SECRET: clientSecret,
+    },
+    stdio: "pipe",
+  });
 
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(
-          new Error("fake-oauth-mcp-server failed to start within timeout"),
-        );
-      }, 10000);
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("fake-oauth-mcp-server failed to start within timeout"));
+    }, 10000);
 
-      fake.stdout?.on("data", (data: Buffer) => {
-        console.log("fake-oauth-mcp-server stdout:", data.toString());
-        if (data.toString().includes("Fake OAuth MCP server listening")) {
-          clearTimeout(timeout);
-          resolve();
-        }
-      });
-
-      fake.stderr?.on("data", (data: Buffer) => {
-        console.error("fake-oauth-mcp-server stderr:", data.toString());
-      });
-
-      fake.on("error", (err) => {
+    fake.stdout?.on("data", (data: Buffer) => {
+      console.log("fake-oauth-mcp-server stdout:", data.toString());
+      if (data.toString().includes("Fake OAuth MCP server listening")) {
         clearTimeout(timeout);
-        reject(err);
-      });
+        resolve();
+      }
     });
 
-    try {
-      await po.setUpOctopusStudioPro({ localAgent: true });
+    fake.stderr?.on("data", (data: Buffer) => {
+      console.error("fake-oauth-mcp-server stderr:", data.toString());
+    });
 
-      await po.electronApp.evaluate(({ shell }) => {
-        shell.openExternal = async (url) => {
-          await fetch(url, { redirect: "follow" });
-        };
-      });
+    fake.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+  });
 
-      await po.navigation.goToPluginsTab();
-      await po.plugins.openAddPluginDialog();
+  try {
+    await po.setUpOctopusStudioPro({ localAgent: true });
 
-      await po.page
-        .getByRole("textbox", { name: "My MCP Server" })
-        // Fake LLM hardcodes server name `testing-mcp-server`.
-        .fill("testing-mcp-server");
-      await po.page.getByTestId("mcp-transport-select").selectOption("http");
-      await po.page
-        .getByPlaceholder("http://localhost:3000")
-        .fill(`${base}/mcp`);
-      await po.page
-        .getByRole("button", { name: "Advanced OAuth options" })
-        .click();
-      await po.page.getByPlaceholder("Pre-registered client ID").fill(clientId);
-      await po.page
-        .getByPlaceholder("Pre-registered client secret")
-        .fill(clientSecret);
-      await po.plugins.submitAddPluginDialog();
+    await po.electronApp.evaluate(({ shell }) => {
+      shell.openExternal = async (url) => {
+        await fetch(url, { redirect: "follow" });
+      };
+    });
 
-      await expect(po.page.getByText("OAuth: connected")).toBeVisible({
-        timeout: 15_000,
-      });
+    await po.navigation.goToPluginsTab();
+    await po.plugins.openAddPluginDialog();
 
-      await po.navigation.goToAppsTab();
-      await po.chatActions.selectChatMode("local-agent");
-      await po.sendPrompt("tc=local-agent/mcp-calculator", {
-        skipWaitForCompletion: true,
-      });
-      await po.agentConsent.waitForAgentConsentBanner();
-      await po.snapshotMessages();
-      await po.agentConsent.clickAgentConsentAlwaysAllow();
-      await po.chatActions.waitForChatCompletion();
-      await expect(po.page.getByText(/The sum of 5 and 3 is 8/)).toBeVisible();
-    } finally {
-      fake.kill();
-      await new Promise<void>((resolve) => {
-        fake.on("exit", () => resolve());
-        setTimeout(() => {
-          fake.kill("SIGKILL");
-          resolve();
-        }, 2000);
-      });
-    }
-  },
-);
+    await po.page
+      .getByRole("textbox", { name: "My MCP Server" })
+      // Fake LLM hardcodes server name `testing-mcp-server`.
+      .fill("testing-mcp-server");
+    await po.page.getByTestId("mcp-transport-select").selectOption("http");
+    await po.page.getByPlaceholder("http://localhost:3000").fill(`${base}/mcp`);
+    await po.page.getByRole("button", { name: "Advanced OAuth options" }).click();
+    await po.page.getByPlaceholder("Pre-registered client ID").fill(clientId);
+    await po.page.getByPlaceholder("Pre-registered client secret").fill(clientSecret);
+    await po.plugins.submitAddPluginDialog();
+
+    await expect(po.page.getByText("OAuth: connected")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await po.navigation.goToAppsTab();
+    await po.chatActions.selectChatMode("local-agent");
+    await po.sendPrompt("tc=local-agent/mcp-calculator", {
+      skipWaitForCompletion: true,
+    });
+    await po.agentConsent.waitForAgentConsentBanner();
+    await po.snapshotMessages();
+    await po.agentConsent.clickAgentConsentAlwaysAllow();
+    await po.chatActions.waitForChatCompletion();
+    await expect(po.page.getByText(/The sum of 5 and 3 is 8/)).toBeVisible();
+  } finally {
+    fake.kill();
+    await new Promise<void>((resolve) => {
+      fake.on("exit", () => resolve());
+      setTimeout(() => {
+        fake.kill("SIGKILL");
+        resolve();
+      }, 2000);
+    });
+  }
+});
 
 testSkipIfWindows(
   "mcp - oauth disable-and-retry when server doesn't support OAuth",
@@ -209,12 +186,7 @@ testSkipIfWindows(
     // "Server doesn't support OAuth" alert appears with the
     // Disable OAuth & retry button. Clicking it must clear the alert
     // and leave the server usable.
-    const fakePath = path.join(
-      __dirname,
-      "..",
-      "testing",
-      "fake-oauth-mcp-server.mjs",
-    );
+    const fakePath = path.join(__dirname, "..", "testing", "fake-oauth-mcp-server.mjs");
     const port = 4004;
     const base = `http://localhost:${port}`;
 
@@ -225,9 +197,7 @@ testSkipIfWindows(
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(
-          new Error("fake-oauth-mcp-server failed to start within timeout"),
-        );
+        reject(new Error("fake-oauth-mcp-server failed to start within timeout"));
       }, 10000);
       fake.stdout?.on("data", (data: Buffer) => {
         if (data.toString().includes("Fake OAuth MCP server listening")) {
@@ -254,13 +224,9 @@ testSkipIfWindows(
       await po.navigation.goToPluginsTab();
       await po.plugins.openAddPluginDialog();
 
-      await po.page
-        .getByRole("textbox", { name: "My MCP Server" })
-        .fill("testing-mcp-server");
+      await po.page.getByRole("textbox", { name: "My MCP Server" }).fill("testing-mcp-server");
       await po.page.getByTestId("mcp-transport-select").selectOption("http");
-      await po.page
-        .getByPlaceholder("http://localhost:3000")
-        .fill(`${base}/mcp`);
+      await po.page.getByPlaceholder("http://localhost:3000").fill(`${base}/mcp`);
       await po.plugins.submitAddPluginDialog();
 
       // Toast fires once at registration and auto-dismisses; assert it
@@ -271,17 +237,15 @@ testSkipIfWindows(
 
       // The full alert with the retry action lives on the detail page.
       await po.plugins.openPluginDetail("testing-mcp-server");
-      await expect(
-        po.page.getByText("Server doesn't support OAuth", { exact: true }),
-      ).toBeVisible({ timeout: 15_000 });
+      await expect(po.page.getByText("Server doesn't support OAuth", { exact: true })).toBeVisible({
+        timeout: 15_000,
+      });
 
-      await po.page
-        .getByRole("button", { name: "Disable OAuth & retry" })
-        .click();
+      await po.page.getByRole("button", { name: "Disable OAuth & retry" }).click();
 
-      await expect(
-        po.page.getByText("Server doesn't support OAuth", { exact: true }),
-      ).toBeHidden({ timeout: 15_000 });
+      await expect(po.page.getByText("Server doesn't support OAuth", { exact: true })).toBeHidden({
+        timeout: 15_000,
+      });
 
       // Drive a tool call to prove the server is actually usable now.
       await po.navigation.goToAppsTab();
@@ -316,12 +280,7 @@ testSkipIfWindows(
     // "Server requires authentication" alert appears with the
     // Enable OAuth & retry button. Clicking it must run the full OAuth
     // flow and reach the connected state.
-    const fakePath = path.join(
-      __dirname,
-      "..",
-      "testing",
-      "fake-oauth-mcp-server.mjs",
-    );
+    const fakePath = path.join(__dirname, "..", "testing", "fake-oauth-mcp-server.mjs");
     const port = 4005;
     const base = `http://localhost:${port}`;
 
@@ -332,9 +291,7 @@ testSkipIfWindows(
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(
-          new Error("fake-oauth-mcp-server failed to start within timeout"),
-        );
+        reject(new Error("fake-oauth-mcp-server failed to start within timeout"));
       }, 10000);
       fake.stdout?.on("data", (data: Buffer) => {
         if (data.toString().includes("Fake OAuth MCP server listening")) {
@@ -359,13 +316,9 @@ testSkipIfWindows(
       await po.navigation.goToPluginsTab();
       await po.plugins.openAddPluginDialog();
 
-      await po.page
-        .getByRole("textbox", { name: "My MCP Server" })
-        .fill("testing-mcp-server");
+      await po.page.getByRole("textbox", { name: "My MCP Server" }).fill("testing-mcp-server");
       await po.page.getByTestId("mcp-transport-select").selectOption("http");
-      await po.page
-        .getByPlaceholder("http://localhost:3000")
-        .fill(`${base}/mcp`);
+      await po.page.getByPlaceholder("http://localhost:3000").fill(`${base}/mcp`);
       // Toggle "Use OAuth" off so the post-create probe runs instead
       // of auto-connect; this is the entry point for the unauthorized
       // retry flow.
@@ -382,9 +335,7 @@ testSkipIfWindows(
         po.page.getByText("Server requires authentication", { exact: true }),
       ).toBeVisible({ timeout: 15_000 });
 
-      await po.page
-        .getByRole("button", { name: "Enable OAuth & retry" })
-        .click();
+      await po.page.getByRole("button", { name: "Enable OAuth & retry" }).click();
 
       await expect(po.page.getByText("OAuth: connected")).toBeVisible({
         timeout: 15_000,

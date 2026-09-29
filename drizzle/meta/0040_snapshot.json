@@ -41,9 +41,7 @@
       "indexes": {
         "app_collections_name_unique": {
           "name": "app_collections_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },
@@ -290,13 +288,9 @@
         "apps_collection_id_app_collections_id_fk": {
           "name": "apps_collection_id_app_collections_id_fk",
           "tableFrom": "apps",
-          "columnsFrom": [
-            "collection_id"
-          ],
+          "columnsFrom": ["collection_id"],
           "tableTo": "app_collections",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -444,13 +438,9 @@
         "chats_app_id_apps_id_fk": {
           "name": "chats_app_id_apps_id_fk",
           "tableFrom": "chats",
-          "columnsFrom": [
-            "app_id"
-          ],
+          "columnsFrom": ["app_id"],
           "tableTo": "apps",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -648,13 +638,9 @@
         "language_models_custom_provider_id_language_model_providers_id_fk": {
           "name": "language_models_custom_provider_id_language_model_providers_id_fk",
           "tableFrom": "language_models",
-          "columnsFrom": [
-            "custom_provider_id"
-          ],
+          "columnsFrom": ["custom_provider_id"],
           "tableTo": "language_model_providers",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -800,9 +786,7 @@
       "indexes": {
         "uniq_mcp_catalog_slug": {
           "name": "uniq_mcp_catalog_slug",
-          "columns": [
-            "catalog_slug"
-          ],
+          "columns": ["catalog_slug"],
           "isUnique": true
         }
       },
@@ -855,10 +839,7 @@
       "indexes": {
         "uniq_mcp_consent": {
           "name": "uniq_mcp_consent",
-          "columns": [
-            "server_id",
-            "tool_name"
-          ],
+          "columns": ["server_id", "tool_name"],
           "isUnique": true
         }
       },
@@ -866,13 +847,9 @@
         "mcp_tool_consents_server_id_mcp_servers_id_fk": {
           "name": "mcp_tool_consents_server_id_mcp_servers_id_fk",
           "tableFrom": "mcp_tool_consents",
-          "columnsFrom": [
-            "server_id"
-          ],
+          "columnsFrom": ["server_id"],
           "tableTo": "mcp_servers",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -989,13 +966,9 @@
         "messages_chat_id_chats_id_fk": {
           "name": "messages_chat_id_chats_id_fk",
           "tableFrom": "messages",
-          "columnsFrom": [
-            "chat_id"
-          ],
+          "columnsFrom": ["chat_id"],
           "tableTo": "chats",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1062,9 +1035,7 @@
       "indexes": {
         "prompts_slug_unique": {
           "name": "prompts_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         }
       },
@@ -1123,25 +1094,17 @@
       "indexes": {
         "security_fix_chats_review_chat_id_idx": {
           "name": "security_fix_chats_review_chat_id_idx",
-          "columns": [
-            "review_chat_id"
-          ],
+          "columns": ["review_chat_id"],
           "isUnique": false
         },
         "security_fix_chats_fix_chat_id_idx": {
           "name": "security_fix_chats_fix_chat_id_idx",
-          "columns": [
-            "fix_chat_id"
-          ],
+          "columns": ["fix_chat_id"],
           "isUnique": false
         },
         "security_fix_chats_unique": {
           "name": "security_fix_chats_unique",
-          "columns": [
-            "app_id",
-            "review_chat_id",
-            "finding_key"
-          ],
+          "columns": ["app_id", "review_chat_id", "finding_key"],
           "isUnique": true
         }
       },
@@ -1149,39 +1112,27 @@
         "security_fix_chats_app_id_apps_id_fk": {
           "name": "security_fix_chats_app_id_apps_id_fk",
           "tableFrom": "security_fix_chats",
-          "columnsFrom": [
-            "app_id"
-          ],
+          "columnsFrom": ["app_id"],
           "tableTo": "apps",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "security_fix_chats_review_chat_id_chats_id_fk": {
           "name": "security_fix_chats_review_chat_id_chats_id_fk",
           "tableFrom": "security_fix_chats",
-          "columnsFrom": [
-            "review_chat_id"
-          ],
+          "columnsFrom": ["review_chat_id"],
           "tableTo": "chats",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "security_fix_chats_fix_chat_id_chats_id_fk": {
           "name": "security_fix_chats_fix_chat_id_chats_id_fk",
           "tableFrom": "security_fix_chats",
-          "columnsFrom": [
-            "fix_chat_id"
-          ],
+          "columnsFrom": ["fix_chat_id"],
           "tableTo": "chats",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1256,10 +1207,7 @@
       "indexes": {
         "versions_app_commit_unique": {
           "name": "versions_app_commit_unique",
-          "columns": [
-            "app_id",
-            "commit_hash"
-          ],
+          "columns": ["app_id", "commit_hash"],
           "isUnique": true
         }
       },
@@ -1267,13 +1215,9 @@
         "versions_app_id_apps_id_fk": {
           "name": "versions_app_id_apps_id_fk",
           "tableFrom": "versions",
-          "columnsFrom": [
-            "app_id"
-          ],
+          "columnsFrom": ["app_id"],
           "tableTo": "apps",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }

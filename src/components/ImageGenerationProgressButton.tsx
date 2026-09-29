@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  useImageGenerationJobs,
-  useImageGenerationPendingCount,
-} from "@/image_generation/hooks";
+import { useImageGenerationJobs, useImageGenerationPendingCount } from "@/image_generation/hooks";
 import { ImageGenerationProgressDialog } from "./ImageGenerationProgressDialog";
 
 export function ImageGenerationProgressButton() {
@@ -16,12 +13,7 @@ export function ImageGenerationProgressButton() {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="relative"
-        onClick={() => setDialogOpen(true)}
-      >
+      <Button variant="outline" size="sm" className="relative" onClick={() => setDialogOpen(true)}>
         <Clock className="h-4 w-4 mr-1" />
         Recent
         {pendingCount > 0 && (
@@ -31,10 +23,7 @@ export function ImageGenerationProgressButton() {
         )}
       </Button>
 
-      <ImageGenerationProgressDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
+      <ImageGenerationProgressDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </>
   );
 }

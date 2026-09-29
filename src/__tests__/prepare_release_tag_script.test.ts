@@ -18,9 +18,7 @@ describe("prepare release tag script", () => {
   });
 
   it("allows missing or draft releases to move a tag", () => {
-    expect(() =>
-      assertReleaseCanMoveTag({ release: null, tagName: "v1.3.0" }),
-    ).not.toThrow();
+    expect(() => assertReleaseCanMoveTag({ release: null, tagName: "v1.3.0" })).not.toThrow();
     expect(() =>
       assertReleaseCanMoveTag({
         release: { draft: true },
@@ -90,9 +88,7 @@ describe("prepare release tag script", () => {
       }),
     ).resolves.toBe(draftRelease);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[1][0]).toContain(
-      "/releases?per_page=100&page=1",
-    );
+    expect(fetchMock.mock.calls[1][0]).toContain("/releases?per_page=100&page=1");
   });
 
   it("keeps non-404 GitHub API errors from direct tag lookup", async () => {
@@ -119,10 +115,7 @@ describe("prepare release tag script", () => {
   it("prefers dereferenced SHAs for annotated remote tags", () => {
     expect(
       getRemoteTagShaFromOutput({
-        output: [
-          "tag-object-sha\trefs/tags/v1.3.0",
-          "commit-sha\trefs/tags/v1.3.0^{}",
-        ].join("\n"),
+        output: ["tag-object-sha\trefs/tags/v1.3.0", "commit-sha\trefs/tags/v1.3.0^{}"].join("\n"),
         tagName: "v1.3.0",
       }),
     ).toBe("commit-sha");

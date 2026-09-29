@@ -13,10 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local agent search_replace (hybrid)", () => {
@@ -58,19 +55,12 @@ describe("local agent search_replace (hybrid)", () => {
     // The agent's search_replace tool call renders its card in the DOM — the
     // same surface the Playwright spec asserted with
     // getByTestId("octopus-studio-search-replace").
-    await waitFor(
-      () =>
-        expect(
-          screen.getByTestId("octopus-studio-search-replace"),
-        ).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("octopus-studio-search-replace")).toBeTruthy(), {
+      timeout: 20_000,
+    });
     // The agent's final message text also renders.
     await waitFor(
-      () =>
-        expect(
-          screen.getByText(/updated the message using search_replace/i),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/updated the message using search_replace/i)).toBeTruthy(),
       { timeout: 20_000 },
     );
 
@@ -81,13 +71,9 @@ describe("local agent search_replace (hybrid)", () => {
     // absence of error events (original node assertions, now read off the
     // renderer bridge that received the events).
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
-    expect(harness.bridge.sentEvents.map((e) => e.channel)).toContain(
-      "chat:stream:end",
-    );
+    expect(harness.bridge.sentEvents.map((e) => e.channel)).toContain("chat:stream:end");
 
     // The search_replace edit was applied verbatim.
     expect(harness.readAppFile("src/App.tsx").trim()).toBe(

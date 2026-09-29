@@ -72,11 +72,9 @@ import path from "path";
 import { ElectronApplication, _electron as electron } from "playwright";
 
 const ENABLED =
-  process.platform === "darwin" &&
-  process.env.OCTOPUS_STUDIO_E2E_SAFE_STORAGE === "1";
+  process.platform === "darwin" && process.env.OCTOPUS_STUDIO_E2E_SAFE_STORAGE === "1";
 
-const UPGRADE_BUILD_DIR =
-  process.env.OCTOPUS_STUDIO_E2E_SAFE_STORAGE_UPGRADE_BUILD;
+const UPGRADE_BUILD_DIR = process.env.OCTOPUS_STUDIO_E2E_SAFE_STORAGE_UPGRADE_BUILD;
 
 // Keychain service names created by Chromium's os_crypt on macOS. The service
 // is "<product name> Safe Storage"; pre-ready initialization on Electron 40
@@ -139,11 +137,7 @@ function freshTempKeychain(): void {
   // prompt), which is what makes the fallback exercisable in this environment.
   for (const [service, account, password] of [
     [CHROMIUM_SERVICE, "Chromium Key", "e2e-chromium-identity-key"],
-    [
-      OCTOPUS_STUDIO_SERVICE,
-      "octopus-studio Key",
-      "e2e-octopusStudio-identity-key",
-    ],
+    [OCTOPUS_STUDIO_SERVICE, "octopus-studio Key", "e2e-octopusStudio-identity-key"],
   ]) {
     security([
       "add-generic-password",
@@ -202,9 +196,7 @@ async function launchOctopusStudio({
   }
 }
 
-async function closeOctopusStudio(
-  electronApp: ElectronApplication,
-): Promise<void> {
+async function closeOctopusStudio(electronApp: ElectronApplication): Promise<void> {
   launchedApps.delete(electronApp);
   const child = electronApp.process();
   try {
@@ -219,10 +211,7 @@ async function closeOctopusStudio(
   }
 }
 
-function encryptViaApp(
-  electronApp: ElectronApplication,
-  plaintext: string,
-): Promise<string> {
+function encryptViaApp(electronApp: ElectronApplication, plaintext: string): Promise<string> {
   return electronApp.evaluate(({ safeStorage }, text) => {
     if (!safeStorage.isEncryptionAvailable()) {
       throw new Error("safeStorage encryption is not available");
@@ -247,13 +236,9 @@ function decryptViaApp(
   }, ciphertextBase64);
 }
 
-async function readSettingsViaIpc(
-  electronApp: ElectronApplication,
-): Promise<any> {
+async function readSettingsViaIpc(electronApp: ElectronApplication): Promise<any> {
   const page = await electronApp.firstWindow();
-  return page.evaluate(() =>
-    (window as any).electron.ipcRenderer.invoke("get-user-settings"),
-  );
+  return page.evaluate(() => (window as any).electron.ipcRenderer.invoke("get-user-settings"));
 }
 
 async function writeSettingsViaIpc(
@@ -275,14 +260,9 @@ function readSettingsFileRaw(userDataDir: string): any {
   return JSON.parse(fs.readFileSync(settingsPath(userDataDir), "utf8"));
 }
 
-function writeGithubTokenCiphertext(
-  userDataDir: string,
-  ciphertextBase64: string,
-): void {
+function writeGithubTokenCiphertext(userDataDir: string, ciphertextBase64: string): void {
   const file = settingsPath(userDataDir);
-  const settings = fs.existsSync(file)
-    ? JSON.parse(fs.readFileSync(file, "utf8"))
-    : {};
+  const settings = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : {};
   settings.githubAccessToken = {
     value: ciphertextBase64,
     encryptionType: "electron-safe-storage",
@@ -291,20 +271,16 @@ function writeGithubTokenCiphertext(
 }
 
 function makeUserDataDir(label: string): string {
-  const dir = path.join(
-    os.tmpdir(),
-    `octopusStudio-e2e-safe-storage-${label}-${Date.now()}`,
-  );
+  const dir = path.join(os.tmpdir(), `octopusStudio-e2e-safe-storage-${label}-${Date.now()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
 // A well-formed (v10-prefixed) ciphertext that no key can decrypt. Its only
 // job is to make readSettings() attempt a safeStorage decrypt at startup.
-const UNDECRYPTABLE_CIPHERTEXT = Buffer.concat([
-  Buffer.from("v10"),
-  Buffer.alloc(16, 7),
-]).toString("base64");
+const UNDECRYPTABLE_CIPHERTEXT = Buffer.concat([Buffer.from("v10"), Buffer.alloc(16, 7)]).toString(
+  "base64",
+);
 
 test.describe("safeStorage keychain identity (issue #3837)", () => {
   test.skip(
@@ -314,12 +290,8 @@ test.describe("safeStorage keychain identity (issue #3837)", () => {
 
   test.beforeAll(() => {
     if (!ENABLED) return;
-    originalDefaultKeychain = parseKeychainPaths(
-      security(["default-keychain", "-d", "user"]),
-    )[0];
-    originalSearchList = parseKeychainPaths(
-      security(["list-keychains", "-d", "user"]),
-    );
+    originalDefaultKeychain = parseKeychainPaths(security(["default-keychain", "-d", "user"]))[0];
+    originalSearchList = parseKeychainPaths(security(["list-keychains", "-d", "user"]));
   });
 
   test.afterAll(() => {
@@ -328,9 +300,7 @@ test.describe("safeStorage keychain identity (issue #3837)", () => {
   });
 
   test.afterEach(async () => {
-    await Promise.all(
-      [...launchedApps].map((electronApp) => closeOctopusStudio(electronApp)),
-    );
+    await Promise.all([...launchedApps].map((electronApp) => closeOctopusStudio(electronApp)));
   });
 
   test.beforeEach(() => {
@@ -428,9 +398,7 @@ test.describe("safeStorage keychain identity (issue #3837)", () => {
     const onDisk = readSettingsFileRaw(userDataDir);
     expect(onDisk.hidePnpmMinimumReleaseAgeWarning).toBe(true);
     expect(onDisk.githubAccessToken?.value).toBe(UNDECRYPTABLE_CIPHERTEXT);
-    expect(onDisk.githubAccessToken?.encryptionType).toBe(
-      "electron-safe-storage",
-    );
+    expect(onDisk.githubAccessToken?.encryptionType).toBe("electron-safe-storage");
 
     // Replacement still works: explicitly setting a new token overwrites the
     // preserved-but-unreadable secret. In a test build encrypt() stores
@@ -446,9 +414,7 @@ test.describe("safeStorage keychain identity (issue #3837)", () => {
 
     const afterReplace = readSettingsFileRaw(userDataDir);
     expect(afterReplace.githubAccessToken?.value).toBe("fresh-token");
-    expect(afterReplace.githubAccessToken?.value).not.toBe(
-      UNDECRYPTABLE_CIPHERTEXT,
-    );
+    expect(afterReplace.githubAccessToken?.value).not.toBe(UNDECRYPTABLE_CIPHERTEXT);
   });
 
   test("Electron 40 -> 43 upgrade: pre-fix build still drops steady-state secrets (#3837)", async () => {

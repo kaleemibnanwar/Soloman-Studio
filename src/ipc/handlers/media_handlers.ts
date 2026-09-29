@@ -5,36 +5,26 @@ import { apps } from "../../db/schema";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { safeJoin } from "../utils/path_utils";
 import { getMimeType, MIME_TYPE_MAP } from "../utils/mime_utils";
-import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../utils/media_path_utils";
+import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../media/media_path_utils";
 import { INVALID_FILE_NAME_CHARS } from "../../shared/media_validation";
 import { ensureOctopusStudioGitignored } from "./gitignoreUtils";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import fs from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { app as electronApp, shell } from "electron";
 import {
   getMediaThumbnailCacheRoot,
   invalidateMediaThumbnailCache,
-} from "../utils/media_thumbnail";
+} from "../media/media_thumbnail";
 
 const logger = log.scope("media_handlers");
 
 const SUPPORTED_MEDIA_EXTENSIONS = Object.keys(MIME_TYPE_MAP);
 
-async function getMediaFilesForApp(
-  appId: number,
-  appName: string,
-  appPath: string,
-) {
+async function getMediaFilesForApp(appId: number, appName: string, appPath: string) {
   const mediaDir = path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
   try {
     await fs.promises.access(mediaDir);
@@ -99,9 +89,7 @@ async function withMediaLock<T>(
         // Moving into an app may update that target's .gitignore. A recording
         // owns its repository for the whole session, so refuse at the target's
         // admission instead of queueing the cross-app move indefinitely.
-        refuseWhenRecording: claimsRepository
-          ? "move an image into this app"
-          : undefined,
+        refuseWhenRecording: claimsRepository ? "move an image into this app" : undefined,
       },
       () => runWithLock(index + 1),
     );
@@ -112,17 +100,11 @@ async function withMediaLock<T>(
 
 function assertSafeFileName(fileName: string): void {
   if (!fileName || fileName.trim().length === 0) {
-    throw new OctopusStudioError(
-      "File name is required",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("File name is required", OctopusStudioErrorKind.Validation);
   }
 
   if (fileName !== path.basename(fileName)) {
-    throw new OctopusStudioError(
-      "Invalid file name",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid file name", OctopusStudioErrorKind.Validation);
   }
 
   if (
@@ -132,10 +114,7 @@ function assertSafeFileName(fileName: string): void {
     fileName === ".." ||
     INVALID_FILE_NAME_CHARS.test(fileName)
   ) {
-    throw new OctopusStudioError(
-      "Invalid file name",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid file name", OctopusStudioErrorKind.Validation);
   }
 }
 
@@ -143,10 +122,7 @@ function assertSafeBaseName(baseName: string): string {
   const trimmed = baseName.trim();
 
   if (!trimmed) {
-    throw new OctopusStudioError(
-      "New image name is required",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("New image name is required", OctopusStudioErrorKind.Validation);
   }
 
   if (
@@ -156,10 +132,7 @@ function assertSafeBaseName(baseName: string): string {
     trimmed === ".." ||
     INVALID_FILE_NAME_CHARS.test(trimmed)
   ) {
-    throw new OctopusStudioError(
-      "Invalid image name",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid image name", OctopusStudioErrorKind.Validation);
   }
 
   return trimmed;
@@ -207,10 +180,7 @@ async function getAppOrThrow(appId: number) {
   });
 
   if (!app) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
 
   return app;
@@ -257,15 +227,10 @@ export function registerMediaHandlers() {
         );
       }
 
-      const destinationPath = safeJoin(
-        appPath,
-        OCTOPUS_STUDIO_MEDIA_DIR_NAME,
-        destinationFileName,
-      );
+      const destinationPath = safeJoin(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME, destinationFileName);
 
       // Allow case-only renames on case-insensitive file systems (macOS, Windows)
-      const isCaseOnlyRename =
-        destinationFileName.toLowerCase() === params.fileName.toLowerCase();
+      const isCaseOnlyRename = destinationFileName.toLowerCase() === params.fileName.toLowerCase();
       if (!isCaseOnlyRename && fs.existsSync(destinationPath)) {
         throw new OctopusStudioError(
           "A media file with that name already exists",
@@ -277,9 +242,7 @@ export function registerMediaHandlers() {
         await fs.promises.rename(sourcePath, destinationPath);
       } catch (e: any) {
         if (e?.code === "ENOENT") {
-          throw new Error(
-            "File was modified or deleted before the rename could complete",
-          );
+          throw new Error("File was modified or deleted before the rename could complete");
         }
         throw e;
       }
@@ -314,10 +277,7 @@ export function registerMediaHandlers() {
     const appPath = getOctopusStudioAppPath(app.path);
     const filePath = getMediaFilePath(appPath, params.fileName);
     if (!fs.existsSync(filePath)) {
-      throw new OctopusStudioError(
-        "Media file not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("Media file not found", OctopusStudioErrorKind.NotFound);
     }
     const result = await shell.openPath(filePath);
     if (result) {
@@ -347,10 +307,7 @@ export function registerMediaHandlers() {
 
         const sourcePath = getMediaFilePath(sourceAppPath, params.fileName);
         if (!fs.existsSync(sourcePath)) {
-          throw new OctopusStudioError(
-            "Media file not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Media file not found", OctopusStudioErrorKind.NotFound);
         }
 
         await ensureOctopusStudioGitignored(targetAppPath);
@@ -364,9 +321,7 @@ export function registerMediaHandlers() {
         );
 
         if (fs.existsSync(destinationPath)) {
-          throw new Error(
-            `Target app already has a media file named "${params.fileName}"`,
-          );
+          throw new Error(`Target app already has a media file named "${params.fileName}"`);
         }
 
         try {
@@ -388,9 +343,7 @@ export function registerMediaHandlers() {
               throw unlinkError;
             }
           } else if (e?.code === "ENOENT") {
-            throw new Error(
-              "File was modified or deleted before the move could complete",
-            );
+            throw new Error("File was modified or deleted before the move could complete");
           } else {
             throw e;
           }

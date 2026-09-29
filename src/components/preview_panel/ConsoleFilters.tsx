@@ -1,19 +1,10 @@
 import { Filter, X, Trash2 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 
 interface ConsoleFiltersProps {
   levelFilter: "all" | "info" | "warn" | "error";
-  typeFilter:
-    | "all"
-    | "server"
-    | "client"
-    | "edge-function"
-    | "network-requests";
+  typeFilter: "all" | "server" | "client" | "edge-function" | "network-requests";
   sourceFilter: string;
   onLevelFilterChange: (value: "all" | "info" | "warn" | "error") => void;
   onTypeFilterChange: (
@@ -41,8 +32,7 @@ export const ConsoleFilters = ({
   showFilters,
 }: ConsoleFiltersProps) => {
   const { t } = useTranslation("home");
-  const hasActiveFilters =
-    levelFilter !== "all" || typeFilter !== "all" || sourceFilter !== "";
+  const hasActiveFilters = levelFilter !== "all" || typeFilter !== "all" || sourceFilter !== "";
 
   if (!showFilters) return null;
 
@@ -53,11 +43,7 @@ export const ConsoleFilters = ({
       {/* Level filter */}
       <select
         value={levelFilter}
-        onChange={(e) =>
-          onLevelFilterChange(
-            e.target.value as "all" | "info" | "warn" | "error",
-          )
-        }
+        onChange={(e) => onLevelFilterChange(e.target.value as "all" | "info" | "warn" | "error")}
         className="text-xs px-2 py-1 border border-border rounded bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
         <option value="all">{t("preview.consoleFilters.allLevels")}</option>
@@ -71,12 +57,7 @@ export const ConsoleFilters = ({
         value={typeFilter}
         onChange={(e) =>
           onTypeFilterChange(
-            e.target.value as
-              | "all"
-              | "server"
-              | "client"
-              | "edge-function"
-              | "network-requests",
+            e.target.value as "all" | "server" | "client" | "edge-function" | "network-requests",
           )
         }
         className="text-xs px-2 py-1 border border-border rounded bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -84,12 +65,8 @@ export const ConsoleFilters = ({
         <option value="all">{t("preview.consoleFilters.allTypes")}</option>
         <option value="server">{t("preview.consoleFilters.server")}</option>
         <option value="client">{t("preview.consoleFilters.client")}</option>
-        <option value="edge-function">
-          {t("preview.consoleFilters.edgeFunction")}
-        </option>
-        <option value="network-requests">
-          {t("preview.consoleFilters.networkRequests")}
-        </option>
+        <option value="edge-function">{t("preview.consoleFilters.edgeFunction")}</option>
+        <option value="network-requests">{t("preview.consoleFilters.networkRequests")}</option>
       </select>
 
       {/* Source filter */}

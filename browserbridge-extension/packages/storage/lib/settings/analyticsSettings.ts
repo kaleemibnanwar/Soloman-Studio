@@ -1,6 +1,6 @@
-import { StorageEnum } from '../base/enums';
-import { createStorage } from '../base/base';
-import type { BaseStorage } from '../base/types';
+import { StorageEnum } from "../base/enums";
+import { createStorage } from "../base/base";
+import type { BaseStorage } from "../base/types";
 
 // Interface for analytics settings configuration
 export interface AnalyticsSettingsConfig {
@@ -17,19 +17,27 @@ export type AnalyticsSettingsStorage = BaseStorage<AnalyticsSettingsConfig> & {
 
 // Generate a random anonymous user ID
 function generateAnonymousUserId(): string {
-  return 'anon_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return (
+    "anon_" +
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
 }
 
 // Default settings - enabled by default as per requirements
 export const DEFAULT_ANALYTICS_SETTINGS: AnalyticsSettingsConfig = {
   enabled: true,
-  anonymousUserId: '',
+  anonymousUserId: "",
 };
 
-const storage = createStorage<AnalyticsSettingsConfig>('analytics-settings', DEFAULT_ANALYTICS_SETTINGS, {
-  storageEnum: StorageEnum.Local,
-  liveUpdate: true,
-});
+const storage = createStorage<AnalyticsSettingsConfig>(
+  "analytics-settings",
+  DEFAULT_ANALYTICS_SETTINGS,
+  {
+    storageEnum: StorageEnum.Local,
+    liveUpdate: true,
+  },
+);
 
 export const analyticsSettingsStore: AnalyticsSettingsStorage = {
   ...storage,

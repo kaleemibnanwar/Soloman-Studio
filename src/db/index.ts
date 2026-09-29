@@ -1,8 +1,5 @@
 // db.ts
-import {
-  type BetterSQLite3Database,
-  drizzle,
-} from "drizzle-orm/better-sqlite3";
+import { type BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import * as schema from "./schema";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
@@ -60,10 +57,7 @@ export function initializeDatabase(): BetterSQLite3Database<typeof schema> & {
   try {
     sqlite.pragma("journal_mode = WAL");
   } catch (error) {
-    logger.warn(
-      "Could not enable WAL mode, falling back to default journal mode:",
-      error,
-    );
+    logger.warn("Could not enable WAL mode, falling back to default journal mode:", error);
   }
 
   _db = drizzle(sqlite, { schema });
@@ -103,9 +97,7 @@ export function closeDatabase(): void {
  * `src/testing/test_db.ts`). Pass null to clear the override.
  */
 export function setDatabaseForTesting(
-  database:
-    | (BetterSQLite3Database<typeof schema> & { $client: Database.Database })
-    | null,
+  database: (BetterSQLite3Database<typeof schema> & { $client: Database.Database }) | null,
 ): void {
   _db = database;
 }
@@ -117,9 +109,7 @@ export function getDb(): BetterSQLite3Database<typeof schema> & {
   $client: Database.Database;
 } {
   if (!_db) {
-    throw new Error(
-      "Database not initialized. Call initializeDatabase() first.",
-    );
+    throw new Error("Database not initialized. Call initializeDatabase() first.");
   }
   return _db as any;
 }

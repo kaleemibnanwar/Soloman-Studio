@@ -23,18 +23,16 @@ export function CloudSandboxExperimentSwitch() {
             });
           }}
         />
-        <Label htmlFor="enable-cloud-sandbox-experiment">
-          Enable Cloud Sandbox (Pro)
-        </Label>
+        <Label htmlFor="enable-cloud-sandbox-experiment">Enable Cloud Sandbox (Pro)</Label>
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
-        Run your app on the Cloud (more secure and uses less local system
-        resources. Note: using Cloud resources consumes Pro credits)
+        Run your app on the Cloud (more secure and uses less local system resources. Note: using
+        Cloud resources consumes Pro credits)
       </div>
       {!isEnabled && isCloudModeActive && (
         <div className="rounded bg-amber-50 p-2 text-sm text-amber-700 dark:bg-amber-950/20 dark:text-amber-300">
-          Cloud Sandbox is still active for the current app. Switch the runtime
-          mode back to Local to fully turn it off.
+          Cloud Sandbox is still active for the current app. Switch the runtime mode back to Local
+          to fully turn it off.
         </div>
       )}
     </div>

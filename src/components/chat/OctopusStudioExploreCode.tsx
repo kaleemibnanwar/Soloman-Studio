@@ -29,9 +29,10 @@ interface OctopusStudioExploreCodeProps {
   };
 }
 
-export const OctopusStudioExploreCode: React.FC<
-  OctopusStudioExploreCodeProps
-> = ({ children, node }) => {
+export const OctopusStudioExploreCode: React.FC<OctopusStudioExploreCodeProps> = ({
+  children,
+  node,
+}) => {
   const state = node?.properties?.state as CustomTagState;
   const inProgress = state === "pending";
   const [isContentVisible, setIsContentVisible] = useState(inProgress);
@@ -56,9 +57,7 @@ export const OctopusStudioExploreCode: React.FC<
       ? `${files || "0"} file${files === "1" ? "" : "s"}, ${symbols || "0"} symbol${symbols === "1" ? "" : "s"}`
       : "";
   const timing =
-    indexMs || searchMs
-      ? `${indexMs || "0"}ms index, ${searchMs || "0"}ms search`
-      : "";
+    indexMs || searchMs ? `${indexMs || "0"}ms index, ${searchMs || "0"}ms search` : "";
 
   return (
     <OctopusStudioCard
@@ -68,14 +67,9 @@ export const OctopusStudioExploreCode: React.FC<
       isExpanded={isContentVisible}
       data-testid="octopus-studio-explore-code"
     >
-      <OctopusStudioCardHeader
-        icon={<ScanSearch size={15} />}
-        accentColor="teal"
-      >
+      <OctopusStudioCardHeader icon={<ScanSearch size={15} />} accentColor="teal">
         <OctopusStudioBadge color="teal">CODE</OctopusStudioBadge>
-        {appName && (
-          <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>
-        )}
+        {appName && <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>}
         <span className="font-medium text-sm text-foreground truncate">
           {query ? `"${query}"` : "Explore code"}
         </span>
@@ -85,35 +79,17 @@ export const OctopusStudioExploreCode: React.FC<
             {truncated ? ", truncated" : ""})
           </span>
         )}
-        {timing && (
-          <span className="text-xs text-muted-foreground shrink-0">
-            {timing}
-          </span>
-        )}
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Exploring..."
-          />
-        )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
-        {errored && (
-          <OctopusStudioStateIndicator state="error" errorLabel="Failed" />
-        )}
+        {timing && <span className="text-xs text-muted-foreground shrink-0">{timing}</span>}
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Exploring..." />}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
+        {errored && <OctopusStudioStateIndicator state="error" errorLabel="Failed" />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
         </div>
       </OctopusStudioCardHeader>
       <OctopusStudioCardContent isExpanded={isContentVisible}>
         <div className="text-xs" onClick={(e) => e.stopPropagation()}>
-          <CodeHighlight className="language-markdown">
-            {children}
-          </CodeHighlight>
+          <CodeHighlight className="language-markdown">{children}</CodeHighlight>
         </div>
       </OctopusStudioCardContent>
     </OctopusStudioCard>

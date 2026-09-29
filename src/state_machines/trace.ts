@@ -1,8 +1,4 @@
-import type {
-  DispatchContext,
-  IgnoreReason,
-  TransitionObserver,
-} from "./types";
+import type { DispatchContext, IgnoreReason, TransitionObserver } from "./types";
 
 export interface ReplayTraceEntry<SerializedEvent> {
   readonly event: SerializedEvent;
@@ -89,10 +85,7 @@ function ensureMachine(machine: string): Map<TraceKey, MachineTraceEntry[]> {
   return rings;
 }
 
-function compareEntries(
-  left: MachineTraceEntry,
-  right: MachineTraceEntry,
-): number {
+function compareEntries(left: MachineTraceEntry, right: MachineTraceEntry): number {
   return left.at - right.at || left.sequence - right.sequence;
 }
 
@@ -155,9 +148,7 @@ export function getTraceLog(machine?: string): readonly MachineTraceEntry[] {
   if (machine !== undefined) {
     return [...(logs.get(machine)?.values() ?? [])].flat().sort(compareEntries);
   }
-  return [...logs.values()]
-    .flatMap((rings) => [...rings.values()].flat())
-    .sort(compareEntries);
+  return [...logs.values()].flatMap((rings) => [...rings.values()].flat()).sort(compareEntries);
 }
 
 export function createTraceObserver<
@@ -171,22 +162,13 @@ export function createTraceObserver<
   options: TraceObserverOptions<State, Event, Command> = {},
 ): TransitionObserver<State, Event, Command, Reason> {
   ensureMachine(machine);
-  const maxEntries = Math.max(
-    0,
-    Math.floor(options.maxEntries ?? DEFAULT_MAX_ENTRIES),
-  );
+  const maxEntries = Math.max(0, Math.floor(options.maxEntries ?? DEFAULT_MAX_ENTRIES));
   const describeState = options.describeState ?? defaultDescription;
   const describeEvent = options.describeEvent ?? defaultDescription;
   const describeCommand = options.describeCommand ?? defaultDescription;
 
   return {
-    onTransitionApplied: ({
-      previous,
-      event,
-      state,
-      commands,
-      dispatchContext,
-    }) => {
+    onTransitionApplied: ({ previous, event, state, commands, dispatchContext }) => {
       if (options.mute?.(event)) return;
       record(
         {
@@ -258,9 +240,7 @@ export function createReplayTraceObserver<
           outcome: {
             kind: "applied",
             stateKey: serialization.stateKey(state),
-            commands: commands.map((command) =>
-              serialization.describeCommand(command),
-            ),
+            commands: commands.map((command) => serialization.describeCommand(command)),
           },
         });
       },

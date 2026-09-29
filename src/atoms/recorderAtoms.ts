@@ -73,16 +73,10 @@ export interface RecordingStartRequest {
 
 export const RECORDING_REQUEST_TTL_MS = 15_000;
 
-export const recordingStartRequestAtom = atom<RecordingStartRequest | null>(
-  null,
-);
+export const recordingStartRequestAtom = atom<RecordingStartRequest | null>(null);
 
-export const recordingStateByAppIdAtom = atom<Map<number, RecordingState>>(
-  new Map(),
-);
-export const recordedEntriesByAppIdAtom = atom<Map<number, RecordedEntry[]>>(
-  new Map(),
-);
+export const recordingStateByAppIdAtom = atom<Map<number, RecordingState>>(new Map());
+export const recordedEntriesByAppIdAtom = atom<Map<number, RecordedEntry[]>>(new Map());
 
 export const currentRecordingStateAtom = atom((get) => {
   const appId = get(selectedAppIdAtom);
@@ -93,9 +87,7 @@ export const currentRecordingStateAtom = atom((get) => {
 
 export const currentRecordedEntriesAtom = atom((get) => {
   const appId = get(selectedAppIdAtom);
-  return appId === null
-    ? []
-    : (get(recordedEntriesByAppIdAtom).get(appId) ?? []);
+  return appId === null ? [] : (get(recordedEntriesByAppIdAtom).get(appId) ?? []);
 });
 
 /**
@@ -164,16 +156,12 @@ export const MAX_RECORDED_ENTRIES = 5_000;
 export const appendRecordedEntryAtom = atom(
   null,
   (get, set, { appId, entry }: { appId: number; entry: RecordedEntry }) => {
-    if (
-      (get(recordedEntriesByAppIdAtom).get(appId)?.length ?? 0) >=
-      MAX_RECORDED_ENTRIES
-    ) {
+    if ((get(recordedEntriesByAppIdAtom).get(appId)?.length ?? 0) >= MAX_RECORDED_ENTRIES) {
       // Dropped, but not silently: a spec generated from a truncated recording
       // replays part of a flow and fails for reasons the user can't see.
       set(setRecordingStateForAppAtom, {
         appId,
-        update: (prev) =>
-          prev.limitReached ? prev : { ...prev, limitReached: true },
+        update: (prev) => (prev.limitReached ? prev : { ...prev, limitReached: true }),
       });
       return;
     }
@@ -186,32 +174,26 @@ export const appendRecordedEntryAtom = atom(
   },
 );
 
-export const clearRecordedEntriesForAppAtom = atom(
-  null,
-  (_get, set, appId: number) => {
-    set(recordedEntriesByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-  },
-);
+export const clearRecordedEntriesForAppAtom = atom(null, (_get, set, appId: number) => {
+  set(recordedEntriesByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+});
 
-export const clearRecorderForAppAtom = atom(
-  null,
-  (_get, set, appId: number) => {
-    set(recordingStateByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-    set(recordedEntriesByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-  },
-);
+export const clearRecorderForAppAtom = atom(null, (_get, set, appId: number) => {
+  set(recordingStateByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+  set(recordedEntriesByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+});

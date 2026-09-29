@@ -16,10 +16,8 @@ export interface CommitDialogOwner {
   appId: number;
 }
 
-const isSameOwner = (
-  a: CommitDialogOwner | null,
-  b: CommitDialogOwner | null,
-) => a !== null && b !== null && a.source === b.source && a.appId === b.appId;
+const isSameOwner = (a: CommitDialogOwner | null, b: CommitDialogOwner | null) =>
+  a !== null && b !== null && a.source === b.source && a.appId === b.appId;
 
 /**
  * Which commit dialog is showing, if any. This is global rather than component
@@ -55,9 +53,7 @@ const commitDialogReturnAtom = atom<CommitDialogOwner | null>(null);
  * practice at most one entry exists, because switching apps unmounts the host
  * that owned the dialog and that drops the draft with it.
  */
-export const commitMessageDraftsByAppIdAtom = atom<Map<number, string>>(
-  new Map(),
-);
+export const commitMessageDraftsByAppIdAtom = atom<Map<number, string>>(new Map());
 
 /**
  * The selected app's commit message draft, or null when the user has not typed
@@ -90,16 +86,13 @@ export const commitMessageDraftAtom = atom(
  * runs after the user moved on cannot wipe a draft they have since typed for
  * another app.
  */
-export const discardCommitMessageDraftAtom = atom(
-  null,
-  (get, set, appId: number) => {
-    const drafts = get(commitMessageDraftsByAppIdAtom);
-    if (!drafts.has(appId)) return;
-    const next = new Map(drafts);
-    next.delete(appId);
-    set(commitMessageDraftsByAppIdAtom, next);
-  },
-);
+export const discardCommitMessageDraftAtom = atom(null, (get, set, appId: number) => {
+  const drafts = get(commitMessageDraftsByAppIdAtom);
+  if (!drafts.has(appId)) return;
+  const next = new Map(drafts);
+  next.delete(appId);
+  set(commitMessageDraftsByAppIdAtom, next);
+});
 
 /**
  * Opens a staged file's working-tree diff in the code view. `returnTo` names
@@ -112,11 +105,7 @@ export const discardCommitMessageDraftAtom = atom(
  */
 export const openStagedDiffAtom = atom(
   null,
-  (
-    _get,
-    set,
-    { path, returnTo }: { path: string; returnTo: CommitDialogOwner | null },
-  ) => {
+  (_get, set, { path, returnTo }: { path: string; returnTo: CommitDialogOwner | null }) => {
     set(openCommitDialogAtom, null);
     set(commitDialogReturnAtom, returnTo);
     set(stagedDiffFileAtom, path);
@@ -150,15 +139,12 @@ export const exitStagedDiffAtom = atom(null, (get, set) => {
  * ever describe the selected app, so a commit resolving late must not close the
  * diff, or discard the message, that has since come to belong to somebody else.
  */
-export const clearStagedDiffAtom = atom(
-  null,
-  (get, set, appId: number | null) => {
-    if (appId === null || get(selectedAppIdAtom) !== appId) return;
-    set(stagedDiffFileAtom, null);
-    set(commitDialogReturnAtom, null);
-    set(discardCommitMessageDraftAtom, appId);
-  },
-);
+export const clearStagedDiffAtom = atom(null, (get, set, appId: number | null) => {
+  if (appId === null || get(selectedAppIdAtom) !== appId) return;
+  set(stagedDiffFileAtom, null);
+  set(commitDialogReturnAtom, null);
+  set(discardCommitMessageDraftAtom, appId);
+});
 
 /**
  * Ends one dialog's life: closes it, drops a pending return to it, and discards
@@ -182,18 +168,15 @@ export const clearStagedDiffAtom = atom(
  * alone: the two sources share one draft per app, so the editor's toolbar
  * unmounting must not empty the input of a banner dialog the user is typing in.
  */
-export const closeCommitDialogAtom = atom(
-  null,
-  (get, set, owner: CommitDialogOwner) => {
-    const ownsDialog = isSameOwner(get(openCommitDialogAtom), owner);
-    const ownsReturn = isSameOwner(get(commitDialogReturnAtom), owner);
-    if (!ownsDialog && !ownsReturn) return;
+export const closeCommitDialogAtom = atom(null, (get, set, owner: CommitDialogOwner) => {
+  const ownsDialog = isSameOwner(get(openCommitDialogAtom), owner);
+  const ownsReturn = isSameOwner(get(commitDialogReturnAtom), owner);
+  if (!ownsDialog && !ownsReturn) return;
 
-    if (ownsDialog) set(openCommitDialogAtom, null);
-    if (ownsReturn) set(commitDialogReturnAtom, null);
-    set(discardCommitMessageDraftAtom, owner.appId);
-  },
-);
+  if (ownsDialog) set(openCommitDialogAtom, null);
+  if (ownsReturn) set(commitDialogReturnAtom, null);
+  set(discardCommitMessageDraftAtom, owner.appId);
+});
 
 /**
  * Drops the open dialog and any pending return without touching the staged

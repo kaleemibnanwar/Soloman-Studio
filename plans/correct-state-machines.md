@@ -617,10 +617,7 @@ reviewed lifetime maps.
 
 ```ts
 interface KeyedAdmissionGate<Key, Event> {
-  beginFence(options: {
-    key: Key;
-    allowDuringDrain(event: Event): boolean;
-  }): FenceHandle<Key>;
+  beginFence(options: { key: Key; allowDuringDrain(event: Event): boolean }): FenceHandle<Key>;
 
   assertCreateAllowed(key: Key): void;
   assertDispatchAllowed(key: Key, event: Event): void;
@@ -672,9 +669,7 @@ interface PreparedRequest<Admission, Outcome> {
   readonly requestId: RequestId;
   readonly admission: Promise<Admission>;
   readonly settled: Promise<Outcome | NotAdmitted>;
-  readonly retry:
-    | { kind: "disabled" }
-    | { kind: "enabled"; dispatch(): Promise<Admission> };
+  readonly retry: { kind: "disabled" } | { kind: "enabled"; dispatch(): Promise<Admission> };
 }
 ```
 

@@ -18,15 +18,11 @@ export function transition(
   if (event.type === "SUBMIT") {
     const existing = state.jobs.find(({ job }) => job.id === event.job.id);
     if (existing) {
-      return ignore(
-        state,
-        sameJob(existing.job, event.job) ? "duplicate-job" : "job-id-conflict",
-      );
+      return ignore(state, sameJob(existing.job, event.job) ? "duplicate-job" : "job-id-conflict");
     }
     if (
       state.jobs.some(
-        ({ activeInvocationRef }) =>
-          activeInvocationRef?.operationId === event.operationId,
+        ({ activeInvocationRef }) => activeInvocationRef?.operationId === event.operationId,
       )
     ) {
       return ignore(state, "operation-id-conflict");
@@ -81,8 +77,7 @@ export function transition(
       kind: "applied",
       state: {
         jobs: state.jobs.map((current) =>
-          current.job.targetAppId === event.appId &&
-          current.activeInvocationRef !== null
+          current.job.targetAppId === event.appId && current.activeInvocationRef !== null
             ? {
                 ...current,
                 job: { ...current.job, status: "cancelled" as const },
@@ -121,9 +116,7 @@ export function transition(
   }
 
   if (event.type === "APP_DELETED") {
-    const removed = state.jobs.filter(
-      ({ job }) => job.targetAppId === event.appId,
-    );
+    const removed = state.jobs.filter(({ job }) => job.targetAppId === event.appId);
     if (removed.length === 0) return ignore(state, "job-not-found");
     return {
       kind: "applied",
@@ -131,8 +124,7 @@ export function transition(
         jobs: state.jobs.filter(({ job }) => job.targetAppId !== event.appId),
       },
       commands: removed.flatMap(({ job, activeInvocationRef }) =>
-        activeInvocationRef &&
-        (job.status === "pending" || job.status === "cancelling")
+        activeInvocationRef && (job.status === "pending" || job.status === "cancelling")
           ? [
               {
                 type: "RequestCancel" as const,
@@ -253,8 +245,7 @@ export function transition(
 
     case "JOB_FAILED": {
       if (isTerminal(current.job)) return ignore(state, "already-terminal");
-      const cancelled =
-        current.job.status === "cancelling" && event.kind === "user_cancelled";
+      const cancelled = current.job.status === "cancelling" && event.kind === "user_cancelled";
       const nextJob: ImageGenerationActorJob = {
         job: cancelled
           ? { ...current.job, status: "cancelled" }
@@ -284,8 +275,7 @@ export function transition(
                   kind: "failed",
                   jobId: current.job.id,
                   message: event.message,
-                  failureKind:
-                    event.kind === "unexpected" ? "unexpected" : "provider",
+                  failureKind: event.kind === "unexpected" ? "unexpected" : "provider",
                 },
           },
         ],
@@ -325,15 +315,10 @@ function replaceJob(
   index: number,
   job: ImageGenerationActorJob,
 ): readonly ImageGenerationActorJob[] {
-  return jobs.map((current, currentIndex) =>
-    currentIndex === index ? job : current,
-  );
+  return jobs.map((current, currentIndex) => (currentIndex === index ? job : current));
 }
 
-function sameJob(
-  left: ImageGenerationJob,
-  right: Omit<ImageGenerationJob, "status">,
-): boolean {
+function sameJob(left: ImageGenerationJob, right: Omit<ImageGenerationJob, "status">): boolean {
   return (
     left.id === right.id &&
     left.startedAt === right.startedAt &&
@@ -346,17 +331,10 @@ function sameJob(
 }
 
 export function isTerminal(job: ImageGenerationJob): boolean {
-  return (
-    job.status === "success" ||
-    job.status === "error" ||
-    job.status === "cancelled"
-  );
+  return job.status === "success" || job.status === "error" || job.status === "cancelled";
 }
 
-function invocation(
-  jobId: string,
-  operationId: string,
-): ImageGenerationInvocationRef {
+function invocation(jobId: string, operationId: string): ImageGenerationInvocationRef {
   return {
     kind: IMAGE_GENERATION_INVOCATION_KIND,
     entityKey: jobId,
@@ -376,7 +354,5 @@ function sameInvocation(
 }
 
 function assertNever(value: never): never {
-  throw new Error(
-    `Unexpected image-generation event: ${JSON.stringify(value)}`,
-  );
+  throw new Error(`Unexpected image-generation event: ${JSON.stringify(value)}`);
 }

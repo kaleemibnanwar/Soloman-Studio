@@ -13,10 +13,7 @@ import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { db } from "@/db";
 import { apps, chats } from "@/db/schema";
@@ -57,9 +54,7 @@ describe("supabase stale app details UI (integration)", () => {
     await screen.findByTestId("app-details-page");
     expect(screen.getByText("minimal")).toBeTruthy();
     await waitFor(() => {
-      expect(harness.bridge.lastInvoke("get-user-settings")?.status).toBe(
-        "fulfilled",
-      );
+      expect(harness.bridge.lastInvoke("get-user-settings")?.status).toBe("fulfilled");
     });
     await harness.bridge.settleInFlight();
 

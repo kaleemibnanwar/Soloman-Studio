@@ -29,17 +29,14 @@ describe("hybrid chat harness testBuild mode", () => {
       });
       expect(started).toBe(true);
 
-      const update = await harness.waitForEvent(
-        "connection-flow:state-changed",
-        (payload) => {
-          const data = payload as FlowStatePayload;
-          return (
-            data?.provider === "github" &&
-            data?.state?.status === "awaiting-return" &&
-            data?.state?.userCode === "FAKE-CODE"
-          );
-        },
-      );
+      const update = await harness.waitForEvent("connection-flow:state-changed", (payload) => {
+        const data = payload as FlowStatePayload;
+        return (
+          data?.provider === "github" &&
+          data?.state?.status === "awaiting-return" &&
+          data?.state?.userCode === "FAKE-CODE"
+        );
+      });
       expect(update.payload).toMatchObject({
         provider: "github",
         state: { status: "awaiting-return", userCode: "FAKE-CODE" },
@@ -55,10 +52,7 @@ describe("hybrid chat harness testBuild mode", () => {
                 return false;
               }
               const data = event.args[0] as FlowStatePayload;
-              return (
-                data?.provider === "github" &&
-                data?.state?.status === "connected"
-              );
+              return data?.provider === "github" && data?.state?.status === "connected";
             }),
           ).toBe(true),
         { timeout: 15_000 },

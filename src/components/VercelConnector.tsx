@@ -47,11 +47,7 @@ interface UnconnectedVercelConnectorProps {
   refreshApp: () => void;
 }
 
-function ConnectedVercelConnector({
-  appId,
-  app,
-  refreshApp,
-}: ConnectedVercelConnectorProps) {
+function ConnectedVercelConnector({ appId, app, refreshApp }: ConnectedVercelConnectorProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const {
     deployments,
@@ -83,13 +79,8 @@ function ConnectedVercelConnector({
   };
 
   return (
-    <div
-      className="mt-4 w-full rounded-md"
-      data-testid="vercel-connected-project"
-    >
-      <p className="text-sm text-muted-foreground">
-        Connected to Vercel Project:
-      </p>
+    <div className="mt-4 w-full rounded-md" data-testid="vercel-connected-project">
+      <p className="text-sm text-muted-foreground">Connected to Vercel Project:</p>
       <a
         onClick={(e) => {
           e.preventDefault();
@@ -154,11 +145,7 @@ function ConnectedVercelConnector({
             "Refresh Deployments"
           )}
         </Button>
-        <Button
-          onClick={handleDisconnectProject}
-          disabled={isDisconnecting}
-          variant="outline"
-        >
+        <Button onClick={handleDisconnectProject} disabled={isDisconnecting} variant="outline">
           {isDisconnecting ? "Disconnecting..." : "Disconnect from project"}
         </Button>
       </div>
@@ -172,10 +159,7 @@ function ConnectedVercelConnector({
           <h4 className="font-medium mb-2">Recent Deployments:</h4>
           <div className="space-y-2">
             {deployments.map((deployment) => (
-              <div
-                key={deployment.uid}
-                className="bg-muted/50 rounded-md p-3"
-              >
+              <div key={deployment.uid} className="bg-muted/50 rounded-md p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
@@ -211,9 +195,7 @@ function ConnectedVercelConnector({
           </div>
         </div>
       )}
-      {disconnectError && (
-        <p className="text-destructive mt-2">{disconnectError}</p>
-      )}
+      {disconnectError && <p className="text-destructive mt-2">{disconnectError}</p>}
     </div>
   );
 }
@@ -234,34 +216,21 @@ function UnconnectedVercelConnector({
   const [tokenSuccess, setTokenSuccess] = useState(false);
 
   // --- Project Setup State ---
-  const [projectSetupMode, setProjectSetupMode] = useState<
-    "create" | "existing"
-  >("create");
-  const [availableProjects, setAvailableProjects] = useState<VercelProject[]>(
-    [],
-  );
+  const [projectSetupMode, setProjectSetupMode] = useState<"create" | "existing">("create");
+  const [availableProjects, setAvailableProjects] = useState<VercelProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>("");
 
   // Create new project state. Seed with a kebab-case slug of the app name (the
   // same transform used for the app folder path) since Vercel requires
   // lowercase project names.
-  const [projectName, setProjectName] = useState(() =>
-    slugifyAppPath(folderName),
-  );
-  const [projectAvailable, setProjectAvailable] = useState<boolean | null>(
-    null,
-  );
-  const [projectCheckError, setProjectCheckError] = useState<string | null>(
-    null,
-  );
+  const [projectName, setProjectName] = useState(() => slugifyAppPath(folderName));
+  const [projectAvailable, setProjectAvailable] = useState<boolean | null>(null);
+  const [projectCheckError, setProjectCheckError] = useState<string | null>(null);
   const [isCheckingProject, setIsCheckingProject] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [createProjectError, setCreateProjectError] = useState<string | null>(
-    null,
-  );
-  const [createProjectSuccess, setCreateProjectSuccess] =
-    useState<boolean>(false);
+  const [createProjectError, setCreateProjectError] = useState<string | null>(null);
+  const [createProjectSuccess, setCreateProjectSuccess] = useState<boolean>(false);
 
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -283,8 +252,7 @@ function UnconnectedVercelConnector({
 
   // For Neon-connected apps, preview what will be auto-configured on Vercel
   // (env var keys + trusted domains) so the user approves before deploying.
-  const showSyncPreview =
-    !!neonProjectId && appId !== null && projectSetupMode === "create";
+  const showSyncPreview = !!neonProjectId && appId !== null && projectSetupMode === "create";
   const {
     data: syncPreview,
     isLoading: isSyncPreviewLoading,
@@ -344,9 +312,7 @@ function UnconnectedVercelConnector({
         setProjectCheckError(result.error || "Project name is not available.");
       }
     } catch (err: any) {
-      setProjectCheckError(
-        err.message || "Failed to check project availability.",
-      );
+      setProjectCheckError(err.message || "Failed to check project availability.");
     } finally {
       setIsCheckingProject(false);
     }
@@ -411,8 +377,7 @@ function UnconnectedVercelConnector({
           <div className="space-y-4">
             <div className="bg-primary/10 border border-primary/20 rounded-md p-3">
               <p className="text-sm text-foreground mb-2">
-                To connect your app to Vercel, you'll need to create an access
-                token:
+                To connect your app to Vercel, you'll need to create an access token:
               </p>
               <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1">
                 <li>If you don't have a Vercel account, sign up first</li>
@@ -432,9 +397,7 @@ function UnconnectedVercelConnector({
                 </Button>
                 <Button
                   onClick={() => {
-                    ipc.system.openExternalUrl(
-                      "https://vercel.com/account/settings/tokens",
-                    );
+                    ipc.system.openExternalUrl("https://vercel.com/account/settings/tokens");
                   }}
                   className="flex-1"
                 >
@@ -445,9 +408,7 @@ function UnconnectedVercelConnector({
 
             <form onSubmit={handleSaveAccessToken} className="space-y-3">
               <div>
-                <Label className="block text-sm font-medium mb-1">
-                  Vercel Access Token
-                </Label>
+                <Label className="block text-sm font-medium mb-1">Vercel Access Token</Label>
                 <Input
                   type="password"
                   placeholder="Enter your Vercel access token"
@@ -495,17 +456,14 @@ function UnconnectedVercelConnector({
 
             {tokenError && (
               <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
-                <p className="text-sm text-destructive">
-                  {tokenError}
-                </p>
+                <p className="text-sm text-destructive">{tokenError}</p>
               </div>
             )}
 
             {tokenSuccess && (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
                 <p className="text-sm text-green-800 dark:text-green-200">
-                  Successfully connected to Vercel! You can now set up your
-                  project below.
+                  Successfully connected to Vercel! You can now set up your project below.
                 </p>
               </div>
             )}
@@ -521,9 +479,7 @@ function UnconnectedVercelConnector({
       <div className="font-medium mb-2">Set up your Vercel project</div>
 
       {/* Collapsible Content */}
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out`}
-      >
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out`}>
         <div className="pt-0 space-y-4">
           {/* Mode Selection */}
           <div>
@@ -567,9 +523,7 @@ function UnconnectedVercelConnector({
             {projectSetupMode === "create" ? (
               <>
                 <div>
-                  <Label className="block text-sm font-medium">
-                    Project Name
-                  </Label>
+                  <Label className="block text-sm font-medium">Project Name</Label>
                   <Input
                     data-testid="vercel-create-project-name-input"
                     className="w-full mt-1"
@@ -584,90 +538,73 @@ function UnconnectedVercelConnector({
                     disabled={isCreatingProject}
                   />
                   {isCheckingProject && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Checking availability...
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Checking availability...</p>
                   )}
                   {projectAvailable === true && (
-                    <p className="text-xs text-success mt-1">
-                      Project name is available!
-                    </p>
+                    <p className="text-xs text-success mt-1">Project name is available!</p>
                   )}
                   {projectAvailable === false && (
-                    <p className="text-xs text-destructive mt-1">
-                      {projectCheckError}
-                    </p>
+                    <p className="text-xs text-destructive mt-1">{projectCheckError}</p>
                   )}
                 </div>
 
-                {showSyncPreview &&
-                  (isSyncPreviewLoading || syncPreviewError || syncPreview) && (
-                    <div
-                      className="bg-primary/10 border border-primary/20 rounded-md p-3"
-                      data-testid="vercel-sync-preview"
-                    >
-                      <p className="text-sm font-medium text-foreground mb-1">
-                        {t("integrations.vercel.syncPreviewTitle")}
+                {showSyncPreview && (isSyncPreviewLoading || syncPreviewError || syncPreview) && (
+                  <div
+                    className="bg-primary/10 border border-primary/20 rounded-md p-3"
+                    data-testid="vercel-sync-preview"
+                  >
+                    <p className="text-sm font-medium text-foreground mb-1">
+                      {t("integrations.vercel.syncPreviewTitle")}
+                    </p>
+                    {isSyncPreviewLoading ? (
+                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        {t("integrations.vercel.syncPreviewLoading")}
                       </p>
-                      {isSyncPreviewLoading ? (
-                        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          {t("integrations.vercel.syncPreviewLoading")}
+                    ) : syncPreviewError ? (
+                      <p className="text-xs text-destructive">
+                        {t("integrations.vercel.syncPreviewError")}
+                      </p>
+                    ) : syncPreview ? (
+                      <>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {t("integrations.vercel.syncPreviewIntro", {
+                            branchType: syncPreview.branchType,
+                          })}
                         </p>
-                      ) : syncPreviewError ? (
-                        <p className="text-xs text-destructive">
-                          {t("integrations.vercel.syncPreviewError")}
-                        </p>
-                      ) : syncPreview ? (
-                        <>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            {t("integrations.vercel.syncPreviewIntro", {
-                              branchType: syncPreview.branchType,
-                            })}
+                        <ul className="list-disc list-inside text-xs font-mono text-foreground space-y-0.5">
+                          {syncPreview.envKeys.map((key) => (
+                            <li key={key}>{key}</li>
+                          ))}
+                        </ul>
+                        {syncPreview.authActive && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {t("integrations.vercel.syncPreviewAuthDomain")}
                           </p>
-                          <ul className="list-disc list-inside text-xs font-mono text-foreground space-y-0.5">
-                            {syncPreview.envKeys.map((key) => (
-                              <li key={key}>{key}</li>
-                            ))}
-                          </ul>
-                          {syncPreview.authActive && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {t("integrations.vercel.syncPreviewAuthDomain")}
-                            </p>
-                          )}
-                        </>
-                      ) : null}
-                    </div>
-                  )}
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+                )}
               </>
             ) : (
               <>
                 <div>
-                  <Label className="block text-sm font-medium">
-                    Select Project
-                  </Label>
+                  <Label className="block text-sm font-medium">Select Project</Label>
                   <Select
                     value={selectedProject}
                     onValueChange={(v) => setSelectedProject(v ?? "")}
                     disabled={isLoadingProjects}
                   >
-                    <SelectTrigger
-                      className="w-full mt-1"
-                      data-testid="vercel-project-select"
-                    >
+                    <SelectTrigger className="w-full mt-1" data-testid="vercel-project-select">
                       <SelectValue
-                        placeholder={
-                          isLoadingProjects
-                            ? "Loading projects..."
-                            : "Select a project"
-                        }
+                        placeholder={isLoadingProjects ? "Loading projects..." : "Select a project"}
                       />
                     </SelectTrigger>
                     <SelectContent>
                       {availableProjects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
-                          {project.name}{" "}
-                          {project.framework && `(${project.framework})`}
+                          {project.name} {project.framework && `(${project.framework})`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -680,8 +617,7 @@ function UnconnectedVercelConnector({
               type="submit"
               disabled={
                 isCreatingProject ||
-                (projectSetupMode === "create" &&
-                  (projectAvailable === false || !projectName)) ||
+                (projectSetupMode === "create" && (projectAvailable === false || !projectName)) ||
                 (projectSetupMode === "existing" && !selectedProject)
               }
             >
@@ -695,9 +631,7 @@ function UnconnectedVercelConnector({
             </Button>
           </form>
 
-          {createProjectError && (
-            <p className="text-destructive mt-2">{createProjectError}</p>
-          )}
+          {createProjectError && <p className="text-destructive mt-2">{createProjectError}</p>}
           {createProjectSuccess && (
             <p className="text-green-600 mt-2">
               {projectSetupMode === "create"
@@ -716,13 +650,7 @@ export function VercelConnector({ appId, folderName }: VercelConnectorProps) {
   const { settings, refreshSettings } = useSettings();
 
   if (app?.vercelProjectId && appId) {
-    return (
-      <ConnectedVercelConnector
-        appId={appId}
-        app={app}
-        refreshApp={refreshApp}
-      />
-    );
+    return <ConnectedVercelConnector appId={appId} app={app} refreshApp={refreshApp} />;
   } else {
     return (
       <UnconnectedVercelConnector

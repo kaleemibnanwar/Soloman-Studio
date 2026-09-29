@@ -31,9 +31,7 @@ export function EconomyModeSwitch() {
         aria-pressed={enabled}
         className={cn(
           "flex h-10 flex-1 items-center justify-center gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-          enabled
-            ? "text-primary"
-            : "hover:bg-sidebar-accent active:bg-sidebar-accent",
+          enabled ? "text-primary" : "hover:bg-sidebar-accent active:bg-sidebar-accent",
         )}
         onClick={handleToggle}
       >

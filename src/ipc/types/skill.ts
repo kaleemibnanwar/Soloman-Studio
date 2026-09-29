@@ -2,11 +2,9 @@ import { z } from "zod";
 import { createClient, defineContract } from "../contracts/core";
 
 export const SkillSchema = z.object({
-  id: z.number(),
   name: z.string(),
   description: z.string(),
   instructions: z.string(),
-  createdAt: z.date(),
   updatedAt: z.date(),
 });
 
@@ -19,8 +17,8 @@ export const CreateSkillParamsSchema = z.object({
 });
 
 export const UpdateSkillParamsSchema = z.object({
-  skillId: z.number(),
-  name: z.string().min(1).optional(),
+  name: z.string().min(1),
+  newName: z.string().min(1).optional(),
   description: z.string().min(1).optional(),
   instructions: z.string().min(1).optional(),
 });
@@ -35,9 +33,14 @@ export const skillContracts = {
     input: z.void(),
     output: ListSkillsResultSchema,
   }),
+  getSkillsDir: defineContract({
+    channel: "get-skills-dir",
+    input: z.void(),
+    output: z.string(),
+  }),
   getSkill: defineContract({
     channel: "get-skill",
-    input: z.number(),
+    input: z.string(),
     output: SkillSchema,
   }),
   createSkill: defineContract({
@@ -54,7 +57,7 @@ export const skillContracts = {
   }),
   deleteSkill: defineContract({
     channel: "delete-skill",
-    input: z.number(),
+    input: z.string(),
     output: z.void(),
     invalidates: () => [{ family: "skills" }],
   }),

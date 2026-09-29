@@ -1,7 +1,4 @@
-export type AutomaticChatScrollReason =
-  | "chat-switch"
-  | "initial-messages-loaded"
-  | "stream-start";
+export type AutomaticChatScrollReason = "chat-switch" | "initial-messages-loaded" | "stream-start";
 
 export function automaticChatScrollReason(args: {
   previousChatId: number | undefined;
@@ -21,10 +18,7 @@ export function automaticChatScrollReason(args: {
   ) {
     return "initial-messages-loaded";
   }
-  if (
-    args.operationId !== "" &&
-    args.operationId !== args.previousOperationId
-  ) {
+  if (args.operationId !== "" && args.operationId !== args.previousOperationId) {
     return "stream-start";
   }
   return null;

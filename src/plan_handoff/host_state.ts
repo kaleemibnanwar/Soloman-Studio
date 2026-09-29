@@ -30,10 +30,7 @@ export type PlanHandoffCommand =
       intent: PlanHandoffIntent;
     };
 
-export type PlanHandoffIgnoreReason =
-  | "no-handoff"
-  | "stale-handoff"
-  | "already-running";
+export type PlanHandoffIgnoreReason = "no-handoff" | "stale-handoff" | "already-running";
 
 export type PlanHandoffHostTransitionResult = TransitionResult<
   PlanHandoffHostState,

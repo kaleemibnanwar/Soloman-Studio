@@ -4,10 +4,7 @@ import path from "node:path";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 function buildLargeLog(): string {
@@ -59,17 +56,14 @@ describe("local-agent large attachment (integration)", () => {
     ]);
     await screen.findByText("large-log.txt");
 
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/large-attachment-sandbox",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/large-attachment-sandbox", {
+      chatId,
+    });
     send();
 
-    const scriptCard = await screen.findByTestId(
-      "octopus-studio-script-card",
-      undefined,
-      { timeout: 20_000 },
-    );
+    const scriptCard = await screen.findByTestId("octopus-studio-script-card", undefined, {
+      timeout: 20_000,
+    });
     expect(scriptCard.textContent).toContain("Summarize large-log.txt");
     fireEvent.click(scriptCard);
     fireEvent.click(await screen.findByText("Output"));
@@ -81,9 +75,7 @@ describe("local-agent large attachment (integration)", () => {
       },
       { timeout: 20_000 },
     );
-    expect(
-      screen.queryByText("Your model did not reference the attached file"),
-    ).toBeNull();
+    expect(screen.queryByText("Your model did not reference the attached file")).toBeNull();
     await harness.waitForStreamEnd(chatId);
 
     const manifestPath = path.join(

@@ -12,9 +12,7 @@ interface OctopusStudioEnableNitroProps {
   state?: CustomTagState;
 }
 
-export const OctopusStudioEnableNitro: React.FC<
-  OctopusStudioEnableNitroProps
-> = ({ state }) => {
+export const OctopusStudioEnableNitro: React.FC<OctopusStudioEnableNitroProps> = ({ state }) => {
   const isPending = state === "pending";
   const isAborted = state === "aborted";
   const headline = isPending
@@ -24,18 +22,10 @@ export const OctopusStudioEnableNitro: React.FC<
       : "Added Nitro server layer";
   return (
     <OctopusStudioCard accentColor="emerald" state={state}>
-      <OctopusStudioCardHeader
-        icon={<Server size={15} />}
-        accentColor="emerald"
-      >
+      <OctopusStudioCardHeader icon={<Server size={15} />} accentColor="emerald">
         <OctopusStudioBadge color="emerald">Server layer</OctopusStudioBadge>
         <span className="text-sm font-medium text-foreground">{headline}</span>
-        {state && (
-          <OctopusStudioStateIndicator
-            state={state}
-            abortedLabel="Did not finish"
-          />
-        )}
+        {state && <OctopusStudioStateIndicator state={state} abortedLabel="Did not finish" />}
       </OctopusStudioCardHeader>
       {!isPending && !isAborted && (
         <div className="px-3 pb-3">

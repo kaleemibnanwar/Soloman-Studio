@@ -1,9 +1,6 @@
 import { createTypedHandler } from "./base";
 import { userInputContracts } from "../types/user_input";
-import {
-  rememberUserInputSubscriber,
-  userInputRegistry,
-} from "../../user_input/main";
+import { rememberUserInputSubscriber, userInputRegistry } from "../../user_input/main";
 
 export function registerUserInputHandlers(): void {
   createTypedHandler(userInputContracts.respond, async (event, input) => {
@@ -18,10 +15,7 @@ export function registerUserInputHandlers(): void {
     rememberUserInputSubscriber(event.sender);
     return userInputRegistry.getPending();
   });
-  createTypedHandler(
-    userInputContracts.rejectFollowUp,
-    async (_event, { requestId }) => {
-      await userInputRegistry.followUpRejected(requestId);
-    },
-  );
+  createTypedHandler(userInputContracts.rejectFollowUp, async (_event, { requestId }) => {
+    await userInputRegistry.followUpRejected(requestId);
+  });
 }

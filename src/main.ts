@@ -40,10 +40,7 @@ import {
   retryRecoveryWithKeychainUnlock,
 } from "./main/safe_storage_legacy";
 import { recordUpdaterError } from "./main/updater_state";
-import {
-  sendTelemetryEvent,
-  sendTelemetryEventToWindow,
-} from "./ipc/utils/telemetry";
+import { sendTelemetryEvent, sendTelemetryEventToWindow } from "./ipc/utils/telemetry";
 import { handleSupabaseOAuthReturn } from "./supabase_admin/supabase_return_handler";
 import { handleOctopusStudioProReturn } from "./main/pro";
 import { IS_TEST_BUILD } from "./ipc/utils/test_utils";
@@ -55,7 +52,7 @@ import { startTaskScheduler } from "./ipc/services/task_scheduler";
 import { startWorkerPlanningScheduler } from "./ipc/services/worker_planning_scheduler";
 import { apps } from "./db/schema";
 import { eq } from "drizzle-orm";
-import { reconcileOrphanTestBranches } from "./ipc/utils/neon_test_branch";
+import { reconcileOrphanTestBranches } from "./ipc/neon/neon_test_branch";
 import { reconcileOrphanTestUsers } from "./ipc/utils/supabase_test_user";
 import { UserSettings } from "./lib/schemas";
 import { handleNeonOAuthReturn } from "./neon_admin/neon_return_handler";
@@ -69,42 +66,33 @@ import {
   AddPromptDataSchema,
   AddPromptPayload,
 } from "./ipc/deep_link_data";
-import {
-  startPerformanceMonitoring,
-  stopPerformanceMonitoring,
-} from "./utils/performance_monitor";
+import { startPerformanceMonitoring, stopPerformanceMonitoring } from "./utils/performance_monitor";
 import {
   browserCrashAttribution,
   parseMinidumpSummary,
   type MinidumpSummary,
 } from "./utils/minidump_summary";
-import {
-  listDumpFilesRecursive,
-  moveDump,
-  pruneDumps,
-} from "./utils/crash_dumps";
+import { listDumpFilesRecursive, moveDump, pruneDumps } from "./utils/crash_dumps";
 import {
   crashAnnotationEventFields,
   crashPerformanceEventFields,
 } from "./utils/crash_telemetry_fields";
 import { classifyOom } from "./utils/oom_classifier";
-import {
-  stopAllAppsSync,
-  stopAppGarbageCollection,
-} from "./ipc/utils/process_manager";
+import { stopAllAppsSync, stopAppGarbageCollection } from "./ipc/process/process_manager";
 const cleanupOldAiMessagesJson = async () => {};
 const startChatSearchIndexer = () => {};
 const stopChatSearchIndexer = () => {};
-import { cleanupOldMediaFiles } from "./ipc/utils/media_cleanup";
-import { scrubGithubTokenFromRemotes } from "./ipc/utils/git_remote_token_scrub";
-import { encryptStoredMcpSecrets } from "./ipc/utils/mcp_secret_encryption";
+import { cleanupOldMediaFiles } from "./ipc/media/media_cleanup";
+import { scrubGithubTokenFromRemotes } from "./ipc/git/git_remote_token_scrub";
+import { encryptStoredMcpSecrets } from "./ipc/mcp/mcp_secret_encryption";
 import { syncBrowserLimbBridge } from "./main/browser_limb_manager";
 import { stopOctoLimbBridge } from "./main/octolimb_bridge";
 import fs from "fs";
-import { gitAddSafeDirectory } from "./ipc/utils/git_utils";
+import { gitAddSafeDirectory } from "./ipc/git/git_utils";
 import {
   getOctopusStudioAppsBaseDirectory,
   getOctopusStudioAppPath,
+  getChatProjectRootPath,
   getUserDataPath,
 } from "./paths/paths";
 import { createDeepLinkQueue } from "./main/deep_link_queue";
@@ -128,15 +116,13 @@ import {
   maybeUpgradeManagedNode,
 } from "./ipc/utils/managed_node";
 import { createOctopusStudioMediaProtocolHandler } from "./main/octopus_studio_media_protocol";
+import { createAppFileProtocolHandler } from "./main/app_file_protocol";
 import {
   createPlatformThumbnailFromPath,
   getMediaThumbnailCacheRoot,
-} from "./ipc/utils/media_thumbnail";
-import {
-  createMcpBeforeQuitHandler,
-  disposeMcpClientsForShutdown,
-} from "./ipc/utils/mcp_shutdown";
-import { disposeMcpOAuthForShutdown } from "./ipc/utils/mcp_oauth_flow";
+} from "./ipc/media/media_thumbnail";
+import { createMcpBeforeQuitHandler, disposeMcpClientsForShutdown } from "./ipc/mcp/mcp_shutdown";
+import { disposeMcpOAuthForShutdown } from "./ipc/mcp/mcp_oauth_flow";
 import { remoteMachineHost } from "./ipc/services/distributed_machine_host";
 import { configureTrustedRenderer } from "./ipc/utils/renderer_security";
 import {
@@ -146,10 +132,7 @@ import {
 } from "./main/window_security";
 import { pathToFileURL } from "node:url";
 import { windowRegistry } from "./window_infrastructure/main/window_registry";
-import {
-  PRIMARY_WINDOW_SESSION_ID,
-  type WindowSessionId,
-} from "./window_infrastructure/types";
+import { PRIMARY_WINDOW_SESSION_ID, type WindowSessionId } from "./window_infrastructure/types";
 import {
   awaitProductWindowRenderer,
   configureWindowProductController,
@@ -176,9 +159,7 @@ const execFileAsync = promisify(execFile);
 // that fixPath() restores at app_runtime_service load time.
 applyManagedPnpmToProcessPath();
 
-async function resolveStartupExecutablePath(
-  command: string,
-): Promise<string | null> {
+async function resolveStartupExecutablePath(command: string): Promise<string | null> {
   try {
     const { stdout } =
       process.platform === "win32"
@@ -274,10 +255,7 @@ function processNativeCrashDumps(): void {
   // Where we keep dumps we've already reported, for later examination. Under
   // userData (not inside crashDumpsDir) so it stays separate from Crashpad's
   // own dump dirs and isn't picked up by the scan above.
-  const retainDir = path.join(
-    app.getPath("userData"),
-    "octopus-studio-crash-reports",
-  );
+  const retainDir = path.join(app.getPath("userData"), "octopus-studio-crash-reports");
   try {
     fs.mkdirSync(retainDir, { recursive: true });
   } catch (error) {
@@ -300,16 +278,12 @@ function processNativeCrashDumps(): void {
       // The sentinel check in onReady runs before the window exists, so
       // pendingCrashDetected already reflects it by the time this runs
       // from did-finish-load.
-      const attribution = browserCrashAttribution(
-        summary,
-        pendingCrashDetected,
-      );
+      const attribution = browserCrashAttribution(summary, pendingCrashDetected);
       // A ptype dump outranks a sentinel-attributed one, so a stripped
       // child dump cannot claim the crash when the labeled browser dump
       // is also in the scan.
       const outranks =
-        attribution === "ptype" &&
-        pendingNativeBrowserCrash?.attribution === "sentinel";
+        attribution === "ptype" && pendingNativeBrowserCrash?.attribution === "sentinel";
       if (attribution && (!pendingNativeBrowserCrash || outranks)) {
         pendingNativeBrowserCrash = { summary, attribution };
         // A browser-process dump is direct evidence of a main-process crash,
@@ -339,9 +313,7 @@ function crashReportName(dumpPath: string): string {
   return `crash-${ts}-${id}.dmp`;
 }
 const deepLinkQueue = createDeepLinkQueue(handleDeepLinkReturn);
-const deepLinkWindowReadiness = new DeepLinkWindowReadiness<BrowserWindow>(
-  deepLinkQueue,
-);
+const deepLinkWindowReadiness = new DeepLinkWindowReadiness<BrowserWindow>(deepLinkQueue);
 let crashRecoveryWindowReadiness: DeepLinkWindowReadiness<BrowserWindow>;
 crashRecoveryWindowReadiness = new DeepLinkWindowReadiness<BrowserWindow>({
   markReady: () => {
@@ -500,10 +472,7 @@ export async function onReady() {
   // TODO: Remove legacyIsRunningCrash migration path after a few releases
   // once existing users have launched at least once on the sentinel build.
   if (legacyIsRunningCrash) {
-    tryWriteSettings(
-      { isRunning: false },
-      "clearing the legacy isRunning crash flag",
-    );
+    tryWriteSettings({ isRunning: false }, "clearing the legacy isRunning crash flag");
   }
 
   writeCrashSentinel();
@@ -515,14 +484,8 @@ export async function onReady() {
   // app is ready; addExtraParameter adds it to all later dumps.
   try {
     const gpu = app.getGPUFeatureStatus();
-    crashReporter.addExtraParameter(
-      "gpu_compositing",
-      String(gpu?.gpu_compositing ?? "unknown"),
-    );
-    crashReporter.addExtraParameter(
-      "gpu_webgl",
-      String(gpu?.webgl ?? "unknown"),
-    );
+    crashReporter.addExtraParameter("gpu_compositing", String(gpu?.gpu_compositing ?? "unknown"));
+    crashReporter.addExtraParameter("gpu_webgl", String(gpu?.webgl ?? "unknown"));
   } catch (error) {
     logger.warn("Could not read GPU status for crash context:", error);
   }
@@ -551,6 +514,26 @@ export async function onReady() {
     }),
   );
 
+  // Handle octopus-studio-file:// requests. The right-side file preview streams
+  // image/video/audio/PDF/font/archive payloads from any project file through
+  // this protocol, so they render directly instead of being decoded as UTF-8.
+  protocol.handle(
+    "octopus-studio-file",
+    createAppFileProtocolHandler({
+      resolveAppRoot: async (appId) => {
+        const record = await db.query.apps.findFirst({
+          where: eq(apps.id, appId),
+          columns: { id: true, type: true, path: true, directory: true },
+        });
+        if (!record) return null;
+        return record.type === "chat"
+          ? getChatProjectRootPath(record.directory, record.id)
+          : getOctopusStudioAppPath(record.path ?? "");
+      },
+      fetchFile: (url) => net.fetch(url),
+    }),
+  );
+
   const shouldUseManagedNode =
     settings.nodeRuntimePreference === "managed" && !settings.customNodePath;
   const managedNodeVersion = await getManagedNodeVersion();
@@ -558,9 +541,7 @@ export async function onReady() {
     if (managedNodeVersion) {
       applyManagedNodeToProcessPath();
     } else {
-      logger.warn(
-        "Managed Node.js is selected, but no usable managed runtime is installed.",
-      );
+      logger.warn("Managed Node.js is selected, but no usable managed runtime is installed.");
     }
     void maybeUpgradeManagedNode();
   }
@@ -668,10 +649,7 @@ declare global {
 
 let mainWindow: BrowserWindow | null = null;
 const productWindows = new Map<WindowSessionId, BrowserWindow>();
-const productWindowDescriptors = new Map<
-  WindowSessionId,
-  WindowSessionDescriptor
->();
+const productWindowDescriptors = new Map<WindowSessionId, WindowSessionDescriptor>();
 let lastClosedWindowSession: WindowSessionDescriptor | undefined;
 let hasCreatedInitialWindow = false;
 let pendingForceCloseData: any = null;
@@ -683,10 +661,7 @@ const lifecycleLogger = log.scope("app_lifecycle");
 const lifecycleStartedAt = Date.now();
 let lifecycleSequence = 0;
 
-function logLifecycle(
-  event: string,
-  details: Record<string, unknown> = {},
-): void {
+function logLifecycle(event: string, details: Record<string, unknown> = {}): void {
   let windows: Array<{
     id: number;
     destroyed: boolean;
@@ -711,18 +686,14 @@ function logLifecycle(
     elapsedMs: Date.now() - lifecycleStartedAt,
     isAppQuitting,
     hasCreatedInitialWindow,
-    mainWindowId:
-      mainWindow && !mainWindow.isDestroyed() ? mainWindow.id : null,
+    mainWindowId: mainWindow && !mainWindow.isDestroyed() ? mainWindow.id : null,
     productWindowCount: productWindows.size,
     windows,
     ...details,
   });
 }
 
-async function observeLifecycleCleanup(
-  name: string,
-  cleanup: () => Promise<void>,
-): Promise<void> {
+async function observeLifecycleCleanup(name: string, cleanup: () => Promise<void>): Promise<void> {
   const startedAt = Date.now();
   logLifecycle("cleanup:start", { name });
   try {
@@ -778,8 +749,7 @@ function deliverPendingCrashRecovery(target: BrowserWindow): void {
     // drop 90% of events for non-Pro users (see src/renderer.tsx).
     error: true,
     has_performance_data: !!pendingForceCloseData,
-    ...(pendingForceCloseData &&
-      crashPerformanceEventFields(pendingForceCloseData)),
+    ...(pendingForceCloseData && crashPerformanceEventFields(pendingForceCloseData)),
     // "native" when a minidump was attributed to this crash, else
     // "unknown" (no dump: force-kill / OOM-kill / power loss / missed).
     crash_cause: nativeCrash ? "native" : "unknown",
@@ -802,8 +772,7 @@ function deliverPendingCrashRecovery(target: BrowserWindow): void {
       faulting_debug_file: nativeCrash.faultingDebugFile,
       faulting_debug_id: nativeCrash.faultingDebugId,
     }),
-    ...(nativeCrash?.annotations &&
-      crashAnnotationEventFields(nativeCrash.annotations)),
+    ...(nativeCrash?.annotations && crashAnnotationEventFields(nativeCrash.annotations)),
     // The OOM verdict and the signals behind it (see classifyOom).
     // Comma-joined: crash event properties stay scalar for PostHog.
     oom_verdict: oom.verdict,
@@ -967,15 +936,12 @@ const createWindow = ({
       },
     };
   });
-  browserWindow.webContents.on(
-    "did-start-navigation",
-    (_event, _url, isInPlace, isMainFrame) => {
-      if (!isMainFrame || isInPlace) return;
+  browserWindow.webContents.on("did-start-navigation", (_event, _url, isInPlace, isMainFrame) => {
+    if (!isMainFrame || isInPlace) return;
 
-      deepLinkWindowReadiness.markNotReady(browserWindow);
-      crashRecoveryWindowReadiness.markNotReady(browserWindow);
-    },
-  );
+    deepLinkWindowReadiness.markNotReady(browserWindow);
+    crashRecoveryWindowReadiness.markNotReady(browserWindow);
+  });
 
   // and load the index.html of the app.
   let initialLoad: Promise<void>;
@@ -1070,12 +1036,7 @@ const createWindow = ({
     if (details.reason === "clean-exit") {
       return;
     }
-    logger.error(
-      "Renderer process gone:",
-      details.reason,
-      "exitCode=",
-      details.exitCode,
-    );
+    logger.error("Renderer process gone:", details.reason, "exitCode=", details.exitCode);
     // Capture the latest heartbeat snapshot synchronously so the record pins
     // the pre-crash performance state, matching the semantics of
     // `app:crash_detected`. `readSettings` returns `DEFAULT_SETTINGS` on any
@@ -1104,8 +1065,9 @@ const createWindow = ({
         { role: "delete" },
       );
       if (params.misspelledWord) {
-        const suggestions: Electron.MenuItemConstructorOptions[] =
-          params.dictionarySuggestions.slice(0, 5).map((suggestion) => ({
+        const suggestions: Electron.MenuItemConstructorOptions[] = params.dictionarySuggestions
+          .slice(0, 5)
+          .map((suggestion) => ({
             label: suggestion,
             click: () => {
               try {
@@ -1137,8 +1099,7 @@ const createWindow = ({
         { type: "separator" },
         {
           label: "Inspect Element",
-          click: () =>
-            browserWindow.webContents.inspectElement(params.x, params.y),
+          click: () => browserWindow.webContents.inspectElement(params.x, params.y),
         },
       );
     }
@@ -1183,10 +1144,7 @@ configureWindowProductController({
         rendererLoad: created.rendererLoad,
         result: created.windowSessionId,
         rollback: () => {
-          const {
-            windowSessionId: failedSessionId,
-            browserWindow: failedWindow,
-          } = created;
+          const { windowSessionId: failedSessionId, browserWindow: failedWindow } = created;
           const failedWebContentsId = failedWindow.webContents.id;
           productWindows.delete(failedSessionId);
           productWindowDescriptors.delete(failedSessionId);
@@ -1267,9 +1225,7 @@ const createApplicationMenu = () => {
       submenu: [
         { role: "reload" as const },
         { role: "forceReload" as const },
-        ...(process.env.NODE_ENV === "development"
-          ? [{ role: "toggleDevTools" as const }]
-          : []),
+        ...(process.env.NODE_ENV === "development" ? [{ role: "toggleDevTools" as const }] : []),
         { type: "separator" as const },
         { role: "togglefullscreen" as const },
       ],
@@ -1308,14 +1264,21 @@ protocol.registerSchemesAsPrivileged([
       stream: true,
     },
   },
+  {
+    scheme: "octopus-studio-file",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
 ]);
 
 // A cold-start protocol URL arrives in argv before any renderer is ready.
 // Queue it in both production and E2E builds; the latter skips only the
 // singleton lock so parallel test processes can coexist.
-const initialDeepLink = process.argv.find((arg) =>
-  arg.startsWith("octopusStudio://"),
-);
+const initialDeepLink = process.argv.find((arg) => arg.startsWith("octopusStudio://"));
 if (initialDeepLink) {
   deepLinkQueue.handle(initialDeepLink);
 }
@@ -1371,10 +1334,7 @@ function getErrorMessage(error: unknown): string {
 
 function showDeepLinkSettingsError(action: string, error: unknown): void {
   logger.error(`Failed to ${action}:`, error);
-  dialog.showErrorBox(
-    "Unable to Save Settings",
-    `Failed to ${action}: ${getErrorMessage(error)}`,
-  );
+  dialog.showErrorBox("Unable to Save Settings", `Failed to ${action}: ${getErrorMessage(error)}`);
 }
 
 async function handleDeepLinkReturn(url: string) {
@@ -1388,12 +1348,7 @@ async function handleDeepLinkReturn(url: string) {
   }
 
   // Intentionally do NOT log the full URL which may contain sensitive tokens.
-  log.log(
-    "Handling deep link: protocol",
-    parsed.protocol,
-    "hostname",
-    parsed.hostname,
-  );
+  log.log("Handling deep link: protocol", parsed.protocol, "hostname", parsed.hostname);
   if (parsed.protocol !== "octopusStudio:") {
     dialog.showErrorBox(
       "Invalid Protocol",
@@ -1406,10 +1361,7 @@ async function handleDeepLinkReturn(url: string) {
     const refreshToken = parsed.searchParams.get("refreshToken");
     const expiresIn = Number(parsed.searchParams.get("expiresIn"));
     if (!token || !refreshToken || !expiresIn) {
-      dialog.showErrorBox(
-        "Invalid URL",
-        "Expected token, refreshToken, and expiresIn",
-      );
+      dialog.showErrorBox("Invalid URL", "Expected token, refreshToken, and expiresIn");
       return;
     }
     {
@@ -1437,10 +1389,7 @@ async function handleDeepLinkReturn(url: string) {
     const refreshToken = parsed.searchParams.get("refreshToken");
     const expiresIn = Number(parsed.searchParams.get("expiresIn"));
     if (!token || !refreshToken || !expiresIn) {
-      dialog.showErrorBox(
-        "Invalid URL",
-        "Expected token, refreshToken, and expiresIn",
-      );
+      dialog.showErrorBox("Invalid URL", "Expected token, refreshToken, and expiresIn");
       return;
     }
     {
@@ -1583,10 +1532,7 @@ app.on("child-process-gone", (_event, details) => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
-  const shouldQuit = shouldQuitAfterAllWindowsClosed(
-    process.platform,
-    isAppQuitting,
-  );
+  const shouldQuit = shouldQuitAfterAllWindowsClosed(process.platform, isAppQuitting);
   logLifecycle("app:window-all-closed", { shouldQuit });
   if (shouldQuit) {
     app.quit();
@@ -1615,16 +1561,10 @@ const handleMcpBeforeQuit = createMcpBeforeQuitHandler({
   },
   cleanup: async () => {
     await Promise.all([
-      observeLifecycleCleanup("mcp-clients", () =>
-        disposeMcpClientsForShutdown(),
-      ),
+      observeLifecycleCleanup("mcp-clients", () => disposeMcpClientsForShutdown()),
       observeLifecycleCleanup("mcp-oauth", () => disposeMcpOAuthForShutdown()),
-      observeLifecycleCleanup("connection-flows", () =>
-        disposeConnectionFlowsForShutdown(),
-      ),
-      observeLifecycleCleanup("remote-machine-host", () =>
-        remoteMachineHost.dispose(),
-      ),
+      observeLifecycleCleanup("connection-flows", () => disposeConnectionFlowsForShutdown()),
+      observeLifecycleCleanup("remote-machine-host", () => remoteMachineHost.dispose()),
       observeLifecycleCleanup("octolimb-bridge", () => stopOctoLimbBridge()),
     ]);
   },
@@ -1672,8 +1612,7 @@ app.on("activate", () => {
     hasCreatedInitialWindow,
     openWindowCount: BrowserWindow.getAllWindows().length,
   };
-  const shouldRequestRelaunch =
-    shouldRequestRelaunchOnActivate(activationContext);
+  const shouldRequestRelaunch = shouldRequestRelaunchOnActivate(activationContext);
   const shouldCreateWindow = shouldCreateWindowOnActivate(activationContext);
   logLifecycle("app:activate", {
     shouldRequestRelaunch,

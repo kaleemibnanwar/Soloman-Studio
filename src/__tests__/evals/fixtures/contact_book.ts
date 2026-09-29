@@ -136,9 +136,7 @@ export function toCsv(book: ContactBook): string {
   const rows = ["name,email,phone,tags,starred"];
   for (const c of book.contacts) {
     const tags = c.tags.join("|");
-    rows.push(
-      [c.name, c.email, c.phone, tags, c.starred ? "true" : "false"].join(","),
-    );
+    rows.push([c.name, c.email, c.phone, tags, c.starred ? "true" : "false"].join(","));
   }
   return rows.join("\n");
 }
@@ -193,9 +191,7 @@ export function validateContact(contact: Contact): string[] {
 
 export function renderDirectory(book: ContactBook): string {
   const sorted = sortByLastName(book);
-  return sorted.contacts
-    .map((c) => `  • ${lastFirstDisplay(c)} — ${c.email}`)
-    .join("\n");
+  return sorted.contacts.map((c) => `  • ${lastFirstDisplay(c)} — ${c.email}`).join("\n");
 }
 
 export function greetingFor(contact: Contact): string {

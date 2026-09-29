@@ -1,9 +1,6 @@
 import { deepEqual } from "./equality.js";
 import { diffLists, type DiffPair, type ListDiff } from "./listDiff.js";
-import {
-  constraintsEqualIgnoringLocality,
-  stripTrailingNotValid,
-} from "../schema/constraints.js";
+import { constraintsEqualIgnoringLocality, stripTrailingNotValid } from "../schema/constraints.js";
 import { fqName } from "../schema/identifiers.js";
 import { normalizeSchema } from "../schema/normalize.js";
 import { objectName } from "../schema/objectName.js";
@@ -92,21 +89,13 @@ export type SchemaDiff = {
   readonly procedureDiffs: ListDiff<Procedure, DiffPair<Procedure>>;
   readonly triggerDiffs: ListDiff<Trigger, DiffPair<Trigger>>;
   readonly viewDiffs: ListDiff<View, DiffPair<View>>;
-  readonly materializedViewDiffs: ListDiff<
-    MaterializedView,
-    DiffPair<MaterializedView>
-  >;
+  readonly materializedViewDiffs: ListDiff<MaterializedView, DiffPair<MaterializedView>>;
 };
 
-export function buildSchemaDiff(
-  oldSchema: Schema,
-  newSchema: Schema,
-): SchemaDiff {
+export function buildSchemaDiff(oldSchema: Schema, newSchema: Schema): SchemaDiff {
   const oldNormalized = normalizeSchema(oldSchema);
   const newNormalized = normalizeSchema(newSchema);
-  const newTablesByName = new Map(
-    newNormalized.tables.map((table) => [objectName(table), table]),
-  );
+  const newTablesByName = new Map(newNormalized.tables.map((table) => [objectName(table), table]));
   const oldIndexesByName = new Map(
     oldNormalized.indexes.map((index) => [objectName(index), index]),
   );
@@ -202,24 +191,14 @@ export function buildSchemaDiff(
           addedTablesByName.has(fqName(newObject.owner.tableName)),
       }),
     }),
-    functionDiffs: diffObjectList(
-      oldNormalized.functions,
-      newNormalized.functions,
-    ),
-    procedureDiffs: diffObjectList(
-      oldNormalized.procedures,
-      newNormalized.procedures,
-    ),
+    functionDiffs: diffObjectList(oldNormalized.functions, newNormalized.functions),
+    procedureDiffs: diffObjectList(oldNormalized.procedures, newNormalized.procedures),
     triggerDiffs: diffTriggerList(
       oldNormalized.triggers,
       newNormalized.triggers,
       addedTablesByName,
     ),
-    viewDiffs: diffTableDependentObjectList(
-      oldNormalized.views,
-      newNormalized.views,
-      tableDiffs,
-    ),
+    viewDiffs: diffTableDependentObjectList(oldNormalized.views, newNormalized.views, tableDiffs),
     materializedViewDiffs: diffTableDependentObjectList(
       oldNormalized.materializedViews,
       newNormalized.materializedViews,
@@ -251,9 +230,7 @@ function buildIndexDiff(options: BuildIndexDiffOptions): {
     newIndexesByName,
   } = options;
   if (options.seenIndexesByName?.has(objectName(newIndex)) === true) {
-    throw new Error(
-      `loop detected between indexes that starts with ${objectName(newIndex)}`,
-    );
+    throw new Error(`loop detected between indexes that starts with ${objectName(newIndex)}`);
   }
   const seenIndexesByName = new Set(options.seenIndexesByName);
   seenIndexesByName.add(objectName(newIndex));
@@ -275,9 +252,7 @@ function buildIndexDiff(options: BuildIndexDiffOptions): {
     const oldParentIndex = oldIndexesByName.get(fqName(newIndex.parentIdx));
     const newParentIndex = newIndexesByName.get(fqName(newIndex.parentIdx));
     if (oldParentIndex === undefined || newParentIndex === undefined) {
-      throw new Error(
-        `could not find parent index ${fqName(newIndex.parentIdx)}`,
-      );
+      throw new Error(`could not find parent index ${fqName(newIndex.parentIdx)}`);
     }
     const parentDiff = buildIndexDiff({
       oldIndex: oldParentIndex,
@@ -343,10 +318,7 @@ function indexIsOnPartitionedTable(
   return table !== undefined && table.partitionKeyDef.length > 0;
 }
 
-function isSubsequence(
-  values: readonly string[],
-  container: readonly string[],
-): boolean {
+function isSubsequence(values: readonly string[], container: readonly string[]): boolean {
   let index = 0;
   for (const value of container) {
     if (values[index] === value) {
@@ -402,9 +374,7 @@ function diffTriggerList(
 
 type TableDependentSchemaObject = View | MaterializedView;
 
-function diffTableDependentObjectList<
-  TObject extends TableDependentSchemaObject,
->(
+function diffTableDependentObjectList<TObject extends TableDependentSchemaObject>(
   oldObjects: readonly TObject[],
   newObjects: readonly TObject[],
   tableDiffs: ListDiff<Table, TableDiff>,
@@ -430,10 +400,7 @@ function hasDeletedTableDependency(
 ): boolean {
   const deletedTablesByName = new Set(tableDiffs.deletes.map(objectName));
   const tableAltersByOldName = new Map(
-    tableDiffs.alters.map((tableDiff) => [
-      objectName(tableDiff.old),
-      tableDiff,
-    ]),
+    tableDiffs.alters.map((tableDiff) => [objectName(tableDiff.old), tableDiff]),
   );
 
   for (const dependency of object.tableDependencies) {
@@ -447,9 +414,7 @@ function hasDeletedTableDependency(
       continue;
     }
 
-    const deletedColumns = new Set(
-      tableDiff.columnsDiff.deletes.map((column) => column.name),
-    );
+    const deletedColumns = new Set(tableDiff.columnsDiff.deletes.map((column) => column.name));
     if (dependency.columns.some((column) => deletedColumns.has(column))) {
       return true;
     }
@@ -467,9 +432,7 @@ function buildTableDiff(
     tableIsPartitioned(newTable) &&
     oldTable.partitionKeyDef !== newTable.partitionKeyDef
   ) {
-    throw new NotImplementedMigrationError(
-      "changing partition key def is not supported",
-    );
+    throw new NotImplementedMigrationError("changing partition key def is not supported");
   }
 
   const requiresRecreation =
@@ -517,8 +480,7 @@ function buildTableDiff(
         getName: objectName,
         buildDiff: (oldPrivilege, newPrivilege) => ({
           diff: { old: oldPrivilege, next: newPrivilege },
-          requiresRecreation:
-            oldPrivilege.isGrantable !== newPrivilege.isGrantable,
+          requiresRecreation: oldPrivilege.isGrantable !== newPrivilege.isGrantable,
         }),
       }),
     },
@@ -552,17 +514,12 @@ function policyCanBeAltered(oldPolicy: Policy, newPolicy: Policy): boolean {
   return deepEqual(comparableOld, newPolicy);
 }
 
-function columnRequiresRecreation(
-  oldColumn: Column,
-  newColumn: Column,
-): boolean {
+function columnRequiresRecreation(oldColumn: Column, newColumn: Column): boolean {
   if (
     oldColumn.isGenerated !== newColumn.isGenerated ||
     oldColumn.generationExpression !== newColumn.generationExpression
   ) {
-    throw new NotImplementedMigrationError(
-      "changing stored generated columns is not supported",
-    );
+    throw new NotImplementedMigrationError("changing stored generated columns is not supported");
   }
   return false;
 }

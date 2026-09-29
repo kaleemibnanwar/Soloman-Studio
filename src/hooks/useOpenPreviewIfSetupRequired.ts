@@ -36,10 +36,7 @@ export function useOpenPreviewIfSetupRequired() {
           return false;
         }
 
-        console.error(
-          "Failed to check Node.js status before opening preview setup:",
-          error,
-        );
+        console.error("Failed to check Node.js status before opening preview setup:", error);
       }
 
       setIsPreviewOpen(true);

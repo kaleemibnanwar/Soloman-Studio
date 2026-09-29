@@ -1,17 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import {
-  act,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { QueryKey } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("golden single-window: production mutation invalidation", () => {
@@ -43,14 +34,10 @@ describe("golden single-window: production mutation invalidation", () => {
     const newChatButtons = await screen.findAllByTestId("new-chat-button");
     fireEvent.click(newChatButtons[0]);
     await waitFor(() =>
-      expect(Number(harness.currentLocation().search.id)).not.toBe(
-        harness.chatId,
-      ),
+      expect(Number(harness.currentLocation().search.id)).not.toBe(harness.chatId),
     );
     // Protects chat-create deduplication in the Phase B invalidation channel.
-    expect(
-      invalidations.filter((key) => key === queryKeys.chats.all),
-    ).toHaveLength(1);
+    expect(invalidations.filter((key) => key === queryKeys.chats.all)).toHaveLength(1);
 
     invalidations.length = 0;
     const selectedChatId = Number(harness.currentLocation().search.id);
@@ -74,13 +61,9 @@ describe("golden single-window: production mutation invalidation", () => {
       target: { value: "Golden renamed chat" },
     });
     fireEvent.click(within(renameDialog).getByRole("button", { name: "Save" }));
-    await waitFor(() =>
-      expect(screen.getByText("Golden renamed chat")).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText("Golden renamed chat")).toBeTruthy());
     // Protects chat-update deduplication in the Phase B invalidation channel.
-    expect(
-      invalidations.filter((key) => key === queryKeys.chats.all),
-    ).toHaveLength(1);
+    expect(invalidations.filter((key) => key === queryKeys.chats.all)).toHaveLength(1);
 
     invalidations.length = 0;
     await act(async () => {
@@ -90,19 +73,13 @@ describe("golden single-window: production mutation invalidation", () => {
       });
     });
     await screen.findByTestId("app-details-page");
-    await harness.openPopover(
-      await screen.findByTestId("app-details-more-options-button"),
-    );
+    await harness.openPopover(await screen.findByTestId("app-details-more-options-button"));
     await harness.clickMenuItem("Delete");
     await harness.confirmDialog(/Delete "/, "Delete App");
     await waitFor(() => expect(harness.currentLocation().pathname).toBe("/"));
 
     // Protects app-delete deduplication in the Phase B invalidation channel.
-    expect(
-      invalidations.filter((key) => key === queryKeys.appCollections.all),
-    ).toHaveLength(1);
-    expect(
-      invalidations.filter((key) => key === queryKeys.apps.all),
-    ).toHaveLength(1);
+    expect(invalidations.filter((key) => key === queryKeys.appCollections.all)).toHaveLength(1);
+    expect(invalidations.filter((key) => key === queryKeys.apps.all)).toHaveLength(1);
   }, 60_000);
 });

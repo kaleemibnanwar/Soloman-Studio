@@ -36,11 +36,7 @@ export function useContextPaths() {
       excludePaths?: GlobPath[];
     }
   >({
-    mutationFn: async ({
-      contextPaths,
-      smartContextAutoIncludes,
-      excludePaths,
-    }) => {
+    mutationFn: async ({ contextPaths, smartContextAutoIncludes, excludePaths }) => {
       if (!appId) throw new Error("No app selected");
       return ipc.context.setContextPaths({
         appId,
@@ -59,21 +55,16 @@ export function useContextPaths() {
   });
 
   const updateContextPaths = async (paths: GlobPath[]) => {
-    const currentAutoIncludes =
-      contextPathsData?.smartContextAutoIncludes || [];
+    const currentAutoIncludes = contextPathsData?.smartContextAutoIncludes || [];
     const currentExcludePaths = contextPathsData?.excludePaths || [];
     return updateContextPathsMutation.mutateAsync({
       contextPaths: paths,
-      smartContextAutoIncludes: currentAutoIncludes.map(
-        ({ globPath }: { globPath: string }) => ({
-          globPath,
-        }),
-      ),
-      excludePaths: currentExcludePaths.map(
-        ({ globPath }: { globPath: string }) => ({
-          globPath,
-        }),
-      ),
+      smartContextAutoIncludes: currentAutoIncludes.map(({ globPath }: { globPath: string }) => ({
+        globPath,
+      })),
+      excludePaths: currentExcludePaths.map(({ globPath }: { globPath: string }) => ({
+        globPath,
+      })),
     });
   };
 
@@ -81,31 +72,22 @@ export function useContextPaths() {
     const currentContextPaths = contextPathsData?.contextPaths || [];
     const currentExcludePaths = contextPathsData?.excludePaths || [];
     return updateContextPathsMutation.mutateAsync({
-      contextPaths: currentContextPaths.map(
-        ({ globPath }: { globPath: string }) => ({ globPath }),
-      ),
+      contextPaths: currentContextPaths.map(({ globPath }: { globPath: string }) => ({ globPath })),
       smartContextAutoIncludes: paths,
-      excludePaths: currentExcludePaths.map(
-        ({ globPath }: { globPath: string }) => ({
-          globPath,
-        }),
-      ),
+      excludePaths: currentExcludePaths.map(({ globPath }: { globPath: string }) => ({
+        globPath,
+      })),
     });
   };
 
   const updateExcludePaths = async (paths: GlobPath[]) => {
     const currentContextPaths = contextPathsData?.contextPaths || [];
-    const currentAutoIncludes =
-      contextPathsData?.smartContextAutoIncludes || [];
+    const currentAutoIncludes = contextPathsData?.smartContextAutoIncludes || [];
     return updateContextPathsMutation.mutateAsync({
-      contextPaths: currentContextPaths.map(
-        ({ globPath }: { globPath: string }) => ({ globPath }),
-      ),
-      smartContextAutoIncludes: currentAutoIncludes.map(
-        ({ globPath }: { globPath: string }) => ({
-          globPath,
-        }),
-      ),
+      contextPaths: currentContextPaths.map(({ globPath }: { globPath: string }) => ({ globPath })),
+      smartContextAutoIncludes: currentAutoIncludes.map(({ globPath }: { globPath: string }) => ({
+        globPath,
+      })),
       excludePaths: paths,
     });
   };

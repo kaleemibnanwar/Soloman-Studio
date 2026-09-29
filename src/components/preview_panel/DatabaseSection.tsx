@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  Database,
-  FlaskConical,
-  Loader2,
-  Server,
-  UploadCloud,
-} from "lucide-react";
+import { ArrowLeft, Database, FlaskConical, Loader2, Server, UploadCloud } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -31,9 +24,7 @@ const ENV_TO_BRANCH: Record<EnvKind, "production" | "development"> = {
   dev: "development",
 };
 
-const branchTypeToEnv = (
-  value: "production" | "development" | null | undefined,
-): EnvKind | null =>
+const branchTypeToEnv = (value: "production" | "development" | null | undefined): EnvKind | null =>
   value === "development" ? "dev" : value === "production" ? "prod" : null;
 
 const ENV_META: Record<
@@ -54,8 +45,7 @@ export const DatabaseSection = ({ appId }: DatabaseSectionProps) => {
   const { branches, isLoadingBranches } = useNeon(appId);
 
   const productionBranch = branches.find((b) => b.type === "production");
-  const effectiveBranchId =
-    app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId;
+  const effectiveBranchId = app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId;
   const isProductionBranchActive =
     !!effectiveBranchId && effectiveBranchId === productionBranch?.branchId;
 
@@ -63,9 +53,7 @@ export const DatabaseSection = ({ appId }: DatabaseSectionProps) => {
   // optimistic value for instant UI until the app query refetches; `undefined`
   // means "use the persisted value".
   const persistedEnv = branchTypeToEnv(app?.selectedDatabaseBranchType);
-  const [override, setOverride] = useState<EnvKind | null | undefined>(
-    undefined,
-  );
+  const [override, setOverride] = useState<EnvKind | null | undefined>(undefined);
   const [pendingEnv, setPendingEnv] = useState<EnvKind | null>(null);
 
   useEffect(() => {
@@ -139,19 +127,14 @@ export const DatabaseSection = ({ appId }: DatabaseSectionProps) => {
   // Don't surface the sync action on the branch-selection screen.
   const hasBranchSelected = isProductionBranchActive || selectedEnv !== null;
   const showSync =
-    !!app?.vercelProjectId &&
-    !!app?.neonProjectId &&
-    !isLoadingBranches &&
-    hasBranchSelected;
+    !!app?.vercelProjectId && !!app?.neonProjectId && !isLoadingBranches && hasBranchSelected;
 
   // Sync against the branch the UI is actually displaying, not the persisted
   // selection. When the production branch is active (Case 2) the UI shows the
   // production database regardless of the stored choice, so pass it explicitly
   // to avoid pushing a stale `selectedDatabaseBranchType` to Vercel.
   const syncBranchType: "production" | "development" =
-    isProductionBranchActive || selectedEnv === "prod"
-      ? "production"
-      : "development";
+    isProductionBranchActive || selectedEnv === "prod" ? "production" : "development";
 
   return (
     <Card data-testid="database-section">
@@ -223,9 +206,7 @@ export const DatabaseSection = ({ appId }: DatabaseSectionProps) => {
                     onClick={() => setPendingEnv(kind)}
                     aria-pressed={isSelected}
                     className={`text-left rounded-lg border bg-background p-4 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      isSelected
-                        ? "border-primary ring-2 ring-primary"
-                        : "border-border"
+                      isSelected ? "border-primary ring-2 ring-primary" : "border-border"
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -281,10 +262,7 @@ export const DatabaseSection = ({ appId }: DatabaseSectionProps) => {
 
             {selectedEnv === "prod" && <MigrationPanelBody appId={appId} />}
 
-            <DatabaseEnvVars
-              appId={appId}
-              branchType={ENV_META[selectedEnv].branchType}
-            />
+            <DatabaseEnvVars appId={appId} branchType={ENV_META[selectedEnv].branchType} />
           </>
         )}
       </CardContent>

@@ -7,16 +7,9 @@
  * single per-app Neon test-branch slot) without an import cycle.
  */
 
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
-export type RecordingEndReason =
-  | "stopped"
-  | "app-stopped"
-  | "error"
-  | "timed-out";
+export type RecordingEndReason = "stopped" | "app-stopped" | "error" | "timed-out";
 
 /** What ending a session left behind. */
 export interface RecordingEndSummary {
@@ -72,10 +65,7 @@ const startingRecordings = new Map<number, { cancelled: boolean }>();
  * them the generation AND the restore. Holding the app first makes the refusal
  * happen while nothing is destroyed yet.
  */
-const recordingStartBlocks = new Map<
-  number,
-  { count: number; reason: string }
->();
+const recordingStartBlocks = new Map<number, { count: number; reason: string }>();
 
 /**
  * Refuse recording starts for this app until the returned release is called.
@@ -84,10 +74,7 @@ const recordingStartBlocks = new Map<
  *
  * `reason` names the operation in the imperative, e.g. "restore a version".
  */
-export function blockRecordingStart(
-  appId: number,
-  reason: string,
-): (() => void) | null {
+export function blockRecordingStart(appId: number, reason: string): (() => void) | null {
   if (isRecordingActive(appId)) return null;
   const existing = recordingStartBlocks.get(appId);
   if (existing) existing.count++;
@@ -123,9 +110,7 @@ export function recordingStartBlockReason(appId: number): string | null {
  * every await before it swaps the environment or publishes a session, or it
  * would relaunch an app the user has just stopped.
  */
-export function reserveRecordingStart(
-  appId: number,
-): RecordingStartReservation | null {
+export function reserveRecordingStart(appId: number): RecordingStartReservation | null {
   if (
     activeRecordings.has(appId) ||
     startingRecordings.has(appId) ||

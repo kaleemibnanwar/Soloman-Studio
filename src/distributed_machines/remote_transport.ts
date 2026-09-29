@@ -20,10 +20,7 @@ import type {
   RemoteOperationContract,
   RemoteMachineSender,
 } from "./definition";
-import type {
-  AnyRemoteMachineDefinition,
-  RemoteMachineManifest,
-} from "./remote_manifest";
+import type { AnyRemoteMachineDefinition, RemoteMachineManifest } from "./remote_manifest";
 import {
   type MachineAddress,
   type MachineDispatchEnvelope,
@@ -33,16 +30,9 @@ import {
   type MachineRejectedReason,
   type MachineSnapshotEnvelope,
 } from "./remote_protocol";
-import type {
-  RequestId,
-  RequestIdempotencyKey,
-  RequestMessageId,
-} from "./request_identity";
+import type { RequestId, RequestIdempotencyKey, RequestMessageId } from "./request_identity";
 import type { RemoteAuthorizationDecision } from "./remote_intent_contract";
-import {
-  finalizeOperationAdmission,
-  type OperationRegistry,
-} from "./operation_registry";
+import { finalizeOperationAdmission, type OperationRegistry } from "./operation_registry";
 
 export interface RemoteTransportEndpoint {
   readonly id: number;
@@ -55,9 +45,7 @@ export interface RemoteTransportWindowRegistry {
   ensureRegistered(endpoint: RemoteTransportEndpoint): WindowSessionId;
   onUnregister(listener: (webContentsId: number) => void): () => void;
   sessionForWebContents(webContentsId: number): WindowSessionId | undefined;
-  endpointForSession(
-    sessionId: WindowSessionId,
-  ): RemoteTransportEndpoint | undefined;
+  endpointForSession(sessionId: WindowSessionId): RemoteTransportEndpoint | undefined;
 }
 
 export interface RemoteMachineTransportOptions {
@@ -142,11 +130,7 @@ function deepFreezePreparedValue<T>(value: T, seen = new Set<object>()): T {
     return value;
   }
   const prototype = Object.getPrototypeOf(value);
-  if (
-    prototype !== Object.prototype &&
-    prototype !== Array.prototype &&
-    prototype !== null
-  ) {
+  if (prototype !== Object.prototype && prototype !== Array.prototype && prototype !== null) {
     throw new Error("Remote prepared values must use plain immutable data");
   }
   seen.add(value);
@@ -166,10 +150,7 @@ export class RemoteMachineTransport {
   private readonly subscriptions = new Map<string, SubscriptionEntry>();
   private readonly actorKeys = new Map<string, unknown>();
   private readonly referencesPerWindow = new Map<number, number>();
-  private readonly pendingSubscriptions = new Map<
-    string,
-    PendingSubscription
-  >();
+  private readonly pendingSubscriptions = new Map<string, PendingSubscription>();
   private readonly pendingReferencesPerWindow = new Map<number, number>();
   private readonly windowSessions = new Map<number, WindowSessionId>();
   private readonly receiptLedger: PendingReceiptLedger<MachineDispatchReceipt>;
@@ -187,12 +168,9 @@ export class RemoteMachineTransport {
       options.maxDeduplicationEntries ?? DEFAULT_MAX_DEDUPLICATION_ENTRIES;
     this.receiptLedger = new PendingReceiptLedger({
       clock: options.clock,
-      maxPendingEntries:
-        options.maxPendingDeduplicationEntries ?? legacyDeduplicationLimit,
-      maxSettledEntries:
-        options.maxSettledDeduplicationEntries ?? legacyDeduplicationLimit,
-      settledRetentionMs:
-        options.deduplicationRetentionMs ?? DEFAULT_DEDUPLICATION_RETENTION_MS,
+      maxPendingEntries: options.maxPendingDeduplicationEntries ?? legacyDeduplicationLimit,
+      maxSettledEntries: options.maxSettledDeduplicationEntries ?? legacyDeduplicationLimit,
+      settledRetentionMs: options.deduplicationRetentionMs ?? DEFAULT_DEDUPLICATION_RETENTION_MS,
       disposal: {
         kind: "resolve",
         value: ({ messageId }) => this.rejected(messageId, "host-disposing"),
@@ -207,8 +185,7 @@ export class RemoteMachineTransport {
     this.maxSnapshotEnvelopeBytes =
       options.maxSnapshotEnvelopeBytes ?? DEFAULT_MAX_SNAPSHOT_ENVELOPE_BYTES;
     this.measureSerializedBytes =
-      options.measureSerializedBytes ??
-      ((value) => serialize(value).byteLength);
+      options.measureSerializedBytes ?? ((value) => serialize(value).byteLength);
     for (const definition of options.manifest.definitions) {
       options.host.register(definition);
     }
@@ -218,10 +195,7 @@ export class RemoteMachineTransport {
     this.removeDisposalListener = options.host.onActorDisposed((event) => {
       const definition = options.manifest.get(event.machineId);
       if (!definition) return;
-      const address = this.wireAddress(
-        definition,
-        this.encodeKey(definition, event.key),
-      );
+      const address = this.wireAddress(definition, this.encodeKey(definition, event.key));
       this.cancelPendingSubscriptionsForAddress(address);
       this.actorKeys.delete(address);
       const entry = this.subscriptions.get(address);
@@ -278,9 +252,7 @@ export class RemoteMachineTransport {
       pending,
       consumed: false,
     };
-    const promise = Promise.resolve().then(() =>
-      this.completeSubscription(sender, prepared),
-    );
+    const promise = Promise.resolve().then(() => this.completeSubscription(sender, prepared));
     pending.promise = promise;
     return promise;
   }
@@ -301,21 +273,16 @@ export class RemoteMachineTransport {
       this.assertPreparedSubscribeCurrent(sender, prepared);
 
       const authorizedKey =
-        definition.remote.canonicalizeKeyAfterAuthorization?.(
-          prepared.decodedKey,
-        ) ?? prepared.decodedKey;
+        definition.remote.canonicalizeKeyAfterAuthorization?.(prepared.decodedKey) ??
+        prepared.decodedKey;
       const canonicalEncodedKey = this.encodeKey(definition, authorizedKey);
-      if (
-        this.domainAddress(definition, authorizedKey) !== prepared.domainAddress
-      ) {
+      if (this.domainAddress(definition, authorizedKey) !== prepared.domainAddress) {
         throw new OctopusStudioError(
           "Remote machine key changed during subscription authorization",
           OctopusStudioErrorKind.Precondition,
         );
       }
-      if (
-        !serialize(canonicalEncodedKey).equals(serialize(prepared.encodedKey))
-      ) {
+      if (!serialize(canonicalEncodedKey).equals(serialize(prepared.encodedKey))) {
         throw new OctopusStudioError(
           "Remote machine wire address changed during subscription authorization",
           OctopusStudioErrorKind.Precondition,
@@ -325,20 +292,14 @@ export class RemoteMachineTransport {
       const currentReferences = this.referencesPerWindow.get(sender.id) ?? 0;
       let entry = this.subscriptions.get(address);
       const alreadySubscribed = entry?.windows.has(sender.id) === true;
-      if (
-        !alreadySubscribed &&
-        currentReferences >= this.maxSubscriptionsPerWindow
-      ) {
+      if (!alreadySubscribed && currentReferences >= this.maxSubscriptionsPerWindow) {
         throw new OctopusStudioError(
           "Remote machine subscription limit exceeded",
           OctopusStudioErrorKind.RateLimited,
         );
       }
       this.assertPreparedSubscribeCurrent(sender, prepared);
-      if (
-        entry &&
-        this.options.host.peek(definition.id, entry.key) !== entry.actor
-      ) {
+      if (entry && this.options.host.peek(definition.id, entry.key) !== entry.actor) {
         throw new OctopusStudioError(
           "Remote machine actor changed during subscription authorization",
           OctopusStudioErrorKind.Precondition,
@@ -395,9 +356,7 @@ export class RemoteMachineTransport {
           unsubscribeActor: () => undefined,
         };
         this.subscriptions.set(address, entry);
-        entry.unsubscribeActor = admittedActor.subscribe(() =>
-          this.broadcastSnapshot(entry!),
-        );
+        entry.unsubscribeActor = admittedActor.subscribe(() => this.broadcastSnapshot(entry!));
       }
 
       if (!alreadySubscribed) {
@@ -426,9 +385,8 @@ export class RemoteMachineTransport {
     if (
       prepared.pending.cancelled ||
       prepared.pending.accountingReleased ||
-      this.pendingSubscriptions.get(
-        this.pendingSubscriptionKey(sender.id, prepared.address),
-      ) !== prepared.pending
+      this.pendingSubscriptions.get(this.pendingSubscriptionKey(sender.id, prepared.address)) !==
+        prepared.pending
     ) {
       throw new OctopusStudioError(
         "Remote machine subscription was cancelled",
@@ -450,20 +408,14 @@ export class RemoteMachineTransport {
     }
   }
 
-  async unsubscribe(
-    sender: RemoteTransportEndpoint,
-    input: MachineAddress,
-  ): Promise<void> {
+  async unsubscribe(sender: RemoteTransportEndpoint, input: MachineAddress): Promise<void> {
     this.assertOpen();
     this.assertAddressWithinLimit(input);
     this.options.windows.ensureRegistered(sender);
     const definition = this.requireDefinition(input.machineId);
     this.assertProtocol(sender, definition, input.protocolVersion);
     const key = this.decodeKey(definition, input.encodedKey);
-    const address = this.wireAddress(
-      definition,
-      this.encodeKey(definition, key),
-    );
+    const address = this.wireAddress(definition, this.encodeKey(definition, key));
     this.cancelPendingSubscriptions(sender.id, address);
     const entry = this.subscriptions.get(address);
     if (!entry) return;
@@ -478,23 +430,15 @@ export class RemoteMachineTransport {
     const windowSessionId = this.options.windows.ensureRegistered(sender);
     this.windowSessions.set(sender.id, windowSessionId);
     const dispatchDefinition = this.options.manifest.get(envelope.machineId);
-    const nativeDispatchLimit =
-      dispatchDefinition?.remoteIntent?.budgets.intentBytes;
+    const nativeDispatchLimit = dispatchDefinition?.remoteIntent?.budgets.intentBytes;
     const dispatchLimit =
       nativeDispatchLimit === undefined
-        ? (dispatchDefinition?.remote.maxDispatchEnvelopeBytes ??
-          this.maxDispatchEnvelopeBytes)
+        ? (dispatchDefinition?.remote.maxDispatchEnvelopeBytes ?? this.maxDispatchEnvelopeBytes)
         : nativeDispatchLimit;
     if (!this.isWithinSerializedLimit(envelope, dispatchLimit)) {
-      return Promise.resolve(
-        this.rejected(envelope.messageId, "invalid-event"),
-      );
+      return Promise.resolve(this.rejected(envelope.messageId, "invalid-event"));
     }
-    const prepared = this.prepareDispatchIdentity(
-      sender,
-      windowSessionId,
-      envelope,
-    );
+    const prepared = this.prepareDispatchIdentity(sender, windowSessionId, envelope);
     if ("receipt" in prepared) {
       if (
         prepared.fingerprint !== undefined &&
@@ -509,15 +453,11 @@ export class RemoteMachineTransport {
         });
         if (replay.kind === "duplicate") return replay.receipt;
         if (replay.kind === "conflict") {
-          return Promise.resolve(
-            this.rejected(envelope.messageId, "invalid-event"),
-          );
+          return Promise.resolve(this.rejected(envelope.messageId, "invalid-event"));
         }
         if (replay.kind === "fresh") return replay.receipt;
         if (replay.kind === "disposed") {
-          return Promise.resolve(
-            this.rejected(envelope.messageId, "host-disposing"),
-          );
+          return Promise.resolve(this.rejected(envelope.messageId, "host-disposing"));
         }
       }
       return Promise.resolve(
@@ -543,9 +483,7 @@ export class RemoteMachineTransport {
       case "duplicate":
         return claim.receipt;
       case "conflict":
-        return Promise.resolve(
-          this.rejected(envelope.messageId, "invalid-event"),
-        );
+        return Promise.resolve(this.rejected(envelope.messageId, "invalid-event"));
       case "capacity-rejected":
         return Promise.reject(
           new OctopusStudioError(
@@ -554,9 +492,7 @@ export class RemoteMachineTransport {
           ),
         );
       case "disposed":
-        return Promise.resolve(
-          this.rejected(envelope.messageId, "host-disposing"),
-        );
+        return Promise.resolve(this.rejected(envelope.messageId, "host-disposing"));
       default: {
         const exhaustive: never = claim;
         return exhaustive;
@@ -573,10 +509,7 @@ export class RemoteMachineTransport {
     return [...this.subscriptions.values()].map((entry) => ({
       machineId: entry.definition.id,
       key: entry.key,
-      totalReferences: [...entry.windows.values()].reduce(
-        (total, count) => total + count,
-        0,
-      ),
+      totalReferences: [...entry.windows.values()].reduce((total, count) => total + count, 0),
       windows: new Map(entry.windows),
     }));
   }
@@ -603,13 +536,7 @@ export class RemoteMachineTransport {
     this.removeDisposalListener();
     for (const definition of this.options.manifest.definitions) {
       const operation = definition.remoteOperation as
-        | RemoteOperationContract<
-            unknown,
-            unknown,
-            unknown,
-            unknown,
-            InvocationRef
-          >
+        | RemoteOperationContract<unknown, unknown, unknown, unknown, InvocationRef>
         | undefined;
       operation?.releaseManager?.();
     }
@@ -644,25 +571,16 @@ export class RemoteMachineTransport {
     if (!keyResult.success) {
       return { receipt: this.rejected(envelope.messageId, "invalid-key") };
     }
-    const intentResult = this.rendererIntentCodec(definition).safeParse(
-      envelope.encodedEvent,
-    );
+    const intentResult = this.rendererIntentCodec(definition).safeParse(envelope.encodedEvent);
     if (!intentResult.success) {
       return { receipt: this.rejected(envelope.messageId, "invalid-event") };
     }
     const intent = (
-      definition.remoteIntent
-        ? immutablePreparedClone(intentResult.data)
-        : intentResult.data
+      definition.remoteIntent ? immutablePreparedClone(intentResult.data) : intentResult.data
     ) as { readonly type: string };
     const encodedKey = this.encodeKey(definition, keyResult.data);
     const address = this.wireAddress(definition, encodedKey);
-    const fingerprint = this.dispatchFingerprint(
-      definition,
-      encodedKey,
-      intent,
-      envelope,
-    );
+    const fingerprint = this.dispatchFingerprint(definition, encodedKey, intent, envelope);
     const admittedEntry = this.subscriptions.get(address);
     if (!admittedEntry || !admittedEntry.windows.has(sender.id)) {
       return {
@@ -672,10 +590,7 @@ export class RemoteMachineTransport {
     }
     if (
       definition.remoteIntent?.keyIntentRelationship.kind === "validate" &&
-      !definition.remoteIntent.keyIntentRelationship.validate(
-        admittedEntry.key,
-        intent,
-      )
+      !definition.remoteIntent.keyIntentRelationship.validate(admittedEntry.key, intent)
     ) {
       return {
         receipt: this.rejected(
@@ -704,21 +619,16 @@ export class RemoteMachineTransport {
         fingerprint,
       };
     }
-    const revisionPolicy =
-      definition.remoteIntent?.intents[intent.type]?.observedRevision;
+    const revisionPolicy = definition.remoteIntent?.intents[intent.type]?.observedRevision;
     if (
       revisionPolicy?.kind === "actor" &&
-      (envelope.expectedActorInstanceId === undefined ||
-        envelope.expectedRevision === undefined)
+      (envelope.expectedActorInstanceId === undefined || envelope.expectedRevision === undefined)
     ) {
       return {
         receipt: this.rejected(envelope.messageId, "revision-conflict"),
       };
     }
-    if (
-      revisionPolicy?.kind === "domain" &&
-      envelope.expectedRevision === undefined
-    ) {
+    if (revisionPolicy?.kind === "domain" && envelope.expectedRevision === undefined) {
       return {
         receipt: this.rejected(envelope.messageId, "revision-conflict"),
       };
@@ -770,10 +680,7 @@ export class RemoteMachineTransport {
         if (decision.kind === "deny") {
           return this.rejected(envelope.messageId, "unauthorized");
         }
-        if (
-          this.disposed ||
-          !this.isCurrentSender(sender, prepared.windowSessionId)
-        ) {
+        if (this.disposed || !this.isCurrentSender(sender, prepared.windowSessionId)) {
           return this.rejected(envelope.messageId, "host-disposing");
         }
         if (
@@ -794,10 +701,8 @@ export class RemoteMachineTransport {
         }
         const currentMetadata = actor.getMetadata();
         if (
-          currentMetadata.actorInstanceId ===
-            authorizedMetadata.actorInstanceId &&
-          currentMetadata.snapshotRevision ===
-            authorizedMetadata.snapshotRevision
+          currentMetadata.actorInstanceId === authorizedMetadata.actorInstanceId &&
+          currentMetadata.snapshotRevision === authorizedMetadata.snapshotRevision
         ) {
           dispatchActorMetadata = currentMetadata;
           stabilized = true;
@@ -837,17 +742,10 @@ export class RemoteMachineTransport {
         if (decision.error.kind !== OctopusStudioErrorKind.Auth) {
           throw decision.error;
         }
-        return this.rejected(
-          envelope.messageId,
-          definition.remoteIntent.refusalMap.authorization,
-        );
+        return this.rejected(envelope.messageId, definition.remoteIntent.refusalMap.authorization);
       }
       this.assertPreparedDispatchContent(prepared, envelope);
-      const preConversionRefusal = this.revalidatePreparedDispatch(
-        sender,
-        envelope,
-        prepared,
-      );
+      const preConversionRefusal = this.revalidatePreparedDispatch(sender, envelope, prepared);
       if (preConversionRefusal) {
         return this.rejected(envelope.messageId, preConversionRefusal);
       }
@@ -865,11 +763,7 @@ export class RemoteMachineTransport {
         requestIdentity,
       );
       this.assertPreparedDispatchContent(prepared, envelope);
-      const finalRefusal = this.revalidatePreparedDispatch(
-        sender,
-        envelope,
-        prepared,
-      );
+      const finalRefusal = this.revalidatePreparedDispatch(sender, envelope, prepared);
       if (finalRefusal) {
         return this.rejected(envelope.messageId, finalRefusal);
       }
@@ -890,11 +784,7 @@ export class RemoteMachineTransport {
             {
               assertFinalAdmission: () => {
                 this.assertPreparedDispatchContent(prepared, envelope);
-                const refusal = this.revalidatePreparedDispatch(
-                  sender,
-                  envelope,
-                  prepared,
-                );
+                const refusal = this.revalidatePreparedDispatch(sender, envelope, prepared);
                 if (refusal) {
                   throw new ActorAdmissionError(
                     refusal === "stale-actor"
@@ -955,9 +845,7 @@ export class RemoteMachineTransport {
                   `Remote machine ${definition.id} does not declare operation outcome codecs`,
                 );
               }
-              const invocationRef = codecs.invocationRefCodec.parse(
-                settlement.invocationRef,
-              );
+              const invocationRef = codecs.invocationRefCodec.parse(settlement.invocationRef);
               const outcome = codecs.outcomeCodec.parse(settlement.outcome);
               const outcomeEnvelope: MachineOperationOutcomeEnvelope = {
                 protocolVersion: definition.remote.protocolVersion,
@@ -968,22 +856,13 @@ export class RemoteMachineTransport {
                 outcome,
                 actor: settlement.receipt.actor,
               };
-              if (
-                !this.isWithinSerializedLimit(
-                  outcomeEnvelope,
-                  codecs.maxEnvelopeBytes,
-                )
-              ) {
+              if (!this.isWithinSerializedLimit(outcomeEnvelope, codecs.maxEnvelopeBytes)) {
                 throw new OctopusStudioError(
                   `Remote operation outcome exceeds the transport limit for ${definition.id}`,
                   OctopusStudioErrorKind.RateLimited,
                 );
               }
-              this.send(
-                sender.id,
-                "distributed-machine:operation-outcome",
-                outcomeEnvelope,
-              );
+              this.send(sender.id, "distributed-machine:operation-outcome", outcomeEnvelope);
             } catch (error) {
               this.options.onError?.(error);
             }
@@ -1023,13 +902,7 @@ export class RemoteMachineTransport {
         },
       );
     const remoteOperation = definition.remoteOperation as
-      | RemoteOperationContract<
-          unknown,
-          unknown,
-          unknown,
-          unknown,
-          InvocationRef
-        >
+      | RemoteOperationContract<unknown, unknown, unknown, unknown, InvocationRef>
       | undefined;
     const operationPreparation = remoteOperation?.prepare({
       key,
@@ -1051,20 +924,13 @@ export class RemoteMachineTransport {
       | undefined;
     if (operationPreparation) {
       const operationAdmission = finalizeOperationAdmission({
-        registry: operationPreparation.registry as OperationRegistry<
-          unknown,
-          InvocationRef
-        >,
+        registry: operationPreparation.registry as OperationRegistry<unknown, InvocationRef>,
         identity: operationPreparation.identity,
         createInvocationRef: operationPreparation.createInvocationRef,
         assertFinalAdmission: () => {
           const refusal = definition.remoteIntent
             ? this.revalidatePreparedDispatch(sender, envelope, prepared)
-            : this.revalidateLegacyPreparedDispatch(
-                sender,
-                prepared,
-                dispatchActorMetadata,
-              );
+            : this.revalidateLegacyPreparedDispatch(sender, prepared, dispatchActorMetadata);
           if (refusal) {
             throw new ActorAdmissionError(
               refusal === "stale-actor"
@@ -1077,8 +943,7 @@ export class RemoteMachineTransport {
           }
         },
         enqueue,
-        receiptOnEnqueueFailure: () =>
-          remoteOperation!.receipt(dispatchActorMetadata),
+        receiptOnEnqueueFailure: () => remoteOperation!.receipt(dispatchActorMetadata),
       });
       operationInvocationRef = operationAdmission.operation.invocationRef;
       if (operationAdmission.kind !== "enqueued") {
@@ -1092,10 +957,7 @@ export class RemoteMachineTransport {
         };
       }
       freshOperation = {
-        registry: operationPreparation.registry as OperationRegistry<
-          unknown,
-          InvocationRef
-        >,
+        registry: operationPreparation.registry as OperationRegistry<unknown, InvocationRef>,
         requestId: operationPreparation.identity.requestId,
         invocationRef: operationAdmission.operation.invocationRef,
       };
@@ -1104,10 +966,7 @@ export class RemoteMachineTransport {
       ticket = enqueue();
     }
     prepared.consumed = true;
-    const dispatchedActor = this.options.host.peek<unknown, unknown, string>(
-      definition.id,
-      key,
-    );
+    const dispatchedActor = this.options.host.peek<unknown, unknown, string>(definition.id, key);
     const outcome = await ticket.settled;
     if (outcome.kind === "failed") {
       freshOperation?.registry.rollbackAdmission(
@@ -1122,8 +981,7 @@ export class RemoteMachineTransport {
         if (outcome.error.code === "stale-actor-revision") {
           return this.rejected(
             envelope.messageId,
-            definition.remoteIntent?.refusalMap.revisionChanged ??
-              "revision-conflict",
+            definition.remoteIntent?.refusalMap.revisionChanged ?? "revision-conflict",
           );
         }
         return this.rejected(envelope.messageId, "host-disposing");
@@ -1199,14 +1057,9 @@ export class RemoteMachineTransport {
       getSettledMetadata(): ActorRuntimeMetadata | undefined;
     };
     if (!ticket || typeof ticket !== "object" || !("settled" in ticket)) {
-      throw new Error(
-        "Remote operation admission did not return a dispatch ticket",
-      );
+      throw new Error("Remote operation admission did not return a dispatch ticket");
     }
-    const dispatchedActor = this.options.host.peek<unknown, unknown, string>(
-      definition.id,
-      key,
-    );
+    const dispatchedActor = this.options.host.peek<unknown, unknown, string>(definition.id, key);
     const outcome = await ticket.settled;
     if (outcome.kind === "failed") {
       rollbackAdmission(outcome.error);
@@ -1217,8 +1070,7 @@ export class RemoteMachineTransport {
         if (outcome.error.code === "stale-actor-revision") {
           return this.rejected(
             messageId,
-            definition.remoteIntent?.refusalMap.revisionChanged ??
-              "revision-conflict",
+            definition.remoteIntent?.refusalMap.revisionChanged ?? "revision-conflict",
           );
         }
         return this.rejected(messageId, "host-disposing");
@@ -1288,8 +1140,7 @@ export class RemoteMachineTransport {
     return Object.freeze({
       requestId: requestId as RequestId,
       messageId: envelope.messageId as RequestMessageId,
-      idempotencyKey: (envelope.causationId ??
-        envelope.messageId) as RequestIdempotencyKey,
+      idempotencyKey: (envelope.causationId ?? envelope.messageId) as RequestIdempotencyKey,
       windowSessionId,
     });
   }
@@ -1328,9 +1179,7 @@ export class RemoteMachineTransport {
         envelope,
       ) !== prepared.fingerprint
     ) {
-      throw new Error(
-        `Remote authorization mutated prepared intent for ${prepared.definition.id}`,
-      );
+      throw new Error(`Remote authorization mutated prepared intent for ${prepared.definition.id}`);
     }
   }
 
@@ -1362,17 +1211,12 @@ export class RemoteMachineTransport {
     ) {
       return "host-disposing";
     }
-    const current = this.options.host.peek<unknown, unknown, string>(
-      definition.id,
-      key,
-    );
+    const current = this.options.host.peek<unknown, unknown, string>(definition.id, key);
     if (!current || current !== actor) return "stale-actor";
     const currentMetadata = current.getMetadata();
     if (
-      currentMetadata.actorInstanceId !==
-        stabilizedActorMetadata.actorInstanceId ||
-      currentMetadata.snapshotRevision !==
-        stabilizedActorMetadata.snapshotRevision
+      currentMetadata.actorInstanceId !== stabilizedActorMetadata.actorInstanceId ||
+      currentMetadata.snapshotRevision !== stabilizedActorMetadata.snapshotRevision
     ) {
       return "revision-conflict";
     }
@@ -1384,8 +1228,7 @@ export class RemoteMachineTransport {
     envelope: MachineDispatchEnvelope,
     prepared: PreparedDispatchIdentity,
   ): MachineRejectedReason | undefined {
-    const { definition, address, admittedEntry, actor, actorMetadata, key } =
-      prepared;
+    const { definition, address, admittedEntry, actor, actorMetadata, key } = prepared;
     const refusalMap = definition.remoteIntent?.refusalMap;
     if (
       prepared.consumed ||
@@ -1409,10 +1252,7 @@ export class RemoteMachineTransport {
     ) {
       return refusalMap?.transportClosed ?? "host-disposing";
     }
-    const current = this.options.host.peek<unknown, unknown, string>(
-      definition.id,
-      key,
-    );
+    const current = this.options.host.peek<unknown, unknown, string>(definition.id, key);
     if (!current || current !== actor) {
       return refusalMap?.actorChanged ?? "stale-actor";
     }
@@ -1434,13 +1274,12 @@ export class RemoteMachineTransport {
       return refusalMap?.revisionChanged ?? "revision-conflict";
     }
     if (observedRevision?.kind === "domain") {
-      const currentDomainRevision =
-        definition.remoteIntent?.resolveDomainRevision?.({
-          name: observedRevision.name,
-          key,
-          intent: prepared.intent,
-          currentState: current.getSnapshot(),
-        });
+      const currentDomainRevision = definition.remoteIntent?.resolveDomainRevision?.({
+        name: observedRevision.name,
+        key,
+        intent: prepared.intent,
+        currentState: current.getSnapshot(),
+      });
       if (
         currentDomainRevision === undefined ||
         envelope.expectedRevision !== currentDomainRevision
@@ -1459,8 +1298,7 @@ export class RemoteMachineTransport {
       metadata,
     );
     const parsed = (
-      entry.definition.remoteIntent?.snapshotCodec ??
-      entry.definition.remote.snapshotCodec
+      entry.definition.remoteIntent?.snapshotCodec ?? entry.definition.remote.snapshotCodec
     ).safeParse(projected);
     if (!parsed.success) {
       throw new Error(
@@ -1475,12 +1313,10 @@ export class RemoteMachineTransport {
       revision: metadata.snapshotRevision,
       encodedState: parsed.data,
     };
-    const nativeSnapshotLimit =
-      entry.definition.remoteIntent?.budgets.snapshotBytes;
+    const nativeSnapshotLimit = entry.definition.remoteIntent?.budgets.snapshotBytes;
     const snapshotLimit =
       nativeSnapshotLimit === undefined
-        ? (entry.definition.remote.maxSnapshotEnvelopeBytes ??
-          this.maxSnapshotEnvelopeBytes)
+        ? (entry.definition.remote.maxSnapshotEnvelopeBytes ?? this.maxSnapshotEnvelopeBytes)
         : nativeSnapshotLimit;
     if (!this.isWithinSerializedLimit(envelope, snapshotLimit)) {
       throw new OctopusStudioError(
@@ -1506,9 +1342,7 @@ export class RemoteMachineTransport {
 
   private send(webContentsId: number, channel: string, payload: unknown): void {
     const sessionId = this.options.windows.sessionForWebContents(webContentsId);
-    const endpoint = sessionId
-      ? this.options.windows.endpointForSession(sessionId)
-      : undefined;
+    const endpoint = sessionId ? this.options.windows.endpointForSession(sessionId) : undefined;
     if (!endpoint || endpoint.isDestroyed()) return;
     try {
       endpoint.send(channel, payload);
@@ -1539,10 +1373,7 @@ export class RemoteMachineTransport {
     }
   }
 
-  private removeWindowReference(
-    entry: SubscriptionEntry,
-    webContentsId: number,
-  ): void {
+  private removeWindowReference(entry: SubscriptionEntry, webContentsId: number): void {
     const count = entry.windows.get(webContentsId);
     if (count === undefined) return;
     entry.windows.delete(webContentsId);
@@ -1571,39 +1402,25 @@ export class RemoteMachineTransport {
     }
   }
 
-  private decodeKey(
-    definition: AnyRemoteMachineDefinition,
-    encodedKey: unknown,
-  ): unknown {
+  private decodeKey(definition: AnyRemoteMachineDefinition, encodedKey: unknown): unknown {
     const parsed = this.keyCodec(definition).safeParse(encodedKey);
     if (!parsed.success) {
-      throw new OctopusStudioError(
-        "Invalid remote machine key",
-        OctopusStudioErrorKind.Validation,
-      );
+      throw new OctopusStudioError("Invalid remote machine key", OctopusStudioErrorKind.Validation);
     }
-    return definition.remoteIntent
-      ? immutablePreparedClone(parsed.data)
-      : parsed.data;
+    return definition.remoteIntent ? immutablePreparedClone(parsed.data) : parsed.data;
   }
 
-  private encodeKey(
-    definition: AnyRemoteMachineDefinition,
-    key: unknown,
-  ): unknown {
+  private encodeKey(definition: AnyRemoteMachineDefinition, key: unknown): unknown {
     const keyContract = definition.remoteIntent ?? definition.remote;
     const encodedKey = keyContract.encodeKey(key);
     const roundTrip = keyContract.keyCodec.safeParse(encodedKey);
     if (
       !roundTrip.success ||
-      this.domainAddress(definition, roundTrip.data) !==
-        this.domainAddress(definition, key)
+      this.domainAddress(definition, roundTrip.data) !== this.domainAddress(definition, key)
     ) {
       throw new Error(`Remote key encoding failed for ${definition.id}`);
     }
-    return definition.remoteIntent
-      ? immutablePreparedClone(encodedKey)
-      : encodedKey;
+    return definition.remoteIntent ? immutablePreparedClone(encodedKey) : encodedKey;
   }
 
   private keyCodec(definition: AnyRemoteMachineDefinition) {
@@ -1621,27 +1438,14 @@ export class RemoteMachineTransport {
     return definition;
   }
 
-  private domainAddress(
-    definition: AnyRemoteMachineDefinition,
-    key: unknown,
-  ): string {
-    const keyToString =
-      definition.remoteIntent?.keyToString ?? definition.remote.keyToString;
+  private domainAddress(definition: AnyRemoteMachineDefinition, key: unknown): string {
+    const keyToString = definition.remoteIntent?.keyToString ?? definition.remote.keyToString;
     return `${definition.id}\0${keyToString(key)}`;
   }
 
-  private wireAddress(
-    definition: AnyRemoteMachineDefinition,
-    encodedKey: unknown,
-  ): string {
+  private wireAddress(definition: AnyRemoteMachineDefinition, encodedKey: unknown): string {
     return createHash("sha256")
-      .update(
-        serialize([
-          definition.remote.protocolVersion,
-          definition.id,
-          encodedKey,
-        ]),
-      )
+      .update(serialize([definition.remote.protocolVersion, definition.id, encodedKey]))
       .digest("hex");
   }
 
@@ -1650,8 +1454,7 @@ export class RemoteMachineTransport {
     capturedWindowSessionId?: WindowSessionId,
   ): RemoteMachineSender & { readonly windowSessionId: WindowSessionId } {
     const windowSessionId =
-      capturedWindowSessionId ??
-      this.options.windows.sessionForWebContents(sender.id);
+      capturedWindowSessionId ?? this.options.windows.sessionForWebContents(sender.id);
     if (!windowSessionId) {
       throw new OctopusStudioError(
         "Remote machine sender has no registered window session",
@@ -1665,10 +1468,7 @@ export class RemoteMachineTransport {
   }
 
   private rendererIntentCodec(definition: AnyRemoteMachineDefinition) {
-    return (
-      definition.remoteIntent?.rendererIntentCodec ??
-      definition.remote.eventCodec
-    );
+    return definition.remoteIntent?.rendererIntentCodec ?? definition.remote.eventCodec;
   }
 
   private async authorizeSubscribe(
@@ -1691,10 +1491,7 @@ export class RemoteMachineTransport {
       });
       return { kind: "allow" };
     } catch (error) {
-      if (
-        isOctopusStudioError(error) &&
-        error.kind === OctopusStudioErrorKind.Auth
-      ) {
+      if (isOctopusStudioError(error) && error.kind === OctopusStudioErrorKind.Auth) {
         return { kind: "deny", error };
       }
       throw error;
@@ -1726,10 +1523,7 @@ export class RemoteMachineTransport {
       });
       return { kind: "allow" };
     } catch (error) {
-      if (
-        isOctopusStudioError(error) &&
-        error.kind === OctopusStudioErrorKind.Auth
-      ) {
+      if (isOctopusStudioError(error) && error.kind === OctopusStudioErrorKind.Auth) {
         return { kind: "deny", error };
       }
       throw error;
@@ -1750,14 +1544,8 @@ export class RemoteMachineTransport {
       sender: { windowSessionId },
       ...(requestIdentity ? { requestIdentity } : {}),
     });
-    if (
-      typeof intent === "object" &&
-      intent !== null &&
-      Object.is(event, intent)
-    ) {
-      throw new Error(
-        `Remote intent conversion for ${definition.id} reused renderer data`,
-      );
+    if (typeof intent === "object" && intent !== null && Object.is(event, intent)) {
+      throw new Error(`Remote intent conversion for ${definition.id} reused renderer data`);
     }
     return immutablePreparedClone(event);
   }
@@ -1792,10 +1580,7 @@ export class RemoteMachineTransport {
     }
   }
 
-  private assertCurrentSender(
-    sender: RemoteTransportEndpoint,
-    sessionId: WindowSessionId,
-  ): void {
+  private assertCurrentSender(sender: RemoteTransportEndpoint, sessionId: WindowSessionId): void {
     if (this.isCurrentSender(sender, sessionId)) return;
     throw new OctopusStudioError(
       "Remote machine sender was destroyed during authorization",
@@ -1803,20 +1588,13 @@ export class RemoteMachineTransport {
     );
   }
 
-  private isCurrentSender(
-    sender: RemoteTransportEndpoint,
-    sessionId: WindowSessionId,
-  ): boolean {
+  private isCurrentSender(sender: RemoteTransportEndpoint, sessionId: WindowSessionId): boolean {
     return (
-      !sender.isDestroyed() &&
-      this.options.windows.sessionForWebContents(sender.id) === sessionId
+      !sender.isDestroyed() && this.options.windows.sessionForWebContents(sender.id) === sessionId
     );
   }
 
-  private rejected(
-    messageId: string,
-    reason: MachineRejectedReason,
-  ): MachineDispatchReceipt {
+  private rejected(messageId: string, reason: MachineRejectedReason): MachineDispatchReceipt {
     return { kind: "rejected", messageId, reason };
   }
 
@@ -1836,8 +1614,7 @@ export class RemoteMachineTransport {
     key: unknown,
   ): PendingSubscription {
     const currentReferences = this.referencesPerWindow.get(webContentsId) ?? 0;
-    const pendingReferences =
-      this.pendingReferencesPerWindow.get(webContentsId) ?? 0;
+    const pendingReferences = this.pendingReferencesPerWindow.get(webContentsId) ?? 0;
     if (
       countsTowardLimit &&
       currentReferences + pendingReferences >= this.maxSubscriptionsPerWindow
@@ -1851,10 +1628,7 @@ export class RemoteMachineTransport {
       address,
       webContentsId,
       countsTowardLimit,
-      lifecycleGeneration: this.options.host.captureAdmissionGeneration(
-        machineId,
-        key,
-      ),
+      lifecycleGeneration: this.options.host.captureAdmissionGeneration(machineId, key),
       cancelled: false,
       accountingReleased: false,
     };
@@ -1870,10 +1644,7 @@ export class RemoteMachineTransport {
     this.releasePendingSubscriptionAccounting(subscription);
   }
 
-  private cancelPendingSubscriptions(
-    webContentsId: number,
-    address: string,
-  ): void {
+  private cancelPendingSubscriptions(webContentsId: number, address: string): void {
     const pending = this.pendingSubscriptions.get(
       this.pendingSubscriptionKey(webContentsId, address),
     );
@@ -1892,9 +1663,7 @@ export class RemoteMachineTransport {
     this.releasePendingSubscriptionAccounting(subscription);
   }
 
-  private releasePendingSubscriptionAccounting(
-    subscription: PendingSubscription,
-  ): void {
+  private releasePendingSubscriptionAccounting(subscription: PendingSubscription): void {
     if (subscription.accountingReleased) return;
     subscription.accountingReleased = true;
     const pendingKey = this.pendingSubscriptionKey(
@@ -1909,10 +1678,7 @@ export class RemoteMachineTransport {
     }
   }
 
-  private pendingSubscriptionKey(
-    webContentsId: number,
-    address: string,
-  ): string {
+  private pendingSubscriptionKey(webContentsId: number, address: string): string {
     return `${webContentsId}\0${address}`;
   }
 

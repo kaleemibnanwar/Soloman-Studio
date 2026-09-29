@@ -2,20 +2,16 @@ import {
   DEFAULT_PTY_COMMAND_TIMEOUT_MS,
   PtyCommandExecutionError,
   runPtyCommand,
-} from "@/ipc/utils/pty_command_runner";
+} from "@/ipc/process/pty_command_runner";
 import fs from "node:fs/promises";
 import path from "node:path";
 import log from "electron-log";
 import defaultApproveBuildsText from "@/data/default-approve-builds.txt?raw";
-import { gitAdd, gitCommit } from "@/ipc/utils/git_utils";
+import { gitAdd, gitCommit } from "@/ipc/git/git_utils";
 import { PNPM_MINIMUM_RELEASE_AGE_WARNING_PREFIX } from "@/shared/packageManagerWarnings";
 import { IS_TEST_BUILD } from "@/ipc/utils/test_utils";
 import { isVersionAtLeast } from "@/shared/version_utils";
-import {
-  getManagedToolsDir,
-  prependPathSegment,
-  sanitizePathEnv,
-} from "@/ipc/utils/managed_tools";
+import { getManagedToolsDir, prependPathSegment, sanitizePathEnv } from "@/ipc/utils/managed_tools";
 import { getPathEnvKey } from "@/ipc/utils/path_env";
 import {
   buildWindowsCommandInvocation,
@@ -33,8 +29,7 @@ export const PNPM_PM_ON_FAIL_IGNORE_ENV = "ignore";
 export const PNPM_PM_ON_FAIL_IGNORE_ARG = "--config.pm-on-fail=ignore";
 const MANAGED_PNPM_DIR = "pnpm";
 const MINIMUM_PACKAGE_RELEASE_AGE_DAYS = 1;
-export const MINIMUM_PACKAGE_RELEASE_AGE_MINUTES =
-  MINIMUM_PACKAGE_RELEASE_AGE_DAYS * 24 * 60;
+export const MINIMUM_PACKAGE_RELEASE_AGE_MINUTES = MINIMUM_PACKAGE_RELEASE_AGE_DAYS * 24 * 60;
 export const PNPM_INSTALL_POLICY_ARGS = [
   PNPM_PM_ON_FAIL_IGNORE_ARG,
   "--config.confirmModulesPurge=false",
@@ -43,32 +38,21 @@ export const PNPM_INSTALL_POLICY_ARGS = [
 
 export const PNPM_MINIMUM_RELEASE_AGE_WARNING_MESSAGE = `${PNPM_MINIMUM_RELEASE_AGE_WARNING_PREFIX}${PNPM_MINIMUM_RELEASE_AGE_VERSION} or newer for the strongest protection`;
 const SOCKET_FIREWALL_PACKAGE = "sfw@2.0.4";
-const SOCKET_FIREWALL_NPX_ARGS = [
-  "--prefer-offline",
-  "--yes",
-  SOCKET_FIREWALL_PACKAGE,
-];
+const SOCKET_FIREWALL_NPX_ARGS = ["--prefer-offline", "--yes", SOCKET_FIREWALL_PACKAGE];
 export const SOCKET_FIREWALL_PROBE_TIMEOUT_MS = 30 * 1000;
 export const PACKAGE_MANAGER_PROBE_TIMEOUT_MS = 30 * 1000;
 export const ADD_DEPENDENCY_INSTALL_TIMEOUT_MS = DEFAULT_PTY_COMMAND_TIMEOUT_MS;
 const logger = log.scope("socket_firewall");
 const OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA = "v1";
-const OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY =
-  "octopus-studio-default-allow-builds-schema";
+const OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY = "octopus-studio-default-allow-builds-schema";
 const OCTOPUS_STUDIO_ALLOW_BUILDS_DATA_VERSION_KEY =
   "octopus-studio-default-allow-builds-data-version";
-const OCTOPUS_STUDIO_ALLOW_BUILDS_CHANNEL_KEY =
-  "octopus-studio-default-allow-builds-channel";
-const OCTOPUS_STUDIO_ALLOW_BUILDS_BEGIN =
-  "# octopus-studio-default-allow-builds begin";
-const OCTOPUS_STUDIO_ALLOW_BUILDS_END =
-  "# octopus-studio-default-allow-builds end";
-const LEGACY_OCTOPUS_STUDIO_ALLOW_BUILDS_BEGIN =
-  "# octopus-studio-default-allow-builds=v1 begin";
-const LEGACY_OCTOPUS_STUDIO_ALLOW_BUILDS_END =
-  "# octopus-studio-default-allow-builds=v1 end";
-const OCTOPUS_STUDIO_AUTO_DENIED_ALLOW_BUILDS_COMMENT =
-  "# octopus-studio-auto-denied";
+const OCTOPUS_STUDIO_ALLOW_BUILDS_CHANNEL_KEY = "octopus-studio-default-allow-builds-channel";
+const OCTOPUS_STUDIO_ALLOW_BUILDS_BEGIN = "# octopus-studio-default-allow-builds begin";
+const OCTOPUS_STUDIO_ALLOW_BUILDS_END = "# octopus-studio-default-allow-builds end";
+const LEGACY_OCTOPUS_STUDIO_ALLOW_BUILDS_BEGIN = "# octopus-studio-default-allow-builds=v1 begin";
+const LEGACY_OCTOPUS_STUDIO_ALLOW_BUILDS_END = "# octopus-studio-default-allow-builds=v1 end";
+const OCTOPUS_STUDIO_AUTO_DENIED_ALLOW_BUILDS_COMMENT = "# octopus-studio-auto-denied";
 const PNPM_IGNORED_BUILDS_ERROR_CODE = "ERR_PNPM_IGNORED_BUILDS";
 const OCTOPUS_STUDIO_ALLOW_BUILDS_METADATA_PATTERN =
   /^#\s*(octopus-studio-default-allow-builds-(?:schema|data-version|channel))=(.+)$/;
@@ -133,18 +117,10 @@ export function getManagedPnpmBinDir(): string {
 }
 
 export function getManagedPnpmCliScriptPath(): string {
-  return path.join(
-    getManagedPnpmInstallDir(),
-    "node_modules",
-    "pnpm",
-    "bin",
-    "pnpm.cjs",
-  );
+  return path.join(getManagedPnpmInstallDir(), "node_modules", "pnpm", "bin", "pnpm.cjs");
 }
 
-function withManagedPnpmPath(
-  env: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
+function withManagedPnpmPath(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   return prependPathSegment(env, getManagedPnpmBinDir());
 }
 
@@ -196,10 +172,7 @@ export type PnpmIgnoredBuild = {
   packageSpec: string;
 };
 
-const remoteAllowBuildsCache = new WeakMap<
-  AllowBuildsTextFetcher,
-  RemoteAllowBuildsCacheEntry
->();
+const remoteAllowBuildsCache = new WeakMap<AllowBuildsTextFetcher, RemoteAllowBuildsCacheEntry>();
 const pendingRemoteAllowBuildsFetches = new WeakMap<
   AllowBuildsTextFetcher,
   Promise<AllowBuildsSource | null>
@@ -210,9 +183,7 @@ function parseAllowBuildsMetadata(
 ): Partial<Record<AllowBuildsMetadataKey, string>> {
   const metadata: Partial<Record<AllowBuildsMetadataKey, string>> = {};
   for (const line of lines) {
-    const match = line
-      .trim()
-      .match(OCTOPUS_STUDIO_ALLOW_BUILDS_METADATA_PATTERN);
+    const match = line.trim().match(OCTOPUS_STUDIO_ALLOW_BUILDS_METADATA_PATTERN);
     if (!match) {
       continue;
     }
@@ -221,15 +192,10 @@ function parseAllowBuildsMetadata(
   return metadata;
 }
 
-function parseDefaultAllowBuilds(
-  text = defaultApproveBuildsText,
-): AllowBuildsSource {
+function parseDefaultAllowBuilds(text = defaultApproveBuildsText): AllowBuildsSource {
   const lines = text.split(/\r?\n/).map((line) => line.trim());
   const metadata = parseAllowBuildsMetadata(lines);
-  if (
-    metadata[OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY] !==
-    OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA
-  ) {
+  if (metadata[OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY] !== OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA) {
     throw new Error(
       `Invalid default pnpm allow-builds list. Expected "${OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY}=${OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA}".`,
     );
@@ -251,9 +217,9 @@ function parseDefaultAllowBuilds(
     schema: OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA,
     dataVersion,
     channel,
-    packages: Array.from(
-      new Set(lines.filter((line) => line && !line.startsWith("#"))),
-    ).sort((a, b) => a.localeCompare(b)),
+    packages: Array.from(new Set(lines.filter((line) => line && !line.startsWith("#")))).sort(
+      (a, b) => a.localeCompare(b),
+    ),
   };
 }
 
@@ -265,10 +231,7 @@ function quoteYamlMapKey(key: string): string {
   return JSON.stringify(key);
 }
 
-function buildAllowBuildsManagedBlock(
-  source: AllowBuildsSource,
-  indent: string,
-): string[] {
+function buildAllowBuildsManagedBlock(source: AllowBuildsSource, indent: string): string[] {
   return [
     `${indent}${OCTOPUS_STUDIO_ALLOW_BUILDS_BEGIN}`,
     `${indent}# ${OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY}=${source.schema}`,
@@ -323,9 +286,7 @@ function findAllowBuildsManagedBlock(lines: string[]): {
       );
     })
   ) {
-    throw new Error(
-      "Unsupported OctopusStudio pnpm allow-builds marker version.",
-    );
+    throw new Error("Unsupported OctopusStudio pnpm allow-builds marker version.");
   }
 
   return null;
@@ -333,9 +294,7 @@ function findAllowBuildsManagedBlock(lines: string[]): {
 
 function getExistingManagedAllowBuildsMetadata(
   existingContent: string,
-): Partial<
-  Pick<AllowBuildsSource, "schema" | "dataVersion" | "channel">
-> | null {
+): Partial<Pick<AllowBuildsSource, "schema" | "dataVersion" | "channel">> | null {
   const lines = existingContent ? existingContent.split(/\r?\n/) : [];
   if (lines.at(-1) === "") {
     lines.pop();
@@ -346,13 +305,10 @@ function getExistingManagedAllowBuildsMetadata(
     return null;
   }
 
-  const metadata = parseAllowBuildsMetadata(
-    lines.slice(range.beginIndex + 1, range.endIndex),
-  );
+  const metadata = parseAllowBuildsMetadata(lines.slice(range.beginIndex + 1, range.endIndex));
   return {
     schema:
-      metadata[OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY] ===
-      OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA
+      metadata[OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA_KEY] === OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA
         ? OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA
         : undefined,
     dataVersion: metadata[OCTOPUS_STUDIO_ALLOW_BUILDS_DATA_VERSION_KEY],
@@ -368,9 +324,7 @@ function getTopLevelAllowBuildsRange(lines: string[]): {
   start: number;
   end: number;
 } | null {
-  const start = lines.findIndex((line) =>
-    /^allowBuilds:\s*(?:#.*)?$/.test(line),
-  );
+  const start = lines.findIndex((line) => /^allowBuilds:\s*(?:#.*)?$/.test(line));
   if (start === -1) {
     return null;
   }
@@ -390,9 +344,7 @@ function getTopLevelAllowBuildsRange(lines: string[]): {
 function parseAllowBuildsExistingKeys(lines: string[]): Set<string> {
   const keys = new Set<string>();
   for (const line of lines) {
-    const match = line.match(
-      /^\s{2}((?:"(?:[^"\\]|\\.)+"|'[^']+'|[^:#]+)):\s*/,
-    );
+    const match = line.match(/^\s{2}((?:"(?:[^"\\]|\\.)+"|'[^']+'|[^:#]+)):\s*/);
     if (!match) {
       continue;
     }
@@ -405,20 +357,14 @@ function parseAllowBuildsExistingKeys(lines: string[]): Set<string> {
 
 function parseYamlMapKey(rawKey: string): string {
   try {
-    return rawKey.startsWith('"')
-      ? JSON.parse(rawKey)
-      : rawKey.replace(/^'|'$/g, "");
+    return rawKey.startsWith('"') ? JSON.parse(rawKey) : rawKey.replace(/^'|'$/g, "");
   } catch {
     return rawKey;
   }
 }
 
-function parseAllowBuildsLine(
-  line: string,
-): { key: string; value: string } | null {
-  const match = line.match(
-    /^\s{2}((?:"(?:[^"\\]|\\.)+"|'[^']+'|[^:#]+)):\s*(.*?)\s*(?:#.*)?$/,
-  );
+function parseAllowBuildsLine(line: string): { key: string; value: string } | null {
+  const match = line.match(/^\s{2}((?:"(?:[^"\\]|\\.)+"|'[^']+'|[^:#]+)):\s*(.*?)\s*(?:#.*)?$/);
   if (!match) {
     return null;
   }
@@ -432,8 +378,7 @@ function parseAllowBuildsLine(
 // ERR_PNPM_IGNORED_BUILDS) nor represents a human decision, so OctopusStudio treats
 // these as its own to resolve: remove them and let the caller convert them
 // into tagged denials (or a managed `true` when the allow-list covers them).
-const PNPM_PLACEHOLDER_ALLOW_BUILDS_VALUE_PATTERN =
-  /^["']?set this to true or false["']?$/i;
+const PNPM_PLACEHOLDER_ALLOW_BUILDS_VALUE_PATTERN = /^["']?set this to true or false["']?$/i;
 
 function removePlaceholderAllowBuildsEntries(lines: string[]): string[] {
   const range = getTopLevelAllowBuildsRange(lines);
@@ -444,19 +389,12 @@ function removePlaceholderAllowBuildsEntries(lines: string[]): string[] {
   const managedBlock = findAllowBuildsManagedBlock(lines);
   const placeholderPackages: string[] = [];
   for (let index = range.end - 1; index > range.start; index -= 1) {
-    if (
-      managedBlock &&
-      index >= managedBlock.beginIndex &&
-      index <= managedBlock.endIndex
-    ) {
+    if (managedBlock && index >= managedBlock.beginIndex && index <= managedBlock.endIndex) {
       continue;
     }
 
     const parsedLine = parseAllowBuildsLine(lines[index]);
-    if (
-      parsedLine &&
-      PNPM_PLACEHOLDER_ALLOW_BUILDS_VALUE_PATTERN.test(parsedLine.value)
-    ) {
+    if (parsedLine && PNPM_PLACEHOLDER_ALLOW_BUILDS_VALUE_PATTERN.test(parsedLine.value)) {
       lines.splice(index, 1);
       placeholderPackages.push(parsedLine.key);
     }
@@ -465,10 +403,7 @@ function removePlaceholderAllowBuildsEntries(lines: string[]): string[] {
   return placeholderPackages;
 }
 
-function removeAutoDeniedPromotedBuilds(
-  lines: string[],
-  source: AllowBuildsSource,
-): string[] {
+function removeAutoDeniedPromotedBuilds(lines: string[], source: AllowBuildsSource): string[] {
   const promotedPackageSet = new Set(source.packages);
   const range = getTopLevelAllowBuildsRange(lines);
   if (!range || promotedPackageSet.size === 0) {
@@ -478,11 +413,7 @@ function removeAutoDeniedPromotedBuilds(
   const managedBlock = findAllowBuildsManagedBlock(lines);
   const promotedPackages: string[] = [];
   for (let index = range.end - 1; index > range.start; index -= 1) {
-    if (
-      managedBlock &&
-      index >= managedBlock.beginIndex &&
-      index <= managedBlock.endIndex
-    ) {
+    if (managedBlock && index >= managedBlock.beginIndex && index <= managedBlock.endIndex) {
       continue;
     }
 
@@ -512,9 +443,7 @@ function insertAutoDeniedBuilds(
   );
   const newDeniedPackageNames = Array.from(new Set(packageNames))
     .filter((packageName) => {
-      return (
-        !sourcePackageSet.has(packageName) && !existingKeys.has(packageName)
-      );
+      return !sourcePackageSet.has(packageName) && !existingKeys.has(packageName);
     })
     .sort((left, right) => left.localeCompare(right));
 
@@ -538,9 +467,7 @@ function insertAutoDeniedBuilds(
 }
 
 function hasTopLevelConfigKey(lines: string[], key: string): boolean {
-  return lines.some((line) =>
-    new RegExp(`^${key}:\\s*(?:#.*)?$|^${key}:\\s+`).test(line),
-  );
+  return lines.some((line) => new RegExp(`^${key}:\\s*(?:#.*)?$|^${key}:\\s+`).test(line));
 }
 
 function formatPnpmWorkspaceConfigContent(lines: string[]): string {
@@ -582,10 +509,7 @@ function updatePnpmAllowBuildsConfigContentWithSource(
   // Placeholder entries become tagged denials below (via the deny list), or
   // simply drop away when the allow-list now covers the package (the managed
   // block rewrite emits `pkg: true` for those).
-  const packagesToDeny = [
-    ...autoDeniedPackageNames,
-    ...removePlaceholderAllowBuildsEntries(lines),
-  ];
+  const packagesToDeny = [...autoDeniedPackageNames, ...removePlaceholderAllowBuildsEntries(lines)];
   const managedBlock = findAllowBuildsManagedBlock(lines);
   if (managedBlock) {
     const { beginIndex, endIndex } = managedBlock;
@@ -607,11 +531,7 @@ function updatePnpmAllowBuildsConfigContentWithSource(
       endIndex - beginIndex + 1,
       ...buildAllowBuildsManagedBlock(filteredSource, indent),
     );
-    const deniedPackages = insertAutoDeniedBuilds(
-      lines,
-      new Set(source.packages),
-      packagesToDeny,
-    );
+    const deniedPackages = insertAutoDeniedBuilds(lines, new Set(source.packages), packagesToDeny);
     return {
       content: formatPnpmWorkspaceConfigContent(lines),
       promotedPackages,
@@ -621,23 +541,13 @@ function updatePnpmAllowBuildsConfigContentWithSource(
 
   const range = getTopLevelAllowBuildsRange(lines);
   if (range) {
-    const existingKeys = parseAllowBuildsExistingKeys(
-      lines.slice(range.start + 1, range.end),
-    );
+    const existingKeys = parseAllowBuildsExistingKeys(lines.slice(range.start + 1, range.end));
     const filteredSource = {
       ...source,
       packages: source.packages.filter((pkg) => !existingKeys.has(pkg)),
     };
-    lines.splice(
-      range.start + 1,
-      0,
-      ...buildAllowBuildsManagedBlock(filteredSource, "  "),
-    );
-    const deniedPackages = insertAutoDeniedBuilds(
-      lines,
-      new Set(source.packages),
-      packagesToDeny,
-    );
+    lines.splice(range.start + 1, 0, ...buildAllowBuildsManagedBlock(filteredSource, "  "));
+    const deniedPackages = insertAutoDeniedBuilds(lines, new Set(source.packages), packagesToDeny);
     return {
       content: formatPnpmWorkspaceConfigContent(lines),
       promotedPackages,
@@ -646,11 +556,7 @@ function updatePnpmAllowBuildsConfigContentWithSource(
   }
 
   const prefix = lines.length > 0 ? [...lines, ""] : [];
-  const nextLines = [
-    ...prefix,
-    "allowBuilds:",
-    ...buildAllowBuildsManagedBlock(source, "  "),
-  ];
+  const nextLines = [...prefix, "allowBuilds:", ...buildAllowBuildsManagedBlock(source, "  ")];
   const deniedPackages = insertAutoDeniedBuilds(
     nextLines,
     new Set(source.packages),
@@ -676,11 +582,9 @@ async function fetchRemoteAllowBuildsSource(
     return pendingFetch;
   }
 
-  const fetchPromise = fetchRemoteAllowBuildsSourceFromNetwork(fetcher).finally(
-    () => {
-      pendingRemoteAllowBuildsFetches.delete(fetcher);
-    },
-  );
+  const fetchPromise = fetchRemoteAllowBuildsSourceFromNetwork(fetcher).finally(() => {
+    pendingRemoteAllowBuildsFetches.delete(fetcher);
+  });
   pendingRemoteAllowBuildsFetches.set(fetcher, fetchPromise);
   return fetchPromise;
 }
@@ -737,15 +641,12 @@ async function resolveAllowBuildsSource({
     return parseDefaultAllowBuilds(allowBuildsText);
   }
 
-  const remoteSource = await fetchRemoteAllowBuildsSource(
-    remoteAllowBuildsTextFetcher,
-  );
+  const remoteSource = await fetchRemoteAllowBuildsSource(remoteAllowBuildsTextFetcher);
   if (remoteSource) {
     return remoteSource;
   }
 
-  const existingMetadata =
-    getExistingManagedAllowBuildsMetadata(existingContent);
+  const existingMetadata = getExistingManagedAllowBuildsMetadata(existingContent);
   if (
     existingMetadata?.schema === OCTOPUS_STUDIO_ALLOW_BUILDS_SCHEMA &&
     existingMetadata.channel === "remote"
@@ -782,10 +683,7 @@ export async function ensurePnpmAllowBuildsConfigured({
       remoteAllowBuildsTextFetcher,
     });
     const updateResult = allowBuildsSource
-      ? updatePnpmAllowBuildsConfigContentWithSource(
-          existingContent,
-          allowBuildsSource,
-        )
+      ? updatePnpmAllowBuildsConfigContentWithSource(existingContent, allowBuildsSource)
       : {
           content: formatPnpmWorkspaceConfigContent(
             existingContent
@@ -838,9 +736,7 @@ export async function commitPnpmAllowBuildsConfigIfChanged(
 
 const SAFE_PNPM_PACKAGE_NAME_PATTERN = /^(@[a-z0-9-_.]+\/)?[a-z0-9-_.]+$/i;
 
-export function getBestEffortPnpmRebuildCommand(
-  packageNames: string[],
-): string | null {
+export function getBestEffortPnpmRebuildCommand(packageNames: string[]): string | null {
   // This command string runs under cmd.exe on Windows (where single quotes
   // are literal and `true` is not a command) and sh elsewhere, so neither
   // quoting nor `|| true` is portable. npm package names never need quoting;
@@ -901,14 +797,10 @@ function parseIgnoredBuildsFromJson(content: string): string[] | null {
     return null;
   }
 
-  return ignoredBuilds.filter(
-    (entry): entry is string => typeof entry === "string",
-  );
+  return ignoredBuilds.filter((entry): entry is string => typeof entry === "string");
 }
 
-export function parsePnpmIgnoredBuildsFromModulesYaml(
-  content: string,
-): PnpmIgnoredBuild[] {
+export function parsePnpmIgnoredBuildsFromModulesYaml(content: string): PnpmIgnoredBuild[] {
   // pnpm 10.x/11.x write .modules.yaml as JSON (a YAML subset); older
   // versions used block-style YAML. Try JSON first, then the line parser.
   const jsonPackageSpecs = parseIgnoredBuildsFromJson(content);
@@ -929,9 +821,7 @@ export function parsePnpmIgnoredBuildsFromModulesYaml(
     const ignoredBuildsMatch = line.match(/^ignoredBuilds:\s*(.*)$/);
     if (ignoredBuildsMatch) {
       inIgnoredBuilds = true;
-      packageSpecs.push(
-        ...parseIgnoredBuildsInlineValue(ignoredBuildsMatch[1]),
-      );
+      packageSpecs.push(...parseIgnoredBuildsInlineValue(ignoredBuildsMatch[1]));
       continue;
     }
 
@@ -957,9 +847,7 @@ export function parsePnpmIgnoredBuildsFromModulesYaml(
     }));
 }
 
-export function parsePnpmIgnoredBuildsFromOutput(
-  output: string,
-): PnpmIgnoredBuild[] {
+export function parsePnpmIgnoredBuildsFromOutput(output: string): PnpmIgnoredBuild[] {
   const match = output.match(/Ignored build scripts:\s*([^\n\r]+)/i);
   if (!match) {
     return [];
@@ -979,9 +867,7 @@ export function parsePnpmIgnoredBuildsFromOutput(
   );
 }
 
-export async function readPnpmIgnoredBuilds(
-  appPath: string,
-): Promise<PnpmIgnoredBuild[]> {
+export async function readPnpmIgnoredBuilds(appPath: string): Promise<PnpmIgnoredBuild[]> {
   try {
     const modulesYamlPath = path.join(appPath, "node_modules", ".modules.yaml");
     const content = await fs.readFile(modulesYamlPath, "utf8");
@@ -1008,10 +894,7 @@ function insertAutoDeniedBuildsIntoContent(
     lines.pop();
   }
 
-  const packagesToDeny = [
-    ...packageNames,
-    ...removePlaceholderAllowBuildsEntries(lines),
-  ];
+  const packagesToDeny = [...packageNames, ...removePlaceholderAllowBuildsEntries(lines)];
   if (packagesToDeny.length > 0 && !getTopLevelAllowBuildsRange(lines)) {
     if (lines.length > 0 && lines.at(-1) !== "") {
       lines.push("");
@@ -1019,11 +902,7 @@ function insertAutoDeniedBuildsIntoContent(
     lines.push("allowBuilds:");
   }
 
-  const deniedPackages = insertAutoDeniedBuilds(
-    lines,
-    new Set<string>(),
-    packagesToDeny,
-  );
+  const deniedPackages = insertAutoDeniedBuilds(lines, new Set<string>(), packagesToDeny);
   if (deniedPackages.length === 0) {
     return {
       content: existingContent,
@@ -1050,9 +929,7 @@ export async function recordDeniedPnpmBuilds({
   allowBuildsText?: string;
   remoteAllowBuildsTextFetcher?: AllowBuildsTextFetcher;
 }): Promise<{ deniedBuilds: PnpmIgnoredBuild[] }> {
-  const packageNames = ignoredBuilds.map(
-    (ignoredBuild) => ignoredBuild.packageName,
-  );
+  const packageNames = ignoredBuilds.map((ignoredBuild) => ignoredBuild.packageName);
   if (packageNames.length === 0) {
     return { deniedBuilds: [] };
   }
@@ -1141,16 +1018,12 @@ export async function runCommand(
 ): Promise<CommandExecutionResult> {
   try {
     const invocation = buildPtyInvocation(command, args);
-    const { output } = await runPtyCommand(
-      invocation.command,
-      invocation.args,
-      {
-        cwd: options.cwd,
-        displayCommand: buildCommandDisplay(command, args),
-        env: options.env,
-        timeoutMs: options.timeoutMs,
-      },
-    );
+    const { output } = await runPtyCommand(invocation.command, invocation.args, {
+      cwd: options.cwd,
+      displayCommand: buildCommandDisplay(command, args),
+      env: options.env,
+      timeoutMs: options.timeoutMs,
+    });
 
     return {
       stdout: output,
@@ -1172,9 +1045,7 @@ export async function runCommand(
   }
 }
 
-export function getCommandExecutionDisplayDetails(
-  error: unknown,
-): string | undefined {
+export function getCommandExecutionDisplayDetails(error: unknown): string | undefined {
   if (!(error instanceof CommandExecutionError)) {
     return undefined;
   }
@@ -1192,9 +1063,7 @@ export function getCommandExecutionDisplayDetails(
   return undefined;
 }
 
-export async function ensureSocketFirewallInstalled(
-  runner: CommandRunner = runCommand,
-): Promise<{
+export async function ensureSocketFirewallInstalled(runner: CommandRunner = runCommand): Promise<{
   available: boolean;
   warningMessage?: string;
 }> {
@@ -1219,17 +1088,13 @@ export async function detectPreferredPackageManager(
   return pnpmSupport.available ? "pnpm" : "npm";
 }
 
-export async function getPnpmMinimumReleaseAgeSupport(
-  runner: CommandRunner = runCommand,
-): Promise<{
+export async function getPnpmMinimumReleaseAgeSupport(runner: CommandRunner = runCommand): Promise<{
   available: boolean;
   minimumReleaseAgeSupported: boolean;
   version?: string;
   warningMessage?: string;
 }> {
-  const testPnpmVersion = IS_TEST_BUILD
-    ? process.env.OCTOPUS_STUDIO_TEST_PNPM_VERSION
-    : undefined;
+  const testPnpmVersion = IS_TEST_BUILD ? process.env.OCTOPUS_STUDIO_TEST_PNPM_VERSION : undefined;
   if (testPnpmVersion) {
     if (isVersionAtLeast(testPnpmVersion, PNPM_MINIMUM_RELEASE_AGE_VERSION)) {
       return {
@@ -1300,11 +1165,7 @@ export function buildAddDependencyCommand(
           ...packages,
         ];
 
-  return wrapPackageManagerCommand(
-    packageManager,
-    packageManagerArgs,
-    useSocketFirewall,
-  );
+  return wrapPackageManagerCommand(packageManager, packageManagerArgs, useSocketFirewall);
 }
 
 export function buildUpdateDependencyCommand(
@@ -1317,11 +1178,7 @@ export function buildUpdateDependencyCommand(
       ? [...PNPM_INSTALL_POLICY_ARGS, "update", ...packages]
       : ["update", "--legacy-peer-deps", ...packages];
 
-  return wrapPackageManagerCommand(
-    packageManager,
-    packageManagerArgs,
-    useSocketFirewall,
-  );
+  return wrapPackageManagerCommand(packageManager, packageManagerArgs, useSocketFirewall);
 }
 
 function wrapPackageManagerCommand(
@@ -1333,11 +1190,7 @@ function wrapPackageManagerCommand(
     return {
       // Use a pinned npx package so sfw stays reproducible and avoids global path issues on Windows.
       command: "npx",
-      args: [
-        ...SOCKET_FIREWALL_NPX_ARGS,
-        packageManager,
-        ...packageManagerArgs,
-      ],
+      args: [...SOCKET_FIREWALL_NPX_ARGS, packageManager, ...packageManagerArgs],
     };
   }
 

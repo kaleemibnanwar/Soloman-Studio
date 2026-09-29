@@ -3,10 +3,7 @@ import { ipc } from "@/ipc/types";
 import type { CreateAppParams, CreateAppResult } from "@/ipc/types";
 import { showError } from "@/lib/toast";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export function useCreateApp() {
   const queryClient = useQueryClient();
@@ -14,10 +11,7 @@ export function useCreateApp() {
   const mutation = useMutation<CreateAppResult, Error, CreateAppParams>({
     mutationFn: async (params: CreateAppParams) => {
       if (!params.name.trim()) {
-        throw new OctopusStudioError(
-          "App name is required",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("App name is required", OctopusStudioErrorKind.Validation);
       }
 
       return ipc.app.createApp(params);
@@ -34,9 +28,7 @@ export function useCreateApp() {
     },
   });
 
-  const createApp = async (
-    params: CreateAppParams,
-  ): Promise<CreateAppResult> => {
+  const createApp = async (params: CreateAppParams): Promise<CreateAppResult> => {
     return mutation.mutateAsync(params);
   };
 

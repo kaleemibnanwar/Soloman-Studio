@@ -1,6 +1,6 @@
-import { StorageEnum } from '../base/enums';
-import { createStorage } from '../base/base';
-import type { BaseStorage } from '../base/types';
+import { StorageEnum } from "../base/enums";
+import { createStorage } from "../base/base";
+import type { BaseStorage } from "../base/types";
 
 // Interface for firewall settings configuration
 export interface FirewallConfig {
@@ -18,7 +18,7 @@ function normalizeUrl(url: string): string {
   return url
     .trim()
     .toLowerCase()
-    .replace(/^https?:\/\//, '');
+    .replace(/^https?:\/\//, "");
 }
 
 export type FirewallStorage = BaseStorage<FirewallConfig> & {
@@ -38,7 +38,7 @@ export const DEFAULT_FIREWALL_SETTINGS: FirewallConfig = {
   enabled: true,
 };
 
-const storage = createStorage<FirewallConfig>('firewall-settings', DEFAULT_FIREWALL_SETTINGS, {
+const storage = createStorage<FirewallConfig>("firewall-settings", DEFAULT_FIREWALL_SETTINGS, {
   storageEnum: StorageEnum.Local,
   liveUpdate: true,
 });
@@ -65,7 +65,7 @@ export const firewallStore: FirewallStorage = {
 
     if (!currentSettings.allowList.includes(normalizedUrl)) {
       // Remove from deny list if it exists there
-      const denyList = currentSettings.denyList.filter(item => item !== normalizedUrl);
+      const denyList = currentSettings.denyList.filter((item) => item !== normalizedUrl);
       // Add to allow list
       await this.updateFirewall({
         allowList: [...currentSettings.allowList, normalizedUrl],
@@ -77,7 +77,7 @@ export const firewallStore: FirewallStorage = {
     const normalizedUrl = normalizeUrl(url);
     const currentSettings = await this.getFirewall();
     await this.updateFirewall({
-      allowList: currentSettings.allowList.filter(item => item !== normalizedUrl),
+      allowList: currentSettings.allowList.filter((item) => item !== normalizedUrl),
     });
   },
   async addToDenyList(url: string) {
@@ -86,7 +86,7 @@ export const firewallStore: FirewallStorage = {
 
     if (!currentSettings.denyList.includes(normalizedUrl)) {
       // Remove from allow list if it exists there
-      const allowList = currentSettings.allowList.filter(item => item !== normalizedUrl);
+      const allowList = currentSettings.allowList.filter((item) => item !== normalizedUrl);
       // Add to deny list
       await this.updateFirewall({
         denyList: [...currentSettings.denyList, normalizedUrl],
@@ -98,7 +98,7 @@ export const firewallStore: FirewallStorage = {
     const normalizedUrl = normalizeUrl(url);
     const currentSettings = await this.getFirewall();
     await this.updateFirewall({
-      denyList: currentSettings.denyList.filter(item => item !== normalizedUrl),
+      denyList: currentSettings.denyList.filter((item) => item !== normalizedUrl),
     });
   },
 };

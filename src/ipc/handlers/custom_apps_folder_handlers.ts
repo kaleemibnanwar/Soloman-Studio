@@ -14,7 +14,7 @@ import {
   invalidateOctopusStudioAppsBaseDirectoryCache,
   isDirectoryAccessible,
 } from "@/paths/paths";
-import { gitAddSafeDirectory } from "../utils/git_utils";
+import { gitAddSafeDirectory } from "../git/git_utils";
 import { writeSettings } from "@/main/settings";
 
 const logger = log.scope("custom_apps_folder_handlers");
@@ -63,8 +63,7 @@ export function registerCustomAppsFolderHandlers() {
       if (!isAbsolute(input)) throw new Error("Directory path is not absolute");
 
       // Make sure it exists
-      if (!isDirectoryAccessible(input))
-        throw new Error("Path is not a directory");
+      if (!isDirectoryAccessible(input)) throw new Error("Path is not a directory");
 
       newOctopusStudioAppsBaseDir = normalize(input);
       updatedSettingValue = newOctopusStudioAppsBaseDir;
@@ -84,9 +83,7 @@ export function registerCustomAppsFolderHandlers() {
         const allApps = tx.select().from(apps).all();
         for (const app of allApps) {
           if (isAbsolute(app.path)) {
-            logger.info(
-              `${app.name} already has an absolute path; skipping path update`,
-            );
+            logger.info(`${app.name} already has an absolute path; skipping path update`);
             continue;
           }
 
@@ -106,8 +103,7 @@ export function registerCustomAppsFolderHandlers() {
       // Add custom apps folder to git safe.directory (required for Windows).
       // The trailing /* allows access to all repositories under the named directory.
       // See: https://git-scm.com/docs/git-config#Documentation/git-config.txt-safedirectory
-      const directory =
-        updatedSettingValue ?? getDefaultOctopusStudioAppsDirectory();
+      const directory = updatedSettingValue ?? getDefaultOctopusStudioAppsDirectory();
       await gitAddSafeDirectory(`${directory}/*`);
     }
 

@@ -36,8 +36,7 @@ export function ReleaseChannelSelector() {
       });
     } else {
       toast("Using Beta release channel", {
-        description:
-          "You will need to restart OctopusStudio for your settings to take effect.",
+        description: "You will need to restart OctopusStudio for your settings to take effect.",
         action: {
           label: "Restart OctopusStudio",
           onClick: () => {

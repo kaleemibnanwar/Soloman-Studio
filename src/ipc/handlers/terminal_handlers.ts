@@ -2,7 +2,7 @@ import { app } from "electron";
 import log from "electron-log";
 import { createTypedHandler } from "./base";
 import { terminalContracts } from "../types/terminal";
-import { getPtySessionManager } from "../utils/pty_session_manager";
+import { getPtySessionManager } from "../process/pty_session_manager";
 
 const logger = log.scope("terminal_handlers");
 let registeredBeforeQuitCleanup = false;

@@ -20,10 +20,7 @@ interface EnvVarRow {
   secret: boolean;
 }
 
-export const DatabaseEnvVars = ({
-  appId,
-  branchType,
-}: DatabaseEnvVarsProps) => {
+export const DatabaseEnvVars = ({ appId, branchType }: DatabaseEnvVarsProps) => {
   const { t } = useTranslation("home");
   const [expanded, setExpanded] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -89,10 +86,7 @@ export const DatabaseEnvVars = ({
   };
 
   return (
-    <div
-      className="rounded-lg border border-border"
-      data-testid="database-env-vars"
-    >
+    <div className="rounded-lg border border-border" data-testid="database-env-vars">
       <button
         type="button"
         onClick={toggleExpanded}
@@ -100,11 +94,7 @@ export const DatabaseEnvVars = ({
         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium hover:bg-accent hover:text-accent-foreground rounded-lg"
       >
         <span>{t("integrations.database.envVars.title")}</span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-        />
+        <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       {expanded && (
         <div className="space-y-3 border-t border-border px-4 py-3">
@@ -117,9 +107,7 @@ export const DatabaseEnvVars = ({
             </p>
           )}
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">
-              {getErrorMessage(error)}
-            </p>
+            <p className="text-sm text-red-600 dark:text-red-400">{getErrorMessage(error)}</p>
           )}
           {rows.map((row) => (
             <div key={row.key}>
@@ -133,11 +121,7 @@ export const DatabaseEnvVars = ({
                 <Input
                   id={`env-${appId}-${branchType}-${row.key}`}
                   readOnly
-                  type={
-                    row.secret && !revealedKeys.has(row.key)
-                      ? "password"
-                      : "text"
-                  }
+                  type={row.secret && !revealedKeys.has(row.key) ? "password" : "text"}
                   value={row.value}
                   className="font-mono text-xs"
                 />
@@ -147,9 +131,7 @@ export const DatabaseEnvVars = ({
                     variant="outline"
                     size="icon"
                     onClick={() => toggleReveal(row.key)}
-                    aria-label={`${
-                      revealedKeys.has(row.key) ? "Hide" : "Show"
-                    } ${row.key}`}
+                    aria-label={`${revealedKeys.has(row.key) ? "Hide" : "Show"} ${row.key}`}
                     aria-pressed={revealedKeys.has(row.key)}
                   >
                     {revealedKeys.has(row.key) ? (

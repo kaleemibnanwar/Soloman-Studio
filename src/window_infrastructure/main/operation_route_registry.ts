@@ -1,7 +1,4 @@
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export type OperationRouteState = "unresolved" | "terminal";
 
@@ -123,9 +120,7 @@ export class OperationRouteRegistry<Route> {
       !Number.isSafeInteger(options.maxTerminalRetained) ||
       options.maxTerminalRetained < 0
     ) {
-      throw new Error(
-        "Operation route capacities must be finite bounded integers",
-      );
+      throw new Error("Operation route capacities must be finite bounded integers");
     }
     this.maxUnresolved = options.maxUnresolved;
     this.maxTerminalRetained = options.maxTerminalRetained;
@@ -137,9 +132,7 @@ export class OperationRouteRegistry<Route> {
     this.assertOpen();
     if (this.invokingAdapter) {
       this.adapterReentryAttempted = true;
-      throw new Error(
-        "Operation route adapters cannot reenter registry admission",
-      );
+      throw new Error("Operation route adapters cannot reenter registry admission");
     }
     const existing = this.entries.get(claim.operationId);
     if (existing) {
@@ -147,9 +140,7 @@ export class OperationRouteRegistry<Route> {
         throw new OperationRouteIdentityConflictError(claim.operationId);
       }
       if (this.entries.get(claim.operationId) !== existing) {
-        throw new Error(
-          "Operation route ownership changed during identity comparison",
-        );
+        throw new Error("Operation route ownership changed during identity comparison");
       }
       return {
         kind: existing.snapshot.state === "terminal" ? "replayed" : "coalesced",
@@ -161,9 +152,7 @@ export class OperationRouteRegistry<Route> {
       throw new OperationRouteCapacityError();
     }
 
-    const storedRoute = this.callAdapter(() =>
-      this.snapshotRoute(claim.owner.route),
-    );
+    const storedRoute = this.callAdapter(() => this.snapshotRoute(claim.owner.route));
     const generation = Object.freeze({
       ordinal: this.nextGeneration++,
       identity: Object.freeze({}),
@@ -236,9 +225,7 @@ export class OperationRouteRegistry<Route> {
 
   releaseWindow(windowSessionId: string): number {
     this.assertMutationAllowed();
-    return this.releaseMatching(
-      (owner) => owner.windowSessionId === windowSessionId,
-    );
+    return this.releaseMatching((owner) => owner.windowSessionId === windowSessionId);
   }
 
   releaseMachine(machineId: string): number {
@@ -251,12 +238,8 @@ export class OperationRouteRegistry<Route> {
    * entity-window fallback, or focused-window fallback before releasing or
    * replacing any unresolved route.
    */
-  inspectWindowRoutes(
-    windowSessionId: string,
-  ): readonly OperationRouteSnapshot<Route>[] {
-    return this.inspectMatching(
-      (owner) => owner.windowSessionId === windowSessionId,
-    );
+  inspectWindowRoutes(windowSessionId: string): readonly OperationRouteSnapshot<Route>[] {
+    return this.inspectMatching((owner) => owner.windowSessionId === windowSessionId);
   }
 
   inspect(): OperationRouteRegistryInspection<Route> {
@@ -278,16 +261,12 @@ export class OperationRouteRegistry<Route> {
     this.mutationVersion += 1;
   }
 
-  private currentEntry(
-    handle: OperationRouteHandle,
-  ): OperationRouteEntry<Route> | undefined {
+  private currentEntry(handle: OperationRouteHandle): OperationRouteEntry<Route> | undefined {
     const entry = this.entries.get(handle.operationId);
     return entry?.handle === handle ? entry : undefined;
   }
 
-  private releaseMatching(
-    matches: (owner: OperationRouteOwner<Route>) => boolean,
-  ): number {
+  private releaseMatching(matches: (owner: OperationRouteOwner<Route>) => boolean): number {
     let released = 0;
     for (const [operationId, entry] of this.entries) {
       if (!matches(entry.snapshot.owner)) continue;
@@ -303,22 +282,18 @@ export class OperationRouteRegistry<Route> {
     matches: (owner: OperationRouteOwner<Route>) => boolean,
   ): readonly OperationRouteSnapshot<Route>[] {
     return Object.freeze(
-      Array.from(this.entries.values(), (entry) =>
-        this.readSnapshot(entry),
-      ).filter((route) => matches(route.owner)),
+      Array.from(this.entries.values(), (entry) => this.readSnapshot(entry)).filter((route) =>
+        matches(route.owner),
+      ),
     );
   }
 
-  private readSnapshot(
-    entry: OperationRouteEntry<Route>,
-  ): OperationRouteSnapshot<Route> {
+  private readSnapshot(entry: OperationRouteEntry<Route>): OperationRouteSnapshot<Route> {
     return Object.freeze({
       operationId: entry.snapshot.operationId,
       owner: Object.freeze({
         ...entry.snapshot.owner,
-        route: this.callAdapter(() =>
-          this.snapshotRoute(entry.snapshot.owner.route),
-        ),
+        route: this.callAdapter(() => this.snapshotRoute(entry.snapshot.owner.route)),
       }),
       state: entry.snapshot.state,
       generation: entry.snapshot.generation,
@@ -336,10 +311,7 @@ export class OperationRouteRegistry<Route> {
     }
   }
 
-  private sameOwner(
-    left: OperationRouteOwner<Route>,
-    right: OperationRouteOwner<Route>,
-  ): boolean {
+  private sameOwner(left: OperationRouteOwner<Route>, right: OperationRouteOwner<Route>): boolean {
     return (
       left.ownerId === right.ownerId &&
       left.machineId === right.machineId &&
@@ -367,19 +339,13 @@ export class OperationRouteRegistry<Route> {
         throw new Error("Operation route adapter mutated registry ownership");
       }
       if (
-        ((typeof value === "object" && value !== null) ||
-          typeof value === "function") &&
+        ((typeof value === "object" && value !== null) || typeof value === "function") &&
         "then" in value
       ) {
-        if (
-          value instanceof Promise &&
-          Object.getPrototypeOf(value) === Promise.prototype
-        ) {
+        if (value instanceof Promise && Object.getPrototypeOf(value) === Promise.prototype) {
           void Promise.prototype.then.call(value, undefined, () => undefined);
         }
-        throw new Error(
-          "Operation route adapters must be synchronous and non-thenable",
-        );
+        throw new Error("Operation route adapters must be synchronous and non-thenable");
       }
       return value;
     } finally {
@@ -398,8 +364,6 @@ export class OperationRouteRegistry<Route> {
   private assertMutationAllowed(): void {
     if (!this.invokingAdapter) return;
     this.adapterReentryAttempted = true;
-    throw new Error(
-      "Operation route adapters cannot mutate registry ownership",
-    );
+    throw new Error("Operation route adapters cannot mutate registry ownership");
   }
 }

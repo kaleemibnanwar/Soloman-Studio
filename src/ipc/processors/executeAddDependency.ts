@@ -5,10 +5,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Message } from "@/ipc/types";
 import { readEffectiveSettings } from "@/main/settings";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
   buildAddDependencyCommand,
@@ -59,8 +56,7 @@ const SEMVER_IDENTIFIER = "[0-9A-Za-z-]+";
 const EXACT_VERSION_PATTERN = new RegExp(
   `^\\d+\\.\\d+\\.\\d+(?:-${SEMVER_IDENTIFIER}(?:\\.${SEMVER_IDENTIFIER})*)?(?:\\+${SEMVER_IDENTIFIER}(?:\\.${SEMVER_IDENTIFIER})*)?$`,
 );
-const PARTIAL_VERSION_PATTERN =
-  /^(?:[xX*]|\d+|\d+\.(?:\d+|[xX*])|\d+\.(?:\d+|[xX*])\.[xX*])$/;
+const PARTIAL_VERSION_PATTERN = /^(?:[xX*]|\d+|\d+\.(?:\d+|[xX*])|\d+\.(?:\d+|[xX*])\.[xX*])$/;
 const RANGE_VERSION_PATTERN = new RegExp(
   `^[~^](?:\\d+|\\d+\\.\\d+|\\d+\\.\\d+\\.\\d+(?:-${SEMVER_IDENTIFIER}(?:\\.${SEMVER_IDENTIFIER})*)?(?:\\+${SEMVER_IDENTIFIER}(?:\\.${SEMVER_IDENTIFIER})*)?)$`,
 );
@@ -104,9 +100,7 @@ function parsePackageSpec(raw: string): ParsedPackageSpec | null {
   if (
     name.startsWith("-") ||
     !NPM_PACKAGE_NAME_PATTERN.test(name) ||
-    (!name.startsWith("@") &&
-      selector === undefined &&
-      LOCAL_TARBALL_NAME_PATTERN.test(name))
+    (!name.startsWith("@") && selector === undefined && LOCAL_TARBALL_NAME_PATTERN.test(name))
   ) {
     return null;
   }
@@ -159,15 +153,10 @@ function parsePackageSpecs(packages: string[]): ParsedPackageSpec[] {
   return parsedSpecs;
 }
 
-async function readInstalledDependencyNames(
-  appPath: string,
-): Promise<Set<string>> {
+async function readInstalledDependencyNames(appPath: string): Promise<Set<string>> {
   let packageJsonText: string;
   try {
-    packageJsonText = await readFile(
-      path.join(appPath, "package.json"),
-      "utf8",
-    );
+    packageJsonText = await readFile(path.join(appPath, "package.json"), "utf8");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return new Set();
@@ -231,9 +220,7 @@ function getDisplayLines(value: string): string[] {
 }
 
 function getFilteredDisplayDetails(value: string): string | undefined {
-  const lines = getDisplayLines(value).filter(
-    (line) => !isDisplaySummaryNoise(line),
-  );
+  const lines = getDisplayLines(value).filter((line) => !isDisplaySummaryNoise(line));
 
   if (lines.length === 0) {
     return undefined;
@@ -319,11 +306,7 @@ async function runAddDependencyCommand(
       env: getPackageManagerCommandEnv(),
       timeoutMs: ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
     };
-    const { stdout, stderr } = await runCommand(
-      command.command,
-      command.args,
-      options,
-    );
+    const { stdout, stderr } = await runCommand(command.command, command.args, options);
     return {
       succeeded: true,
       installResults: stdout + (stderr ? `\n${stderr}` : ""),
@@ -347,10 +330,7 @@ function formatDeniedBuildsNote(packageNames: string[]): string {
   return `\n\nNote: build scripts for ${packageList} were not run (Octopus Studio security policy).`;
 }
 
-async function rebuildPromotedPnpmBuilds(
-  appPath: string,
-  packageNames: string[],
-): Promise<void> {
+async function rebuildPromotedPnpmBuilds(appPath: string, packageNames: string[]): Promise<void> {
   if (packageNames.length === 0) {
     return;
   }
@@ -387,19 +367,13 @@ export async function installPackages({
     });
   }
   const updatePackages = parsedSpecs
-    .filter(
-      ({ name, selector }) =>
-        selector === undefined && installedDependencyNames.has(name),
-    )
+    .filter(({ name, selector }) => selector === undefined && installedDependencyNames.has(name))
     .map(({ name }) => name);
-  const exactPackages = parsedSpecs
-    .filter(({ exact }) => exact)
-    .map(({ raw }) => raw);
+  const exactPackages = parsedSpecs.filter(({ exact }) => exact).map(({ raw }) => raw);
   const packagesToInstall = parsedSpecs
     .filter(
       ({ name, selector, exact }) =>
-        !exact &&
-        (selector !== undefined || !installedDependencyNames.has(name)),
+        !exact && (selector !== undefined || !installedDependencyNames.has(name)),
     )
     .map(({ raw }) => raw);
 
@@ -484,8 +458,10 @@ export async function installPackages({
   const commandResults: string[] = [];
   const completedPackages: string[] = [];
   for (const command of commands) {
-    const { succeeded, installResults, lastError } =
-      await runAddDependencyCommand(command.invocation, appPath);
+    const { succeeded, installResults, lastError } = await runAddDependencyCommand(
+      command.invocation,
+      appPath,
+    );
     if (!succeeded && lastError) {
       throw new ExecuteAddDependencyError({
         error: lastError,
@@ -516,9 +492,9 @@ export async function installPackages({
     });
     if (deniedBuilds.length > 0) {
       installResultsWithPolicyNotes += formatDeniedBuildsNote(
-        Array.from(
-          new Set(deniedBuilds.map((ignoredBuild) => ignoredBuild.packageName)),
-        ).sort((left, right) => left.localeCompare(right)),
+        Array.from(new Set(deniedBuilds.map((ignoredBuild) => ignoredBuild.packageName))).sort(
+          (left, right) => left.localeCompare(right),
+        ),
       );
     }
   }
@@ -554,10 +530,7 @@ export async function executeAddDependency({
   );
 
   // Save the updated message back to the database
-  await db
-    .update(messages)
-    .set({ content: updatedContent })
-    .where(eq(messages.id, message.id));
+  await db.update(messages).set({ content: updatedContent }).where(eq(messages.id, message.id));
 
   return {
     installResults,

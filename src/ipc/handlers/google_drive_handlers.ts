@@ -4,25 +4,19 @@ import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { createTypedHandler } from "./base";
 import { googleDriveContracts } from "../types/google_drive";
-import {
-  clearDriveAccount,
-  getDriveAccount,
-} from "../utils/google_drive_auth";
-import { connectGoogleDrive } from "../utils/google_drive_oauth_flow";
+import { clearDriveAccount, getDriveAccount } from "../google/google_drive_auth";
+import { connectGoogleDrive } from "../google/google_drive_oauth_flow";
 import {
   deleteProjectDriveFolder,
   disableProjectDriveSync,
   enableProjectDriveSync,
   syncProject,
-} from "../utils/google_drive_sync";
+} from "../google/google_drive_sync";
 import {
   deprovisionGoogleWorkspaceMcpServers,
   provisionGoogleWorkspaceMcpServers,
-} from "../utils/google_workspace_mcp";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "../../errors/octopus_studio_error";
+} from "../google/google_workspace_mcp";
+import { OctopusStudioError, OctopusStudioErrorKind } from "../../errors/octopus_studio_error";
 
 const logger = log.scope("google_drive_handlers");
 
@@ -37,10 +31,7 @@ async function loadAppOrThrow(appId: number) {
     },
   });
   if (!app) {
-    throw new OctopusStudioError(
-      `Project not found: ${appId}`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`Project not found: ${appId}`, OctopusStudioErrorKind.NotFound);
   }
   return app;
 }
@@ -68,40 +59,29 @@ export function registerGoogleDriveHandlers() {
     });
   });
 
-  createTypedHandler(
-    googleDriveContracts.getProjectSyncStatus,
-    async (_event, { appId }) => {
-      const app = await loadAppOrThrow(appId);
-      return {
-        enabled: app.googleDriveSyncEnabled,
-        folderId: app.googleDriveFolderId,
-        folderName: app.googleDriveFolderName,
-        lastSyncedAt: app.googleDriveLastSyncedAt,
-      };
-    },
+  createTypedHandler(googleDriveContracts.getProjectSyncStatus, async (_event, { appId }) => {
+    const app = await loadAppOrThrow(appId);
+    return {
+      enabled: app.googleDriveSyncEnabled,
+      folderId: app.googleDriveFolderId,
+      folderName: app.googleDriveFolderName,
+      lastSyncedAt: app.googleDriveLastSyncedAt,
+    };
+  });
+
+  createTypedHandler(googleDriveContracts.enableProjectSync, async (_event, { appId }) =>
+    enableProjectDriveSync(appId),
   );
 
-  createTypedHandler(
-    googleDriveContracts.enableProjectSync,
-    async (_event, { appId }) => enableProjectDriveSync(appId),
+  createTypedHandler(googleDriveContracts.disableProjectSync, async (_event, { appId }) => {
+    await disableProjectDriveSync(appId);
+  });
+
+  createTypedHandler(googleDriveContracts.syncProjectNow, async (_event, { appId }) =>
+    syncProject(appId),
   );
 
-  createTypedHandler(
-    googleDriveContracts.disableProjectSync,
-    async (_event, { appId }) => {
-      await disableProjectDriveSync(appId);
-    },
-  );
-
-  createTypedHandler(
-    googleDriveContracts.syncProjectNow,
-    async (_event, { appId }) => syncProject(appId),
-  );
-
-  createTypedHandler(
-    googleDriveContracts.deleteProjectDriveFolder,
-    async (_event, { appId }) => {
-      await deleteProjectDriveFolder(appId);
-    },
-  );
+  createTypedHandler(googleDriveContracts.deleteProjectDriveFolder, async (_event, { appId }) => {
+    await deleteProjectDriveFolder(appId);
+  });
 }

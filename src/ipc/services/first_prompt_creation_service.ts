@@ -83,10 +83,7 @@ export class FirstPromptCreationRegistry {
     if (oldest !== undefined) this.finalizedOperationIds.delete(oldest);
   }
 
-  async complete(
-    operationId: string,
-    cleanup: () => Promise<void>,
-  ): Promise<void> {
+  async complete(operationId: string, cleanup: () => Promise<void>): Promise<void> {
     if (this.finalizedOperationIds.has(operationId)) return;
     const entry = this.entries.get(operationId) ?? { cancelled: false };
     if (entry.cancelled) {
@@ -124,12 +121,6 @@ export class FirstPromptCreationRegistry {
 
 export const firstPromptCreationRegistry = new FirstPromptCreationRegistry();
 
-export function logFirstPromptCreationCleanupFailure(
-  operationId: string,
-  error: unknown,
-): void {
-  logger.error(
-    `Failed to clean up first-prompt operation ${operationId}`,
-    error,
-  );
+export function logFirstPromptCreationCleanupFailure(operationId: string, error: unknown): void {
+  logger.error(`Failed to clean up first-prompt operation ${operationId}`, error);
 }

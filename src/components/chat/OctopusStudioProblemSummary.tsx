@@ -25,16 +25,12 @@ const ProblemItem: React.FC<ProblemItemProps> = ({ problem, index }) => {
   return (
     <div className="flex items-start gap-3 py-2 px-3 border-b border-border/40 last:border-b-0">
       <div className="flex-shrink-0 size-6 rounded-full bg-muted/60 flex items-center justify-center mt-0.5">
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {index + 1}
-        </span>
+        <span className="text-[11px] font-semibold text-muted-foreground">{index + 1}</span>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1.5">
           <FileText size={13} className="text-muted-foreground shrink-0" />
-          <span className="text-sm font-medium text-foreground truncate">
-            {problem.file}
-          </span>
+          <span className="text-sm font-medium text-foreground truncate">{problem.file}</span>
           <span className="text-[11px] text-muted-foreground font-mono">
             {problem.line}:{problem.column}
           </span>
@@ -42,17 +38,16 @@ const ProblemItem: React.FC<ProblemItemProps> = ({ problem, index }) => {
             TS{problem.code}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {problem.message}
-        </p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{problem.message}</p>
       </div>
     </div>
   );
 };
 
-export const OctopusStudioProblemSummary: React.FC<
-  OctopusStudioProblemSummaryProps
-> = ({ summary, children }) => {
+export const OctopusStudioProblemSummary: React.FC<OctopusStudioProblemSummaryProps> = ({
+  summary,
+  children,
+}) => {
   const [isContentVisible, setIsContentVisible] = useState(false);
 
   // Parse problems from children content if available
@@ -90,8 +85,7 @@ export const OctopusStudioProblemSummary: React.FC<
   }, [children]);
 
   const totalProblems = problems.length;
-  const displaySummary =
-    summary || `${totalProblems} problems found (TypeScript errors)`;
+  const displaySummary = summary || `${totalProblems} problems found (TypeScript errors)`;
 
   return (
     <OctopusStudioCard
@@ -100,14 +94,9 @@ export const OctopusStudioProblemSummary: React.FC<
       onClick={() => setIsContentVisible(!isContentVisible)}
       data-testid="problem-summary"
     >
-      <OctopusStudioCardHeader
-        icon={<AlertTriangle size={15} />}
-        accentColor="amber"
-      >
+      <OctopusStudioCardHeader icon={<AlertTriangle size={15} />} accentColor="amber">
         <OctopusStudioBadge color="amber">Auto-fix</OctopusStudioBadge>
-        <span className="font-medium text-sm text-foreground truncate">
-          {displaySummary}
-        </span>
+        <span className="font-medium text-sm text-foreground truncate">{displaySummary}</span>
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
         </div>

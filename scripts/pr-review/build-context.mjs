@@ -17,8 +17,7 @@ if (!outputPath) throw new Error("OUTPUT_PATH is required");
 if (!githubOutputPath) throw new Error("GITHUB_OUTPUT is required");
 
 const [owner, repo] = repository.split("/");
-if (!owner || !repo)
-  throw new Error(`Invalid GITHUB_REPOSITORY: ${repository}`);
+if (!owner || !repo) throw new Error(`Invalid GITHUB_REPOSITORY: ${repository}`);
 
 const headers = {
   Accept: "application/vnd.github+json",
@@ -35,9 +34,7 @@ const api = async (pathname, accept = headers.Accept) => {
     },
   });
   if (!response.ok) {
-    throw new Error(
-      `GitHub API ${pathname} failed: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`GitHub API ${pathname} failed: ${response.status} ${response.statusText}`);
   }
   return response;
 };
@@ -109,9 +106,7 @@ function getCommentableLineRanges(patch) {
   return ranges;
 }
 
-const pullRequestResponse = await api(
-  `repos/${owner}/${repo}/pulls/${prNumber}`,
-);
+const pullRequestResponse = await api(`repos/${owner}/${repo}/pulls/${prNumber}`);
 const pullRequest = await pullRequestResponse.json();
 
 const files = [];

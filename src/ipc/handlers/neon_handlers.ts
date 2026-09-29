@@ -19,15 +19,8 @@ import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { EndpointType } from "@neondatabase/api-client";
 import { retryOnLocked } from "../utils/retryOnLocked";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import {
-  getEnvFilePath,
-  readEnvFileIfExists,
-  removeNeonEnvVars,
-} from "../utils/app_env_var_utils";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { getEnvFilePath, readEnvFileIfExists, removeNeonEnvVars } from "../utils/app_env_var_utils";
 import {
   logger,
   combineWarnings,
@@ -41,11 +34,8 @@ import {
   syncActiveNeonAuthCookieSecretFromEnv,
   resolveNeonBranchEnvVars,
   type NeonBranchType,
-} from "../utils/neon_utils";
-import {
-  ensureNitroIfVite,
-  type EnsureNitroResult,
-} from "../utils/nitro_setup";
+} from "../neon/neon_utils";
+import { ensureNitroIfVite, type EnsureNitroResult } from "../utils/nitro_setup";
 import { getOctopusStudioAppPath } from "@/paths/paths";
 import { createAppOperationHandler } from "@/ipc/utils/app_mutation_lock";
 import { readAppResource } from "@/ipc/services/app_operation_coordinator";
@@ -65,10 +55,7 @@ function createLockedHandler<
   TOutput extends z.ZodType,
 >(
   contract: IpcContract<TChannel, TInput, TOutput>,
-  handler: (
-    event: IpcMainInvokeEvent,
-    input: z.infer<TInput>,
-  ) => Promise<z.infer<TOutput>>,
+  handler: (event: IpcMainInvokeEvent, input: z.infer<TInput>) => Promise<z.infer<TOutput>>,
   resources: AppOperationRequest["resources"] = NEON_APP_MUTATION_RESOURCES,
 ): void {
   createTypedHandler(
@@ -145,9 +132,7 @@ export function registerNeonHandlers() {
       try {
         await nitroSetup.rollback();
       } catch (rollbackError) {
-        logger.error(
-          `Failed to roll back Nitro setup for app ${appId}: ${rollbackError}`,
-        );
+        logger.error(`Failed to roll back Nitro setup for app ${appId}: ${rollbackError}`);
       }
     };
 
@@ -284,8 +269,7 @@ export function registerNeonHandlers() {
           })
           .where(eq(apps.id, appId));
 
-        const connectionUri =
-          developmentBranchResponse.data.connection_uris[0].connection_uri;
+        const connectionUri = developmentBranchResponse.data.connection_uris[0].connection_uri;
 
         // Auto-inject env vars into the app's .env.local
         const warning = combineWarnings(
@@ -317,13 +301,9 @@ export function registerNeonHandlers() {
         );
         try {
           await neonClient.deleteProject(project.id);
-          logger.info(
-            `Successfully cleaned up orphan Neon project ${project.id}`,
-          );
+          logger.info(`Successfully cleaned up orphan Neon project ${project.id}`);
         } catch (deleteError) {
-          logger.error(
-            `Failed to clean up orphan Neon project ${project.id}: ${deleteError}`,
-          );
+          logger.error(`Failed to clean up orphan Neon project ${project.id}: ${deleteError}`);
         }
         // Clear stale Neon references from the app row so it doesn't
         // point at the now-deleted project.
@@ -382,11 +362,7 @@ export function registerNeonHandlers() {
 
     try {
       // Get the app from the database to find the neonProjectId and neonBranchId
-      const app = await db
-        .select()
-        .from(apps)
-        .where(eq(apps.id, appId))
-        .limit(1);
+      const app = await db.select().from(apps).where(eq(apps.id, appId)).limit(1);
 
       if (app.length === 0) {
         throw new OctopusStudioError(
@@ -406,9 +382,7 @@ export function registerNeonHandlers() {
       const neonClient = await getNeonClient();
 
       // Get project info
-      const projectResponse = await neonClient.getProject(
-        appData.neonProjectId,
-      );
+      const projectResponse = await neonClient.getProject(appData.neonProjectId);
 
       if (!projectResponse.data.project) {
         throw new OctopusStudioError(
@@ -432,39 +406,37 @@ export function registerNeonHandlers() {
       }
 
       // Map branches to our format
-      const branches: NeonBranch[] = branchesResponse.data.branches.map(
-        (branch) => {
-          let type: "production" | "development" | "snapshot" | "preview";
+      const branches: NeonBranch[] = branchesResponse.data.branches.map((branch) => {
+        let type: "production" | "development" | "snapshot" | "preview";
 
-          if (branch.id === appData.neonDevelopmentBranchId) {
-            type = "development";
-          } else if (branch.id === appData.neonPreviewBranchId) {
-            type = "preview";
-          } else if (branch.default) {
-            type = "production";
-          } else {
-            type = "snapshot";
-          }
+        if (branch.id === appData.neonDevelopmentBranchId) {
+          type = "development";
+        } else if (branch.id === appData.neonPreviewBranchId) {
+          type = "preview";
+        } else if (branch.default) {
+          type = "production";
+        } else {
+          type = "snapshot";
+        }
 
-          // Find parent branch name if parent_id exists
-          let parentBranchName: string | undefined;
-          if (branch.parent_id) {
-            const parentBranch = branchesResponse.data.branches?.find(
-              (b) => b.id === branch.parent_id,
-            );
-            parentBranchName = parentBranch?.name;
-          }
+        // Find parent branch name if parent_id exists
+        let parentBranchName: string | undefined;
+        if (branch.parent_id) {
+          const parentBranch = branchesResponse.data.branches?.find(
+            (b) => b.id === branch.parent_id,
+          );
+          parentBranchName = parentBranch?.name;
+        }
 
-          return {
-            type,
-            branchId: branch.id,
-            branchName: branch.name,
-            lastUpdated: branch.updated_at,
-            parentBranchId: branch.parent_id,
-            parentBranchName,
-          };
-        },
-      );
+        return {
+          type,
+          branchId: branch.id,
+          branchName: branch.name,
+          lastUpdated: branch.updated_at,
+          parentBranchId: branch.parent_id,
+          parentBranchName,
+        };
+      });
 
       logger.info(`Successfully retrieved Neon project info for app ${appId}`);
 
@@ -580,8 +552,7 @@ export function registerNeonHandlers() {
       // for the active branch only. neonDevelopmentBranchId should be null when
       // no dedicated development branch exists to prevent destructive operations
       // against the production/default branch.
-      const activeBranchId =
-        dedicatedDevBranch?.id ?? defaultBranch?.id ?? null;
+      const activeBranchId = dedicatedDevBranch?.id ?? defaultBranch?.id ?? null;
 
       if (!activeBranchId) {
         throw new OctopusStudioError(
@@ -602,9 +573,7 @@ export function registerNeonHandlers() {
 
       // Auto-inject env vars into the app's .env.local
       const branchType: NeonBranchType =
-        activeBranchId === dedicatedDevBranch?.id
-          ? "development"
-          : "production";
+        activeBranchId === dedicatedDevBranch?.id ? "development" : "production";
       let warning: string | undefined;
       try {
         warning = await autoInjectNeonEnvVars({
@@ -633,9 +602,7 @@ export function registerNeonHandlers() {
             })
             .where(eq(apps.id, appId));
         } catch (revertError) {
-          logger.error(
-            `Failed to revert Neon fields from app ${appId}: ${revertError}`,
-          );
+          logger.error(`Failed to revert Neon fields from app ${appId}: ${revertError}`);
         }
         try {
           await restoreEnvFileSnapshot({
@@ -643,16 +610,12 @@ export function registerNeonHandlers() {
             snapshot: envFileSnapshot,
           });
         } catch (restoreError) {
-          logger.error(
-            `Failed to restore .env.local for app ${appId}: ${restoreError}`,
-          );
+          logger.error(`Failed to restore .env.local for app ${appId}: ${restoreError}`);
         }
         throw envError;
       }
 
-      logger.info(
-        `Successfully linked Neon project ${projectId} to app ${appId}`,
-      );
+      logger.info(`Successfully linked Neon project ${projectId} to app ${appId}`);
       return {
         success: true,
         warning: combineWarnings(...nitroSetup.warningMessages, warning),
@@ -665,16 +628,12 @@ export function registerNeonHandlers() {
         try {
           await nitroSetup.rollback();
         } catch (rollbackError) {
-          logger.error(
-            `Failed to roll back Nitro setup for app ${appId}: ${rollbackError}`,
-          );
+          logger.error(`Failed to roll back Nitro setup for app ${appId}: ${rollbackError}`);
         }
       }
       if (error instanceof OctopusStudioError) throw error;
       const errorMessage = getNeonErrorMessage(error);
-      logger.error(
-        `Failed to set Neon project for app ${appId}: ${errorMessage}`,
-      );
+      logger.error(`Failed to set Neon project for app ${appId}: ${errorMessage}`);
       throw new OctopusStudioError(
         `Failed to set Neon project for app ${appId}: ${errorMessage}`,
         OctopusStudioErrorKind.External,
@@ -689,11 +648,7 @@ export function registerNeonHandlers() {
 
     try {
       // Fetch the app record to get its path before clearing Neon fields
-      const appRecord = await db
-        .select()
-        .from(apps)
-        .where(eq(apps.id, appId))
-        .limit(1);
+      const appRecord = await db.select().from(apps).where(eq(apps.id, appId)).limit(1);
 
       // Update DB first (easy to verify), then remove env vars.
       // If env removal fails, DB is correct and stale env vars are harmless.
@@ -718,9 +673,7 @@ export function registerNeonHandlers() {
       return { success: true };
     } catch (error: any) {
       const errorMessage = getNeonErrorMessage(error);
-      logger.error(
-        `Failed to unset Neon project for app ${appId}: ${errorMessage}`,
-      );
+      logger.error(`Failed to unset Neon project for app ${appId}: ${errorMessage}`);
       throw new OctopusStudioError(
         `Failed to unset Neon project for app ${appId}: ${errorMessage}`,
         OctopusStudioErrorKind.External,
@@ -734,11 +687,7 @@ export function registerNeonHandlers() {
     logger.info(`Setting active Neon branch ${branchId} for app ${appId}`);
 
     try {
-      const appRecord = await db
-        .select()
-        .from(apps)
-        .where(eq(apps.id, appId))
-        .limit(1);
+      const appRecord = await db.select().from(apps).where(eq(apps.id, appId)).limit(1);
 
       if (appRecord.length === 0) {
         throw new OctopusStudioError(
@@ -761,10 +710,7 @@ export function registerNeonHandlers() {
 
       // Validate that the branch belongs to this project
       const neonClient = await getNeonClient();
-      const branchResponse = await neonClient.getProjectBranch(
-        appData.neonProjectId,
-        branchId,
-      );
+      const branchResponse = await neonClient.getProjectBranch(appData.neonProjectId, branchId);
       if (branchResponse.data.branch?.project_id !== appData.neonProjectId) {
         throw new OctopusStudioError(
           `Branch ${branchId} does not belong to Neon project ${appData.neonProjectId}`,
@@ -780,9 +726,7 @@ export function registerNeonHandlers() {
       }
 
       const branchType: NeonBranchType =
-        branchId === appData.neonDevelopmentBranchId
-          ? "development"
-          : "production";
+        branchId === appData.neonDevelopmentBranchId ? "development" : "production";
 
       // Back-compat for existing apps: the OUTGOING branch's actual cookie
       // secret may only exist in .env.local, or a prior build may have put a
@@ -790,16 +734,10 @@ export function registerNeonHandlers() {
       // autoInjectNeonEnvVars overwrites .env.local with the incoming branch.
       // Preview branches do not have a persisted cookie-secret column, so skip
       // that outgoing shape.
-      const outgoingBranchId =
-        appData.neonActiveBranchId ?? appData.neonDevelopmentBranchId;
-      if (
-        outgoingBranchId &&
-        outgoingBranchId !== appData.neonPreviewBranchId
-      ) {
+      const outgoingBranchId = appData.neonActiveBranchId ?? appData.neonDevelopmentBranchId;
+      if (outgoingBranchId && outgoingBranchId !== appData.neonPreviewBranchId) {
         const outgoingBranchType: NeonBranchType =
-          outgoingBranchId === appData.neonDevelopmentBranchId
-            ? "development"
-            : "production";
+          outgoingBranchId === appData.neonDevelopmentBranchId ? "development" : "production";
         await syncActiveNeonAuthCookieSecretFromEnv({
           appData,
           branchType: outgoingBranchType,
@@ -815,8 +753,7 @@ export function registerNeonHandlers() {
       // Update DB first, then inject env vars.
       // If env injection fails, revert the DB update so the app and env stay in sync.
       const previousActiveBranchId = appData.neonActiveBranchId;
-      const previousSelectedDatabaseBranchType =
-        appData.selectedDatabaseBranchType;
+      const previousSelectedDatabaseBranchType = appData.selectedDatabaseBranchType;
       // When production becomes active, the DatabaseSection renders the
       // production-only state and ignores any prior deploy-branch pick. Clear
       // the stored selection so backend consumers (Vercel sync, sync preview)
@@ -827,9 +764,7 @@ export function registerNeonHandlers() {
         .update(apps)
         .set({
           neonActiveBranchId: branchId,
-          ...(branchType === "production"
-            ? { selectedDatabaseBranchType: null }
-            : {}),
+          ...(branchType === "production" ? { selectedDatabaseBranchType: null } : {}),
         })
         .where(eq(apps.id, appId));
 
@@ -855,9 +790,7 @@ export function registerNeonHandlers() {
             })
             .where(eq(apps.id, appId));
         } catch (revertError) {
-          logger.error(
-            `Failed to revert active branch for app ${appId}: ${revertError}`,
-          );
+          logger.error(`Failed to revert active branch for app ${appId}: ${revertError}`);
         }
         try {
           await restoreEnvFileSnapshot({
@@ -865,23 +798,17 @@ export function registerNeonHandlers() {
             snapshot: envFileSnapshot,
           });
         } catch (restoreError) {
-          logger.error(
-            `Failed to restore .env.local for app ${appId}: ${restoreError}`,
-          );
+          logger.error(`Failed to restore .env.local for app ${appId}: ${restoreError}`);
         }
         throw envError;
       }
 
-      logger.info(
-        `Successfully set active branch ${branchId} for app ${appId}`,
-      );
+      logger.info(`Successfully set active branch ${branchId} for app ${appId}`);
       return { success: true, warning };
     } catch (error: any) {
       if (error instanceof OctopusStudioError) throw error;
       const errorMessage = getNeonErrorMessage(error);
-      logger.error(
-        `Failed to set active branch for app ${appId}: ${errorMessage}`,
-      );
+      logger.error(`Failed to set active branch for app ${appId}: ${errorMessage}`);
       throw new OctopusStudioError(
         `Failed to set active branch for app ${appId}: ${errorMessage}`,
         OctopusStudioErrorKind.External,
@@ -890,43 +817,33 @@ export function registerNeonHandlers() {
   });
 
   // Get email and password config for the active branch
-  createTypedHandler(
-    neonContracts.getEmailPasswordConfig,
-    async (_, params) => {
-      const { appData, branchId } = await getAppWithNeonBranch(params.appId);
-      return getCachedEmailPasswordConfig(appData.neonProjectId!, branchId);
-    },
-  );
+  createTypedHandler(neonContracts.getEmailPasswordConfig, async (_, params) => {
+    const { appData, branchId } = await getAppWithNeonBranch(params.appId);
+    return getCachedEmailPasswordConfig(appData.neonProjectId!, branchId);
+  });
 
   // Update email verification setting for the active branch
-  createTypedHandler(
-    neonContracts.updateEmailVerification,
-    async (_, params) => {
-      const { appData, branchId } = await getAppWithNeonBranch(params.appId);
-      const neonClient = await getNeonClient();
+  createTypedHandler(neonContracts.updateEmailVerification, async (_, params) => {
+    const { appData, branchId } = await getAppWithNeonBranch(params.appId);
+    const neonClient = await getNeonClient();
 
-      const response = await neonClient.updateNeonAuthEmailAndPasswordConfig(
-        appData.neonProjectId!,
-        branchId,
-        {
-          require_email_verification: params.requireEmailVerification,
-          send_verification_email_on_sign_up: params.requireEmailVerification,
-        },
-      );
-      invalidateEmailPasswordConfigCache(appData.neonProjectId!, branchId);
-      return response.data;
-    },
-  );
+    const response = await neonClient.updateNeonAuthEmailAndPasswordConfig(
+      appData.neonProjectId!,
+      branchId,
+      {
+        require_email_verification: params.requireEmailVerification,
+        send_verification_email_on_sign_up: params.requireEmailVerification,
+      },
+    );
+    invalidateEmailPasswordConfigCache(appData.neonProjectId!, branchId);
+    return response.data;
+  });
 
   // Do not use log handler because there's sensitive data in the response
   createTypedHandler(neonContracts.getBranchEnvVars, async (_, params) => {
     const { appId, branchType } = params;
 
-    const appRows = await db
-      .select()
-      .from(apps)
-      .where(eq(apps.id, appId))
-      .limit(1);
+    const appRows = await db.select().from(apps).where(eq(apps.id, appId)).limit(1);
     if (appRows.length === 0) {
       throw new OctopusStudioError(
         `App with ID ${appId} not found`,
@@ -936,8 +853,10 @@ export function registerNeonHandlers() {
     // Provision-on-view: resolveNeonBranchEnvVars ensures Neon Auth is active
     // and (for Next.js) a per-branch cookie secret exists, so the previewed
     // values match what gets injected into .env.local / Vercel.
-    const { databaseUrl, neonAuthBaseUrl, neonAuthCookieSecret } =
-      await resolveNeonBranchEnvVars({ appData: appRows[0], branchType });
+    const { databaseUrl, neonAuthBaseUrl, neonAuthCookieSecret } = await resolveNeonBranchEnvVars({
+      appData: appRows[0],
+      branchType,
+    });
 
     return { databaseUrl, neonAuthBaseUrl, neonAuthCookieSecret };
   });
@@ -950,9 +869,7 @@ export function registerNeonHandlers() {
     neonContracts.setSelectedDatabaseBranchType,
     async (_, params) => {
       const { appId, branchType } = params;
-      logger.info(
-        `Setting selected database branch type for app ${appId}: ${branchType}`,
-      );
+      logger.info(`Setting selected database branch type for app ${appId}: ${branchType}`);
 
       // Reject "development" when the app has no development branch — persisting
       // it would later cause env-var/deploy resolution to fail.

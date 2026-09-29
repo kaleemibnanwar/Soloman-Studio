@@ -8,10 +8,7 @@ export const DEFAULT_REMOTE_OPERATION_OUTCOME_ENVELOPE_BYTES = 64 * 1_024;
  * it. Main uses the exact v8 serialized size; this renderer-safe traversal
  * charges container overhead and stops as soon as the machine budget is spent.
  */
-export function isWithinStructuredCloneBudget(
-  value: unknown,
-  maxBytes: number,
-): boolean {
+export function isWithinStructuredCloneBudget(value: unknown, maxBytes: number): boolean {
   if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) return false;
   let remaining = maxBytes;
   const pending: unknown[] = [value];
@@ -92,11 +89,7 @@ export function isWithinStructuredCloneBudget(
       continue;
     }
     const prototype = Object.getPrototypeOf(current);
-    if (
-      !Array.isArray(current) &&
-      prototype !== Object.prototype &&
-      prototype !== null
-    ) {
+    if (!Array.isArray(current) && prototype !== Object.prototype && prototype !== null) {
       return false;
     }
     for (const key of Object.keys(current)) {
@@ -147,13 +140,12 @@ export const MachineDisposedEnvelopeSchema = MachineAddressSchema.extend({
   finalRevision: revisionSchema,
 });
 
-export const MachineOperationOutcomeEnvelopeSchema =
-  MachineAddressSchema.extend({
-    requestId: z.string().min(1).max(256),
-    invocationRef: z.unknown(),
-    outcome: z.unknown(),
-    actor: actorRuntimeMetadataSchema,
-  });
+export const MachineOperationOutcomeEnvelopeSchema = MachineAddressSchema.extend({
+  requestId: z.string().min(1).max(256),
+  invocationRef: z.unknown(),
+  outcome: z.unknown(),
+  actor: actorRuntimeMetadataSchema,
+});
 
 export const MachineProtocolMismatchSchema = z.object({
   machineId: machineIdSchema,
@@ -196,21 +188,11 @@ export const MachineDispatchReceiptSchema = z.discriminatedUnion("kind", [
 ]);
 
 export type MachineAddress = z.infer<typeof MachineAddressSchema>;
-export type MachineDispatchEnvelope = z.infer<
-  typeof MachineDispatchEnvelopeSchema
->;
-export type MachineSnapshotEnvelope = z.infer<
-  typeof MachineSnapshotEnvelopeSchema
->;
-export type MachineDisposedEnvelope = z.infer<
-  typeof MachineDisposedEnvelopeSchema
->;
-export type MachineOperationOutcomeEnvelope = z.infer<
-  typeof MachineOperationOutcomeEnvelopeSchema
->;
-export type MachineProtocolMismatch = z.infer<
-  typeof MachineProtocolMismatchSchema
->;
+export type MachineDispatchEnvelope = z.infer<typeof MachineDispatchEnvelopeSchema>;
+export type MachineSnapshotEnvelope = z.infer<typeof MachineSnapshotEnvelopeSchema>;
+export type MachineDisposedEnvelope = z.infer<typeof MachineDisposedEnvelopeSchema>;
+export type MachineOperationOutcomeEnvelope = z.infer<typeof MachineOperationOutcomeEnvelopeSchema>;
+export type MachineProtocolMismatch = z.infer<typeof MachineProtocolMismatchSchema>;
 export type MachineRejectedReason = z.infer<typeof MachineRejectedReasonSchema>;
 export type MachineDispatchReceipt<Reason = unknown> =
   | {

@@ -9,12 +9,9 @@ export function useTrialModelRestriction() {
   const { userBudget, isLoadingUserBudget } = useUserBudgetInfo();
   const { settings, updateSettings } = useSettings();
 
-  const isTrial =
-    (userBudget?.isTrial && settings && isOctopusStudioProEnabled(settings)) ??
-    false;
+  const isTrial = (userBudget?.isTrial && settings && isOctopusStudioProEnabled(settings)) ?? false;
   const isOnAutoModel =
-    settings?.selectedModel?.provider === "auto" &&
-    settings?.selectedModel?.name === "auto";
+    settings?.selectedModel?.provider === "auto" && settings?.selectedModel?.name === "auto";
 
   // Auto-switch to auto model if user is on trial and not already on auto
   useEffect(() => {

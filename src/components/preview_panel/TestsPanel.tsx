@@ -1,15 +1,7 @@
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FlaskConical,
   Play,
@@ -36,10 +28,7 @@ import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useCurrentAppUrl } from "@/hooks/useAppRun";
 import { selectedFileAtom } from "@/atoms/viewAtoms";
 import { clearStagedDiffAtom } from "@/atoms/commitAtoms";
-import {
-  currentRecordingStateAtom,
-  recordingStartRequestAtom,
-} from "@/atoms/recorderAtoms";
+import { currentRecordingStateAtom, recordingStartRequestAtom } from "@/atoms/recorderAtoms";
 import {
   applyTestRunFinishedAtom,
   applyTestRunStartedAtom,
@@ -84,34 +73,16 @@ import { sameOriginStartPath } from "./previewAddressPath";
 function StatusIcon({ status }: { status: TestStatus }) {
   switch (status) {
     case "passed":
-      return (
-        <CheckCircle2
-          size={16}
-          className="text-green-600 dark:text-green-500 shrink-0"
-        />
-      );
+      return <CheckCircle2 size={16} className="text-green-600 dark:text-green-500 shrink-0" />;
     case "partial":
       return <Circle size={16} className="text-teal-500 shrink-0" />;
     case "failed":
-      return (
-        <XCircle
-          size={16}
-          className="text-red-500 dark:text-red-400 shrink-0"
-        />
-      );
+      return <XCircle size={16} className="text-red-500 dark:text-red-400 shrink-0" />;
     case "inconclusive":
-      return (
-        <AlertTriangle
-          size={16}
-          className="text-amber-500 dark:text-amber-400 shrink-0"
-        />
-      );
+      return <AlertTriangle size={16} className="text-amber-500 dark:text-amber-400 shrink-0" />;
     case "running":
       return (
-        <Loader2
-          size={16}
-          className="animate-spin text-blue-500 dark:text-blue-400 shrink-0"
-        />
+        <Loader2 size={16} className="animate-spin text-blue-500 dark:text-blue-400 shrink-0" />
       );
     case "not-run":
     default:
@@ -274,19 +245,9 @@ function IconRowButton({
   );
 }
 
-function OpenInEditorButton({
-  onClick,
-  label,
-}: {
-  onClick: () => void;
-  label: string;
-}) {
+function OpenInEditorButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
-    <IconRowButton
-      onClick={onClick}
-      label={label}
-      title="Open in the code editor"
-    >
+    <IconRowButton onClick={onClick} label={label} title="Open in the code editor">
       {/* Same icon as the toolbar's code-view button, so the row action reads
           as "switch to code" rather than "open elsewhere". */}
       <Code size={13} />
@@ -308,9 +269,7 @@ function DeleteButton({
       onClick={onClick}
       label={label}
       title={
-        disabled
-          ? "Can't delete a test file while tests are running"
-          : "Delete this test file"
+        disabled ? "Can't delete a test file while tests are running" : "Delete this test file"
       }
       disabled={disabled}
       danger
@@ -335,12 +294,7 @@ function FixButton({ onClick, label }: { onClick: () => void; label: string }) {
 }
 
 interface AskAiToFix {
-  (
-    file: string,
-    error: string | undefined,
-    testTitle?: string,
-    screenshotPath?: string,
-  ): void;
+  (file: string, error: string | undefined, testTitle?: string, screenshotPath?: string): void;
 }
 
 interface TestCaseRowProps {
@@ -387,10 +341,7 @@ function TestCaseRow({
           className="absolute left-5 top-0 w-px bg-border"
           style={{ height: isLast ? "50%" : "100%" }}
         />
-        <span
-          aria-hidden
-          className="absolute left-5 top-1/2 h-px w-7 bg-border"
-        />
+        <span aria-hidden className="absolute left-5 top-1/2 h-px w-7 bg-border" />
         <StatusIcon status={status} />
         <button
           className={cn(
@@ -400,21 +351,12 @@ function TestCaseRow({
           onClick={() => canExpand && setExpanded((v) => !v)}
           disabled={!canExpand}
         >
-          <span
-            className="block truncate text-[13px] text-foreground"
-            title={testCase.title}
-          >
+          <span className="block truncate text-[13px] text-foreground" title={testCase.title}>
             {testCase.title}
           </span>
-          <span
-            className={cn(
-              "block truncate text-[11px]",
-              statusTextClass(status),
-            )}
-          >
+          <span className={cn("block truncate text-[11px]", statusTextClass(status))}>
             {statusLabel(status)}
-            {result?.durationMs != null &&
-              ` · ${(result.durationMs / 1000).toFixed(1)}s`}
+            {result?.durationMs != null && ` · ${(result.durationMs / 1000).toFixed(1)}s`}
           </span>
         </button>
         {canExpand && (
@@ -429,21 +371,12 @@ function TestCaseRow({
         {isFailing && (
           <FixButton
             onClick={() =>
-              onAskAiToFix(
-                file,
-                result?.error,
-                testCase.title,
-                result?.screenshotPath,
-              )
+              onAskAiToFix(file, result?.error, testCase.title, result?.screenshotPath)
             }
             label={`Ask AI to fix test: ${testCase.title}`}
           />
         )}
-        <RunButton
-          onRun={onRun}
-          disabled={disabled}
-          label={`Run test: ${testCase.title}`}
-        />
+        <RunButton onRun={onRun} disabled={disabled} label={`Run test: ${testCase.title}`} />
         <OpenInEditorButton
           onClick={onOpenInEditor}
           label={`Open test in code editor: ${testCase.title}`}
@@ -454,10 +387,7 @@ function TestCaseRow({
           {/* Continue the vertical guide past the details unless this is the
               last child (whose line already terminated at the elbow). */}
           {!isLast && (
-            <span
-              aria-hidden
-              className="absolute left-5 top-0 bottom-0 w-px bg-border"
-            />
+            <span aria-hidden className="absolute left-5 top-0 bottom-0 w-px bg-border" />
           )}
           <FailureDetails
             appId={appId}
@@ -541,50 +471,26 @@ function FileRow({
         </button>
         <StatusIcon status={status} />
         <button
-          className={cn(
-            "min-w-0 flex-1 text-left",
-            hasTests ? "cursor-pointer" : "cursor-default",
-          )}
+          className={cn("min-w-0 flex-1 text-left", hasTests ? "cursor-pointer" : "cursor-default")}
           onClick={toggle}
           disabled={!hasTests}
         >
-          <span
-            className="block truncate text-sm font-medium text-foreground"
-            title={file}
-          >
+          <span className="block truncate text-sm font-medium text-foreground" title={file}>
             {fileName}
           </span>
-          <span
-            className={cn(
-              "block truncate text-[11px]",
-              statusTextClass(status),
-            )}
-          >
+          <span className={cn("block truncate text-[11px]", statusTextClass(status))}>
             {statusLabel(status)}
-            {hasTests &&
-              ` · ${tests.length} ${tests.length === 1 ? "test" : "tests"}`}
-            {result?.durationMs != null &&
-              ` · ${(result.durationMs / 1000).toFixed(1)}s`}
+            {hasTests && ` · ${tests.length} ${tests.length === 1 ? "test" : "tests"}`}
+            {result?.durationMs != null && ` · ${(result.durationMs / 1000).toFixed(1)}s`}
           </span>
         </button>
         {isFailing && (
           <FixButton
-            onClick={() =>
-              onAskAiToFix(
-                file,
-                result?.error,
-                undefined,
-                result?.screenshotPath,
-              )
-            }
+            onClick={() => onAskAiToFix(file, result?.error, undefined, result?.screenshotPath)}
             label={`Ask AI to fix tests in: ${fileName}`}
           />
         )}
-        <RunButton
-          onRun={onRunFile}
-          disabled={disabled}
-          label={`Run all tests in: ${fileName}`}
-        />
+        <RunButton onRun={onRunFile} disabled={disabled} label={`Run all tests in: ${fileName}`} />
         <OpenInEditorButton
           onClick={() => onOpenInEditor()}
           label={`Open in code editor: ${fileName}`}
@@ -624,8 +530,7 @@ export function TestsPanel() {
   const specs = useAtomValue(currentTestSpecsAtom);
   const runState = useAtomValue(currentTestRunStateAtom);
   const appUrl = useCurrentAppUrl(selectedAppId);
-  const { state: previewIframeState } =
-    usePreviewIframeController(selectedAppId);
+  const { state: previewIframeState } = usePreviewIframeController(selectedAppId);
   const setSpecs = useSetAtom(setTestSpecsForAppAtom);
   const setRunState = useSetAtom(setTestRunStateForAppAtom);
   const setPreviewMode = useSetAtom(previewModeAtom);
@@ -641,8 +546,7 @@ export function TestsPanel() {
   const { app } = useLoadApp(selectedAppId);
   const { settings, updateSettings } = useSettings();
   const { runApp } = useRunApp();
-  const { setTestingEnabled, isLoading: isTogglingTesting } =
-    useSetTestingEnabled();
+  const { setTestingEnabled, isLoading: isTogglingTesting } = useSetTestingEnabled();
   const { deleteTestAsync, isDeleting } = useDeleteAppTest();
   const { streamMessage, isStreaming } = useStreamChat();
   const { effectiveMode } = useChatMode(chatId);
@@ -685,8 +589,7 @@ export function TestsPanel() {
   // no isolation, so the warning is strongest.
   const hasNeon = !!app?.neonProjectId;
   const hasSupabase = !!app?.supabaseProjectId;
-  const hasNeonIsolation =
-    hasNeon && (settings?.runtimeMode2 ?? "host") === "host";
+  const hasNeonIsolation = hasNeon && (settings?.runtimeMode2 ?? "host") === "host";
   const hasSupabaseIsolation = hasSupabase && !!app?.supabaseOrganizationSlug;
 
   const [outputOpen, setOutputOpen] = useState(false);
@@ -731,9 +634,7 @@ export function TestsPanel() {
 
   const loadingSpecs = specsQuery.isLoading && specs.length === 0;
   const showNeonRestartDisclosure =
-    specs.length > 0 &&
-    !!app?.neonProjectId &&
-    (settings?.runtimeMode2 ?? "host") === "host";
+    specs.length > 0 && !!app?.neonProjectId && (settings?.runtimeMode2 ?? "host") === "host";
 
   // Pop the output drawer when a run starts for the app being viewed. Keyed
   // off the global atom's phase transition — not the raw IPC event — so it
@@ -751,11 +652,7 @@ export function TestsPanel() {
       if (selectedAppId !== null && runState.phase !== "idle") {
         setOutputOpen(true);
       }
-    } else if (
-      prev.appId === selectedAppId &&
-      prev.phase === "idle" &&
-      runState.phase !== "idle"
-    ) {
+    } else if (prev.appId === selectedAppId && prev.phase === "idle" && runState.phase !== "idle") {
       setOutputOpen(true);
     }
     prevRunRef.current = { appId: selectedAppId, phase: runState.phase };
@@ -780,19 +677,17 @@ export function TestsPanel() {
   // Storing the snapshot rather than a bare flag is what keeps a FRESH run
   // authoritative: a new run produces a new isolation object, which no longer
   // matches, so its own verdict governs the button again.
-  const [switchedKeyRuns, setSwitchedKeyRuns] = useState<
-    ReadonlyMap<number, unknown>
-  >(() => new Map());
+  const [switchedKeyRuns, setSwitchedKeyRuns] = useState<ReadonlyMap<number, unknown>>(
+    () => new Map(),
+  );
   const keySwitched =
     selectedAppId != null &&
     runState.isolation != null &&
     switchedKeyRuns.get(selectedAppId) === runState.isolation;
-  const isSwitchingKey =
-    switchKey.isPending && switchKey.variables?.appId === selectedAppId;
+  const isSwitchingKey = switchKey.isPending && switchKey.variables?.appId === selectedAppId;
   // Clears as soon as the user takes the fix, so the sentence claiming the key
   // is still legacy never sits next to a button that says it's been updated.
-  const showLegacyKeyWarning =
-    !!runState.isolation?.canSwitchToPublishableKey && !keySwitched;
+  const showLegacyKeyWarning = !!runState.isolation?.canSwitchToPublishableKey && !keySwitched;
 
   // Depends on mutateAsync, not the mutation object: useMutation returns a new
   // object every render, which would rebuild this callback each time.
@@ -806,9 +701,7 @@ export function TestsPanel() {
     // on screen by then.
     const isolation = switchedIsolation;
     const markSwitched = () =>
-      setSwitchedKeyRuns((current) =>
-        new Map(current).set(appId, isolation ?? null),
-      );
+      setSwitchedKeyRuns((current) => new Map(current).set(appId, isolation ?? null));
     try {
       const { outcome } = await switchKeyAsync({ appId });
       // Only a real switch (or a key that was already current) may retire the
@@ -872,14 +765,7 @@ export function TestsPanel() {
         });
       }
     },
-    [
-      selectedAppId,
-      applyRunStarted,
-      applyRunFinished,
-      setRunState,
-      headed,
-      parallel,
-    ],
+    [selectedAppId, applyRunStarted, applyRunFinished, setRunState, headed, parallel],
   );
 
   // Agent-initiated runs (the tests:run-state lifecycle) are consumed by the
@@ -919,8 +805,7 @@ export function TestsPanel() {
       const output = jotaiStore.get(currentTestRunOutputAtom).trim();
       if (output) {
         const MAX = 4000;
-        const tail =
-          output.length > MAX ? `…(truncated)\n${output.slice(-MAX)}` : output;
+        const tail = output.length > MAX ? `…(truncated)\n${output.slice(-MAX)}` : output;
         sections.push(`Test output:\n\`\`\`\n${tail}\n\`\`\``);
       }
 
@@ -938,8 +823,7 @@ export function TestsPanel() {
           });
           if (dataUrl) {
             const blob = await (await fetch(dataUrl)).blob();
-            const name =
-              screenshotPath.split(/[\\/]/).pop() || "screenshot.png";
+            const name = screenshotPath.split(/[\\/]/).pop() || "screenshot.png";
             const screenshotFile = new File([blob], name, {
               type: blob.type || "image/png",
             });
@@ -1014,13 +898,11 @@ export function TestsPanel() {
   // where users look for it. Switch tabs and hand the request to the recorder,
   // which starts the session as soon as the preview mounts.
   const isRecordingSession = recordingState.phase !== "idle";
-  const canStartRecording =
-    devServerRunning && !isRunning && !isRecordingSession;
+  const canStartRecording = devServerRunning && !isRunning && !isRecordingSession;
   const startRecording = useCallback(() => {
     if (selectedAppId == null) return;
     const currentPreviewUrl =
-      previewIframeState.history[previewIframeState.position] ??
-      previewIframeState.currentUrl;
+      previewIframeState.history[previewIframeState.position] ?? previewIframeState.currentUrl;
     // Only a route the user picked through OctopusStudio's chrome becomes the session's
     // opening navigation. A route the app reached on its own — a redirect, a
     // link followed before Record was pressed — is not a starting point the
@@ -1165,9 +1047,7 @@ export function TestsPanel() {
             : runState.runningFiles.includes(file);
         if (isThisRunning) return "running";
       }
-      return (
-        findCaseResult(runState.results[file], testCase)?.status ?? "not-run"
-      );
+      return findCaseResult(runState.results[file], testCase)?.status ?? "not-run";
     },
     [isRunning, runState.runningFiles, runState.runningTests, runState.results],
   );
@@ -1236,9 +1116,7 @@ export function TestsPanel() {
                 ? "Parallel: a file's tests run concurrently (faster, shared dev server)"
                 : "Serial: a file's tests run one at a time"
             }
-            aria-label={
-              parallel ? "Switch to serial mode" : "Switch to parallel mode"
-            }
+            aria-label={parallel ? "Switch to serial mode" : "Switch to parallel mode"}
             className={cn(
               "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors",
               parallel
@@ -1261,9 +1139,7 @@ export function TestsPanel() {
                 ? "Headed: tests open a visible browser window"
                 : "Headless: tests run without a visible window"
             }
-            aria-label={
-              headed ? "Switch to headless mode" : "Switch to headed mode"
-            }
+            aria-label={headed ? "Switch to headless mode" : "Switch to headed mode"}
             className={cn(
               "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors",
               headed
@@ -1281,10 +1157,7 @@ export function TestsPanel() {
           // pointer events on a disabled control, so a title there never
           // surfaces — leaving a greyed-out Record with no reason given, which
           // is exactly when the reason matters most.
-          <span
-            title={recordButtonTitle}
-            data-testid="tests-record-button-hint"
-          >
+          <span title={recordButtonTitle} data-testid="tests-record-button-hint">
             <button
               onClick={startRecording}
               disabled={!canStartRecording}
@@ -1336,25 +1209,17 @@ export function TestsPanel() {
         <>
           {/* Live counter (aria-live for screen readers) */}
           {(isRunning ||
-            counts.passed +
-              counts.failed +
-              counts.inconclusive +
-              counts.partial >
-              0) && (
+            counts.passed + counts.failed + counts.inconclusive + counts.partial > 0) && (
             <div
               aria-live="polite"
               className="px-4 py-1.5 text-xs text-muted-foreground border-b border-border/60"
             >
               {isRunning && (
                 <span className="text-blue-600 dark:text-blue-400">
-                  {runState.phase === "setup"
-                    ? "Setting up testing… "
-                    : "Running… "}
+                  {runState.phase === "setup" ? "Setting up testing… " : "Running… "}
                 </span>
               )}
-              <span className="text-green-600 dark:text-green-500">
-                {counts.passed} passed
-              </span>
+              <span className="text-green-600 dark:text-green-500">{counts.passed} passed</span>
               {counts.failed > 0 && (
                 <span className="text-red-600 dark:text-red-400">
                   {" · "}
@@ -1383,16 +1248,15 @@ export function TestsPanel() {
                   Isolated test data
                 </span>
               )}
-              {!isRunning &&
-                runState.isolation?.mode === "supabase-test-user" && (
-                  <span
-                    className="ml-2 inline-flex items-center gap-1 rounded-full bg-teal-100 dark:bg-teal-900/30 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-300 align-middle"
-                    title="Tests ran as a temporary, isolated test user under Row-Level Security — your real data was not touched."
-                  >
-                    <ShieldCheck size={11} className="shrink-0" />
-                    Isolated test user
-                  </span>
-                )}
+              {!isRunning && runState.isolation?.mode === "supabase-test-user" && (
+                <span
+                  className="ml-2 inline-flex items-center gap-1 rounded-full bg-teal-100 dark:bg-teal-900/30 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-300 align-middle"
+                  title="Tests ran as a temporary, isolated test user under Row-Level Security — your real data was not touched."
+                >
+                  <ShieldCheck size={11} className="shrink-0" />
+                  Isolated test user
+                </span>
+              )}
             </div>
           )}
 
@@ -1436,8 +1300,8 @@ export function TestsPanel() {
             <div className="flex items-start gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-900/20 border-b border-teal-200 dark:border-teal-800 text-sm text-teal-800 dark:text-teal-200">
               <ShieldCheck size={15} className="shrink-0 mt-0.5" />
               <span className="flex-1">
-                Neon test runs restart the preview to switch to a temporary
-                database, then restart it again afterward.
+                Neon test runs restart the preview to switch to a temporary database, then restart
+                it again afterward.
               </span>
             </div>
           )}
@@ -1448,9 +1312,7 @@ export function TestsPanel() {
               <AlertTriangle size={15} className="shrink-0" />
               <span className="flex-1">Start the app to run tests.</span>
               <button
-                onClick={() =>
-                  runAppLifecycleInBackground("start", runApp(selectedAppId))
-                }
+                onClick={() => runAppLifecycleInBackground("start", runApp(selectedAppId))}
                 className="px-2 py-1 rounded-md bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700 cursor-pointer text-xs font-medium"
               >
                 Start
@@ -1471,8 +1333,7 @@ export function TestsPanel() {
                 disabled={isRunning || !devServerRunning}
                 className={cn(
                   "shrink-0 px-2 py-1 rounded-md bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700 cursor-pointer text-xs font-medium",
-                  (isRunning || !devServerRunning) &&
-                    "opacity-40 cursor-not-allowed",
+                  (isRunning || !devServerRunning) && "opacity-40 cursor-not-allowed",
                 )}
               >
                 Retry
@@ -1484,9 +1345,7 @@ export function TestsPanel() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
-        {testingEnabled && selectedAppId != null && (
-          <MigrateTestsBanner appId={selectedAppId} />
-        )}
+        {testingEnabled && selectedAppId != null && <MigrateTestsBanner appId={selectedAppId} />}
         {!testingEnabled ? (
           <EnableTestingScreen
             hasNeonIsolation={hasNeonIsolation}
@@ -1502,10 +1361,7 @@ export function TestsPanel() {
           </div>
         ) : specsQuery.isError ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <AlertTriangle
-              size={28}
-              className="mb-3 text-amber-500 dark:text-amber-400"
-            />
+            <AlertTriangle size={28} className="mb-3 text-amber-500 dark:text-amber-400" />
             <h3 className="text-base font-semibold text-foreground mb-2">
               Couldn&apos;t load tests
             </h3>
@@ -1522,18 +1378,12 @@ export function TestsPanel() {
         ) : specs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
-              <FlaskConical
-                size={22}
-                className="text-teal-600 dark:text-teal-400"
-              />
+              <FlaskConical size={22} className="text-teal-600 dark:text-teal-400" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              No tests yet
-            </h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No tests yet</h3>
             <p className="text-sm text-muted-foreground max-w-sm mb-5">
-              Generate your first test, or ask the AI in chat to write one for a
-              specific feature. Generated tests show up here as a starting point
-              you can review and re-run.
+              Generate your first test, or ask the AI in chat to write one for a specific feature.
+              Generated tests show up here as a starting point you can review and re-run.
             </p>
             <button
               onClick={generateTest}
@@ -1586,9 +1436,7 @@ export function TestsPanel() {
                 onRunFile={() => runTests(spec.file)}
                 onRunCase={(line) => runTests(spec.file, line)}
                 onOpenInEditor={(line) => openInEditor(spec.file, line)}
-                onDelete={() =>
-                  setPendingDelete({ appId: selectedAppId, file: spec.file })
-                }
+                onDelete={() => setPendingDelete({ appId: selectedAppId, file: spec.file })}
                 caseStatus={(testCase) => caseStatus(spec.file, testCase)}
                 caseResult={(testCase) => caseResult(spec.file, testCase)}
                 onAskAiToFix={askAiToFix}
@@ -1602,9 +1450,7 @@ export function TestsPanel() {
 
       <DeleteTestFileDialog
         file={pendingDelete?.file ?? null}
-        testCount={
-          specs.find((s) => s.file === pendingDelete?.file)?.tests.length ?? 0
-        }
+        testCount={specs.find((s) => s.file === pendingDelete?.file)?.tests.length ?? 0}
         onOpenChange={(open) => {
           if (!open) setPendingDelete(null);
         }}
@@ -1619,8 +1465,7 @@ export function TestsPanel() {
         action={agentModeDialog?.action ?? lastAgentModeActionRef.current}
         onContinue={() => {
           if (agentModeDialog?.action === "fix") {
-            const { file, error, testTitle, screenshotPath } =
-              agentModeDialog.params;
+            const { file, error, testTitle, screenshotPath } = agentModeDialog.params;
             doAskAiToFix(file, error, testTitle, screenshotPath);
           } else if (agentModeDialog) {
             doGenerateTest();
@@ -1661,8 +1506,8 @@ function DeleteTestFileDialog({
                   testCount === 1 ? "test" : "tests"
                 } in it. `
               : "This deletes the test file. "}
-            If it's tracked in git, the deletion is committed on its own so you
-            can restore it from version history.
+            If it's tracked in git, the deletion is committed on its own so you can restore it from
+            version history.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1703,13 +1548,10 @@ function EnableTestingScreen({
       <div className="w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
         <FlaskConical size={22} className="text-teal-600 dark:text-teal-400" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">
-        Enable testing for this app
-      </h3>
+      <h3 className="text-lg font-semibold text-foreground mb-2">Enable testing for this app</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-5">
-        Let Octopus Studio write and run end-to-end tests that drive your app
-        like a real user. Tests are a starting point you can review, edit, and
-        re-run.
+        Let Octopus Studio write and run end-to-end tests that drive your app like a real user.
+        Tests are a starting point you can review, edit, and re-run.
       </p>
 
       {/* Data-safety warning, scaled to how well runs are isolated for this
@@ -1719,8 +1561,8 @@ function EnableTestingScreen({
         <div className="flex items-start gap-2 max-w-sm mb-5 px-3 py-2 rounded-md bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 text-left text-[13px] text-teal-800 dark:text-teal-200">
           <ShieldCheck size={15} className="shrink-0 mt-0.5" />
           <span>
-            Tests run against a temporary copy of your Neon database, so your
-            real data isn&apos;t touched.
+            Tests run against a temporary copy of your Neon database, so your real data isn&apos;t
+            touched.
           </span>
         </div>
       ) : (
@@ -1745,11 +1587,7 @@ function EnableTestingScreen({
           isEnabling && "opacity-40 cursor-not-allowed",
         )}
       >
-        {isEnabling ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <FlaskConical size={16} />
-        )}
+        {isEnabling ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
         Enable testing for this app
       </button>
     </div>

@@ -55,9 +55,7 @@ export class ChatActions {
   async clickNewChat({ index = 0 }: { index?: number } = {}) {
     // There are two new chat buttons.
     const previousChatId = new URL(this.page.url()).searchParams.get("id");
-    const visibleNewChatButtons = this.page.locator(
-      '[data-testid="new-chat-button"]:visible',
-    );
+    const visibleNewChatButtons = this.page.locator('[data-testid="new-chat-button"]:visible');
 
     await expect(async () => {
       const visibleCount = await visibleNewChatButtons.count();
@@ -96,9 +94,7 @@ export class ChatActions {
     return this.page.getByRole("button", { name: "Undo" });
   }
 
-  async waitForChatCompletion({
-    timeout = Timeout.MEDIUM,
-  }: { timeout?: number } = {}) {
+  async waitForChatCompletion({ timeout = Timeout.MEDIUM }: { timeout?: number } = {}) {
     await expect(this.getRetryButton()).toBeVisible({
       timeout,
     });
@@ -155,13 +151,9 @@ export class ChatActions {
       });
       await chatInput.fill(prompt, { timeout: 1_000 });
       const visiblePrompt = prompt.replace(/@app:/g, "@");
-      expect(await chatInput.textContent({ timeout: 1_000 })).toContain(
-        visiblePrompt,
-      );
+      expect(await chatInput.textContent({ timeout: 1_000 })).toContain(visiblePrompt);
       await this.page.waitForTimeout(100);
-      expect(await chatInput.textContent({ timeout: 1_000 })).toContain(
-        visiblePrompt,
-      );
+      expect(await chatInput.textContent({ timeout: 1_000 })).toContain(visiblePrompt);
       await expect(sendButton).toBeEnabled({ timeout: 1_000 });
       try {
         await sendButton.click({ timeout: 1_000 });
@@ -176,9 +168,7 @@ export class ChatActions {
           .getByRole("button", { name: "Cancel generation" })
           .isVisible({ timeout: 500 })
           .catch(() => false);
-        const inputText = await chatInput
-          .textContent({ timeout: 500 })
-          .catch(() => "");
+        const inputText = await chatInput.textContent({ timeout: 500 }).catch(() => "");
 
         if (promptSubmitted || (generationStarted && !inputText?.trim())) {
           return;
@@ -192,9 +182,7 @@ export class ChatActions {
     }
   }
 
-  async selectChatMode(
-    mode: "build" | "ask" | "agent" | "local-agent" | "basic-agent" | "plan",
-  ) {
+  async selectChatMode(mode: "build" | "ask" | "agent" | "local-agent" | "basic-agent" | "plan") {
     await this.page.getByTestId("chat-mode-selector").click();
     const mapping: Record<string, string> = {
       build: "Build Generate and edit code",

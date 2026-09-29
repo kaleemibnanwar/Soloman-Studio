@@ -6,9 +6,7 @@ test("auto update - disable and enable", async ({ po }) => {
 
   const beforeSettings = po.settings.recordSettings();
   await po.settings.toggleAutoUpdate();
-  await expect(
-    po.page.getByRole("button", { name: "Restart OctopusStudio" }),
-  ).toBeVisible();
+  await expect(po.page.getByRole("button", { name: "Restart OctopusStudio" })).toBeVisible();
   po.settings.snapshotSettingsDelta(beforeSettings);
 
   const beforeSettings2 = po.settings.recordSettings();

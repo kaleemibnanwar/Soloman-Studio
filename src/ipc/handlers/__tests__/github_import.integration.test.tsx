@@ -1,13 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
@@ -15,10 +9,7 @@ import { apps } from "@/db/schema";
 import { ipc } from "@/ipc/types";
 import { writeSettings } from "@/main/settings";
 import { invalidateOctopusStudioAppsBaseDirectoryCache } from "@/paths/paths";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("GitHub import dialog (integration)", () => {
@@ -55,9 +46,7 @@ describe("GitHub import dialog (integration)", () => {
   }
 
   function getTabByText(text: string): HTMLElement {
-    const tab = screen
-      .getAllByRole("tab")
-      .find((element) => element.textContent?.includes(text));
+    const tab = screen.getAllByRole("tab").find((element) => element.textContent?.includes(text));
     if (!tab) {
       throw new Error(`Could not find tab containing text: ${text}`);
     }
@@ -69,9 +58,7 @@ describe("GitHub import dialog (integration)", () => {
   }
 
   function importedAppPath(appPath: string): string {
-    return path.isAbsolute(appPath)
-      ? appPath
-      : path.join(importAppsRoot, appPath);
+    return path.isAbsolute(appPath) ? appPath : path.join(importAppsRoot, appPath);
   }
 
   async function findImportedApp(name: string) {
@@ -113,19 +100,14 @@ describe("GitHub import dialog (integration)", () => {
 
     clickTab("GitHub URL");
     const urlPanel = await screen.findByLabelText("GitHub URL");
-    fireEvent.change(
-      within(urlPanel).getByPlaceholderText("https://github.com/user/repo.git"),
-      {
-        target: { value: "https://github.com/testuser/existing-vite-app.git" },
-      },
-    );
+    fireEvent.change(within(urlPanel).getByPlaceholderText("https://github.com/user/repo.git"), {
+      target: { value: "https://github.com/testuser/existing-vite-app.git" },
+    });
     fireEvent.change(within(urlPanel).getByPlaceholderText(/Leave empty/), {
       target: { value: "url-existing-vite-app" },
     });
 
-    fireEvent.click(
-      within(urlPanel).getByRole("button", { name: "Advanced options" }),
-    );
+    fireEvent.click(within(urlPanel).getByRole("button", { name: "Advanced options" }));
     fireEvent.change(within(urlPanel).getByPlaceholderText("pnpm install"), {
       target: { value: "npm install" },
     });
@@ -141,12 +123,10 @@ describe("GitHub import dialog (integration)", () => {
     expect(app.startCommand).toBe("npm start");
 
     const appDir = importedAppPath(app.path);
-    expect(
-      fs.readFileSync(path.join(appDir, "package.json"), "utf8"),
-    ).toContain('"name": "existing-vite-app"');
-    expect(
-      fs.readFileSync(path.join(appDir, "vite.config.ts"), "utf8"),
-    ).toContain("defineConfig");
+    expect(fs.readFileSync(path.join(appDir, "package.json"), "utf8")).toContain(
+      '"name": "existing-vite-app"',
+    );
+    expect(fs.readFileSync(path.join(appDir, "vite.config.ts"), "utf8")).toContain("defineConfig");
   }, 90_000);
 
   it("skips the tagger upgrade when 'Optimize for OctopusStudio' is unchecked", async () => {
@@ -223,16 +203,11 @@ describe("GitHub import dialog (integration)", () => {
 
     clickTab("GitHub URL");
     const urlPanel = await screen.findByLabelText("GitHub URL");
-    fireEvent.change(
-      within(urlPanel).getByPlaceholderText("https://github.com/user/repo.git"),
-      {
-        target: { value: "https://github.com/testuser/existing-vite-app.git" },
-      },
-    );
+    fireEvent.change(within(urlPanel).getByPlaceholderText("https://github.com/user/repo.git"), {
+      target: { value: "https://github.com/testuser/existing-vite-app.git" },
+    });
 
-    fireEvent.click(
-      within(urlPanel).getByRole("button", { name: "Advanced options" }),
-    );
+    fireEvent.click(within(urlPanel).getByRole("button", { name: "Advanced options" }));
 
     // Fill ONLY the install command, leaving the start command empty.
     fireEvent.change(within(urlPanel).getByPlaceholderText("pnpm install"), {
@@ -243,9 +218,7 @@ describe("GitHub import dialog (integration)", () => {
     // only one of the two commands is set.
     await waitFor(() =>
       expect(
-        within(urlPanel).getByText(
-          /Both commands are required when customizing/,
-        ),
+        within(urlPanel).getByText(/Both commands are required when customizing/),
       ).toBeTruthy(),
     );
     const importButton = within(urlPanel).getByRole("button", {
@@ -259,9 +232,7 @@ describe("GitHub import dialog (integration)", () => {
     });
     await waitFor(() =>
       expect(
-        within(urlPanel).queryByText(
-          /Both commands are required when customizing/,
-        ),
+        within(urlPanel).queryByText(/Both commands are required when customizing/),
       ).toBeNull(),
     );
     expect(importButton.disabled).toBe(false);

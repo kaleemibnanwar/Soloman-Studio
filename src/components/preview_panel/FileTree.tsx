@@ -11,19 +11,26 @@ import {
   Search,
   Unlink,
   X,
+  FilePlus,
+  FolderPlus,
+  Pencil,
+  Copy,
+  FileText,
+  Scissors,
+  ClipboardPaste,
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { selectedFileAtom } from "@/atoms/viewAtoms";
+import { getFileIconByPath } from "./preview/fileIcons";
 import { useSetAtom } from "jotai";
 import { Input } from "@/components/ui/input";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import type { AppFileSearchResult } from "@/ipc/types";
@@ -36,10 +43,21 @@ import { chatInputValueAtom } from "@/atoms/chatAtoms";
 import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/lib/toast";
 import { LinkToProjectDialog } from "./LinkToProjectDialog";
+import { useFileManager, type FileManagerApi } from "./useFileManager";
+import {
+  NamePromptDialog,
+  ConfirmDeleteDialog,
+  MoveToDialog,
+  ConflictDialog,
+} from "./FileTreeDialogs";
 
 interface FileTreeProps {
   appId: number | null;
   files: string[];
+  /** Re-reads the file list after a mutation (delegates to the app query). */
+  refresh: () => void;
+  /** Absolute OS path of the app root, for "copy path" / "reveal in folder". */
+  appRootPath?: string;
 }
 
 interface TreeNode {
@@ -93,9 +111,7 @@ const getDirMarker = (path: string, status: FileTreeStatus): FileMarker => {
  * rather than by walking the tree, keeping this O(changed files x depth)
  * instead of O(all files) on every poll.
  */
-export const collectAncestorDirs = (
-  paths: ReadonlySet<string>,
-): ReadonlySet<string> => {
+export const collectAncestorDirs = (paths: ReadonlySet<string>): ReadonlySet<string> => {
   const dirs = new Set<string>();
   for (const filePath of paths) {
     const parts = filePath.split("/");
@@ -152,13 +168,7 @@ export const collectUncommittedPaths = (
  * Uses the native `title` rather than a Tooltip: tooltips open immediately on
  * hover, which flickers while moving the pointer down a dense tree.
  */
-const ChangeMarkerDot = ({
-  marker,
-  isDirectory,
-}: {
-  marker: FileMarker;
-  isDirectory: boolean;
-}) => {
+const ChangeMarkerDot = ({ marker, isDirectory }: { marker: FileMarker; isDirectory: boolean }) => {
   const { t } = useTranslation("home");
 
   if (!marker) return null;
@@ -176,23 +186,12 @@ const ChangeMarkerDot = ({
       role="img"
       aria-label={label}
       title={label}
-      className={cn(
-        "ml-1.5 flex flex-shrink-0 items-center",
-        MARKER_CLASSES[marker],
-      )}
+      className={cn("ml-1.5 flex flex-shrink-0 items-center", MARKER_CLASSES[marker])}
     >
       <Circle size={8} fill="currentColor" />
     </span>
   );
 };
-
-/**
- * Keeps file names lined up with folder names rather than with the folder icon.
- * Files have no icon of their own, so they need the icon's width back.
- */
-const FileIndent = () => (
-  <span aria-hidden className="mr-1 w-4 flex-shrink-0" />
-);
 
 const useDebouncedValue = <T,>(value: T, delay = 200) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -303,10 +302,11 @@ const buildFileTree = (files: string[]): TreeNode[] => {
 };
 
 // File tree component
-export const FileTree = ({ appId, files }: FileTreeProps) => {
+export const FileTree = ({ appId, files, refresh, appRootPath }: FileTreeProps) => {
   const { t } = useTranslation("home");
   const [searchValue, setSearchValue] = useState("");
   const prevAppIdRef = useRef<number | null>(appId);
+  const setSelectedFile = useSetAtom(selectedFileAtom);
 
   // Reset search when appId changes to prevent unnecessary IPC calls with old search term
   useEffect(() => {
@@ -354,14 +354,8 @@ export const FileTree = ({ appId, files }: FileTreeProps) => {
     [uncommittedFiles, files],
   );
 
-  const uncommittedDirs = useMemo(
-    () => collectAncestorDirs(uncommittedPaths),
-    [uncommittedPaths],
-  );
-  const unsavedDirs = useMemo(
-    () => collectAncestorDirs(unsavedPaths),
-    [unsavedPaths],
-  );
+  const uncommittedDirs = useMemo(() => collectAncestorDirs(uncommittedPaths), [uncommittedPaths]);
+  const unsavedDirs = useMemo(() => collectAncestorDirs(unsavedPaths), [unsavedPaths]);
 
   const status = useMemo<FileTreeStatus>(
     () => ({ uncommittedPaths, uncommittedDirs, unsavedPaths, unsavedDirs }),
@@ -388,8 +382,34 @@ export const FileTree = ({ appId, files }: FileTreeProps) => {
       });
   }, [isSearchMode, matchesByPath]);
 
+  const existingPaths = useMemo(() => new Set(files), [files]);
+
+  // Clear the selected file when a move/delete invalidated its path.
+  const onMoved = (paths: readonly string[]) => {
+    setSelectedFile((current) => (current && paths.includes(current.path) ? null : current));
+  };
+
+  const fileManager = useFileManager({
+    appId,
+    existingPaths,
+    refresh,
+    onMoved,
+  });
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      fileManager.handleDrop(droppedFiles, "");
+    }
+  };
+
   return (
-    <div className="file-tree mt-2 flex h-full flex-col">
+    <div className="file-tree mt-2 flex h-full flex-col" onDragOver={onDragOver} onDrop={onDrop}>
       <div className="px-2 pb-2">
         <div className="relative">
           <Search
@@ -433,14 +453,9 @@ export const FileTree = ({ appId, files }: FileTreeProps) => {
 
       <div className="flex-1 overflow-auto">
         {isSearchMode && searchError && (
-          <div className="px-3 py-2 text-xs text-red-500">
-            {searchError.message}
-          </div>
+          <div className="px-3 py-2 text-xs text-red-500">{searchError.message}</div>
         )}
-        {isSearchMode &&
-        !searchLoading &&
-        !searchError &&
-        matchesByPath.size === 0 ? (
+        {isSearchMode && !searchLoading && !searchError && matchesByPath.size === 0 ? (
           <div className="px-3 py-2 text-xs text-muted-foreground">
             {t("preview.noFilesMatchedSearch")}
           </div>
@@ -466,6 +481,8 @@ export const FileTree = ({ appId, files }: FileTreeProps) => {
             status={status}
             appId={appId}
             onRequestLink={setLinkDialogPath}
+            fileManager={fileManager}
+            appRootPath={appRootPath}
           />
         )}
       </div>
@@ -480,6 +497,63 @@ export const FileTree = ({ appId, files }: FileTreeProps) => {
           sourcePath={linkDialogPath}
         />
       )}
+
+      {appId != null && (
+        <>
+          <NamePromptDialog
+            open={fileManager.nameDialog != null}
+            title={
+              fileManager.nameDialog?.kind === "rename"
+                ? "Rename"
+                : fileManager.nameDialog?.kind === "new-folder"
+                  ? "New folder"
+                  : "New file"
+            }
+            description={
+              fileManager.nameDialog?.kind === "rename"
+                ? "Enter a new name for this item."
+                : `Create in "${fileManager.nameDialog?.targetDir || "root"}"`
+            }
+            initialValue={
+              fileManager.nameDialog?.kind === "rename"
+                ? (fileManager.nameDialog.path?.split("/").pop() ?? "")
+                : ""
+            }
+            submitLabel={fileManager.nameDialog?.kind === "rename" ? "Rename" : "Create"}
+            onOpenChange={(open) => {
+              if (!open) fileManager.closeNameDialog();
+            }}
+            onSubmit={fileManager.submitNameDialog}
+          />
+          <ConfirmDeleteDialog
+            open={fileManager.deleteTarget != null}
+            paths={fileManager.deleteTarget?.paths ?? []}
+            busy={fileManager.deleteBusy}
+            onOpenChange={(open) => {
+              if (!open) fileManager.closeDeleteDialog();
+            }}
+            onConfirm={fileManager.confirmDelete}
+          />
+          <MoveToDialog
+            open={fileManager.moveTarget != null}
+            paths={fileManager.moveTarget?.paths ?? []}
+            initialDir={fileManager.moveTarget?.paths[0]?.split("/").slice(0, -1).join("/") ?? ""}
+            onOpenChange={(open) => {
+              if (!open) fileManager.closeMoveDialog();
+            }}
+            onSubmit={fileManager.submitMoveTo}
+          />
+          <ConflictDialog
+            open={fileManager.conflictItems != null}
+            items={fileManager.conflictItems ?? []}
+            existing={existingPaths}
+            onOpenChange={(open) => {
+              if (!open) fileManager.onResolveConflicts(null);
+            }}
+            onResolve={fileManager.onResolveConflicts}
+          />
+        </>
+      )}
     </div>
   );
 };
@@ -493,6 +567,8 @@ interface TreeNodesProps {
   status: FileTreeStatus;
   appId: number | null;
   onRequestLink: (path: string) => void;
+  fileManager: FileManagerApi;
+  appRootPath?: string;
 }
 
 // Sort nodes to show directories first
@@ -515,6 +591,8 @@ const TreeNodes = ({
   status,
   appId,
   onRequestLink,
+  fileManager,
+  appRootPath,
 }: TreeNodesProps) => (
   <ul className="ml-4">
     {sortNodes(nodes).map((node) => (
@@ -528,6 +606,8 @@ const TreeNodes = ({
         status={status}
         appId={appId}
         onRequestLink={onRequestLink}
+        fileManager={fileManager}
+        appRootPath={appRootPath}
       />
     ))}
   </ul>
@@ -542,6 +622,8 @@ interface TreeNodeProps {
   status: FileTreeStatus;
   appId: number | null;
   onRequestLink: (path: string) => void;
+  fileManager: FileManagerApi;
+  appRootPath?: string;
 }
 
 // Search result item component (flat list in search mode)
@@ -552,12 +634,7 @@ interface SearchResultItemProps {
   status: FileTreeStatus;
 }
 
-const SearchResultItem = ({
-  path,
-  matchCount,
-  result,
-  status,
-}: SearchResultItemProps) => {
+const SearchResultItem = ({ path, matchCount, result, status }: SearchResultItemProps) => {
   const setSelectedFile = useSetAtom(selectedFileAtom);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -591,11 +668,7 @@ const SearchResultItem = ({
         {/* Path, with its change marker trailing it */}
         <span className="flex min-w-0 flex-1 items-center">
           <span
-            className={cn(
-              "truncate",
-              marker && "font-medium",
-              marker && MARKER_CLASSES[marker],
-            )}
+            className={cn("truncate", marker && "font-medium", marker && MARKER_CLASSES[marker])}
           >
             {path}
           </span>
@@ -655,9 +728,12 @@ const TreeNode = ({
   status,
   appId,
   onRequestLink,
+  fileManager,
+  appRootPath,
 }: TreeNodeProps) => {
   const [expanded, setExpanded] = useState(level < 2);
   const setSelectedFile = useSetAtom(selectedFileAtom);
+  const FileIcon = getFileIconByPath(node.path);
   const match = isSearchMode ? matchesByPath.get(node.path) : undefined;
   const marker = node.isDirectory
     ? getDirMarker(node.path, status)
@@ -704,6 +780,28 @@ const TreeNode = ({
       );
   };
 
+  const absPath = appRootPath ? `${appRootPath}/${node.path}` : "";
+
+  const handleCopyPath = () => {
+    if (!absPath) return;
+    navigator.clipboard
+      .writeText(absPath)
+      .then(() => showSuccess("Copied absolute path"))
+      .catch(() => showError("Failed to copy path"));
+  };
+
+  const handleCopyRelativePath = () => {
+    navigator.clipboard
+      .writeText(node.path)
+      .then(() => showSuccess("Copied relative path"))
+      .catch(() => showError("Failed to copy path"));
+  };
+
+  const handleReveal = () => {
+    if (!absPath) return;
+    ipc.system.showItemInFolder(absPath);
+  };
+
   const row = (
     <div
       className="group flex items-center rounded px-1.5 py-0.5 text-sm hover:bg-(--sidebar)"
@@ -717,7 +815,9 @@ const TreeNode = ({
           {expanded ? <FolderOpen size={16} /> : <Folder size={16} />}
         </span>
       ) : (
-        <FileIndent />
+        <span className="mr-1 flex-shrink-0 text-gray-500">
+          <FileIcon size={16} />
+        </span>
       )}
       <span className="flex min-w-0 flex-1 items-center">
         <span
@@ -748,6 +848,63 @@ const TreeNode = ({
         <ContextMenu onOpenChange={(open) => open && checkSymlinkStatus()}>
           <ContextMenuTrigger>{row}</ContextMenuTrigger>
           <ContextMenuContent>
+            {node.isDirectory && (
+              <>
+                <ContextMenuItem onClick={() => fileManager.actions.newFile(node.path)}>
+                  <FilePlus size={14} />
+                  New file
+                </ContextMenuItem>
+                <ContextMenuItem onClick={() => fileManager.actions.newFolder(node.path)}>
+                  <FolderPlus size={14} />
+                  New folder
+                </ContextMenuItem>
+                <ContextMenuItem
+                  disabled={!fileManager.canPaste}
+                  onClick={() => fileManager.actions.paste(node.path)}
+                >
+                  <ClipboardPaste size={14} />
+                  Paste
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+              </>
+            )}
+            <ContextMenuItem onClick={() => fileManager.actions.rename(node.path)}>
+              <Pencil size={14} />
+              Rename
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => fileManager.actions.copy([node.path])}>
+              <Copy size={14} />
+              Copy
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => fileManager.actions.cut([node.path])}>
+              <Scissors size={14} />
+              Cut
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => fileManager.actions.moveTo([node.path])}>
+              <FolderOpen size={14} />
+              Move to…
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => fileManager.actions.delete([node.path])}
+              variant="destructive"
+            >
+              <Trash2 size={14} />
+              Delete
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={handleCopyPath} disabled={!absPath}>
+              <Copy size={14} />
+              Copy absolute path
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleCopyRelativePath}>
+              <FileText size={14} />
+              Copy relative path
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleReveal} disabled={!absPath}>
+              <ExternalLink size={14} />
+              Reveal in folder
+            </ContextMenuItem>
+            <ContextMenuSeparator />
             <ContextMenuItem onClick={() => onRequestLink(node.path)}>
               <Link2 size={14} />
               Link to another project…
@@ -799,6 +956,8 @@ const TreeNode = ({
           status={status}
           appId={appId}
           onRequestLink={onRequestLink}
+          fileManager={fileManager}
+          appRootPath={appRootPath}
         />
       )}
     </li>

@@ -39,24 +39,17 @@ export function RecordingStorageWarningDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent data-testid="recording-storage-warning-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Start recording from a clean slate?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Start recording from a clean slate?</AlertDialogTitle>
           <AlertDialogDescription>
-            Recording starts from a signed-out browser, so Octopus Studio clears
-            the preview's cookies and local storage first. You'll be signed out
-            of your preview and anything the app stored there will be gone.
-            Cookies aren't specific to one preview, so any other app you have
-            running is signed out too. Your app's code and database aren't
-            touched.
+            Recording starts from a signed-out browser, so Octopus Studio clears the preview's
+            cookies and local storage first. You'll be signed out of your preview and anything the
+            app stored there will be gone. Cookies aren't specific to one preview, so any other app
+            you have running is signed out too. Your app's code and database aren't touched.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onContinue}
-            data-testid="recording-storage-warning-continue"
-          >
+          <AlertDialogAction onClick={onContinue} data-testid="recording-storage-warning-continue">
             Clear and start recording
           </AlertDialogAction>
         </AlertDialogFooter>

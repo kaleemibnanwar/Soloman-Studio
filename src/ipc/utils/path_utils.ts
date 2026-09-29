@@ -1,9 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { normalizePath } from "../../../shared/normalizePath";
 
 /**
@@ -75,9 +72,7 @@ export function safeJoin(basePath: string, ...paths: string[]): string {
 
 function isNodeErrorWithCode(error: unknown, code: string): boolean {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    (error as NodeJS.ErrnoException).code === code
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === code
   );
 }
 
@@ -118,13 +113,9 @@ export async function assertMutationPathAllowed(params: {
   followFinalSymlink?: boolean;
 }): Promise<string> {
   const realAppPath = await fs.promises.realpath(params.appPath);
-  const joinedPath = stripTrailingPathSeparators(
-    safeJoin(params.appPath, params.relativePath),
-  );
+  const joinedPath = stripTrailingPathSeparators(safeJoin(params.appPath, params.relativePath));
   const followFinalSymlink = params.followFinalSymlink !== false;
-  const finalEntryName = followFinalSymlink
-    ? undefined
-    : path.basename(joinedPath);
+  const finalEntryName = followFinalSymlink ? undefined : path.basename(joinedPath);
   let existing = followFinalSymlink ? joinedPath : path.dirname(joinedPath);
   const missingSegments: string[] = [];
   let realExisting: string;
@@ -186,21 +177,13 @@ export async function assertMutationPathAllowed(params: {
  * project root. The case-insensitive comparison also covers the common
  * case-insensitive macOS and Windows filesystems.
  */
-export function isProjectRootPath(
-  basePath: string,
-  inputPath: string,
-): boolean {
+export function isProjectRootPath(basePath: string, inputPath: string): boolean {
   const resolvedBasePath = path.resolve(basePath);
-  const resolvedTargetPath = path.resolve(
-    path.join(basePath, normalizePath(inputPath)),
-  );
+  const resolvedTargetPath = path.resolve(path.join(basePath, normalizePath(inputPath)));
   return resolvedTargetPath.toLowerCase() === resolvedBasePath.toLowerCase();
 }
 
-export function assertNotProjectRootPath(
-  basePath: string,
-  inputPath: string,
-): void {
+export function assertNotProjectRootPath(basePath: string, inputPath: string): void {
   if (isProjectRootPath(basePath, inputPath)) {
     throw new OctopusStudioError(
       `Refusing to delete project root for path: "${inputPath}"`,
@@ -226,9 +209,7 @@ export async function prepareDeletePath(
   inputPath: string,
 ): Promise<PreparedDeletePath> {
   assertNotProjectRootPath(basePath, inputPath);
-  const relativePath = path.posix
-    .normalize(normalizePath(inputPath))
-    .replace(/\/+$/, "");
+  const relativePath = path.posix.normalize(normalizePath(inputPath)).replace(/\/+$/, "");
   const canonicalRelativePath = await assertMutationPathAllowed({
     appPath: basePath,
     relativePath,

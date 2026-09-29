@@ -3,12 +3,12 @@
  * Provides content sanitization and basic security checks
  */
 
-import { sanitizeContent, detectThreats, cleanEmptyTags } from './sanitizer';
-import type { SanitizationResult, ValidationResult } from './types';
-import { ThreatType } from './types';
-import { createLogger } from '@src/background/log';
+import { sanitizeContent, detectThreats, cleanEmptyTags } from "./sanitizer";
+import type { SanitizationResult, ValidationResult } from "./types";
+import { ThreatType } from "./types";
+import { createLogger } from "@src/background/log";
 
-const logger = createLogger('SecurityGuardrails');
+const logger = createLogger("SecurityGuardrails");
 
 /**
  * Main security guardrails service
@@ -26,7 +26,9 @@ export class SecurityGuardrails {
       this.enabled = config.enabled;
     }
 
-    logger.info(`Security guardrails initialized - enabled: ${this.enabled}, strict: ${this.strictMode}`);
+    logger.info(
+      `Security guardrails initialized - enabled: ${this.enabled}, strict: ${this.strictMode}`,
+    );
   }
 
   /**
@@ -38,7 +40,7 @@ export class SecurityGuardrails {
   sanitize(content: string | undefined, options?: { strict?: boolean }): SanitizationResult {
     if (!this.enabled) {
       return {
-        sanitized: content || '',
+        sanitized: content || "",
         threats: [],
         modified: false,
       };
@@ -48,7 +50,7 @@ export class SecurityGuardrails {
     const result = sanitizeContent(content, effectiveStrict);
 
     if (result.modified && result.threats.length > 0) {
-      logger.info('Threats detected during sanitization:', result.threats);
+      logger.info("Threats detected during sanitization:", result.threats);
     }
 
     return result;
@@ -96,7 +98,9 @@ export class SecurityGuardrails {
     }
 
     // In normal mode, only critical threats are invalid
-    const criticalThreats = threats.filter(t => t === ThreatType.TASK_OVERRIDE || t === ThreatType.DANGEROUS_ACTION);
+    const criticalThreats = threats.filter(
+      (t) => t === ThreatType.TASK_OVERRIDE || t === ThreatType.DANGEROUS_ACTION,
+    );
 
     return {
       isValid: criticalThreats.length === 0,
@@ -123,7 +127,7 @@ export class SecurityGuardrails {
    */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
-    logger.info(`Security guardrails ${enabled ? 'enabled' : 'disabled'}`);
+    logger.info(`Security guardrails ${enabled ? "enabled" : "disabled"}`);
   }
 
   /**
@@ -132,7 +136,7 @@ export class SecurityGuardrails {
    */
   setStrictMode(strict: boolean): void {
     this.strictMode = strict;
-    logger.info(`Strict mode ${strict ? 'enabled' : 'disabled'}`);
+    logger.info(`Strict mode ${strict ? "enabled" : "disabled"}`);
   }
 
   /**
@@ -168,9 +172,9 @@ export class SecurityGuardrails {
 }
 
 // Export everything for direct use
-export * from './types';
-export * from './patterns';
-export * from './sanitizer';
+export * from "./types";
+export * from "./patterns";
+export * from "./sanitizer";
 
 // Create a default instance
 export const guardrails = new SecurityGuardrails();

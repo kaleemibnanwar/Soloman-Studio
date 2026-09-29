@@ -13,12 +13,8 @@ function git(cwd: string, ...args: string[]) {
 async function makeRuntimeTreeClean(po: PageObject, appPath: string) {
   const screenshotDir = path.join(appPath, ".octopusStudio", "screenshot");
   await expect(async () => {
-    const entries = fs.existsSync(screenshotDir)
-      ? fs.readdirSync(screenshotDir)
-      : [];
-    expect(entries.some((entry) => SCREENSHOT_FILENAME_REGEX.test(entry))).toBe(
-      true,
-    );
+    const entries = fs.existsSync(screenshotDir) ? fs.readdirSync(screenshotDir) : [];
+    expect(entries.some((entry) => SCREENSHOT_FILENAME_REGEX.test(entry))).toBe(true);
   }).toPass({ timeout: Timeout.MEDIUM });
 
   const status = git(appPath, "status", "--short");
@@ -30,60 +26,55 @@ async function makeRuntimeTreeClean(po: PageObject, appPath: string) {
   });
 }
 
-testSkipIfWindows(
-  "version preview is drained and isolated when switching apps",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    await po.importApp("minimal");
-    await po.chatActions.waitForChatCompletion();
-    await po.chatActions.clickNewChat();
-    const appAName = await po.appManagement.getCurrentAppName();
-    const appAPath = await po.appManagement.getCurrentAppPath();
-    await po.sendPrompt("tc=write-index");
-    await expect(
-      po.previewPanel.getPreviewIframeElement().contentFrame().locator("body"),
-    ).toBeVisible({ timeout: Timeout.LONG });
-    await makeRuntimeTreeClean(po, appAPath);
-    const originBranch = git(appAPath, "branch", "--show-current");
-    const versionButton = po.page.getByRole("button", {
-      name: /^Version \d+$/,
-    });
-    const currentVersionLabel = await versionButton.textContent();
+testSkipIfWindows("version preview is drained and isolated when switching apps", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.importApp("minimal");
+  await po.chatActions.waitForChatCompletion();
+  await po.chatActions.clickNewChat();
+  const appAName = await po.appManagement.getCurrentAppName();
+  const appAPath = await po.appManagement.getCurrentAppPath();
+  await po.sendPrompt("tc=write-index");
+  await expect(
+    po.previewPanel.getPreviewIframeElement().contentFrame().locator("body"),
+  ).toBeVisible({ timeout: Timeout.LONG });
+  await makeRuntimeTreeClean(po, appAPath);
+  const originBranch = git(appAPath, "branch", "--show-current");
+  const versionButton = po.page.getByRole("button", {
+    name: /^Version \d+$/,
+  });
+  const currentVersionLabel = await versionButton.textContent();
 
-    await versionButton.click();
-    await po.page.getByTestId("version-row-1").click();
-    await po.previewPanel.selectPreviewMode("code");
-    await expect(po.page.getByTestId("version-diff-view")).toBeVisible({
-      timeout: Timeout.LONG,
-    });
-    await po.page.getByTestId("version-diff-file").first().click();
+  await versionButton.click();
+  await po.page.getByTestId("version-row-1").click();
+  await po.previewPanel.selectPreviewMode("code");
+  await expect(po.page.getByTestId("version-diff-view")).toBeVisible({
+    timeout: Timeout.LONG,
+  });
+  await po.page.getByTestId("version-diff-file").first().click();
 
-    await po.appManagement.showAppList();
-    await po.appManagement.importApp("version-integrity");
-    await expect(po.page.getByTestId("version-diff-view")).not.toBeVisible({
-      timeout: Timeout.MEDIUM,
-    });
+  await po.appManagement.showAppList();
+  await po.appManagement.importApp("version-integrity");
+  await expect(po.page.getByTestId("version-diff-view")).not.toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 
-    await expect
-      .poll(
-        () => ({
-          branch: git(appAPath, "branch", "--show-current"),
-          status: git(appAPath, "status", "--short"),
-        }),
-        { timeout: Timeout.LONG },
-      )
-      .toEqual({ branch: originBranch, status: "" });
+  await expect
+    .poll(
+      () => ({
+        branch: git(appAPath, "branch", "--show-current"),
+        status: git(appAPath, "status", "--short"),
+      }),
+      { timeout: Timeout.LONG },
+    )
+    .toEqual({ branch: originBranch, status: "" });
 
-    await po.page
-      .getByRole("button", { name: `${appAName} New Chat` })
-      .first()
-      .click();
-    await expect(po.page.getByTestId("version-diff-view")).not.toBeVisible();
-    await expect(
-      po.page.getByRole("button", { name: currentVersionLabel! }),
-    ).toBeVisible({
-      timeout: Timeout.MEDIUM,
-    });
-    await expect(po.page.getByText("Version History")).not.toBeVisible();
-  },
-);
+  await po.page
+    .getByRole("button", { name: `${appAName} New Chat` })
+    .first()
+    .click();
+  await expect(po.page.getByTestId("version-diff-view")).not.toBeVisible();
+  await expect(po.page.getByRole("button", { name: currentVersionLabel! })).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
+  await expect(po.page.getByText("Version History")).not.toBeVisible();
+});

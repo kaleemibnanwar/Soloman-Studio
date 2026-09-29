@@ -39,10 +39,7 @@ import {
   shouldFilterPostHogExceptionEvent,
 } from "./lib/posthogTelemetry";
 import { registerRendererIpcListeners } from "./app_wiring/registerRendererIpcListeners";
-import {
-  ChatStreamProvider,
-  useChatStreamManager,
-} from "./chat_stream/ChatStreamProvider";
+import { ChatStreamProvider, useChatStreamManager } from "./chat_stream/ChatStreamProvider";
 import {
   EntityDisposalProvider,
   useEntityDisposal,
@@ -107,60 +104,47 @@ const queryClient = new QueryClient({
   }),
 });
 
-const posthogClient = posthog.init(
-  "phc_5Vxx0XT8Ug3eWROhP6mm4D6D2DgIIKT232q4AKxC2ab",
-  {
-    api_host: "https://us.i.posthog.com",
-    // @ts-ignore
-    debug: import.meta.env.MODE === "development",
-    autocapture: false,
-    capture_exceptions: true,
-    capture_pageview: false,
-    before_send: (event) => {
-      if (!isTelemetryOptedIn()) {
-        console.debug("Telemetry not opted in, skipping event");
+const posthogClient = posthog.init("phc_5Vxx0XT8Ug3eWROhP6mm4D6D2DgIIKT232q4AKxC2ab", {
+  api_host: "https://us.i.posthog.com",
+  // @ts-ignore
+  debug: import.meta.env.MODE === "development",
+  autocapture: false,
+  capture_exceptions: true,
+  capture_pageview: false,
+  before_send: (event) => {
+    if (!isTelemetryOptedIn()) {
+      console.debug("Telemetry not opted in, skipping event");
+      return null;
+    }
+
+    if (shouldFilterPostHogExceptionEvent(event)) {
+      console.debug("Filtering generic fetch failed exception from telemetry");
+      return null;
+    }
+    const telemetryUserId = getTelemetryUserId();
+    if (telemetryUserId) {
+      posthogClient.identify(telemetryUserId);
+    }
+
+    if (event?.properties["$ip"]) {
+      event.properties["$ip"] = null;
+    }
+
+    // For non-Pro users, only send 10% of events (but always send errors,
+    // app:initial-load, promo_click, and sandbox.script.* — see
+    // shouldBypassNonProTelemetrySampling).
+    if (!isOctopusStudioProUser()) {
+      if (!shouldBypassNonProTelemetrySampling(event) && Math.random() > 0.1) {
+        console.debug("Non-Pro user: sampling out event", event?.event);
         return null;
       }
+    }
 
-      if (shouldFilterPostHogExceptionEvent(event)) {
-        console.debug(
-          "Filtering generic fetch failed exception from telemetry",
-        );
-        return null;
-      }
-      const telemetryUserId = getTelemetryUserId();
-      if (telemetryUserId) {
-        posthogClient.identify(telemetryUserId);
-      }
-
-      if (event?.properties["$ip"]) {
-        event.properties["$ip"] = null;
-      }
-
-      // For non-Pro users, only send 10% of events (but always send errors,
-      // app:initial-load, promo_click, and sandbox.script.* — see
-      // shouldBypassNonProTelemetrySampling).
-      if (!isOctopusStudioProUser()) {
-        if (
-          !shouldBypassNonProTelemetrySampling(event) &&
-          Math.random() > 0.1
-        ) {
-          console.debug("Non-Pro user: sampling out event", event?.event);
-          return null;
-        }
-      }
-
-      console.debug(
-        "Telemetry opted in - UUID:",
-        telemetryUserId,
-        "sending event",
-        event,
-      );
-      return event;
-    },
-    persistence: "localStorage",
+    console.debug("Telemetry opted in - UUID:", telemetryUserId, "sending event", event);
+    return event;
   },
-);
+  persistence: "localStorage",
+});
 
 function App() {
   return (
@@ -254,24 +238,15 @@ function RendererServices() {
           });
           try {
             if (bootstrap.mayMigrateLegacyChatTabSession) {
-              promoteMostRecentChatTabSession(
-                window.localStorage,
-                bootstrap.windowSessionId,
-              );
+              promoteMostRecentChatTabSession(window.localStorage, bootstrap.windowSessionId);
             }
-            pruneChatTabWindowSessions(
-              window.localStorage,
-              bootstrap.restorableWindowSessionIds,
-            );
+            pruneChatTabWindowSessions(window.localStorage, bootstrap.restorableWindowSessionIds);
             store.set(initializeChatTabSessionStorageAtom);
           } catch (error) {
             // Browser storage is optional presentation state. A denied or full
             // localStorage must not turn a successful main-process bootstrap
             // into a permanently blank product window.
-            console.error(
-              "Failed to initialize chat tab session storage",
-              error,
-            );
+            console.error("Failed to initialize chat tab session storage", error);
           }
           const entity: VisibleEntity | undefined = bootstrap.initialEntity;
           if (entity?.kind === "chat") {
@@ -279,10 +254,7 @@ function RendererServices() {
             // pre-hydration opens, so this works even with a collapsed sidebar.
             store.set(ensureRecentViewedChatIdAtom, entity.id);
           }
-          const navigation = initialWindowNavigation(
-            entity,
-            bootstrap.initialChatAppId,
-          );
+          const navigation = initialWindowNavigation(entity, bootstrap.initialChatAppId);
           if (navigation) {
             void router.navigate({ ...navigation, replace: true });
           }
@@ -311,8 +283,7 @@ function RendererServices() {
       chatStreamManager,
       entityDisposal,
       getCurrentPathname: () => router.state.location.pathname,
-      subscribeToNavigation: (listener) =>
-        router.subscribe("onResolved", listener),
+      subscribeToNavigation: (listener) => router.subscribe("onResolved", listener),
     });
   }, [chatStreamManager, entityDisposal, queryClient, store, windowReady]);
 

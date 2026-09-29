@@ -1,9 +1,5 @@
 import { escapeIdentifier, fqName } from "../schema/identifiers.js";
-import type {
-  Column,
-  ColumnIdentity,
-  SchemaQualifiedName,
-} from "../schema/model.js";
+import type { Column, ColumnIdentity, SchemaQualifiedName } from "../schema/model.js";
 import { temporaryNotNullConstraintName } from "../schema/randomIdentifier.js";
 import {
   lockTimeoutDefaultMs,
@@ -60,9 +56,7 @@ export function deleteColumnStatement(
     sql: `${alterTablePrefix(tableName)} DROP COLUMN ${escapeIdentifier(column.name)}`,
     timeoutMs: statementTimeoutDefaultMs,
     lockTimeoutMs: lockTimeoutDefaultMs,
-    hazards: [
-      { type: "DELETES_DATA", message: "Deletes all values in the column" },
-    ],
+    hazards: [{ type: "DELETES_DATA", message: "Deletes all values in the column" }],
     skipValidation: false,
   };
 }
@@ -73,10 +67,7 @@ export function alterColumnStatements(
 ): readonly InternalStatement[] {
   const statements: InternalStatement[] = [];
   const prefix = `${alterTablePrefix(tableName)} ALTER COLUMN ${escapeIdentifier(diff.next.name)}`;
-  const typeOrCollationChanged = columnTypeOrCollationChanged(
-    diff.old,
-    diff.next,
-  );
+  const typeOrCollationChanged = columnTypeOrCollationChanged(diff.old, diff.next);
   const defaultChanged = diff.old.default !== diff.next.default;
 
   if (diff.old.isNullable !== diff.next.isNullable && !diff.next.isNullable) {
@@ -85,8 +76,7 @@ export function alterColumnStatements(
 
   if (
     diff.old.default.length > 0 &&
-    (diff.next.default.length === 0 ||
-      (typeOrCollationChanged && defaultChanged))
+    (diff.next.default.length === 0 || (typeOrCollationChanged && defaultChanged))
   ) {
     statements.push({
       sql: `${prefix} DROP DEFAULT`,
@@ -129,10 +119,7 @@ export function alterColumnStatements(
   return statements;
 }
 
-function columnTypeOrCollationChanged(
-  oldColumn: Column,
-  newColumn: Column,
-): boolean {
+function columnTypeOrCollationChanged(oldColumn: Column, newColumn: Column): boolean {
   return (
     oldColumn.type.toLowerCase() !== newColumn.type.toLowerCase() ||
     schemaName(oldColumn.collation) !== schemaName(newColumn.collation)
@@ -150,16 +137,12 @@ function typeTransformationStatement(
 ): InternalStatement {
   const prefix = `${alterTablePrefix(tableName)} ALTER COLUMN ${escapeIdentifier(newColumn.name)}`;
   const newType = newColumn.type.toLowerCase();
-  const isTimestampTarget =
-    newType.startsWith("timestamp") || newType.startsWith("timestamptz");
+  const isTimestampTarget = newType.startsWith("timestamp") || newType.startsWith("timestamptz");
   const usingExpression =
     oldColumn.type.toLowerCase() === "bigint" && isTimestampTarget
       ? `to_timestamp(${escapeIdentifier(newColumn.name)} / 1000.0)`
       : `${escapeIdentifier(newColumn.name)}::${newColumn.type}`;
-  const collation =
-    newColumn.collation === null
-      ? ""
-      : `COLLATE ${fqName(newColumn.collation)} `;
+  const collation = newColumn.collation === null ? "" : `COLLATE ${fqName(newColumn.collation)} `;
   return {
     sql: `${prefix} SET DATA TYPE ${newColumn.type} ${collation}using ${usingExpression}`,
     timeoutMs: statementTimeoutDefaultMs,
@@ -175,10 +158,7 @@ function typeTransformationStatement(
   };
 }
 
-function analyzeColumnStatement(
-  tableName: SchemaQualifiedName,
-  column: Column,
-): InternalStatement {
+function analyzeColumnStatement(tableName: SchemaQualifiedName, column: Column): InternalStatement {
   return {
     sql: `ANALYZE ${fqName(tableName)} (${escapeIdentifier(column.name)})`,
     timeoutMs: statementTimeoutDefaultMs,
@@ -186,8 +166,7 @@ function analyzeColumnStatement(
     hazards: [
       {
         type: "IMPACTS_DATABASE_PERFORMANCE",
-        message:
-          "Running analyze reads rows from the table and may affect query performance.",
+        message: "Running analyze reads rows from the table and may affect query performance.",
       },
     ],
     skipValidation: false,
@@ -209,17 +188,13 @@ function identityStatements(
   }
   if (oldColumn.identity === null) {
     return [
-      standardColumnStatement(
-        `${prefix} ADD ${buildColumnIdentityDefinition(newColumn.identity)}`,
-      ),
+      standardColumnStatement(`${prefix} ADD ${buildColumnIdentityDefinition(newColumn.identity)}`),
     ];
   }
 
   const modifications: string[] = [];
   if (oldColumn.identity.type !== newColumn.identity.type) {
-    modifications.push(
-      `SET GENERATED ${columnIdentityTypeModifier(newColumn.identity.type)}`,
-    );
+    modifications.push(`SET GENERATED ${columnIdentityTypeModifier(newColumn.identity.type)}`);
   }
   if (oldColumn.identity.increment !== newColumn.identity.increment) {
     modifications.push(`SET INCREMENT BY ${newColumn.identity.increment}`);
@@ -240,9 +215,7 @@ function identityStatements(
     modifications.push(`SET ${newColumn.identity.cycle ? "" : "NO "}CYCLE`);
   }
 
-  return modifications.map((modification) =>
-    standardColumnStatement(`${prefix} ${modification}`),
-  );
+  return modifications.map((modification) => standardColumnStatement(`${prefix} ${modification}`));
 }
 
 function standardColumnStatement(sql: string): InternalStatement {
@@ -255,10 +228,7 @@ function standardColumnStatement(sql: string): InternalStatement {
   };
 }
 
-function identityEqual(
-  left: ColumnIdentity | null,
-  right: ColumnIdentity | null,
-): boolean {
+function identityEqual(left: ColumnIdentity | null, right: ColumnIdentity | null): boolean {
   if (left === null || right === null) {
     return left === right;
   }

@@ -13,10 +13,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { cleanup, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("hybrid chat harness (smoke)", () => {
@@ -72,9 +69,7 @@ describe("hybrid chat harness (smoke)", () => {
     // Prove it went through the REAL main-process pipeline:
     // 1. The octopus-studio-write tag was executed against the real app checkout.
     expect(harness.appFileExists("src/foo/bar.tsx")).toBe(true);
-    expect(harness.readAppFile("src/foo/bar.tsx").trim()).toBe(
-      "// BEGINNING OF FILE",
-    );
+    expect(harness.readAppFile("src/foo/bar.tsx").trim()).toBe("// BEGINNING OF FILE");
     // 2. A real commit was made.
     expect(harness.gitLog().length).toBeGreaterThan(1);
     // 3. Real db rows exist and were auto-approved.
@@ -101,27 +96,19 @@ describe("hybrid chat harness (smoke)", () => {
     const first = harness.mount();
     await screen.findByTestId("chat-input-container");
     const { sendButton } = await harness.typeInChat("draft only");
-    expect((sendButton as HTMLButtonElement).hasAttribute("disabled")).toBe(
-      false,
-    );
+    expect((sendButton as HTMLButtonElement).hasAttribute("disabled")).toBe(false);
 
     first.unmount();
 
     const second = harness.mount();
-    const remountedSendButton = await screen.findByLabelText(
-      /^(sendMessage|Send message)$/,
-    );
+    const remountedSendButton = await screen.findByLabelText(/^(sendMessage|Send message)$/);
     await waitFor(() => {
-      expect(
-        (remountedSendButton as HTMLButtonElement).hasAttribute("disabled"),
-      ).toBe(true);
+      expect((remountedSendButton as HTMLButtonElement).hasAttribute("disabled")).toBe(true);
     });
     second.unmount();
   }, 30_000);
 });
 
 function bridgeSawChunk(harness: HybridChatHarness): boolean {
-  return harness.bridge.sentEvents.some(
-    (e) => e.channel === "chat:response:chunk",
-  );
+  return harness.bridge.sentEvents.some((e) => e.channel === "chat:response:chunk");
 }

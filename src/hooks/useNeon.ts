@@ -44,28 +44,24 @@ export function useNeon(appId: number | null) {
   const branches: NeonBranch[] = projectInfo?.branches ?? [];
 
   // Fetch email and password config for the active branch
-  const { data: emailPasswordConfig, isLoading: isLoadingEmailConfig } =
-    useQuery({
-      queryKey: queryKeys.neon.emailPasswordConfig({
-        appId,
-        branchId:
-          app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId ?? null,
-      }),
-      queryFn: () => ipc.neon.getEmailPasswordConfig({ appId: appId! }),
-      enabled:
-        !!appId &&
-        !!app?.neonProjectId &&
-        !!(app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId),
-    });
+  const { data: emailPasswordConfig, isLoading: isLoadingEmailConfig } = useQuery({
+    queryKey: queryKeys.neon.emailPasswordConfig({
+      appId,
+      branchId: app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId ?? null,
+    }),
+    queryFn: () => ipc.neon.getEmailPasswordConfig({ appId: appId! }),
+    enabled:
+      !!appId &&
+      !!app?.neonProjectId &&
+      !!(app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId),
+  });
 
   return {
     isConnected,
     projects,
     projectInfo,
     branches,
-    emailPasswordConfig: emailPasswordConfig as
-      | NeonAuthEmailAndPasswordConfig
-      | undefined,
+    emailPasswordConfig: emailPasswordConfig as NeonAuthEmailAndPasswordConfig | undefined,
     isLoadingEmailConfig,
 
     isLoadingProjects,

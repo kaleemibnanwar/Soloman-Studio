@@ -1,11 +1,7 @@
 import { useState, useMemo } from "react";
 import { ChevronsUpDown, Check, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function AppSearchSelect({
   apps,
@@ -61,9 +57,7 @@ export function AppSearchSelect({
         </div>
         <div className="max-h-[200px] overflow-y-auto p-1">
           {filteredApps.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              No apps found.
-            </p>
+            <p className="py-4 text-center text-sm text-muted-foreground">No apps found.</p>
           ) : (
             filteredApps.map((app) => (
               <button
@@ -76,9 +70,7 @@ export function AppSearchSelect({
                 }}
                 className="relative flex w-full cursor-default items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
               >
-                {app.id === selectedAppId && (
-                  <Check className="absolute left-2 h-4 w-4" />
-                )}
+                {app.id === selectedAppId && <Check className="absolute left-2 h-4 w-4" />}
                 {app.name}
               </button>
             ))

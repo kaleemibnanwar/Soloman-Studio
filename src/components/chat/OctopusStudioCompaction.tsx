@@ -13,9 +13,10 @@ interface OctopusStudioCompactionProps {
   children?: React.ReactNode;
 }
 
-export const OctopusStudioCompaction: React.FC<
-  OctopusStudioCompactionProps
-> = ({ children, node }) => {
+export const OctopusStudioCompaction: React.FC<OctopusStudioCompactionProps> = ({
+  children,
+  node,
+}) => {
   const { title = "Compacting conversation", state } = node.properties;
   const inProgress = state === "pending";
   const [isExpanded, setIsExpanded] = useState(true);
@@ -86,9 +87,7 @@ export const OctopusStudioCompaction: React.FC<
           {content ? (
             <VanillaMarkdownParser content={content} />
           ) : inProgress ? (
-            <span className="text-xs text-gray-400 italic">
-              Generating summary...
-            </span>
+            <span className="text-xs text-gray-400 italic">Generating summary...</span>
           ) : null}
         </div>
       </div>

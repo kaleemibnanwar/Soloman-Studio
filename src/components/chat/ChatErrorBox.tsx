@@ -11,11 +11,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function ChatErrorBox({
   onDismiss,
@@ -29,21 +25,15 @@ export function ChatErrorBox({
   onStartNewChat?: () => void;
 }) {
   const fallbackPrefix = "Fallbacks=[{";
-  const normalizedError = error.includes(fallbackPrefix)
-    ? error.split(fallbackPrefix)[0]
-    : error;
+  const normalizedError = error.includes(fallbackPrefix) ? error.split(fallbackPrefix)[0] : error;
   const isFreeModelQuotaError =
     normalizedError.includes("octopus_studio_free_model_quota_exceeded") ||
     normalizedError.includes("FREE_MODEL_QUOTA_EXCEEDED") ||
-    normalizedError.includes(
-      "OctopusStudio Free has reached its daily limit.",
-    ) ||
+    normalizedError.includes("OctopusStudio Free has reached its daily limit.") ||
     normalizedError.includes("OctopusStudio Free limit");
   const { messagesLimit } = useFreeAgentQuota();
-  const {
-    messagesLimit: freeModelMessagesLimit,
-    resetTime: freeModelResetTime,
-  } = useFreeModelQuota({ enabled: isFreeModelQuotaError });
+  const { messagesLimit: freeModelMessagesLimit, resetTime: freeModelResetTime } =
+    useFreeModelQuota({ enabled: isFreeModelQuotaError });
   const { userBudget } = useUserBudgetInfo();
   // Trial Pro users cannot use the Free model (it is hidden from the picker and
   // rejected by the engine), so don't suggest it to them.
@@ -119,10 +109,7 @@ export function ChatErrorBox({
         <span>
           You have used all of your OctopusStudio AI credits this month.{" "}
           {!isTrialProUser && (
-            <>
-              Switch to the Free model and send {freeModelMessagesLimit} free
-              messages per day.{" "}
-            </>
+            <>Switch to the Free model and send {freeModelMessagesLimit} free messages per day. </>
           )}
           <ExternalLink
             href="https://academy.octopusStudio.sh/subscription?utm_source=octopus-studio-app&utm_medium=app&utm_campaign=exceeded-budget-error"
@@ -146,9 +133,8 @@ export function ChatErrorBox({
   if (error.includes("FREE_AGENT_QUOTA_EXCEEDED")) {
     return (
       <ChatErrorContainer onDismiss={onDismiss}>
-        You have used all {messagesLimit} free Agent messages for today. Please
-        upgrade to OctopusStudio Pro for unlimited access or switch to Build
-        mode.
+        You have used all {messagesLimit} free Agent messages for today. Please upgrade to
+        OctopusStudio Pro for unlimited access or switch to Build mode.
         <div className="mt-2 space-y-2 space-x-2">
           <ExternalLink
             href="https://octopusStudio.sh/pro?utm_source=octopus-studio-app&utm_medium=app&utm_campaign=free-agent-quota-exceeded"
@@ -173,8 +159,7 @@ export function ChatErrorBox({
     return (
       <ChatErrorContainer onDismiss={onDismiss}>
         <span>
-          You have reached the {freeModelMessagesLimit}-message OctopusStudio
-          Free model limit.
+          You have reached the {freeModelMessagesLimit}-message OctopusStudio Free model limit.
           {resetText} Switch to paid models.{" "}
           <ExternalLink
             href="https://academy.octopusStudio.sh/subscription?utm_source=octopus-studio-app&utm_medium=app&utm_campaign=exceeded-budget-error"
@@ -210,14 +195,10 @@ export function ChatErrorBox({
               <span>Start new chat</span>
               <MessageSquarePlus size={18} />
             </TooltipTrigger>
-            <TooltipContent>
-              Starting a new chat can fix some issues
-            </TooltipContent>
+            <TooltipContent>Starting a new chat can fix some issues</TooltipContent>
           </Tooltip>
         )}
-        <ExternalLink href="https://www.octopusStudio.sh/docs/faq">
-          Read docs
-        </ExternalLink>
+        <ExternalLink href="https://www.octopusStudio.sh/docs/faq">Read docs</ExternalLink>
       </div>
     </ChatErrorContainer>
   );
@@ -236,17 +217,11 @@ function ExternalLink({
 }) {
   const baseClasses =
     "cursor-pointer inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium shadow-sm focus:outline-none focus:ring-2";
-  const primaryClasses =
-    "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500";
+  const primaryClasses = "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500";
   const secondaryClasses =
     "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 focus:ring-blue-200";
   const iconElement =
-    icon ??
-    (variant === "primary" ? (
-      <CircleArrowUp size={18} />
-    ) : (
-      <ExternalLinkIcon size={14} />
-    ));
+    icon ?? (variant === "primary" ? <CircleArrowUp size={18} /> : <ExternalLinkIcon size={14} />);
 
   return (
     <a
@@ -271,10 +246,7 @@ function ChatErrorContainer({
       data-testid="chat-error-box"
       className="relative mt-2 bg-red-50 border border-red-200 rounded-md shadow-sm p-2 mx-4"
     >
-      <button
-        onClick={onDismiss}
-        className="absolute top-2.5 left-2 p-1 hover:bg-red-100 rounded"
-      >
+      <button onClick={onDismiss} className="absolute top-2.5 left-2 p-1 hover:bg-red-100 rounded">
         <X size={14} className="text-red-500" />
       </button>
       <div className="pl-8 py-1 text-sm">
@@ -319,10 +291,7 @@ function ChatInfoContainer({
 }) {
   return (
     <div className="relative mt-2 bg-sky-50 border border-sky-200 rounded-md shadow-sm p-2 mx-4">
-      <button
-        onClick={onDismiss}
-        className="absolute top-2.5 left-2 p-1 hover:bg-sky-100 rounded"
-      >
+      <button onClick={onDismiss} className="absolute top-2.5 left-2 p-1 hover:bg-sky-100 rounded">
         <X size={14} className="text-sky-600" />
       </button>
       <div className="pl-8 py-1 text-sm">

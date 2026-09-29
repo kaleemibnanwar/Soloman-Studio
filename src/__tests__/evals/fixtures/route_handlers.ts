@@ -8,10 +8,7 @@ interface AuthedRequest extends Request {
 
 // ── Project handlers ───────────────────────────────────────────────────────
 
-export async function getProject(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function getProject(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`getProject called without userId from ${req.ip}`);
@@ -34,10 +31,7 @@ export async function getProject(
   res.json(rows[0]);
 }
 
-export async function updateProject(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function updateProject(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`updateProject called without userId from ${req.ip}`);
@@ -57,10 +51,7 @@ export async function updateProject(
   res.json({ ok: true });
 }
 
-export async function deleteProject(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function deleteProject(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`deleteProject called without userId from ${req.ip}`);
@@ -79,10 +70,7 @@ export async function deleteProject(
   res.json({ ok: true });
 }
 
-export async function archiveProject(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function archiveProject(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`archiveProject called without userId from ${req.ip}`);
@@ -91,25 +79,20 @@ export async function archiveProject(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `archiveProject called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`archiveProject called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
 
-  await db.query(
-    "UPDATE projects SET status = 'archived', archived_at = ? WHERE id = ?",
-    [new Date().toISOString(), id],
-  );
+  await db.query("UPDATE projects SET status = 'archived', archived_at = ? WHERE id = ?", [
+    new Date().toISOString(),
+    id,
+  ]);
   logger.info(`archiveProject(${id}) took ${Date.now() - start}ms`);
   res.json({ ok: true });
 }
 
-export async function getProjectMembers(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function getProjectMembers(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`getProjectMembers called without userId from ${req.ip}`);
@@ -118,9 +101,7 @@ export async function getProjectMembers(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `getProjectMembers called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`getProjectMembers called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
@@ -133,10 +114,7 @@ export async function getProjectMembers(
   res.json({ members: rows });
 }
 
-export async function addProjectMember(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function addProjectMember(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`addProjectMember called without userId from ${req.ip}`);
@@ -145,9 +123,7 @@ export async function addProjectMember(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `addProjectMember called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`addProjectMember called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
@@ -157,16 +133,11 @@ export async function addProjectMember(
     "INSERT INTO project_members (project_id, user_id, role, added_at) VALUES (?, ?, ?, ?)",
     [id, memberId, role, new Date().toISOString()],
   );
-  logger.info(
-    `addProjectMember(${id}, member=${memberId}) took ${Date.now() - start}ms`,
-  );
+  logger.info(`addProjectMember(${id}, member=${memberId}) took ${Date.now() - start}ms`);
   res.status(201).json({ ok: true });
 }
 
-export async function removeProjectMember(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function removeProjectMember(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`removeProjectMember called without userId from ${req.ip}`);
@@ -175,60 +146,47 @@ export async function removeProjectMember(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `removeProjectMember called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`removeProjectMember called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
 
   const { memberId } = req.params;
-  await db.query(
-    "DELETE FROM project_members WHERE project_id = ? AND user_id = ?",
-    [id, memberId],
-  );
-  logger.info(
-    `removeProjectMember(${id}, member=${memberId}) took ${Date.now() - start}ms`,
-  );
+  await db.query("DELETE FROM project_members WHERE project_id = ? AND user_id = ?", [
+    id,
+    memberId,
+  ]);
+  logger.info(`removeProjectMember(${id}, member=${memberId}) took ${Date.now() - start}ms`);
   res.json({ ok: true });
 }
 
-export async function transferProjectOwnership(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function transferProjectOwnership(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
-    logger.warn(
-      `transferProjectOwnership called without userId from ${req.ip}`,
-    );
+    logger.warn(`transferProjectOwnership called without userId from ${req.ip}`);
     res.status(401).json({ error: "unauthorized" });
     return;
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `transferProjectOwnership called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`transferProjectOwnership called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
 
   const { newOwnerId } = req.body as { newOwnerId: string };
-  await db.query(
-    "UPDATE projects SET owner_id = ?, updated_at = ? WHERE id = ?",
-    [newOwnerId, new Date().toISOString(), id],
-  );
+  await db.query("UPDATE projects SET owner_id = ?, updated_at = ? WHERE id = ?", [
+    newOwnerId,
+    new Date().toISOString(),
+    id,
+  ]);
   logger.info(
     `transferProjectOwnership(${id}, newOwner=${newOwnerId}) took ${Date.now() - start}ms`,
   );
   res.json({ ok: true });
 }
 
-export async function listProjectVersions(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function listProjectVersions(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`listProjectVersions called without userId from ${req.ip}`);
@@ -237,9 +195,7 @@ export async function listProjectVersions(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `listProjectVersions called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`listProjectVersions called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
@@ -252,10 +208,7 @@ export async function listProjectVersions(
   res.json({ versions: rows });
 }
 
-export async function restoreProjectVersion(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function restoreProjectVersion(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`restoreProjectVersion called without userId from ${req.ip}`);
@@ -264,9 +217,7 @@ export async function restoreProjectVersion(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `restoreProjectVersion called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`restoreProjectVersion called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }
@@ -286,16 +237,11 @@ export async function restoreProjectVersion(
     new Date().toISOString(),
     id,
   ]);
-  logger.info(
-    `restoreProjectVersion(${id}, version=${versionId}) took ${Date.now() - start}ms`,
-  );
+  logger.info(`restoreProjectVersion(${id}, version=${versionId}) took ${Date.now() - start}ms`);
   res.json({ ok: true });
 }
 
-export async function duplicateProject(
-  req: AuthedRequest,
-  res: Response,
-): Promise<void> {
+export async function duplicateProject(req: AuthedRequest, res: Response): Promise<void> {
   const start = Date.now();
   if (!req.userId) {
     logger.warn(`duplicateProject called without userId from ${req.ip}`);
@@ -304,9 +250,7 @@ export async function duplicateProject(
   }
   const id = req.params.id;
   if (!id || typeof id !== "string") {
-    logger.warn(
-      `duplicateProject called with invalid id from user ${req.userId}`,
-    );
+    logger.warn(`duplicateProject called with invalid id from user ${req.userId}`);
     res.status(400).json({ error: "invalid id" });
     return;
   }

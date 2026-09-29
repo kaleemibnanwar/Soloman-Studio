@@ -9,10 +9,7 @@ import { cn } from "@/lib/utils";
 
 const RadioGroup = React.forwardRef<
   HTMLDivElement,
-  Omit<
-    React.ComponentPropsWithoutRef<typeof BaseRadioGroup>,
-    "onValueChange"
-  > & {
+  Omit<React.ComponentPropsWithoutRef<typeof BaseRadioGroup>, "onValueChange"> & {
     onValueChange?: (value: string) => void;
   }
 >(({ className, onValueChange, ...props }, ref) => {

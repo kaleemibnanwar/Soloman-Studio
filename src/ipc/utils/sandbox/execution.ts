@@ -2,15 +2,9 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Capability, StructuredValue } from "mustardscript";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import { getOctopusStudioMediaDir } from "@/ipc/utils/media_path_utils";
-import {
-  buildSandboxCapabilitiesWithObserver,
-  type SandboxHostCallObserver,
-} from "./capabilities";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { getOctopusStudioMediaDir } from "@/ipc/media/media_path_utils";
+import { buildSandboxCapabilitiesWithObserver, type SandboxHostCallObserver } from "./capabilities";
 import {
   clampSandboxWallClockTimeoutMs,
   clampSandboxTimeoutMs,
@@ -116,15 +110,8 @@ function truncateUtf8(value: string, maxBytes: number): string {
   return bytes.subarray(0, end).toString("utf8");
 }
 
-async function spillOutput(params: {
-  appPath: string;
-  output: string;
-}): Promise<string> {
-  const hash = crypto
-    .createHash("sha256")
-    .update(params.output)
-    .digest("hex")
-    .slice(0, 16);
+async function spillOutput(params: { appPath: string; output: string }): Promise<string> {
+  const hash = crypto.createHash("sha256").update(params.output).digest("hex").slice(0, 16);
   const capped = truncateUtf8(params.output, SANDBOX_UI_OUTPUT_LIMIT_BYTES);
   const outputPath = path.join(
     getOctopusStudioMediaDir(params.appPath),
@@ -230,18 +217,13 @@ function createVmRuntimeBudget(timeoutMs: number): {
     stop,
     abort: () => abortController.abort(),
     getElapsedMs: () =>
-      runningSince === undefined
-        ? elapsedMs
-        : elapsedMs + Date.now() - runningSince,
+      runningSince === undefined ? elapsedMs : elapsedMs + Date.now() - runningSince,
   };
 }
 
 function wrapCapabilitiesWithVmBudget(
   capabilities: Record<string, (...args: unknown[]) => unknown>,
-  budget: Pick<
-    ReturnType<typeof createVmRuntimeBudget>,
-    "pause" | "resume" | "signal"
-  >,
+  budget: Pick<ReturnType<typeof createVmRuntimeBudget>, "pause" | "resume" | "signal">,
   hooks: Pick<SandboxExecutionParams, "onVmBudgetPause" | "onVmBudgetResume">,
 ): Record<string, (...args: unknown[]) => unknown> {
   return Object.fromEntries(
@@ -287,19 +269,12 @@ function wrapCapabilitiesWithVmBudget(
 export async function executeSandboxScriptInProcess(
   params: SandboxExecutionParams,
 ): Promise<SandboxRunResult> {
-  if (
-    Buffer.byteLength(params.script, "utf8") > SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES
-  ) {
-    throw new OctopusStudioError(
-      "Sandbox script is too large.",
-      OctopusStudioErrorKind.Validation,
-    );
+  if (Buffer.byteLength(params.script, "utf8") > SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES) {
+    throw new OctopusStudioError("Sandbox script is too large.", OctopusStudioErrorKind.Validation);
   }
 
   const timeoutMs = clampSandboxTimeoutMs(params.timeoutMs);
-  const wallClockTimeoutMs = clampSandboxWallClockTimeoutMs(
-    params.wallClockTimeoutMs,
-  );
+  const wallClockTimeoutMs = clampSandboxWallClockTimeoutMs(params.wallClockTimeoutMs);
   const { Mustard, ExecutionContext } = await loadMustard();
   const vmBudget = createVmRuntimeBudget(timeoutMs);
   let wallClockTimeout: NodeJS.Timeout | undefined;
@@ -310,11 +285,7 @@ export async function executeSandboxScriptInProcess(
     const rawCapabilityMap =
       params.capabilities ??
       buildSandboxCapabilitiesWithObserver(params.appPath, params.onHostCall);
-    const capabilityMap = wrapCapabilitiesWithVmBudget(
-      rawCapabilityMap,
-      vmBudget,
-      params,
-    );
+    const capabilityMap = wrapCapabilitiesWithVmBudget(rawCapabilityMap, vmBudget, params);
     const context = new ExecutionContext({
       capabilities: capabilityMap as unknown as Record<string, Capability>,
       limits: {
@@ -352,17 +323,14 @@ export async function executeSandboxScriptInProcess(
     vmBudget.stop();
     const executionMs = vmBudget.getElapsedMs();
     const output = stringifyStructuredValue(result);
-    const truncated =
-      Buffer.byteLength(output, "utf8") > SANDBOX_LLM_OUTPUT_LIMIT_BYTES;
+    const truncated = Buffer.byteLength(output, "utf8") > SANDBOX_LLM_OUTPUT_LIMIT_BYTES;
     const fullOutputPath =
       truncated && params.persistFullOutput !== false
         ? await spillOutput({ appPath: params.appPath, output })
         : undefined;
 
     return {
-      value: truncated
-        ? truncateUtf8(output, SANDBOX_LLM_OUTPUT_LIMIT_BYTES)
-        : output,
+      value: truncated ? truncateUtf8(output, SANDBOX_LLM_OUTPUT_LIMIT_BYTES) : output,
       truncated,
       fullOutputPath,
       executionMs,

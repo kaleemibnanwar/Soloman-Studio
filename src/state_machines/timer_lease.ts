@@ -51,9 +51,7 @@ export class TimerLeaseScope<Key, Token, Event> {
 
   has(key: Key, token?: Token): boolean {
     const lease = this.leases.get(key);
-    return (
-      lease !== undefined && (token === undefined || lease.token === token)
-    );
+    return lease !== undefined && (token === undefined || lease.token === token);
   }
 
   dispose(): void {

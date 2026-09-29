@@ -19,13 +19,11 @@ export function AutoApproveSqlSwitch() {
             });
           }}
         />
-        <Label htmlFor="enable-auto-approve-non-schema-sql">
-          Skip consent for non-schema SQL
-        </Label>
+        <Label htmlFor="enable-auto-approve-non-schema-sql">Skip consent for non-schema SQL</Label>
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
-        In Agent mode, skip the consent prompt when running SQL that does not
-        change the database schema. Schema changes still require approval.
+        In Agent mode, skip the consent prompt when running SQL that does not change the database
+        schema. Schema changes still require approval.
       </div>
     </div>
   );

@@ -19,10 +19,7 @@ import {
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { createTypedHandler } from "./base";
 import { createAppOperationHandler } from "../utils/app_mutation_lock";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import { createTestOnlyLoggedHandler } from "./safe_handle";
 import { readSettings, writeSettings } from "../../main/settings";
 import { supabaseContracts } from "../types/supabase";
@@ -31,7 +28,7 @@ import {
   OctopusStudioErrorKind,
   isOctopusStudioError,
 } from "@/errors/octopus_studio_error";
-import { assertNoNeonProject } from "../utils/neon_utils";
+import { assertNoNeonProject } from "../neon/neon_utils";
 import { runOAuthReturnExchange } from "./connection_flow_handlers";
 import { IS_TEST_BUILD } from "../utils/test_utils";
 
@@ -68,10 +65,7 @@ export function registerSupabaseHandlers() {
         });
       } catch (error) {
         // If we can't fetch details, still include the org with just the ID
-        logger.error(
-          `Failed to fetch details for organization ${organizationSlug}:`,
-          error,
-        );
+        logger.error(`Failed to fetch details for organization ${organizationSlug}:`, error);
         results.push({ organizationSlug });
       }
     }
@@ -80,32 +74,29 @@ export function registerSupabaseHandlers() {
   });
 
   // Delete a Supabase organization connection
-  createTypedHandler(
-    supabaseContracts.deleteOrganization,
-    async (_, params) => {
-      const { organizationSlug } = params;
-      const settings = readSettings();
-      const organizations = { ...settings.supabase?.organizations };
+  createTypedHandler(supabaseContracts.deleteOrganization, async (_, params) => {
+    const { organizationSlug } = params;
+    const settings = readSettings();
+    const organizations = { ...settings.supabase?.organizations };
 
-      if (!organizations[organizationSlug]) {
-        throw new OctopusStudioError(
-          `Supabase organization ${organizationSlug} not found`,
-          OctopusStudioErrorKind.NotFound,
-        );
-      }
+    if (!organizations[organizationSlug]) {
+      throw new OctopusStudioError(
+        `Supabase organization ${organizationSlug} not found`,
+        OctopusStudioErrorKind.NotFound,
+      );
+    }
 
-      delete organizations[organizationSlug];
+    delete organizations[organizationSlug];
 
-      writeSettings({
-        supabase: {
-          ...settings.supabase,
-          organizations,
-        },
-      });
+    writeSettings({
+      supabase: {
+        ...settings.supabase,
+        organizations,
+      },
+    });
 
-      logger.info(`Deleted Supabase organization ${organizationSlug}`);
-    },
-  );
+    logger.info(`Deleted Supabase organization ${organizationSlug}`);
+  });
 
   // List all projects from all connected organizations
   createTypedHandler(supabaseContracts.listAllProjects, async () => {
@@ -148,10 +139,7 @@ export function registerSupabaseHandlers() {
           }
         }
       } catch (error) {
-        logger.error(
-          `Failed to fetch projects for organization ${organizationSlug}:`,
-          error,
-        );
+        logger.error(`Failed to fetch projects for organization ${organizationSlug}:`, error);
         // Continue with other organizations even if one fails
       }
     }
@@ -186,9 +174,7 @@ export function registerSupabaseHandlers() {
 
     if (response.error) {
       const errorMsg =
-        typeof response.error === "string"
-          ? response.error
-          : JSON.stringify(response.error);
+        typeof response.error === "string" ? response.error : JSON.stringify(response.error);
       throw new OctopusStudioError(
         `Failed to fetch logs: ${errorMsg}`,
         OctopusStudioErrorKind.External,
@@ -205,11 +191,10 @@ export function registerSupabaseHandlers() {
       const functionName = extractFunctionName(eventMessage);
 
       return {
-        level: (level === "error"
-          ? "error"
-          : level === "warn"
-            ? "warn"
-            : "info") as "info" | "warn" | "error",
+        level: (level === "error" ? "error" : level === "warn" ? "warn" : "info") as
+          | "info"
+          | "warn"
+          | "error",
         type: "edge-function" as const,
         message: eventMessage,
         timestamp: logEntry.timestamp / 1000, // Convert from microseconds to milliseconds
@@ -281,24 +266,21 @@ export function registerSupabaseHandlers() {
   });
 
   // Does this app still authenticate with the project's legacy anon key?
-  createTypedHandler(
-    supabaseContracts.detectLegacyAppKey,
-    async (_, { appId }) => {
-      const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-      // An app with no Supabase project has nothing to check. Reporting
-      // "no legacy key" beats throwing: the caller only wants to know whether
-      // to offer the switch.
-      if (!app?.supabaseProjectId) {
-        return { hasLegacyKey: false };
-      }
-      const legacy = await detectLegacyAppKey({
-        appPath: getOctopusStudioAppPath(app.path),
-        projectId: app.supabaseProjectId,
-        organizationSlug: app.supabaseOrganizationSlug,
-      });
-      return { hasLegacyKey: !!legacy };
-    },
-  );
+  createTypedHandler(supabaseContracts.detectLegacyAppKey, async (_, { appId }) => {
+    const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
+    // An app with no Supabase project has nothing to check. Reporting
+    // "no legacy key" beats throwing: the caller only wants to know whether
+    // to offer the switch.
+    if (!app?.supabaseProjectId) {
+      return { hasLegacyKey: false };
+    }
+    const legacy = await detectLegacyAppKey({
+      appPath: getOctopusStudioAppPath(app.path),
+      projectId: app.supabaseProjectId,
+      organizationSlug: app.supabaseOrganizationSlug,
+    });
+    return { hasLegacyKey: !!legacy };
+  });
 
   // Swap an app's generated client off the legacy anon key it was created with.
   // This is a read-modify-write of the app's source, so it owns both provider
@@ -313,10 +295,7 @@ export function registerSupabaseHandlers() {
           where: eq(apps.id, appId),
         });
         if (!app) {
-          throw new OctopusStudioError(
-            `App ${appId} not found.`,
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError(`App ${appId} not found.`, OctopusStudioErrorKind.NotFound);
         }
         if (!app.supabaseProjectId) {
           throw new OctopusStudioError(
@@ -335,10 +314,7 @@ export function registerSupabaseHandlers() {
           // The switch re-checks the key against the Management API, so a revoked
           // org token surfaces here. Classify it before it crosses IPC, or the
           // renderer sees an auth problem as an unclassified product exception.
-          const classified = classifyManagementApiError(
-            error,
-            "update this app's API key",
-          );
+          const classified = classifyManagementApiError(error, "update this app's API key");
           if (isOctopusStudioError(classified)) {
             throw classified;
           }
@@ -362,10 +338,7 @@ export function registerSupabaseHandlers() {
 
   testOnlyHandle(
     "supabase:fake-connect-and-set-project",
-    async (
-      event,
-      { appId, fakeProjectId }: { appId: number; fakeProjectId: string },
-    ) => {
+    async (event, { appId, fakeProjectId }: { appId: number; fakeProjectId: string }) => {
       const fakeOrgId = "fake-org-id";
 
       // Directly store fake credentials in the organizations map
@@ -411,9 +384,7 @@ export function registerSupabaseHandlers() {
           supabaseOrganizationSlug: fakeOrgId,
         })
         .where(eq(apps.id, appId));
-      logger.info(
-        `Set fake Supabase project ${fakeProjectId} for app ${appId} during testing.`,
-      );
+      logger.info(`Set fake Supabase project ${fakeProjectId} for app ${appId} during testing.`);
     },
   );
 }

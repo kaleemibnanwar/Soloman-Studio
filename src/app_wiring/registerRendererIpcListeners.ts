@@ -14,10 +14,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { showError } from "@/lib/toast";
 import { getUserInputReadModel } from "@/user_input/read_model";
 import { RendererQueryInvalidationConsumer } from "@/window_infrastructure/renderer_query_invalidation";
-import type {
-  QueryInvalidationBatch,
-  VisibleEntity,
-} from "@/window_infrastructure/types";
+import type { QueryInvalidationBatch, VisibleEntity } from "@/window_infrastructure/types";
 import type { EntityDisposalRegistry } from "@/state_machines/entity_disposal";
 
 export type RendererIpcClient = typeof defaultIpc;
@@ -28,10 +25,7 @@ type ChatStreamRendererFacade = {
 };
 
 const lastQueryInvalidationEpochByClient = new WeakMap<QueryClient, number>();
-const lastEntityDisposalEpochByRegistry = new WeakMap<
-  EntityDisposalRegistry,
-  number
->();
+const lastEntityDisposalEpochByRegistry = new WeakMap<EntityDisposalRegistry, number>();
 
 export interface RegisterRendererIpcListenersOptions {
   ipcClient: RendererIpcClient;
@@ -53,12 +47,8 @@ export function visibleEntitiesForRoute(
   }
   if (pathname !== "/chat") return [];
   return [
-    ...(selectedAppId === null
-      ? []
-      : [{ kind: "app" as const, id: selectedAppId }]),
-    ...(selectedChatId === null
-      ? []
-      : [{ kind: "chat" as const, id: selectedChatId }]),
+    ...(selectedAppId === null ? [] : [{ kind: "app" as const, id: selectedAppId }]),
+    ...(selectedChatId === null ? [] : [{ kind: "chat" as const, id: selectedChatId }]),
   ];
 }
 
@@ -81,28 +71,23 @@ export function registerQueryInvalidationListener(
       lastQueryInvalidationEpochByClient.set(queryClient, consumer.epoch());
     }
   };
-  const unsubscribe =
-    ipcClient.events.windowInfrastructure.onQueryInvalidations((batch) => {
-      if (consumer) {
-        consumer.consume(batch);
-        rememberEpoch();
-      } else {
-        pendingBatches.push(batch);
-      }
-    });
+  const unsubscribe = ipcClient.events.windowInfrastructure.onQueryInvalidations((batch) => {
+    if (consumer) {
+      consumer.consume(batch);
+      rememberEpoch();
+    } else {
+      pendingBatches.push(batch);
+    }
+  });
 
   const bootstrapInvalidations = () => {
     void ipcClient.windowInfrastructure
       .bootstrap({
-        lastSeenQueryInvalidationEpoch:
-          lastQueryInvalidationEpochByClient.get(queryClient) ?? 0,
+        lastSeenQueryInvalidationEpoch: lastQueryInvalidationEpochByClient.get(queryClient) ?? 0,
       })
       .then((bootstrap) => {
         if (disposed) return;
-        consumer = new RendererQueryInvalidationConsumer(
-          queryClient,
-          bootstrap.windowSessionId,
-        );
+        consumer = new RendererQueryInvalidationConsumer(queryClient, bootstrap.windowSessionId);
         consumer.recover(
           bootstrap.currentQueryInvalidationEpoch,
           bootstrap.missedInvalidations,
@@ -163,10 +148,7 @@ export function registerRendererIpcListeners({
             next.set(chatId, messages);
             return next;
           });
-        } else if (
-          streamingMessageId !== undefined &&
-          streamingPatch !== undefined
-        ) {
+        } else if (streamingMessageId !== undefined && streamingPatch !== undefined) {
           const applied = applyStreamingPatch(
             (update) => store.set(chatMessagesByIdAtom, update),
             chatId,
@@ -198,9 +180,7 @@ export function registerRendererIpcListeners({
     );
     void ipcClient.windowInfrastructure
       .setVisibleEntities(entities)
-      .catch((error) =>
-        console.error("Failed to publish visible window entities", error),
-      );
+      .catch((error) => console.error("Failed to publish visible window entities", error));
   };
   const updateInterest = (
     previous: number | null,
@@ -208,22 +188,16 @@ export function registerRendererIpcListeners({
     kind: "app-output" | "chat-chunk",
   ) => {
     const interestFor = (id: number) =>
-      kind === "app-output"
-        ? ({ kind, appId: id } as const)
-        : ({ kind, chatId: id } as const);
+      kind === "app-output" ? ({ kind, appId: id } as const) : ({ kind, chatId: id } as const);
     if (previous !== null) {
       void ipcClient.windowInfrastructure
         .detachInterest(interestFor(previous))
-        .catch((error) =>
-          console.error(`Failed to detach ${kind} interest`, error),
-        );
+        .catch((error) => console.error(`Failed to detach ${kind} interest`, error));
     }
     if (next !== null) {
       void ipcClient.windowInfrastructure
         .attachInterest(interestFor(next))
-        .catch((error) =>
-          console.error(`Failed to attach ${kind} interest`, error),
-        );
+        .catch((error) => console.error(`Failed to attach ${kind} interest`, error));
     }
   };
   updateInterest(null, selectedAppInterest, "app-output");
@@ -254,34 +228,30 @@ export function registerRendererIpcListeners({
     () => window.removeEventListener("focus", handleWindowFocus),
   );
   unsubscribes.push(
-    ipcClient.events.windowInfrastructure.onEntityDisposed(
-      ({ entity, epoch }) => {
-        if (
-          epoch <= (lastEntityDisposalEpochByRegistry.get(entityDisposal) ?? 0)
-        ) {
-          return;
-        }
-        lastEntityDisposalEpochByRegistry.set(entityDisposal, epoch);
-        try {
-          if (entity.kind === "app") {
-            if (store.get(selectedAppIdAtom) === entity.id) {
-              store.set(selectedAppIdAtom, null);
-            }
-            entityDisposal.disposeForApp(entity.id);
-          } else {
-            if (store.get(selectedChatIdAtom) === entity.id) {
-              store.set(selectedChatIdAtom, null);
-            }
-            entityDisposal.disposeForChat(entity.id);
+    ipcClient.events.windowInfrastructure.onEntityDisposed(({ entity, epoch }) => {
+      if (epoch <= (lastEntityDisposalEpochByRegistry.get(entityDisposal) ?? 0)) {
+        return;
+      }
+      lastEntityDisposalEpochByRegistry.set(entityDisposal, epoch);
+      try {
+        if (entity.kind === "app") {
+          if (store.get(selectedAppIdAtom) === entity.id) {
+            store.set(selectedAppIdAtom, null);
           }
-        } catch (error) {
-          console.error("Window-local entity disposal failed", {
-            entity,
-            error,
-          });
+          entityDisposal.disposeForApp(entity.id);
+        } else {
+          if (store.get(selectedChatIdAtom) === entity.id) {
+            store.set(selectedChatIdAtom, null);
+          }
+          entityDisposal.disposeForChat(entity.id);
         }
-      },
-    ),
+      } catch (error) {
+        console.error("Window-local entity disposal failed", {
+          entity,
+          error,
+        });
+      }
+    }),
   );
 
   unsubscribes.push(

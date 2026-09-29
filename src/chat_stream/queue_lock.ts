@@ -5,10 +5,7 @@ const queueMutationTails = new Map<number, Promise<void>>();
  * chat. The tail contains only a completion gate, so a failed task never
  * poisons later queue work.
  */
-export async function withChatQueueLock<T>(
-  chatId: number,
-  task: () => T | Promise<T>,
-): Promise<T> {
+export async function withChatQueueLock<T>(chatId: number, task: () => T | Promise<T>): Promise<T> {
   const previous = queueMutationTails.get(chatId) ?? Promise.resolve();
   let release: () => void = () => undefined;
   const gate = new Promise<void>((resolve) => {

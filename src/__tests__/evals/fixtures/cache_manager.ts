@@ -51,12 +51,7 @@ export function set<T>(key: string, value: T, sizeBytes: number): void {
   totalBytes += sizeBytes;
 }
 
-export function setWithTtl<T>(
-  key: string,
-  value: T,
-  sizeBytes: number,
-  ttlMs: number,
-): void {
+export function setWithTtl<T>(key: string, value: T, sizeBytes: number, ttlMs: number): void {
   if (ttlMs <= 0) {
     throw new Error(`ttlMs must be positive, got ${ttlMs}`);
   }
@@ -77,9 +72,7 @@ export function setWithTtl<T>(
   totalBytes += sizeBytes;
 }
 
-export function setMany<T>(
-  items: Array<{ key: string; value: T; sizeBytes: number }>,
-): void {
+export function setMany<T>(items: Array<{ key: string; value: T; sizeBytes: number }>): void {
   for (const item of items) {
     set(item.key, item.value, item.sizeBytes);
   }
@@ -106,11 +99,7 @@ export function get<T>(key: string): T | null {
   return entry.value as T;
 }
 
-export function getOrSet<T>(
-  key: string,
-  factory: () => T,
-  sizeBytes: number,
-): T {
+export function getOrSet<T>(key: string, factory: () => T, sizeBytes: number): T {
   const cached = get<T>(key);
   if (cached !== null) return cached;
   const value = factory();
@@ -260,12 +249,7 @@ export function createNamespace(prefix: string) {
     set<T>(key: string, value: T, sizeBytes: number): void {
       set(ns(key), value, sizeBytes);
     },
-    setWithTtl<T>(
-      key: string,
-      value: T,
-      sizeBytes: number,
-      ttlMs: number,
-    ): void {
+    setWithTtl<T>(key: string, value: T, sizeBytes: number, ttlMs: number): void {
       setWithTtl(ns(key), value, sizeBytes, ttlMs);
     },
     get<T>(key: string): T | null {

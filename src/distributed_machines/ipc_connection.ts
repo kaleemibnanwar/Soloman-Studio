@@ -1,8 +1,5 @@
 import { ipc } from "@/ipc/types";
-import type {
-  RemoteMachineClientConnection,
-  RemoteTransportStatus,
-} from "./remote_client";
+import type { RemoteMachineClientConnection, RemoteTransportStatus } from "./remote_client";
 import type {
   MachineAddress,
   MachineDispatchEnvelope,
@@ -17,18 +14,14 @@ import type {
  * it releases every listener while main retains the authoritative actors.
  */
 export class IpcRemoteMachineConnection implements RemoteMachineClientConnection {
-  private readonly statusListeners = new Set<
-    (status: RemoteTransportStatus) => void
-  >();
+  private readonly statusListeners = new Set<(status: RemoteTransportStatus) => void>();
   private status: RemoteTransportStatus = "connected";
 
   getStatus(): RemoteTransportStatus {
     return this.status;
   }
 
-  onStatusChange(
-    listener: (status: RemoteTransportStatus) => void,
-  ): () => void {
+  onStatusChange(listener: (status: RemoteTransportStatus) => void): () => void {
     this.statusListeners.add(listener);
     return () => this.statusListeners.delete(listener);
   }

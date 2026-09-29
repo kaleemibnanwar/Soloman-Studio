@@ -22,10 +22,7 @@ vi.mock("electron", async () => {
   return createElectronMock(h);
 });
 
-import {
-  setupChatFlowHarness,
-  type ChatFlowHarness,
-} from "@/testing/chat_flow_harness";
+import { setupChatFlowHarness, type ChatFlowHarness } from "@/testing/chat_flow_harness";
 
 describe("chat flow harness (smoke)", () => {
   let harness: ChatFlowHarness;
@@ -48,9 +45,7 @@ describe("chat flow harness (smoke)", () => {
 
     // File write from the <octopus-studio-write> tag in octopus-studio-write-angle.md.
     expect(harness.appFileExists("src/foo/bar.tsx")).toBe(true);
-    expect(harness.readAppFile("src/foo/bar.tsx")).toContain(
-      "// BEGINNING OF FILE",
-    );
+    expect(harness.readAppFile("src/foo/bar.tsx")).toContain("// BEGINNING OF FILE");
 
     // Git commit of the applied change.
     expect(harness.gitLog().length).toBeGreaterThan(1);
@@ -72,9 +67,7 @@ describe("chat flow harness (smoke)", () => {
     expect(channels).toContain("chat:response:end");
     expect(channels).toContain("chat:stream:end");
     const responseEnd = events.find((e) => e.channel === "chat:response:end")!;
-    expect(
-      (responseEnd.payload as { updatedFiles: boolean }).updatedFiles,
-    ).toBe(true);
+    expect((responseEnd.payload as { updatedFiles: boolean }).updatedFiles).toBe(true);
     expect(eventsFor("chat:response:error")).toHaveLength(0);
   }, 30_000);
 

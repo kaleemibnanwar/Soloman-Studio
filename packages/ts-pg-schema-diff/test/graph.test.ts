@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DirectedGraph,
-  isLowerPriorityFromGetPriority,
-} from "../src/graph/graph.js";
+import { DirectedGraph, isLowerPriorityFromGetPriority } from "../src/graph/graph.js";
 import { SqlGraph, sqlPriority } from "../src/graph/sqlGraph.js";
 import type { InternalStatement } from "../src/plan/types.js";
 
@@ -18,9 +15,7 @@ describe("DirectedGraph", () => {
 
     expect(
       graph
-        .topologicallySortWithPriority(
-          isLowerPriorityFromGetPriority((vertex) => vertex.priority),
-        )
+        .topologicallySortWithPriority(isLowerPriorityFromGetPriority((vertex) => vertex.priority))
         .map((vertex) => vertex.id),
     ).toEqual(["a", "b", "c"]);
   });
@@ -37,9 +32,7 @@ describe("DirectedGraph", () => {
 
     expect(
       graph
-        .topologicallySortWithPriority(
-          isLowerPriorityFromGetPriority((vertex) => vertex.priority),
-        )
+        .topologicallySortWithPriority(isLowerPriorityFromGetPriority((vertex) => vertex.priority))
         .map((vertex) => vertex.id),
     ).toEqual(["b", "a", "c"]);
   });
@@ -51,9 +44,7 @@ describe("DirectedGraph", () => {
     graph.addEdge("a", "b");
     graph.addEdge("b", "a");
 
-    expect(() => graph.topologicallySort()).toThrow(
-      /cycle detected: .*a->b.*b->a/u,
-    );
+    expect(() => graph.topologicallySort()).toThrow(/cycle detected: .*a->b.*b->a/u);
   });
 });
 
@@ -68,10 +59,7 @@ describe("SqlGraph", () => {
     graph.addVertex({
       id: "create",
       priority: sqlPriority.sooner,
-      statements: [
-        statement("CREATE INDEX new_idx ON users (id)"),
-        statement("ANALYZE users"),
-      ],
+      statements: [statement("CREATE INDEX new_idx ON users (id)"), statement("ANALYZE users")],
     });
     graph.addVertex({
       id: "rename",

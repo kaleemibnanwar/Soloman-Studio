@@ -19,11 +19,7 @@ interface ImageSwapPopoverProps {
   onSwap: (newSrc: string, uploadData?: ImageUploadData) => void;
 }
 
-export function ImageSwapPopover({
-  currentSrc,
-  isDynamicImage,
-  onSwap,
-}: ImageSwapPopoverProps) {
+export function ImageSwapPopover({ currentSrc, isDynamicImage, onSwap }: ImageSwapPopoverProps) {
   const [mode, setMode] = useState<"url" | "upload">("url");
   const [urlValue, setUrlValue] = useState(currentSrc);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
@@ -48,14 +44,8 @@ export function ImageSwapPopover({
       return;
     }
     // Accept absolute URLs (http/https/protocol-relative) and root-relative paths
-    if (
-      !/^https?:\/\//i.test(trimmed) &&
-      !trimmed.startsWith("//") &&
-      !trimmed.startsWith("/")
-    ) {
-      setUrlError(
-        "Please enter a valid URL (https://...) or an absolute path (/...).",
-      );
+    if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith("//") && !trimmed.startsWith("/")) {
+      setUrlError("Please enter a valid URL (https://...) or an absolute path (/...).");
       return;
     }
     setUrlError(null);
@@ -72,9 +62,7 @@ export function ImageSwapPopover({
       return;
     }
     if (file.size > 7.5 * 1024 * 1024) {
-      setFileError(
-        "Image is too large (max 7.5 MB). Please choose a smaller file.",
-      );
+      setFileError("Image is too large (max 7.5 MB). Please choose a smaller file.");
       return;
     }
     setFileError(null);
@@ -98,9 +86,7 @@ export function ImageSwapPopover({
       });
     };
     reader.onerror = () => {
-      setFileError(
-        "Failed to read the file. Please try again or choose a different file.",
-      );
+      setFileError("Failed to read the file. Please try again or choose a different file.");
       setSelectedFileName(null);
     };
     reader.readAsDataURL(file);
@@ -110,24 +96,16 @@ export function ImageSwapPopover({
   };
 
   return (
-    <StylePopover
-      icon={<ImageIcon size={16} />}
-      title="Image Source"
-      tooltip="Swap Image"
-    >
+    <StylePopover icon={<ImageIcon size={16} />} title="Image Source" tooltip="Swap Image">
       <div className="space-y-3">
         {isDynamicImage && (
           <p className="text-xs text-yellow-600 dark:text-yellow-400">
-            This image has a dynamic source. Swapping will replace it with a
-            static value.
+            This image has a dynamic source. Swapping will replace it with a static value.
           </p>
         )}
 
         {/* Mode toggle tabs */}
-        <Tabs
-          value={mode}
-          onValueChange={(val) => setMode(val as "url" | "upload")}
-        >
+        <Tabs value={mode} onValueChange={(val) => setMode(val as "url" | "upload")}>
           <TabsList className="w-full h-8">
             <TabsTrigger value="url" className="flex-1 gap-1 text-xs">
               <Link size={12} />
@@ -162,11 +140,7 @@ export function ImageSwapPopover({
               }}
             />
             {urlError && (
-              <p
-                id="image-url-error"
-                role="alert"
-                className="text-xs text-red-500"
-              >
+              <p id="image-url-error" role="alert" className="text-xs text-red-500">
                 {urlError}
               </p>
             )}
@@ -192,9 +166,7 @@ export function ImageSwapPopover({
               className="w-full"
             >
               <Upload size={14} className="mr-1 shrink-0" />
-              <span className="truncate">
-                {selectedFileName || "Choose File"}
-              </span>
+              <span className="truncate">{selectedFileName || "Choose File"}</span>
             </Button>
             {fileError && (
               <p role="alert" className="text-xs text-red-500">
@@ -209,9 +181,7 @@ export function ImageSwapPopover({
 
         {/* Current source display */}
         <div className="pt-2 border-t border-border">
-          <Label className="text-xs text-gray-500 dark:text-gray-400">
-            Current source
-          </Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">Current source</Label>
           <p className="text-xs font-mono truncate mt-1" title={appliedSrc}>
             {appliedSrc || "none"}
           </p>

@@ -100,10 +100,7 @@ function lcsLength(a: string[], b: string[]): number {
  * side is a sanitized placeholder (binary/oversized files), which would produce
  * meaningless counts.
  */
-export function computeLineDiffStats(
-  oldContent: string,
-  newContent: string,
-): LineDiffStats {
+export function computeLineDiffStats(oldContent: string, newContent: string): LineDiffStats {
   if (oldContent === newContent) {
     return EMPTY_STATS;
   }

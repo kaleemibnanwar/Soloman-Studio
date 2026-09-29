@@ -15,9 +15,7 @@ export function encryptToString(plaintext: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
     // No keyring (e.g. Linux without libsecret): store plaintext
     // rather than blocking the caller on those hosts.
-    logger.warn(
-      "safeStorage encryption unavailable; secret written as plaintext",
-    );
+    logger.warn("safeStorage encryption unavailable; secret written as plaintext");
     return PLAINTEXT_PREFIX + Buffer.from(plaintext, "utf8").toString("base64");
   }
   return safeStorage.encryptString(plaintext).toString("base64");
@@ -25,10 +23,7 @@ export function encryptToString(plaintext: string): string {
 
 export function decryptFromString(stored: string): string {
   if (stored.startsWith(PLAINTEXT_PREFIX)) {
-    return Buffer.from(
-      stored.slice(PLAINTEXT_PREFIX.length),
-      "base64",
-    ).toString("utf8");
+    return Buffer.from(stored.slice(PLAINTEXT_PREFIX.length), "base64").toString("utf8");
   }
   const buf = Buffer.from(stored, "base64");
   if (!safeStorage.isEncryptionAvailable()) {
@@ -45,10 +40,7 @@ export function decryptFromString(stored: string): string {
     // Either untagged plaintext from a no-keyring write (recoverable)
     // or undecryptable ciphertext. Return bytes either way and let the
     // caller decide.
-    logger.warn(
-      "safeStorage.decryptString rejected a stored secret; treating as plaintext",
-      err,
-    );
+    logger.warn("safeStorage.decryptString rejected a stored secret; treating as plaintext", err);
     return buf.toString("utf8");
   }
 }
@@ -58,9 +50,7 @@ export function decryptFromString(stored: string): string {
  * and null maps store as NULL so the column clearly means "nothing
  * set" rather than holding an encrypted empty object.
  */
-export function encryptSecretMap(
-  value: Record<string, string> | null | undefined,
-): string | null {
+export function encryptSecretMap(value: Record<string, string> | null | undefined): string | null {
   if (!value || Object.keys(value).length === 0) {
     return null;
   }
@@ -72,9 +62,7 @@ export function encryptSecretMap(
  * blob is absent or does not decrypt to a JSON object of strings, so
  * an unreadable secret never surfaces as an empty-but-valid map.
  */
-export function decryptSecretMap(
-  stored: string | null | undefined,
-): Record<string, string> | null {
+export function decryptSecretMap(stored: string | null | undefined): Record<string, string> | null {
   if (!stored) {
     return null;
   }
@@ -130,13 +118,9 @@ export function readServerSecretMap(
     return { status: "ok", value: decrypted };
   }
   if (plaintext) {
-    logger.warn(
-      "Could not read an encrypted MCP secret; falling back to the plaintext column",
-    );
+    logger.warn("Could not read an encrypted MCP secret; falling back to the plaintext column");
     return { status: "ok", value: plaintext };
   }
-  logger.error(
-    "Could not read an encrypted MCP secret and no plaintext fallback exists",
-  );
+  logger.error("Could not read an encrypted MCP secret and no plaintext fallback exists");
   return { status: "unreadable" };
 }

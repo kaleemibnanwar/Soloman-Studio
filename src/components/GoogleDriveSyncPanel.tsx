@@ -28,9 +28,7 @@ function summarizeSync(summary: {
 }
 
 export function GoogleDriveSyncPanel({ appId }: GoogleDriveSyncPanelProps) {
-  const [accountEmail, setAccountEmail] = useState<string | null | undefined>(
-    undefined,
-  );
+  const [accountEmail, setAccountEmail] = useState<string | null | undefined>(undefined);
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,8 +71,7 @@ export function GoogleDriveSyncPanel({ appId }: GoogleDriveSyncPanelProps) {
     setToggling(true);
     try {
       if (checked) {
-        const summary: DriveSyncSummary =
-          await ipc.googleDrive.enableProjectSync({ appId });
+        const summary: DriveSyncSummary = await ipc.googleDrive.enableProjectSync({ appId });
         showSuccess(`Drive sync enabled — ${summarizeSync(summary)}`);
       } else {
         await ipc.googleDrive.disableProjectSync({ appId });
@@ -97,9 +94,7 @@ export function GoogleDriveSyncPanel({ appId }: GoogleDriveSyncPanelProps) {
       showSuccess(summarizeSync(summary));
       await refresh();
     } catch (error) {
-      showError(
-        `Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      showError(`Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setSyncing(false);
     }
@@ -145,12 +140,7 @@ export function GoogleDriveSyncPanel({ appId }: GoogleDriveSyncPanelProps) {
           <Label htmlFor={`drive-sync-${appId}`}>Sync with Google Drive</Label>
         </div>
         {syncEnabled && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSyncNow}
-            disabled={syncing}
-          >
+          <Button size="sm" variant="outline" onClick={handleSyncNow} disabled={syncing}>
             {syncing ? (
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
             ) : (
@@ -163,9 +153,7 @@ export function GoogleDriveSyncPanel({ appId }: GoogleDriveSyncPanelProps) {
       <p className="text-xs text-muted-foreground">
         Connected as {accountEmail}
         {syncEnabled &&
-          (lastSyncedAt
-            ? ` · Last synced ${lastSyncedAt.toLocaleString()}`
-            : " · Not yet synced")}
+          (lastSyncedAt ? ` · Last synced ${lastSyncedAt.toLocaleString()}` : " · Not yet synced")}
       </p>
     </div>
   );

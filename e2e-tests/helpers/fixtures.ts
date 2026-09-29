@@ -34,9 +34,7 @@ export interface ElectronConfig {
 async function terminateElectronApp(electronApp: ElectronApplication) {
   const childProcess = electronApp.process();
   const pid = childProcess.pid;
-  console.log(
-    `[cleanup:start] Terminating Electron app${pid ? ` ${pid}` : ""}`,
-  );
+  console.log(`[cleanup:start] Terminating Electron app${pid ? ` ${pid}` : ""}`);
 
   if (!pid || childProcess.exitCode !== null || childProcess.signalCode) {
     console.log("[cleanup:end] Electron app already exited");
@@ -75,9 +73,7 @@ async function terminateElectronApp(electronApp: ElectronApplication) {
     return;
   }
 
-  console.warn(
-    `[cleanup:timeout] Playwright close did not finish; killing process group ${pid}`,
-  );
+  console.warn(`[cleanup:timeout] Playwright close did not finish; killing process group ${pid}`);
   try {
     // Playwright launches Electron as a process-group leader and uses the same
     // negative-PID kill internally. Killing the whole group also terminates
@@ -126,23 +122,17 @@ export const test = base.extend<{
       });
       if (electronConfig.showPnpmMinimumReleaseAgeWarning) {
         await page.evaluate(async () => {
-          await (window as any).electron.ipcRenderer.invoke(
-            "set-user-settings",
-            {
-              enablePnpmMinimumReleaseAgeWarning: true,
-              hidePnpmMinimumReleaseAgeWarning: false,
-            },
-          );
+          await (window as any).electron.ipcRenderer.invoke("set-user-settings", {
+            enablePnpmMinimumReleaseAgeWarning: true,
+            hidePnpmMinimumReleaseAgeWarning: false,
+          });
         });
       } else {
         await page.evaluate(async () => {
-          await (window as any).electron.ipcRenderer.invoke(
-            "set-user-settings",
-            {
-              enablePnpmMinimumReleaseAgeWarning: false,
-              hidePnpmMinimumReleaseAgeWarning: true,
-            },
-          );
+          await (window as any).electron.ipcRenderer.invoke("set-user-settings", {
+            enablePnpmMinimumReleaseAgeWarning: false,
+            hidePnpmMinimumReleaseAgeWarning: true,
+          });
         });
       }
       await use(po);
@@ -185,9 +175,7 @@ export const test = base.extend<{
       const fakeLlmPort = FAKE_LLM_BASE_PORT + testInfo.parallelIndex;
 
       process.env.FAKE_LLM_PORT = String(fakeLlmPort);
-      process.env.OCTOPUS_STUDIO_E2E_PORT_BLOCK_INDEX = String(
-        testInfo.parallelIndex,
-      );
+      process.env.OCTOPUS_STUDIO_E2E_PORT_BLOCK_INDEX = String(testInfo.parallelIndex);
       process.env.OLLAMA_HOST = `http://localhost:${fakeLlmPort}/ollama`;
       process.env.LM_STUDIO_BASE_URL_FOR_TESTING = `http://localhost:${fakeLlmPort}/lmstudio`;
       process.env.OCTOPUS_STUDIO_ENGINE_URL = `http://localhost:${fakeLlmPort}/engine/v1`;
@@ -272,10 +260,7 @@ export const test = base.extend<{
           console.timeEnd("taskkill");
           console.log(`[cleanup:end] Killed ${executableName}`);
         } catch (error) {
-          console.warn(
-            "Failed to kill octopusStudio.exe: (continuing with test cleanup)",
-            error,
-          );
+          console.warn("Failed to kill octopusStudio.exe: (continuing with test cleanup)", error);
         }
       } else {
         await terminateElectronApp(electronApp);

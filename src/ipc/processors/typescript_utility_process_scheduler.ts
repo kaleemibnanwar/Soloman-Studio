@@ -45,10 +45,7 @@ export class TypeScriptUtilityProcessScheduler {
     return this.activeKind;
   }
 
-  runExclusive<T>(
-    kind: TypeScriptUtilityProcessKind,
-    operation: () => Promise<T>,
-  ): Promise<T> {
+  runExclusive<T>(kind: TypeScriptUtilityProcessKind, operation: () => Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.queue.push({
         kind,
@@ -72,9 +69,7 @@ export class TypeScriptUtilityProcessScheduler {
     stop: () => Promise<void>;
   }): ResidentProcessRegistration {
     if (!this.operationActive || this.activeKind !== kind) {
-      throw new Error(
-        `Cannot register a ${kind} process outside its scheduled operation`,
-      );
+      throw new Error(`Cannot register a ${kind} process outside its scheduled operation`);
     }
     if (this.resident && this.resident.token !== token) {
       throw new Error(
@@ -114,9 +109,7 @@ export class TypeScriptUtilityProcessScheduler {
       const resident = this.resident;
       if (
         resident &&
-        (resident.kind !== queued.kind ||
-          !resident.reusable ||
-          resident.stopPromise)
+        (resident.kind !== queued.kind || !resident.reusable || resident.stopPromise)
       ) {
         await this.stopResidentProcess(resident);
       }
@@ -158,9 +151,7 @@ export class TypeScriptUtilityProcessScheduler {
           );
       }).then(() => {
         if (this.resident === entry) {
-          throw new Error(
-            `${entry.kind} process reported that it stopped before emitting exit`,
-          );
+          throw new Error(`${entry.kind} process reported that it stopped before emitting exit`);
         }
       });
 
@@ -184,5 +175,4 @@ export class TypeScriptUtilityProcessScheduler {
   }
 }
 
-export const typescriptUtilityProcessScheduler =
-  new TypeScriptUtilityProcessScheduler();
+export const typescriptUtilityProcessScheduler = new TypeScriptUtilityProcessScheduler();

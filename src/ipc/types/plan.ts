@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineEvent,
-  createEventClient,
-  defineContract,
-  createClient,
-} from "../contracts/core";
+import { defineEvent, createEventClient, defineContract, createClient } from "../contracts/core";
 
 // Plan Schemas
 

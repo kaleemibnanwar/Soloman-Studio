@@ -34,9 +34,7 @@ testSkipIfWindows(
     await expect(continueButton).toBeDisabled();
 
     // Pick Development → expand env vars → development branch values appear.
-    await panel
-      .getByRole("button", { name: /^Use development database/ })
-      .click();
+    await panel.getByRole("button", { name: /^Use development database/ }).click();
     await expect(continueButton).toBeEnabled();
     await continueButton.click();
 
@@ -50,15 +48,13 @@ testSkipIfWindows(
       "postgresql://test:test@test-development.neon.tech/test",
       { timeout: Timeout.MEDIUM },
     );
-    await expect(
-      panel.getByLabel("NEON_AUTH_BASE_URL", { exact: true }),
-    ).toHaveValue(
+    await expect(panel.getByLabel("NEON_AUTH_BASE_URL", { exact: true })).toHaveValue(
       "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
     );
     // The Next.js template surfaces a per-branch cookie secret.
-    await expect(
-      panel.getByLabel("NEON_AUTH_COOKIE_SECRET", { exact: true }),
-    ).toHaveValue(/^[a-f0-9]{64}$/);
+    await expect(panel.getByLabel("NEON_AUTH_COOKIE_SECRET", { exact: true })).toHaveValue(
+      /^[a-f0-9]{64}$/,
+    );
 
     // Copy button writes DATABASE_URL to the clipboard.
     await panel.getByRole("button", { name: "Copy DATABASE_URL" }).click();
@@ -69,21 +65,18 @@ testSkipIfWindows(
     // Go back, pick Production → the migration panel appears and the env vars
     // reflect the default (production) branch instead.
     await panel.getByRole("button", { name: "Back to selection" }).click();
-    await panel
-      .getByRole("button", { name: /^Separate production database/ })
-      .click();
+    await panel.getByRole("button", { name: /^Separate production database/ }).click();
     await panel.getByRole("button", { name: "Continue" }).click();
 
-    await expect(
-      panel.getByRole("button", { name: "Migrate to Production" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(panel.getByRole("button", { name: "Migrate to Production" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
     await panel.getByRole("button", { name: "Environment variables" }).click();
 
     const prodDatabaseUrl = panel.getByLabel("DATABASE_URL", { exact: true });
-    await expect(prodDatabaseUrl).toHaveValue(
-      "postgresql://test:test@test-main.neon.tech/test",
-      { timeout: Timeout.MEDIUM },
-    );
+    await expect(prodDatabaseUrl).toHaveValue("postgresql://test:test@test-main.neon.tech/test", {
+      timeout: Timeout.MEDIUM,
+    });
   },
 );

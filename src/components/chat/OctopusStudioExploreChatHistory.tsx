@@ -27,18 +27,17 @@ interface OctopusStudioExploreChatHistoryProps {
   };
 }
 
-export const OctopusStudioExploreChatHistory: React.FC<
-  OctopusStudioExploreChatHistoryProps
-> = ({ children, node }) => {
+export const OctopusStudioExploreChatHistory: React.FC<OctopusStudioExploreChatHistoryProps> = ({
+  children,
+  node,
+}) => {
   const { t } = useTranslation("chat");
   const state = node?.properties?.state as CustomTagState;
   const inProgress = state === "pending";
   const outcome = node?.properties?.outcome || "";
   // Complete high-signal results collapse; anything partial or empty stays
   // expanded so degraded recall is visible.
-  const [isContentVisible, setIsContentVisible] = useState(
-    inProgress || outcome !== "complete",
-  );
+  const [isContentVisible, setIsContentVisible] = useState(inProgress || outcome !== "complete");
 
   useEffect(() => {
     if (!inProgress && outcome === "complete") {
@@ -64,20 +63,13 @@ export const OctopusStudioExploreChatHistory: React.FC<
       isExpanded={isContentVisible}
       data-testid="octopus-studio-explore-chat-history"
     >
-      <OctopusStudioCardHeader
-        icon={<History size={15} />}
-        accentColor="purple"
-      >
-        <OctopusStudioBadge color="purple">
-          {t("exploreChatHistory.badge")}
-        </OctopusStudioBadge>
+      <OctopusStudioCardHeader icon={<History size={15} />} accentColor="purple">
+        <OctopusStudioBadge color="purple">{t("exploreChatHistory.badge")}</OctopusStudioBadge>
         <span className="font-medium text-sm text-foreground truncate">
           {query ? `"${query}"` : t("exploreChatHistory.title")}
         </span>
         {resultSummary && (
-          <span className="text-xs text-muted-foreground shrink-0">
-            ({resultSummary})
-          </span>
+          <span className="text-xs text-muted-foreground shrink-0">({resultSummary})</span>
         )}
         {!inProgress && outcome === "no_match" && (
           <span className="text-xs text-muted-foreground shrink-0">
@@ -102,10 +94,7 @@ export const OctopusStudioExploreChatHistory: React.FC<
           />
         )}
         {errored && (
-          <OctopusStudioStateIndicator
-            state="error"
-            errorLabel={t("exploreChatHistory.failed")}
-          />
+          <OctopusStudioStateIndicator state="error" errorLabel={t("exploreChatHistory.failed")} />
         )}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
@@ -113,9 +102,7 @@ export const OctopusStudioExploreChatHistory: React.FC<
       </OctopusStudioCardHeader>
       <OctopusStudioCardContent isExpanded={isContentVisible}>
         <div className="text-xs" onClick={(e) => e.stopPropagation()}>
-          <CodeHighlight className="language-markdown">
-            {children}
-          </CodeHighlight>
+          <CodeHighlight className="language-markdown">{children}</CodeHighlight>
         </div>
       </OctopusStudioCardContent>
     </OctopusStudioCard>

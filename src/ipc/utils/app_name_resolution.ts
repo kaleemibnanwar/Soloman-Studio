@@ -3,10 +3,7 @@ import fs from "node:fs";
 import { db } from "@/db";
 import { apps } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { getOctopusStudioAppPath } from "@/paths/paths";
 import { appFolderNameWithSuffix } from "@/shared/app_names";
 
@@ -27,9 +24,7 @@ export async function resolveUniqueAppName(
 ): Promise<string> {
   const allApps = await db.query.apps.findMany({ where: eq(apps.type, "app") });
   const takenNames = new Set(
-    allApps
-      .filter((app) => app.id !== options?.excludeAppId)
-      .map((app) => app.name),
+    allApps.filter((app) => app.id !== options?.excludeAppId).map((app) => app.name),
   );
   if (!takenNames.has(desiredName)) {
     return desiredName;

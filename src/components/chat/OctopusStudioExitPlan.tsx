@@ -13,9 +13,7 @@ interface OctopusStudioExitPlanProps {
   };
 }
 
-export const OctopusStudioExitPlan: React.FC<OctopusStudioExitPlanProps> = ({
-  node,
-}) => {
+export const OctopusStudioExitPlan: React.FC<OctopusStudioExitPlanProps> = ({ node }) => {
   const { notes } = node.properties;
   const chatId = useAtomValue(selectedChatIdAtom);
   const acceptInNewChatByChatId = useAtomValue(planAcceptInNewChatByChatIdAtom);
@@ -31,9 +29,7 @@ export const OctopusStudioExitPlan: React.FC<OctopusStudioExitPlanProps> = ({
     handoffState.phase !== "cancelled";
   // Defaults to continuing in the current chat when the choice is unknown
   // (typed acceptance, or after a reload), matching usePlanHandoff routing.
-  const useNewChat = chatId
-    ? (acceptInNewChatByChatId.get(chatId) ?? false)
-    : false;
+  const useNewChat = chatId ? (acceptInNewChatByChatId.get(chatId) ?? false) : false;
 
   const [dotCount, setDotCount] = useState(0);
   useEffect(() => {
@@ -52,9 +48,7 @@ export const OctopusStudioExitPlan: React.FC<OctopusStudioExitPlanProps> = ({
           <div className="font-semibold text-red-800 dark:text-red-200">
             Failed to start plan implementation
           </div>
-          <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-            {failure}
-          </p>
+          <p className="mt-1 text-sm text-red-700 dark:text-red-300">{failure}</p>
         </div>
       </div>
     );
@@ -65,9 +59,7 @@ export const OctopusStudioExitPlan: React.FC<OctopusStudioExitPlanProps> = ({
       <CheckCircle className="text-green-500 flex-shrink-0" size={24} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-green-800 dark:text-green-200">
-            Plan Accepted
-          </span>
+          <span className="font-semibold text-green-800 dark:text-green-200">Plan Accepted</span>
           <ArrowRight className="text-green-500" size={16} />
           <span className="text-green-700 dark:text-green-300">
             {isTransitioning
@@ -79,11 +71,7 @@ export const OctopusStudioExitPlan: React.FC<OctopusStudioExitPlanProps> = ({
                 : "Continuing implementation in this chat"}
           </span>
         </div>
-        {notes && (
-          <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-            {notes}
-          </p>
-        )}
+        {notes && <p className="text-sm text-green-600 dark:text-green-400 mt-1">{notes}</p>}
       </div>
     </div>
   );

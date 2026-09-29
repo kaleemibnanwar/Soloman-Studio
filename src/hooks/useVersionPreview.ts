@@ -1,26 +1,13 @@
 import { useCallback, useMemo, useRef, useSyncExternalStore } from "react";
-import {
-  useDistributedMachine,
-  useRemoteMachineClient,
-} from "@/distributed_machines/react";
+import { useDistributedMachine, useRemoteMachineClient } from "@/distributed_machines/react";
 import { showError } from "@/lib/toast";
-import {
-  CLOSED_STATE,
-  type PreviewEvent,
-  type PreviewState,
-} from "@/version_preview/state";
-import {
-  projectVersionPreview,
-  type VersionPreviewProjection,
-} from "@/version_preview/projection";
+import { CLOSED_STATE, type PreviewEvent, type PreviewState } from "@/version_preview/state";
+import { projectVersionPreview, type VersionPreviewProjection } from "@/version_preview/projection";
 import { versionPreviewClientDefinition } from "@/version_preview/client_definition";
 import { combineVersionPreviewState } from "@/version_preview/presentation_store";
 import { useVersionPreviewPresentationStore } from "@/version_preview/VersionPreviewProvider";
 import { useVersionPreviewWindowInterestClient } from "@/version_preview/VersionPreviewProvider";
-import {
-  versionPreviewKey,
-  type VersionPreviewIntentEvent,
-} from "@/version_preview/transport";
+import { versionPreviewKey, type VersionPreviewIntentEvent } from "@/version_preview/transport";
 
 const NULL_APP_ID = 0;
 
@@ -28,10 +15,7 @@ function operationId(): string {
   return `version-preview:${globalThis.crypto.randomUUID()}`;
 }
 
-function toIntent(
-  event: PreviewEvent,
-  id: string,
-): VersionPreviewIntentEvent | null {
+function toIntent(event: PreviewEvent, id: string): VersionPreviewIntentEvent | null {
   switch (event.type) {
     case "CLOSE":
     case "RETRY_RETURN":
@@ -99,17 +83,13 @@ export function useVersionPreview(appId: number | null): {
       (listener) => presentationStore.subscribe(routedAppId, listener),
       [presentationStore, routedAppId],
     ),
-    useCallback(
-      () => presentationStore.getSnapshot(routedAppId),
-      [presentationStore, routedAppId],
-    ),
+    useCallback(() => presentationStore.getSnapshot(routedAppId), [presentationStore, routedAppId]),
   );
   const state =
     appId === null
       ? CLOSED_STATE
       : combineVersionPreviewState(appId, remote.state.state, presentation);
-  const isPaneVisible =
-    appId !== null && presentationStore.isPaneVisible(appId);
+  const isPaneVisible = appId !== null && presentationStore.isPaneVisible(appId);
 
   const dispatchNow = useCallback(
     async (
@@ -137,8 +117,7 @@ export function useVersionPreview(appId: number | null): {
       let acquiredSelectionInterest = false;
       let selectionAccepted = false;
       if (event.type === "SELECT_VERSION") {
-        acquiredSelectionInterest = (await windowInterest.acquire(appId))
-          .acquired;
+        acquiredSelectionInterest = (await windowInterest.acquire(appId)).acquired;
         if (
           selectionEpoch !== undefined &&
           !windowInterest.isSelectionEpochCurrent(appId, selectionEpoch)
@@ -166,11 +145,7 @@ export function useVersionPreview(appId: number | null): {
               if (result.outcome === "succeeded") {
                 resolve();
               } else {
-                reject(
-                  new Error(
-                    result.error?.message ?? "Version operation failed",
-                  ),
-                );
+                reject(new Error(result.error?.message ?? "Version operation failed"));
               }
             };
             unsubscribe = actor.subscribe(inspect);
@@ -206,11 +181,7 @@ export function useVersionPreview(appId: number | null): {
         throw new Error("The version operation was not accepted");
       } catch (error) {
         unsubscribe();
-        if (
-          event.type === "SELECT_VERSION" &&
-          acquiredSelectionInterest &&
-          !selectionAccepted
-        ) {
+        if (event.type === "SELECT_VERSION" && acquiredSelectionInterest && !selectionAccepted) {
           await releaseSelectionInterest(operationId());
         }
         throw error;
@@ -223,17 +194,12 @@ export function useVersionPreview(appId: number | null): {
       if (event.type !== "SELECT_VERSION") {
         return dispatchNow(event, waitForSettlement);
       }
-      const selectionEpoch = windowInterest.selectionEpoch(
-        appId ?? NULL_APP_ID,
-      );
+      const selectionEpoch = windowInterest.selectionEpoch(appId ?? NULL_APP_ID);
       const operation = selectionQueue.current
         .catch(() => undefined)
         .then(async () => {
           await actor.resync();
-          if (
-            appId === null ||
-            !windowInterest.isSelectionEpochCurrent(appId, selectionEpoch)
-          ) {
+          if (appId === null || !windowInterest.isSelectionEpochCurrent(appId, selectionEpoch)) {
             return;
           }
           await dispatchNow(event, waitForSettlement, selectionEpoch);
@@ -246,9 +212,7 @@ export function useVersionPreview(appId: number | null): {
   const send = useCallback(
     (event: PreviewEvent) => {
       void dispatch(event, false).catch(() => {
-        showError(
-          "Version controls are temporarily unavailable. Please try again.",
-        );
+        showError("Version controls are temporarily unavailable. Please try again.");
       });
     },
     [dispatch],

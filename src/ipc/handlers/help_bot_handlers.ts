@@ -4,23 +4,13 @@ import { readSettings } from "../../main/settings";
 
 import log from "electron-log";
 import { safeSend } from "../utils/safe_sender";
-import {
-  cancelOrphanedBaseStream,
-  fastTextOutput,
-} from "../utils/stream_text_utils";
-import {
-  createOpenAI,
-  openai,
-  OpenAIResponsesProviderOptions,
-} from "@ai-sdk/openai";
+import { cancelOrphanedBaseStream, fastTextOutput } from "../utils/stream_text_utils";
+import { createOpenAI, openai, OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createTypedHandler } from "./base";
 import { helpContracts } from "../types/help";
 import { getTestFetchOption } from "../utils/test_fetch_override";
 import { resolveBuiltinModelAlias } from "../shared/remote_language_model_catalog";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("help-bot");
 
@@ -59,10 +49,7 @@ export function registerHelpBotHandlers() {
 
       // Append user message to session history
       const history = helpSessions.get(sessionId) ?? [];
-      const updatedHistory: HelpMessage[] = [
-        ...history,
-        { role: "user", content: message },
-      ];
+      const updatedHistory: HelpMessage[] = [...history, { role: "user", content: message }];
 
       const abortController = new AbortController();
       activeHelpStreams.set(sessionId, abortController);
@@ -73,9 +60,7 @@ export function registerHelpBotHandlers() {
         apiKey,
         ...getTestFetchOption(),
       });
-      const helpBotModel = await resolveBuiltinModelAlias(
-        "octopusStudio/help-bot/default",
-      );
+      const helpBotModel = await resolveBuiltinModelAlias("octopusStudio/help-bot/default");
 
       if (!helpBotModel || helpBotModel.providerId !== "openai") {
         // Help bot requires OpenAI provider because it uses the OpenAI

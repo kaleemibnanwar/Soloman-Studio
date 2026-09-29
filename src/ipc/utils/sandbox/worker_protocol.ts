@@ -33,9 +33,7 @@ export type SandboxWorkerMessage =
   | { type: "result"; result: SandboxRunResult }
   | { type: "error"; error: SerializedSandboxWorkerError };
 
-export function serializeSandboxWorkerError(
-  error: unknown,
-): SerializedSandboxWorkerError {
+export function serializeSandboxWorkerError(error: unknown): SerializedSandboxWorkerError {
   if (isOctopusStudioError(error)) {
     return {
       name: error.name,
@@ -56,25 +54,16 @@ export function serializeSandboxWorkerError(
   };
 }
 
-function isOctopusStudioErrorKind(
-  value: unknown,
-): value is OctopusStudioErrorKind {
+function isOctopusStudioErrorKind(value: unknown): value is OctopusStudioErrorKind {
   return (
     typeof value === "string" &&
-    Object.values(OctopusStudioErrorKind).includes(
-      value as OctopusStudioErrorKind,
-    )
+    Object.values(OctopusStudioErrorKind).includes(value as OctopusStudioErrorKind)
   );
 }
 
-export function deserializeSandboxWorkerError(
-  error: SerializedSandboxWorkerError,
-): Error {
+export function deserializeSandboxWorkerError(error: SerializedSandboxWorkerError): Error {
   if (isOctopusStudioErrorKind(error.kind)) {
-    const octopusStudioError = new OctopusStudioError(
-      error.message,
-      error.kind,
-    );
+    const octopusStudioError = new OctopusStudioError(error.message, error.kind);
     octopusStudioError.stack = error.stack;
     return octopusStudioError;
   }

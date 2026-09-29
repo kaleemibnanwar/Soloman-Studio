@@ -4,8 +4,7 @@ import { MacNotificationGuideDialog } from "./MacNotificationGuideDialog";
 import { useEnableNotifications } from "@/hooks/useEnableNotifications";
 
 export function ChatEventNotificationSwitch() {
-  const { isEnabled, enable, disable, showMacGuide, setShowMacGuide } =
-    useEnableNotifications();
+  const { isEnabled, enable, disable, showMacGuide, setShowMacGuide } = useEnableNotifications();
 
   return (
     <>
@@ -23,10 +22,7 @@ export function ChatEventNotificationSwitch() {
         />
         <Label htmlFor="chat-event-notifications">Enable notifications</Label>
       </div>
-      <MacNotificationGuideDialog
-        open={showMacGuide}
-        onClose={() => setShowMacGuide(false)}
-      />
+      <MacNotificationGuideDialog open={showMacGuide} onClose={() => setShowMacGuide(false)} />
     </>
   );
 }

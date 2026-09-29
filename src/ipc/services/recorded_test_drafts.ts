@@ -40,10 +40,7 @@ const writtenByAppId = new Map<number, Map<string, string>>();
  */
 const MAX_REMEMBERED_WRITES = 20;
 
-export function setRecordedTestDraft(
-  appId: number,
-  draft: RecordedTestDraft,
-): void {
+export function setRecordedTestDraft(appId: number, draft: RecordedTestDraft): void {
   draftsByAppId.set(appId, draft);
 }
 
@@ -57,17 +54,11 @@ export function getRecordedTestDraft(appId: number): RecordedTestDraft | null {
  * must not take that newer draft down with it, leaving a recording the user can
  * no longer save.
  */
-export function clearRecordedTestDraft(
-  appId: number,
-  onlyDraftId?: string,
-): void {
+export function clearRecordedTestDraft(appId: number, onlyDraftId?: string): void {
   // `undefined` means "whatever is parked", but a *supplied* id always scopes
   // the clear — including the empty string. Treating `""` as omitted would let
   // a malformed or stale discard delete a newer recording it never named.
-  if (
-    onlyDraftId !== undefined &&
-    draftsByAppId.get(appId)?.draftId !== onlyDraftId
-  ) {
+  if (onlyDraftId !== undefined && draftsByAppId.get(appId)?.draftId !== onlyDraftId) {
     return;
   }
   draftsByAppId.delete(appId);
@@ -82,10 +73,7 @@ export function clearRecordedTestDraft(
  * and the newer one is what the user just made. Same reasoning as the scoped
  * clear above, from the other direction.
  */
-export function restoreRecordedTestDraft(
-  appId: number,
-  draft: RecordedTestDraft,
-): void {
+export function restoreRecordedTestDraft(appId: number, draft: RecordedTestDraft): void {
   if (draftsByAppId.has(appId)) return;
   draftsByAppId.set(appId, draft);
 }
@@ -111,10 +99,7 @@ export function markRecordedDraftWritten(
 }
 
 /** The spec this recording already produced, or null if it hasn't been written. */
-export function getWrittenSpecForDraft(
-  appId: number,
-  draft: RecordedTestDraft,
-): string | null {
+export function getWrittenSpecForDraft(appId: number, draft: RecordedTestDraft): string | null {
   return writtenByAppId.get(appId)?.get(draft.draftId) ?? null;
 }
 
@@ -123,10 +108,7 @@ export function getWrittenSpecForDraft(
  * this a retry would find the marker, latch approval against the deleted file,
  * and leave the user with a card pointing at a spec that isn't there.
  */
-export function forgetRecordedDraftWrite(
-  appId: number,
-  draft: RecordedTestDraft,
-): void {
+export function forgetRecordedDraftWrite(appId: number, draft: RecordedTestDraft): void {
   writtenByAppId.get(appId)?.delete(draft.draftId);
 }
 

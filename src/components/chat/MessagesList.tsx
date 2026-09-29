@@ -1,13 +1,6 @@
 import React from "react";
 import type { Message, Version } from "@/ipc/types";
-import {
-  forwardRef,
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { forwardRef, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import ChatMessage from "./ChatMessage";
 import { OpenRouterSetupBanner, SetupBanner } from "../SetupBanner";
@@ -86,9 +79,7 @@ type PendingRevert =
 // Footer component for Virtuoso - receives context via props
 function FooterComponent({ context }: { context?: FooterContext }) {
   const userInputRequests = useUserInputRequests();
-  const [pendingRevert, setPendingRevert] = useState<PendingRevert | null>(
-    null,
-  );
+  const [pendingRevert, setPendingRevert] = useState<PendingRevert | null>(null);
   const actionInFlightRef = useRef(false);
   const contextAppId = context?.appId ?? null;
   const contextChatId = context?.selectedChatId ?? null;
@@ -146,17 +137,14 @@ function FooterComponent({ context }: { context?: FooterContext }) {
         request.questionnaireSubmitted &&
         request.descriptor?.kind === "questionnaire" &&
         request.descriptor.chatId === selectedChatId &&
-        (questionnaireSettledAt === undefined ||
-          request.settledAt > questionnaireSettledAt)
+        (questionnaireSettledAt === undefined || request.settledAt > questionnaireSettledAt)
       ) {
         questionnaireSettledAt = request.settledAt;
       }
     }
   }
 
-  const lastMessage = messages.length
-    ? messages[messages.length - 1]
-    : undefined;
+  const lastMessage = messages.length ? messages[messages.length - 1] : undefined;
   const isLastMessageAssistant = lastMessage?.role === "assistant";
   const isCurrentContext = (
     expectedAppId: number,
@@ -266,16 +254,11 @@ function FooterComponent({ context }: { context?: FooterContext }) {
       // The user message that triggered this assistant response
       const userMessage = messages[messages.length - 2];
       const currentCommitIndex = currentMessage?.commitHash
-        ? freshVersions.findIndex(
-            (version) => version.oid === currentMessage.commitHash,
-          )
+        ? freshVersions.findIndex((version) => version.oid === currentMessage.commitHash)
         : -1;
       const previousVersionId =
-        currentCommitIndex >= 0
-          ? freshVersions[currentCommitIndex + 1]?.oid
-          : undefined;
-      const revertTargetVersionId =
-        previousVersionId ?? currentMessage?.sourceCommitHash;
+        currentCommitIndex >= 0 ? freshVersions[currentCommitIndex + 1]?.oid : undefined;
+      const revertTargetVersionId = previousVersionId ?? currentMessage?.sourceCommitHash;
 
       if (revertTargetVersionId) {
         const currentChatMessageId = userMessage
@@ -284,9 +267,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
         const extraCommits = getExtraRevertedCommits({
           versions: freshVersions,
           targetOid: revertTargetVersionId,
-          ownCommitHashes: currentMessage?.commitHash
-            ? [currentMessage.commitHash]
-            : [],
+          ownCommitHashes: currentMessage?.commitHash ? [currentMessage.commitHash] : [],
         });
         const expectedHeadOid = freshVersions[0]?.oid;
 
@@ -311,9 +292,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
           currentChatMessageId,
         });
       } else {
-        showWarning(
-          "No source commit hash found for message. Need to manually undo code changes",
-        );
+        showWarning("No source commit hash found for message. Need to manually undo code changes");
       }
     } catch (error) {
       console.error("Error during undo operation:", error);
@@ -338,9 +317,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
       const freshVersions = restoreTargetBranch
         ? await ipc.version.listVersions({ appId, ref: restoreTargetBranch })
         : ((await refreshVersions()).data ?? []);
-      const lastUserMessage = [...messages]
-        .reverse()
-        .find((message) => message.role === "user");
+      const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
       if (!lastUserMessage) {
         console.error("No user message found");
         return;
@@ -351,14 +328,10 @@ function FooterComponent({ context }: { context?: FooterContext }) {
       // restoring without that snapshot would bypass impact and HEAD guards.
       const lastMessage = messages[messages.length - 1];
       const currentCommitIndex = lastMessage?.commitHash
-        ? freshVersions.findIndex(
-            (version) => version.oid === lastMessage.commitHash,
-          )
+        ? freshVersions.findIndex((version) => version.oid === lastMessage.commitHash)
         : -1;
       const previousVersionId =
-        currentCommitIndex >= 0
-          ? freshVersions[currentCommitIndex + 1]?.oid
-          : undefined;
+        currentCommitIndex >= 0 ? freshVersions[currentCommitIndex + 1]?.oid : undefined;
       const revertTargetVersionId = previousVersionId;
 
       if (!isCurrentContext(appId, selectedChatId, lastMessage?.id)) return;
@@ -379,15 +352,10 @@ function FooterComponent({ context }: { context?: FooterContext }) {
           getExtraRevertedCommits({
             versions: freshVersions,
             targetOid: revertTargetVersionId,
-            ownCommitHashes: lastMessage?.commitHash
-              ? [lastMessage.commitHash]
-              : [],
+            ownCommitHashes: lastMessage?.commitHash ? [lastMessage.commitHash] : [],
           }) ?? [];
         const expectedHeadOid = freshVersions[0]?.oid;
-        if (
-          (extraCommits?.length || uncommittedFiles.length) &&
-          expectedHeadOid
-        ) {
+        if ((extraCommits?.length || uncommittedFiles.length) && expectedHeadOid) {
           setPendingRevert({
             kind: "retry",
             appId,
@@ -408,9 +376,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
         appId,
         targetVersionId: revertTargetVersionId,
         expectedHeadOid: freshVersions[0]?.oid,
-        currentChatMessageId: revertTargetVersionId
-          ? currentChatMessageId
-          : undefined,
+        currentChatMessageId: revertTargetVersionId ? currentChatMessageId : undefined,
         retry,
       });
     } catch (error) {
@@ -428,11 +394,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
     isLastMessageAssistant && !!lastMessage?.commitHash && appId != null;
   const currentPendingRevert =
     pendingRevert &&
-    isCurrentContext(
-      pendingRevert.appId,
-      pendingRevert.chatId,
-      pendingRevert.messageId,
-    )
+    isCurrentContext(pendingRevert.appId, pendingRevert.chatId, pendingRevert.messageId)
       ? pendingRevert
       : null;
 
@@ -455,9 +417,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={
-                isUndoLoading || isRetryLoading || isAnyVersionMutationPending
-              }
+              disabled={isUndoLoading || isRetryLoading || isAnyVersionMutationPending}
               onClick={handleUndo}
             >
               {isUndoLoading ? (
@@ -472,9 +432,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={
-                isRetryLoading || isUndoLoading || isAnyVersionMutationPending
-              }
+              disabled={isRetryLoading || isUndoLoading || isAnyVersionMutationPending}
               onClick={handleRetry}
             >
               {isRetryLoading ? (
@@ -494,9 +452,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
           kind={currentPendingRevert.kind}
           extraCommits={currentPendingRevert.extraCommits}
           uncommittedFileCount={
-            currentPendingRevert.kind === "retry"
-              ? currentPendingRevert.uncommittedFileCount
-              : 0
+            currentPendingRevert.kind === "retry" ? currentPendingRevert.uncommittedFileCount : 0
           }
           actionsDisabled={isAnyVersionMutationPending}
           onOpenChange={(open) => {
@@ -538,17 +494,12 @@ function FooterComponent({ context }: { context?: FooterContext }) {
               return;
             }
             setPendingRevert(null);
-            const operation =
-              action.kind === "undo"
-                ? executeUndo(action)
-                : executeRetry(action);
+            const operation = action.kind === "undo" ? executeUndo(action) : executeRetry(action);
             void operation
               .catch((error) => {
                 console.error(`Error during ${action.kind} operation:`, error);
                 showError(
-                  action.kind === "undo"
-                    ? "Failed to undo changes"
-                    : "Failed to retry message",
+                  action.kind === "undo" ? "Failed to undo changes" : "Failed to retry message",
                 );
               })
               .finally(() => endAction(action.kind));
@@ -575,214 +526,209 @@ function FooterComponent({ context }: { context?: FooterContext }) {
   );
 }
 
-export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
-  function MessagesList({ messages, messagesEndRef, onAtBottomChange }, ref) {
-    const appId = useAtomValue(selectedAppIdAtom);
-    const { refreshVersions } = useVersions(appId);
-    const {
-      state: previewState,
-      projection: previewProjection,
-      sendAndWaitForMutation: sendPreviewMutation,
-    } = useVersionPreview(appId);
-    const isAnyVersionMutationPending =
-      !previewProjection.capabilities.canRestore;
-    const restoreTargetBranch =
-      previewState.type === "previewing" &&
-      previewState.session.checkedOutVersionId !== null
-        ? previewState.session.originBranch
-        : null;
-    const { streamMessage, isStreaming } = useStreamChat();
-    const { isAnyProviderSetup, isProviderSetup } = useLanguageModelProviders();
-    const { settings } = useSettings();
-    const [isUndoLoading, setIsUndoLoading] = useState(false);
-    const [isRetryLoading, setIsRetryLoading] = useState(false);
-    const selectedChatId = useAtomValue(selectedChatIdAtom);
-    const { chat: selectedChat } = useChatMode(selectedChatId);
+export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(function MessagesList(
+  { messages, messagesEndRef, onAtBottomChange },
+  ref,
+) {
+  const appId = useAtomValue(selectedAppIdAtom);
+  const { refreshVersions } = useVersions(appId);
+  const {
+    state: previewState,
+    projection: previewProjection,
+    sendAndWaitForMutation: sendPreviewMutation,
+  } = useVersionPreview(appId);
+  const isAnyVersionMutationPending = !previewProjection.capabilities.canRestore;
+  const restoreTargetBranch =
+    previewState.type === "previewing" && previewState.session.checkedOutVersionId !== null
+      ? previewState.session.originBranch
+      : null;
+  const { streamMessage, isStreaming } = useStreamChat();
+  const { isAnyProviderSetup, isProviderSetup } = useLanguageModelProviders();
+  const { settings } = useSettings();
+  const [isUndoLoading, setIsUndoLoading] = useState(false);
+  const [isRetryLoading, setIsRetryLoading] = useState(false);
+  const selectedChatId = useAtomValue(selectedChatIdAtom);
+  const { chat: selectedChat } = useChatMode(selectedChatId);
 
-    // Virtualization only renders visible DOM elements, which creates issues for E2E tests:
-    // 1. Off-screen logs don't exist in the DOM and can't be queried by test selectors
-    // 2. Tests would need complex scrolling logic to bring elements into view before interaction
-    // 3. Race conditions and timing issues occur when waiting for virtualized elements to render after scrolling
-    const isTestMode = settings?.isTestMode;
+  // Virtualization only renders visible DOM elements, which creates issues for E2E tests:
+  // 1. Off-screen logs don't exist in the DOM and can't be queried by test selectors
+  // 2. Tests would need complex scrolling logic to bring elements into view before interaction
+  // 3. Race conditions and timing issues occur when waiting for virtualized elements to render after scrolling
+  const isTestMode = settings?.isTestMode;
 
-    // Wrap state setters in useCallback to stabilize references
-    const handleSetIsUndoLoading = useCallback((loading: boolean) => {
-      setIsUndoLoading(loading);
-    }, []);
+  // Wrap state setters in useCallback to stabilize references
+  const handleSetIsUndoLoading = useCallback((loading: boolean) => {
+    setIsUndoLoading(loading);
+  }, []);
 
-    const handleSetIsRetryLoading = useCallback((loading: boolean) => {
-      setIsRetryLoading(loading);
-    }, []);
+  const handleSetIsRetryLoading = useCallback((loading: boolean) => {
+    setIsRetryLoading(loading);
+  }, []);
 
-    // Stabilize renderSetupBanner with proper dependencies
-    const renderSetupBanner = useCallback(() => {
-      const selectedModel =
-        selectedChat?.modelSelection ?? settings?.selectedModel;
-      if (
-        selectedModel?.name === "free" &&
-        selectedModel?.provider === "auto" &&
-        !isProviderSetup("openrouter")
-      ) {
-        return <OpenRouterSetupBanner className="w-full" />;
+  // Stabilize renderSetupBanner with proper dependencies
+  const renderSetupBanner = useCallback(() => {
+    const selectedModel = selectedChat?.modelSelection ?? settings?.selectedModel;
+    if (
+      selectedModel?.name === "free" &&
+      selectedModel?.provider === "auto" &&
+      !isProviderSetup("openrouter")
+    ) {
+      return <OpenRouterSetupBanner className="w-full" />;
+    }
+    if (!isAnyProviderSetup()) {
+      return <SetupBanner />;
+    }
+    return null;
+  }, [
+    settings?.selectedModel?.name,
+    settings?.selectedModel?.provider,
+    selectedChat?.modelSelection,
+    isProviderSetup,
+    isAnyProviderSetup,
+  ]);
+
+  // Precompute which indices are cancelled prompts so the callback
+  // can depend on this set instead of the full messages array reference.
+  const cancelledPromptIndices = useMemo(() => {
+    const indices = new Set<number>();
+    for (let i = 0; i < messages.length - 1; i++) {
+      if (messages[i].role === "user" && isCancelledResponseContent(messages[i + 1].content)) {
+        indices.add(i);
       }
-      if (!isAnyProviderSetup()) {
-        return <SetupBanner />;
-      }
-      return null;
-    }, [
-      settings?.selectedModel?.name,
-      settings?.selectedModel?.provider,
-      selectedChat?.modelSelection,
-      isProviderSetup,
-      isAnyProviderSetup,
-    ]);
+    }
+    return indices;
+  }, [messages]);
 
-    // Precompute which indices are cancelled prompts so the callback
-    // can depend on this set instead of the full messages array reference.
-    const cancelledPromptIndices = useMemo(() => {
-      const indices = new Set<number>();
-      for (let i = 0; i < messages.length - 1; i++) {
-        if (
-          messages[i].role === "user" &&
-          isCancelledResponseContent(messages[i + 1].content)
-        ) {
-          indices.add(i);
-        }
-      }
-      return indices;
-    }, [messages]);
+  // Memoized item renderer for virtualized list
+  const itemContent = useCallback(
+    (index: number, message: Message) => {
+      const isLastMessage = index === messages.length - 1;
+      const messageKey = message.id;
 
-    // Memoized item renderer for virtualized list
-    const itemContent = useCallback(
-      (index: number, message: Message) => {
-        const isLastMessage = index === messages.length - 1;
-        const messageKey = message.id;
+      return (
+        <div className="px-4" key={messageKey}>
+          <MemoizedChatMessage
+            message={message}
+            isLastMessage={isLastMessage}
+            isCancelledPrompt={cancelledPromptIndices.has(index)}
+          />
+        </div>
+      );
+    },
+    [messages.length, cancelledPromptIndices],
+  );
 
-        return (
-          <div className="px-4" key={messageKey}>
-            <MemoizedChatMessage
-              message={message}
-              isLastMessage={isLastMessage}
-              isCancelledPrompt={cancelledPromptIndices.has(index)}
-            />
-          </div>
-        );
-      },
-      [messages.length, cancelledPromptIndices],
-    );
+  // Create context object for Footer component with stable references
+  const footerContext = useMemo<FooterContext>(
+    () => ({
+      messages,
+      messagesEndRef,
+      isStreaming,
+      isUndoLoading,
+      isRetryLoading,
+      isAnyVersionMutationPending,
+      setIsUndoLoading: handleSetIsUndoLoading,
+      setIsRetryLoading: handleSetIsRetryLoading,
+      refreshVersions,
+      restoreTargetBranch,
+      sendPreviewMutation,
+      streamMessage,
+      selectedChatId,
+      appId,
+      renderSetupBanner,
+    }),
+    [
+      messages,
+      messagesEndRef,
+      isStreaming,
+      isUndoLoading,
+      isRetryLoading,
+      isAnyVersionMutationPending,
+      handleSetIsUndoLoading,
+      handleSetIsRetryLoading,
+      refreshVersions,
+      restoreTargetBranch,
+      sendPreviewMutation,
+      streamMessage,
+      selectedChatId,
+      appId,
+      renderSetupBanner,
+    ],
+  );
 
-    // Create context object for Footer component with stable references
-    const footerContext = useMemo<FooterContext>(
-      () => ({
-        messages,
-        messagesEndRef,
-        isStreaming,
-        isUndoLoading,
-        isRetryLoading,
-        isAnyVersionMutationPending,
-        setIsUndoLoading: handleSetIsUndoLoading,
-        setIsRetryLoading: handleSetIsRetryLoading,
-        refreshVersions,
-        restoreTargetBranch,
-        sendPreviewMutation,
-        streamMessage,
-        selectedChatId,
-        appId,
-        renderSetupBanner,
-      }),
-      [
-        messages,
-        messagesEndRef,
-        isStreaming,
-        isUndoLoading,
-        isRetryLoading,
-        isAnyVersionMutationPending,
-        handleSetIsUndoLoading,
-        handleSetIsRetryLoading,
-        refreshVersions,
-        restoreTargetBranch,
-        sendPreviewMutation,
-        streamMessage,
-        selectedChatId,
-        appId,
-        renderSetupBanner,
-      ],
-    );
-
-    // Render empty state or setup banner
-    if (messages.length === 0) {
-      const setupBanner = renderSetupBanner();
-      if (setupBanner) {
-        return (
-          <div
-            className="absolute inset-0 overflow-y-auto p-4 pb-0 pr-0"
-            ref={ref}
-            data-testid="messages-list"
-          >
-            {setupBanner}
-          </div>
-        );
-      }
+  // Render empty state or setup banner
+  if (messages.length === 0) {
+    const setupBanner = renderSetupBanner();
+    if (setupBanner) {
       return (
         <div
           className="absolute inset-0 overflow-y-auto p-4 pb-0 pr-0"
           ref={ref}
           data-testid="messages-list"
         >
-          <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-              <MessageSquare className="h-8 w-8 opacity-40" aria-hidden />
-              <p className="text-sm">Send a message to get started</p>
-            </div>
-          </div>
+          {setupBanner}
         </div>
       );
     }
-
-    // In test mode, render all messages without virtualization
-    // so E2E tests can query all messages in the DOM
-    if (isTestMode) {
-      return (
-        <div
-          className="absolute inset-0 p-4 pb-0 pr-0 overflow-y-auto"
-          ref={ref}
-          data-testid="messages-list"
-        >
-          {messages.map((message, index) => {
-            const isLastMessage = index === messages.length - 1;
-            return (
-              <div className="px-4" key={message.id}>
-                <ChatMessage
-                  message={message}
-                  isLastMessage={isLastMessage}
-                  isCancelledPrompt={cancelledPromptIndices.has(index)}
-                />
-              </div>
-            );
-          })}
-          <FooterComponent context={footerContext} />
-        </div>
-      );
-    }
-
     return (
       <div
-        className="absolute inset-0 overflow-y-auto p-4 pb-0 mb-2 pr-0"
+        className="absolute inset-0 overflow-y-auto p-4 pb-0 pr-0"
         ref={ref}
         data-testid="messages-list"
       >
-        <Virtuoso
-          data={messages}
-          increaseViewportBy={{ top: 1000, bottom: 500 }}
-          initialTopMostItemIndex={messages.length - 1}
-          itemContent={itemContent}
-          components={{ Footer: FooterComponent }}
-          context={footerContext}
-          atBottomThreshold={80}
-          atBottomStateChange={onAtBottomChange}
-          followOutput={(isAtBottom) => (isAtBottom ? "auto" : false)}
-        />
+        <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
+            <MessageSquare className="h-8 w-8 opacity-40" aria-hidden />
+            <p className="text-sm">Send a message to get started</p>
+          </div>
+        </div>
       </div>
     );
-  },
-);
+  }
+
+  // In test mode, render all messages without virtualization
+  // so E2E tests can query all messages in the DOM
+  if (isTestMode) {
+    return (
+      <div
+        className="absolute inset-0 p-4 pb-0 pr-0 overflow-y-auto"
+        ref={ref}
+        data-testid="messages-list"
+      >
+        {messages.map((message, index) => {
+          const isLastMessage = index === messages.length - 1;
+          return (
+            <div className="px-4" key={message.id}>
+              <ChatMessage
+                message={message}
+                isLastMessage={isLastMessage}
+                isCancelledPrompt={cancelledPromptIndices.has(index)}
+              />
+            </div>
+          );
+        })}
+        <FooterComponent context={footerContext} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="absolute inset-0 overflow-y-auto p-4 pb-0 mb-2 pr-0"
+      ref={ref}
+      data-testid="messages-list"
+    >
+      <Virtuoso
+        data={messages}
+        increaseViewportBy={{ top: 1000, bottom: 500 }}
+        initialTopMostItemIndex={messages.length - 1}
+        itemContent={itemContent}
+        components={{ Footer: FooterComponent }}
+        context={footerContext}
+        atBottomThreshold={80}
+        atBottomStateChange={onAtBottomChange}
+        followOutput={(isAtBottom) => (isAtBottom ? "auto" : false)}
+      />
+    </div>
+  );
+});

@@ -34,8 +34,7 @@
   // Removed from the DOM once read: leaving it there would let any script the
   // previewed app loads lift the capability with one `querySelector` and drive
   // this bootstrap itself.
-  const authBootstrapToken =
-    document.currentScript?.dataset.octopusStudioAuthToken;
+  const authBootstrapToken = document.currentScript?.dataset.octopusStudioAuthToken;
   try {
     document.currentScript?.removeAttribute("data-octopusStudio-auth-token");
   } catch {
@@ -113,10 +112,7 @@
       throw new Error(`sign-in failed (${response.status})`);
     }
     const session = await response.json();
-    window.localStorage.setItem(
-      `sb-${ref}-auth-token`,
-      JSON.stringify(session),
-    );
+    window.localStorage.setItem(`sb-${ref}-auth-token`, JSON.stringify(session));
   }
 
   // Ask for "/" so the session starts from the app's entry point rather than
@@ -135,8 +131,7 @@
 
   /** A marker older than the TTL is leftover from a previous session. */
   function isPendingStale(pending) {
-    const startedAt =
-      typeof pending.startedAt === "number" ? pending.startedAt : 0;
+    const startedAt = typeof pending.startedAt === "number" ? pending.startedAt : 0;
     return Date.now() - startedAt > PENDING_TTL_MS;
   }
 
@@ -146,9 +141,7 @@
   }
 
   function redirectPendingHome(pending) {
-    const homeRedirects = Number.isInteger(pending.homeRedirects)
-      ? pending.homeRedirects
-      : 0;
+    const homeRedirects = Number.isInteger(pending.homeRedirects) ? pending.homeRedirects : 0;
     if (homeRedirects >= MAX_HOME_REDIRECTS) {
       failPending("the app never settled on a signed-in page after sign-in");
       return;
@@ -208,11 +201,7 @@
         },
         "*",
       );
-      post(
-        true,
-        undefined,
-        location.pathname + location.search + location.hash,
-      );
+      post(true, undefined, location.pathname + location.search + location.hash);
     }, HOME_SETTLE_DELAY_MS);
   }
 
@@ -271,17 +260,14 @@
         const encoded = text.slice(7).replace(/-/g, "+").replace(/_/g, "/");
         const padded = encoded + "=".repeat((4 - (encoded.length % 4)) % 4);
         const binary = atob(padded);
-        text = new TextDecoder().decode(
-          Uint8Array.from(binary, (char) => char.charCodeAt(0)),
-        );
+        text = new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
       } catch {
         return null;
       }
     }
     try {
       const parsed = JSON.parse(text);
-      const session =
-        parsed && parsed.currentSession ? parsed.currentSession : parsed;
+      const session = parsed && parsed.currentSession ? parsed.currentSession : parsed;
       const token = session && session.access_token;
       return typeof token === "string" && token ? token : null;
     } catch {
@@ -302,9 +288,7 @@
     const projectUrl = auth && auth.projectUrl;
     const anonKey = auth && auth.anonKey;
     if (!ref || !projectUrl || !anonKey) return false;
-    const accessToken = readStoredAccessToken(
-      localStorage.getItem(`sb-${ref}-auth-token`),
-    );
+    const accessToken = readStoredAccessToken(localStorage.getItem(`sb-${ref}-auth-token`));
     if (!accessToken) return false;
     const base = projectUrl.replace(/\/+$/, "");
     const response = await fetch(`${base}/auth/v1/user`, {
@@ -324,13 +308,8 @@
         const response = await fetch("/api/auth/get-session", {
           credentials: "include",
         });
-        const data = response.ok
-          ? await response.json().catch(() => null)
-          : null;
-        const hasUser = !!(
-          data &&
-          (data.user || (data.session && data.session.user))
-        );
+        const data = response.ok ? await response.json().catch(() => null) : null;
+        const hasUser = !!(data && (data.user || (data.session && data.session.user)));
         if (!hasUser) {
           failPending("no session after sign-in");
           return;
@@ -384,10 +363,7 @@
       authBootstrapToken &&
       data.token === authBootstrapToken
     ) {
-      handleLogin(
-        data.auth,
-        typeof data.nonce === "string" ? data.nonce : null,
-      );
+      handleLogin(data.auth, typeof data.nonce === "string" ? data.nonce : null);
     }
   });
 

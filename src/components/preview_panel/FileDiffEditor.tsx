@@ -13,15 +13,9 @@ interface FileDiffEditorProps {
  * Read-only Monaco diff editor showing the parent ("original") content on the
  * left and the selected commit's ("modified") content on the right.
  */
-export function FileDiffEditor({
-  filePath,
-  oldContent,
-  newContent,
-}: FileDiffEditorProps) {
+export function FileDiffEditor({ filePath, oldContent, newContent }: FileDiffEditorProps) {
   const { isDarkMode } = useTheme();
-  const editorTheme = isDarkMode
-    ? "octopus-studio-dark"
-    : "octopus-studio-light";
+  const editorTheme = isDarkMode ? "octopus-studio-dark" : "octopus-studio-light";
 
   return (
     <div className="h-full w-full" data-testid="version-diff-editor">

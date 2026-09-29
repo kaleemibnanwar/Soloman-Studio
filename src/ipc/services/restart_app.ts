@@ -16,19 +16,13 @@ export interface RestartAppOptions {
  * Compatibility adapter for internal callers that still own an IPC event.
  * New main-process callers should consume appRuntimeService directly.
  */
-export function restartApp(
-  event: IpcMainInvokeEvent,
-  options: RestartAppOptions,
-): Promise<void> {
+export function restartApp(event: IpcMainInvokeEvent, options: RestartAppOptions): Promise<void> {
   return appRuntimeService.restart({
     ...options,
     output: getIpcAppRuntimeOutput(event.sender),
   });
 }
 
-export function waitForAppReady(
-  appId: number,
-  options?: { timeoutMs?: number },
-): Promise<void> {
+export function waitForAppReady(appId: number, options?: { timeoutMs?: number }): Promise<void> {
   return appRuntimeService.waitForReady(appId, options);
 }

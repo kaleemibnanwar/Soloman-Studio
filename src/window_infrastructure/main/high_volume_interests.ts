@@ -17,10 +17,7 @@ export class HighVolumeWindowInterests<T> {
   private readonly explicitSubscriptionKeys = new Set<string>();
   private readonly liveSubscriptionKeys = new Set<string>();
   private readonly subscriptionStates = new Map<string, SubscriptionState<T>>();
-  private readonly pendingByDestination = new Map<
-    number,
-    PendingPayload<T>[]
-  >();
+  private readonly pendingByDestination = new Map<number, PendingPayload<T>[]>();
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
@@ -40,8 +37,7 @@ export class HighVolumeWindowInterests<T> {
     const key = windowInterestKey(interest);
     const stateKey = this.subscriptionKey(webContentsId, key);
     this.explicitSubscriptionKeys.add(stateKey);
-    const interests =
-      this.interestsByWebContents.get(webContentsId) ?? new Set<string>();
+    const interests = this.interestsByWebContents.get(webContentsId) ?? new Set<string>();
     if (interests.has(key)) {
       this.discardPending(webContentsId, key);
     }
@@ -82,8 +78,7 @@ export class HighVolumeWindowInterests<T> {
     const key = windowInterestKey(interest);
     const stateKey = this.subscriptionKey(webContentsId, key);
     this.liveSubscriptionKeys.add(stateKey);
-    const interests =
-      this.interestsByWebContents.get(webContentsId) ?? new Set<string>();
+    const interests = this.interestsByWebContents.get(webContentsId) ?? new Set<string>();
     interests.add(key);
     this.interestsByWebContents.set(webContentsId, interests);
     if (!this.subscriptionStates.has(stateKey)) {
@@ -120,9 +115,7 @@ export class HighVolumeWindowInterests<T> {
     let scheduledDelivery = false;
     for (const [webContentsId, interests] of this.interestsByWebContents) {
       if (!interests.has(key)) continue;
-      const state = this.subscriptionStates.get(
-        this.subscriptionKey(webContentsId, key),
-      );
+      const state = this.subscriptionStates.get(this.subscriptionKey(webContentsId, key));
       if (state?.attaching) {
         state.bufferedDuringAttach.push(payload);
         continue;
@@ -137,17 +130,11 @@ export class HighVolumeWindowInterests<T> {
     }
   }
 
-  sendImmediate(
-    interest: WindowInterest,
-    payload: T,
-    channel = this.channel,
-  ): void {
+  sendImmediate(interest: WindowInterest, payload: T, channel = this.channel): void {
     const key = windowInterestKey(interest);
     for (const [webContentsId, interests] of this.interestsByWebContents) {
       if (!interests.has(key)) continue;
-      const state = this.subscriptionStates.get(
-        this.subscriptionKey(webContentsId, key),
-      );
+      const state = this.subscriptionStates.get(this.subscriptionKey(webContentsId, key));
       if (state?.attaching) {
         state.bufferedDuringAttach.push(payload);
         continue;
@@ -189,9 +176,7 @@ export class HighVolumeWindowInterests<T> {
   private discardPending(webContentsId: number, interestKey: string): void {
     const payloads = this.pendingByDestination.get(webContentsId);
     if (!payloads) return;
-    const retained = payloads.filter(
-      (pending) => pending.interestKey !== interestKey,
-    );
+    const retained = payloads.filter((pending) => pending.interestKey !== interestKey);
     if (retained.length === 0) {
       this.pendingByDestination.delete(webContentsId);
     } else {
@@ -225,9 +210,7 @@ export class HighVolumeWindowInterests<T> {
   }
 
   private endpoint(webContentsId: number) {
-    return this.registry
-      .liveEndpoints()
-      .find((candidate) => candidate.id === webContentsId);
+    return this.registry.liveEndpoints().find((candidate) => candidate.id === webContentsId);
   }
 
   private removeWindow(webContentsId: number): void {
@@ -242,15 +225,9 @@ export class HighVolumeWindowInterests<T> {
     }
   }
 
-  private removeInterestIfUnowned(
-    webContentsId: number,
-    interestKey: string,
-  ): void {
+  private removeInterestIfUnowned(webContentsId: number, interestKey: string): void {
     const stateKey = this.subscriptionKey(webContentsId, interestKey);
-    if (
-      this.explicitSubscriptionKeys.has(stateKey) ||
-      this.liveSubscriptionKeys.has(stateKey)
-    ) {
+    if (this.explicitSubscriptionKeys.has(stateKey) || this.liveSubscriptionKeys.has(stateKey)) {
       return;
     }
     const interests = this.interestsByWebContents.get(webContentsId);

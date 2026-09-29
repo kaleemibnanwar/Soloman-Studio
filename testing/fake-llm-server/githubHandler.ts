@@ -61,24 +61,17 @@ function recordPushEvents(repoName: string, body: string): PushEvent[] {
   return events;
 }
 
-function ensureBareRepoHeadTracksCreatedBranch(
-  bareRepoPath: string,
-  events: PushEvent[],
-) {
-  const createdBranch = events.find(
-    (event) => event.operation === "create",
-  )?.branch;
+function ensureBareRepoHeadTracksCreatedBranch(bareRepoPath: string, events: PushEvent[]) {
+  const createdBranch = events.find((event) => event.operation === "create")?.branch;
   if (!createdBranch) {
     return;
   }
 
   let headRef: string;
   try {
-    headRef = execFileSync(
-      "git",
-      ["--git-dir", bareRepoPath, "symbolic-ref", "--quiet", "HEAD"],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    )
+    headRef = execFileSync("git", ["--git-dir", bareRepoPath, "symbolic-ref", "--quiet", "HEAD"], {
+      stdio: ["ignore", "pipe", "pipe"],
+    })
       .toString()
       .trim();
   } catch {
@@ -86,11 +79,9 @@ function ensureBareRepoHeadTracksCreatedBranch(
   }
 
   try {
-    execFileSync(
-      "git",
-      ["--git-dir", bareRepoPath, "show-ref", "--verify", "--quiet", headRef],
-      { stdio: "ignore" },
-    );
+    execFileSync("git", ["--git-dir", bareRepoPath, "show-ref", "--verify", "--quiet", headRef], {
+      stdio: "ignore",
+    });
     return;
   } catch {
     // Continue below: HEAD points at a default branch ref that has not been
@@ -100,20 +91,11 @@ function ensureBareRepoHeadTracksCreatedBranch(
   try {
     execFileSync(
       "git",
-      [
-        "--git-dir",
-        bareRepoPath,
-        "symbolic-ref",
-        "HEAD",
-        `refs/heads/${createdBranch}`,
-      ],
+      ["--git-dir", bareRepoPath, "symbolic-ref", "HEAD", `refs/heads/${createdBranch}`],
       { stdio: "pipe" },
     );
   } catch (error) {
-    console.warn(
-      "* Warning: failed to set symbolic-ref HEAD on bare repo",
-      error,
-    );
+    console.warn("* Warning: failed to set symbolic-ref HEAD on bare repo", error);
   }
 }
 
@@ -127,9 +109,7 @@ const mockUser = {
   email: "testuser@example.com",
 };
 
-let mockReposRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), "octopusStudio-git-mock-"),
-);
+let mockReposRoot = fs.mkdtempSync(path.join(os.tmpdir(), "octopusStudio-git-mock-"));
 
 const mockRepos = [
   {
@@ -176,10 +156,8 @@ const mockBranches = [
 ];
 
 // Simple in-memory collaborator store keyed by full repo name
-const repoCollaborators: Record<
-  string,
-  { login: string; avatar_url: string; permissions: any }[]
-> = {};
+const repoCollaborators: Record<string, { login: string; avatar_url: string; permissions: any }[]> =
+  {};
 
 // Store device flow state
 let deviceFlowState = {
@@ -473,9 +451,7 @@ export function handleResetRepos(req: Request, res: Response) {
   } catch (err) {
     console.warn("* Warning: failed to remove old repos root", err);
   }
-  mockReposRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), "octopusStudio-git-mock-"),
-  );
+  mockReposRoot = fs.mkdtempSync(path.join(os.tmpdir(), "octopusStudio-git-mock-"));
   fakeLlmLog(`* New repos root: ${mockReposRoot}`);
   res.json({ reset: true, timestamp: new Date() });
 }
@@ -523,17 +499,12 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
         // "existing-vite-app" fixture used by the import auto-upgrade test) get
         // seeded with an initial commit so they can be cloned/imported.
         if (repoName === "existing-vite-app") {
-          const tmpClone = fs.mkdtempSync(
-            path.join(os.tmpdir(), "octopusStudio-git-clone-"),
-          );
+          const tmpClone = fs.mkdtempSync(path.join(os.tmpdir(), "octopusStudio-git-clone-"));
           try {
             execSync(`git clone "${bareRepoPath}" "${tmpClone}"`, {
               stdio: "pipe",
             });
-            fs.writeFileSync(
-              path.join(tmpClone, "README.md"),
-              `# ${repoName}\n`,
-            );
+            fs.writeFileSync(path.join(tmpClone, "README.md"), `# ${repoName}\n`);
             fs.writeFileSync(
               path.join(tmpClone, "package.json"),
               JSON.stringify(
@@ -572,24 +543,18 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
               stdio: "pipe",
             });
             try {
-              execSync(
-                `git --git-dir="${bareRepoPath}" symbolic-ref HEAD refs/heads/main`,
-                { stdio: "pipe" },
-              );
+              execSync(`git --git-dir="${bareRepoPath}" symbolic-ref HEAD refs/heads/main`, {
+                stdio: "pipe",
+              });
             } catch (err) {
-              console.warn(
-                "* Warning: failed to set symbolic-ref HEAD on bare repo",
-                err,
-              );
+              console.warn("* Warning: failed to set symbolic-ref HEAD on bare repo", err);
             }
           } finally {
             fs.rmSync(tmpClone, { recursive: true, force: true });
           }
         }
 
-        fakeLlmLog(
-          `* Successfully created bare git repository: ${repoName}.git`,
-        );
+        fakeLlmLog(`* Successfully created bare git repository: ${repoName}.git`);
       } catch (error) {
         console.error(`* Failed to create bare git repository:`, error);
         return res.status(500).json({
@@ -612,10 +577,7 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
       });
       req.on("end", () => {
         const rawBody = Buffer.concat(chunks);
-        const recordedEvents = recordPushEvents(
-          repoName,
-          rawBody.toString("latin1"),
-        );
+        const recordedEvents = recordPushEvents(repoName, rawBody.toString("latin1"));
 
         const env = req.headers["git-protocol"]
           ? {
@@ -624,11 +586,7 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
             }
           : process.env;
         res.setHeader("content-type", "application/x-git-receive-pack-result");
-        const ps = spawn(
-          "git-receive-pack",
-          ["--stateless-rpc", bareRepoPath],
-          { env },
-        );
+        const ps = spawn("git-receive-pack", ["--stateless-rpc", bareRepoPath], { env });
         ps.on("error", (error) => {
           console.error("* git-receive-pack failed to spawn:", error);
           if (!res.headersSent) {
@@ -654,19 +612,14 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
         // is fully buffered above, so it always terminates on its own, and
         // killing receive-pack mid-ref-update is what would leave stale locks
         // in the bare repo.
-        fakeLlmLog(
-          `* [git-http-server] 200 POST    ${req.url} (persistent receive-pack)`,
-        );
+        fakeLlmLog(`* [git-http-server] 200 POST    ${req.url} (persistent receive-pack)`);
       });
       return;
     }
 
     // Rewrite the URL to match what the middleware expects
     // Change /github/git/testuser/test-repo.git/... to /github/git/test-repo.git/...
-    const rewrittenUrl = req.url.replace(
-      /\/github\/git\/[^/]+\//,
-      "/github/git/",
-    );
+    const rewrittenUrl = req.url.replace(/\/github\/git\/[^/]+\//, "/github/git/");
     req.url = rewrittenUrl;
     fakeLlmLog(`* Rewritten URL from ${urlPath} to ${rewrittenUrl}`);
   }
@@ -677,9 +630,7 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
     next ||
       (() => {
         // Fallback if middleware doesn't handle the request
-        fakeLlmLog(
-          `* Git middleware did not handle request: ${req.method} ${req.url}`,
-        );
+        fakeLlmLog(`* Git middleware did not handle request: ${req.method} ${req.url}`);
         res.status(404).json({
           message: "Git operation not supported",
           url: req.url,

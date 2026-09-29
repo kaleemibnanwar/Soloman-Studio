@@ -5,11 +5,7 @@ import {
   type IgnoreReason as SharedIgnoreReason,
   type TransitionResult,
 } from "@/state_machines/types";
-import type {
-  McpOAuthEvent,
-  McpOAuthFlowIdentity,
-  McpOAuthState,
-} from "./state";
+import type { McpOAuthEvent, McpOAuthFlowIdentity, McpOAuthState } from "./state";
 
 export type IgnoreReason = SharedIgnoreReason<
   | "stale-invocation"
@@ -19,15 +15,9 @@ export type IgnoreReason = SharedIgnoreReason<
   | "duplicate-connect"
 >;
 
-export type McpOAuthTransitionResult = TransitionResult<
-  McpOAuthState,
-  never,
-  IgnoreReason
->;
+export type McpOAuthTransitionResult = TransitionResult<McpOAuthState, never, IgnoreReason>;
 
-function eventIdentity(
-  event: Extract<McpOAuthEvent, { type: "CONNECT" }>,
-): McpOAuthFlowIdentity {
+function eventIdentity(event: Extract<McpOAuthEvent, { type: "CONNECT" }>): McpOAuthFlowIdentity {
   return {
     invocationRef: event.invocationRef,
     rendererMessageId: event.rendererMessageId,
@@ -41,17 +31,11 @@ function hasCurrentInvocation(
   event: Exclude<McpOAuthEvent, { type: "CONNECT" }>,
 ): boolean {
   if (state.status === "idle") return false;
-  const active =
-    state.status === "superseding"
-      ? state.closing.invocationRef
-      : state.invocationRef;
+  const active = state.status === "superseding" ? state.closing.invocationRef : state.invocationRef;
   return sameInvocationRef(active, event.invocationRef);
 }
 
-export function transition(
-  state: McpOAuthState,
-  event: McpOAuthEvent,
-): McpOAuthTransitionResult {
+export function transition(state: McpOAuthState, event: McpOAuthEvent): McpOAuthTransitionResult {
   if (event.type === "CONNECT") {
     const next = eventIdentity(event);
     switch (state.status) {

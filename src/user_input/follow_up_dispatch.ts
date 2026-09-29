@@ -1,9 +1,6 @@
 import type { UserInputCommand } from "./commands";
 
-type FollowUpDueCommand = Extract<
-  UserInputCommand,
-  { type: "broadcast-follow-up-due" }
->;
+type FollowUpDueCommand = Extract<UserInputCommand, { type: "broadcast-follow-up-due" }>;
 
 export interface FollowUpDispatchDeps {
   isStillDue(requestId: string): boolean;

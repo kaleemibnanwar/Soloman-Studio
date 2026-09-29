@@ -1,24 +1,13 @@
 import type { PackageManagerWarning } from "@/package_manager_warnings/store";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ipc } from "@/ipc/types";
 import { useSettings } from "@/hooks/useSettings";
 import { useRebuildAppAfterPnpmInstall, useRunApp } from "@/hooks/useRunApp";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { isVersionAtLeast } from "@/shared/version_utils";
-import {
-  Download,
-  ExternalLink,
-  Loader2,
-  PackageCheck,
-  Shield,
-  X,
-} from "lucide-react";
+import { Download, ExternalLink, Loader2, PackageCheck, Shield, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   usePackageManagerWarning,
@@ -57,11 +46,7 @@ export function PackageManagerWarningBanner() {
   );
 }
 
-function PackageManagerWarningBannerContent({
-  warning,
-}: {
-  warning: PackageManagerWarning;
-}) {
+function PackageManagerWarningBannerContent({ warning }: { warning: PackageManagerWarning }) {
   const warningStore = usePackageManagerWarningStore();
   const rebuildAppAfterPnpmInstall = useRebuildAppAfterPnpmInstall();
   const { loading: appRunLoading, restartApp, stopApp } = useRunApp();
@@ -79,8 +64,7 @@ function PackageManagerWarningBannerContent({
     return () => window.clearTimeout(clearTimerRef.current);
   }, []);
 
-  const suppressFutureWarnings = () =>
-    updateSettings({ hidePnpmMinimumReleaseAgeWarning: true });
+  const suppressFutureWarnings = () => updateSettings({ hidePnpmMinimumReleaseAgeWarning: true });
 
   const isPnpmMigrationWarning = warning.kind === "pnpm-migration";
 
@@ -108,10 +92,7 @@ function PackageManagerWarningBannerContent({
       await ipc.system.installPnpm();
       await rebuildAppAfterPnpmInstall(warning.appId);
       setInstallStatus("success");
-      clearTimerRef.current = window.setTimeout(
-        () => warningStore.clear(warning.appId),
-        2_000,
-      );
+      clearTimerRef.current = window.setTimeout(() => warningStore.clear(warning.appId), 2_000);
     } catch (error) {
       setInstallStatus("error");
       setInstallErrorMessage(getInstallErrorMessage(error));
@@ -153,10 +134,7 @@ function PackageManagerWarningBannerContent({
     !isPnpmMigrationWarning &&
     nodeSystemInfo !== undefined &&
     (!nodeSystemInfo.nodeVersion ||
-      !isVersionAtLeast(
-        nodeSystemInfo.nodeVersion,
-        PNPM_11_MINIMUM_NODE_VERSION,
-      ));
+      !isVersionAtLeast(nodeSystemInfo.nodeVersion, PNPM_11_MINIMUM_NODE_VERSION));
   const displayMessage = isSuccess
     ? isPnpmMigrationWarning
       ? "pnpm migration applied. Restarting preview..."
@@ -174,11 +152,7 @@ function PackageManagerWarningBannerContent({
       <Shield className="size-4 shrink-0 text-amber-700 dark:text-amber-300" />
       <Tooltip>
         <TooltipTrigger
-          render={
-            <span className="min-w-0 flex-1 truncate text-left">
-              {displayMessage}
-            </span>
-          }
+          render={<span className="min-w-0 flex-1 truncate text-left">{displayMessage}</span>}
         />
         <TooltipContent side="bottom" align="start" className="max-w-md">
           {displayMessage}
@@ -206,12 +180,7 @@ function PackageManagerWarningBannerContent({
             Docs
           </Button>
         ) : needsNodeUpgrade ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDownloadNode}
-            disabled={isSuccess}
-          >
+          <Button size="sm" variant="ghost" onClick={handleDownloadNode} disabled={isSuccess}>
             <Download className="size-3.5" />
             Download Node.js
           </Button>

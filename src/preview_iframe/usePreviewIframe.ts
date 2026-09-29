@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import { useKeyedController } from "@/state_machines/react";
-import {
-  routePreviewIframeMessage,
-  type PreviewSharedMachineEvent,
-} from "./commands";
+import { routePreviewIframeMessage, type PreviewSharedMachineEvent } from "./commands";
 import { usePreviewIframeManager } from "./PreviewIframeProvider";
 import type { PreviewIframeEvent } from "./state";
 import { INITIAL_PREVIEW_IFRAME_STATE, selectIframeSrc } from "./state";
@@ -32,13 +29,10 @@ export function usePreviewIframe(input: {
   appId: number | null;
   appUrl: string | null;
   iframeRef: RefObject<HTMLIFrameElement | null>;
-  onSharedMachineEvent: (
-    event: PreviewSharedMachineEvent | { type: "IFRAME_LOADED" },
-  ) => void;
+  onSharedMachineEvent: (event: PreviewSharedMachineEvent | { type: "IFRAME_LOADED" }) => void;
   onComponentMessage: (event: MessageEvent) => void;
 }) {
-  const { appId, appUrl, iframeRef, onSharedMachineEvent, onComponentMessage } =
-    input;
+  const { appId, appUrl, iframeRef, onSharedMachineEvent, onComponentMessage } = input;
   const manager = usePreviewIframeManager();
   const { state, send } = usePreviewIframeController(appId);
   const componentHandlerRef = useRef(onComponentMessage);
@@ -50,17 +44,11 @@ export function usePreviewIframe(input: {
   // same machine snapshot so SPA navigation updates history without asking
   // React to navigate the live iframe a second time.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const iframeSrc = useMemo(
-    () => selectIframeSrc(state, appUrl),
-    [state.iframeEpoch, appUrl],
-  );
+  const iframeSrc = useMemo(() => selectIframeSrc(state, appUrl), [state.iframeEpoch, appUrl]);
 
   useEffect(() => {
     if (appId === null) return;
-    const detach = manager.commands.attach(
-      appId,
-      () => iframeRef.current?.contentWindow ?? null,
-    );
+    const detach = manager.commands.attach(appId, () => iframeRef.current?.contentWindow ?? null);
     send({ type: "IFRAME_REPLACED", reason: "external" });
     return detach;
   }, [appId, iframeRef, manager, send]);
@@ -76,8 +64,7 @@ export function usePreviewIframe(input: {
         contentWindow: iframeRef.current?.contentWindow ?? null,
         appUrl,
         send,
-        onSharedMachineEvent: (message) =>
-          sharedMachineHandlerRef.current(message),
+        onSharedMachineEvent: (message) => sharedMachineHandlerRef.current(message),
         onComponentMessage: (message) => componentHandlerRef.current(message),
       });
     window.addEventListener("message", handleMessage);
@@ -85,10 +72,7 @@ export function usePreviewIframe(input: {
   }, [appUrl, iframeRef, send]);
 
   const postMessage = useCallback(
-    (message: {
-      type: "octopus-studio-take-screenshot";
-      requestId: string;
-    }) => {
+    (message: { type: "octopus-studio-take-screenshot"; requestId: string }) => {
       if (appId !== null) manager.commands.post(appId, message);
     },
     [appId, manager],

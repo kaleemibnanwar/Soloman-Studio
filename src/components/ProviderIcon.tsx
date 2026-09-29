@@ -25,22 +25,15 @@ type Brand =
 function resolveBrand(providerId: string, apiName?: string): Brand {
   const name = apiName?.toLowerCase() ?? "";
 
-  if (name.startsWith("anthropic/") || name.includes("claude"))
-    return "anthropic";
-  if (
-    name.startsWith("openai/") ||
-    name.startsWith("gpt-") ||
-    name.startsWith("gpt5")
-  )
+  if (name.startsWith("anthropic/") || name.includes("claude")) return "anthropic";
+  if (name.startsWith("openai/") || name.startsWith("gpt-") || name.startsWith("gpt5"))
     return "openai";
   if (name.startsWith("google/") || name.startsWith("gemini")) return "gemini";
   if (name.startsWith("moonshotai/") || name.startsWith("kimi")) return "kimi";
   if (name.startsWith("z-ai/") || name.startsWith("glm-")) return "zai";
   if (name.startsWith("qwen/") || name.startsWith("qwen-")) return "qwen";
-  if (name.startsWith("deepseek/") || name.startsWith("deepseek-"))
-    return "deepseek";
-  if (name.startsWith("minimax/") || name.startsWith("minimax-"))
-    return "minimax";
+  if (name.startsWith("deepseek/") || name.startsWith("deepseek-")) return "deepseek";
+  if (name.startsWith("minimax/") || name.startsWith("minimax-")) return "minimax";
   if (name.startsWith("grok-")) return "grok";
 
   switch (providerId) {
@@ -179,13 +172,7 @@ function QwenMark() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <defs>
-        <linearGradient
-          id="provider-icon-qwen"
-          x1="0%"
-          x2="100%"
-          y1="0%"
-          y2="0%"
-        >
+        <linearGradient id="provider-icon-qwen" x1="0%" x2="100%" y1="0%" y2="0%">
           <stop offset="0%" stopColor="#6336E7" stopOpacity=".84" />
           <stop offset="100%" stopColor="#6F69F7" stopOpacity=".84" />
         </linearGradient>
@@ -210,13 +197,7 @@ function MiniMaxMark() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <defs>
-        <linearGradient
-          id="provider-icon-minimax"
-          x1="0%"
-          x2="100.182%"
-          y1="50.057%"
-          y2="50.057%"
-        >
+        <linearGradient id="provider-icon-minimax" x1="0%" x2="100.182%" y1="50.057%" y2="50.057%">
           <stop offset="0%" stopColor="#E2167E" />
           <stop offset="100%" stopColor="#FE603C" />
         </linearGradient>
@@ -233,13 +214,7 @@ function BedrockMark() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <defs>
-        <linearGradient
-          id="provider-icon-bedrock"
-          x1="80%"
-          x2="20%"
-          y1="20%"
-          y2="80%"
-        >
+        <linearGradient id="provider-icon-bedrock" x1="80%" x2="20%" y1="20%" y2="80%">
           <stop offset="0%" stopColor="#6350FB" />
           <stop offset="50%" stopColor="#3D8FFF" />
           <stop offset="100%" stopColor="#9AD8F8" />
@@ -338,14 +313,7 @@ function CustomMark() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <circle cx="12" cy="12" r="3" />
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }

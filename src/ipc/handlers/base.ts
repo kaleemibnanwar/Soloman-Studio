@@ -1,9 +1,6 @@
 import type { IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   createIpcErrorEnvelope,
   createIpcSuccessEnvelope,
@@ -13,19 +10,14 @@ import { sendTelemetryException } from "../utils/telemetry";
 import { registerTrustedIpcHandler } from "./trusted_handle";
 import { queryInvalidationBus } from "@/window_infrastructure/main/query_invalidation_bus";
 
-type RegisteredHandler = (
-  event: IpcMainInvokeEvent,
-  input: any,
-) => Promise<unknown>;
+type RegisteredHandler = (event: IpcMainInvokeEvent, input: any) => Promise<unknown>;
 
 // Registry of raw handler implementations keyed by channel. Lets unit tests
 // invoke a handler directly (after calling the module's register*Handlers())
 // without mocking electron or introspecting ipcMain.handle calls.
 const registeredHandlers = new Map<string, RegisteredHandler>();
 
-export function getRegisteredHandlerForTesting(
-  channel: string,
-): RegisteredHandler {
+export function getRegisteredHandlerForTesting(channel: string): RegisteredHandler {
   const handler = registeredHandlers.get(channel);
   if (!handler) {
     throw new Error(
@@ -53,15 +45,9 @@ export function createTypedHandler<
   TOutput extends z.ZodType,
 >(
   contract: IpcContract<TChannel, TInput, TOutput>,
-  handler: (
-    event: IpcMainInvokeEvent,
-    input: z.infer<TInput>,
-  ) => Promise<z.infer<TOutput>>,
+  handler: (event: IpcMainInvokeEvent, input: z.infer<TInput>) => Promise<z.infer<TOutput>>,
 ): void {
-  const runHandler = async (
-    event: IpcMainInvokeEvent,
-    input: z.infer<TInput>,
-  ) => {
+  const runHandler = async (event: IpcMainInvokeEvent, input: z.infer<TInput>) => {
     const result = await handler(event, input);
     const invalidationScopes = contract.invalidates?.(input, result) ?? [];
     if (invalidationScopes.length > 0) {
@@ -105,9 +91,7 @@ export function createTypedHandler<
           const errorMessage = outputParsed.error.issues
             .map((e) => `${e.path.join(".")}: ${e.message}`)
             .join("; ");
-          console.error(
-            `[${contract.channel}] Output validation warning: ${errorMessage}`,
-          );
+          console.error(`[${contract.channel}] Output validation warning: ${errorMessage}`);
         }
       }
 
@@ -131,21 +115,11 @@ export function createLoggedTypedHandler(logger: {
   info: (msg: string) => void;
   error: (msg: string, err?: any) => void;
 }) {
-  return function <
-    TChannel extends string,
-    TInput extends z.ZodType,
-    TOutput extends z.ZodType,
-  >(
+  return function <TChannel extends string, TInput extends z.ZodType, TOutput extends z.ZodType>(
     contract: IpcContract<TChannel, TInput, TOutput>,
-    handler: (
-      event: IpcMainInvokeEvent,
-      input: z.infer<TInput>,
-    ) => Promise<z.infer<TOutput>>,
+    handler: (event: IpcMainInvokeEvent, input: z.infer<TInput>) => Promise<z.infer<TOutput>>,
   ): void {
-    const runHandler = async (
-      event: IpcMainInvokeEvent,
-      input: z.infer<TInput>,
-    ) => {
+    const runHandler = async (event: IpcMainInvokeEvent, input: z.infer<TInput>) => {
       const result = await handler(event, input);
       const invalidationScopes = contract.invalidates?.(input, result) ?? [];
       if (invalidationScopes.length > 0) {
@@ -185,9 +159,7 @@ export function createLoggedTypedHandler(logger: {
               const errorMessage = outputParsed.error.issues
                 .map((e) => `${e.path.join(".")}: ${e.message}`)
                 .join("; ");
-              console.error(
-                `[${contract.channel}] Output validation warning: ${errorMessage}`,
-              );
+              console.error(`[${contract.channel}] Output validation warning: ${errorMessage}`);
             }
           }
 

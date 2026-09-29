@@ -1,21 +1,10 @@
 import type React from "react";
 
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { Version } from "@/ipc/types";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 vi.mock("react-virtuoso", () => ({
@@ -30,9 +19,7 @@ vi.mock("react-virtuoso", () => ({
   }) => (
     <div data-testid="virtualized-version-list" data-total-count={data.length}>
       {data.map((item, index) => (
-        <div key={computeItemKey?.(index, item) ?? item.oid}>
-          {itemContent(index, item)}
-        </div>
+        <div key={computeItemKey?.(index, item) ?? item.oid}>{itemContent(index, item)}</div>
       ))}
     </div>
   ),
@@ -86,11 +73,7 @@ describe("version search (integration)", () => {
     const { send } = await harness.typeInChat("tc=write-index", { chatId });
     send();
     await harness.waitForStreamEnd(chatId);
-    await screen.findByRole(
-      "button",
-      { name: /^Version 2$/ },
-      { timeout: 20_000 },
-    );
+    await screen.findByRole("button", { name: /^Version 2$/ }, { timeout: 20_000 });
 
     await openVersionPane();
 
@@ -111,9 +94,9 @@ describe("version search (integration)", () => {
     const favoriteButton = screen.getByTestId("version-favorite-button-2");
     fireEvent.click(favoriteButton);
     await waitFor(() => {
-      expect(
-        favoriteButton.querySelector("svg")?.getAttribute("class"),
-      ).toMatch(/(?:^|\s)fill-\[#6c55dc\]/);
+      expect(favoriteButton.querySelector("svg")?.getAttribute("class")).toMatch(
+        /(?:^|\s)fill-\[#6c55dc\]/,
+      );
     });
 
     const versionNote = "Stable landing screen";
@@ -128,18 +111,13 @@ describe("version search (integration)", () => {
     await closeVersionPane();
     await openVersionPane();
     await waitFor(() => {
-      expect(
-        (screen.getByLabelText("Note for version 2") as HTMLTextAreaElement)
-          .value,
-      ).toBe(versionNote);
+      expect((screen.getByLabelText("Note for version 2") as HTMLTextAreaElement).value).toBe(
+        versionNote,
+      );
     });
-    expect(
-      screen.getByRole("button", { name: /^Version 2$/ }).textContent,
-    ).toBe("Version 2");
+    expect(screen.getByRole("button", { name: /^Version 2$/ }).textContent).toBe("Version 2");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Show favorite versions only" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Show favorite versions only" }));
     await screen.findByTestId("version-row-2");
     expect(screen.queryByTestId("version-row-1")).toBeNull();
 
@@ -149,15 +127,11 @@ describe("version search (integration)", () => {
     await closeVersionPane();
     await openVersionPane();
     await screen.findByTestId("version-row-1");
+    expect((screen.getByLabelText("Note for version 2") as HTMLTextAreaElement).value).toBe(
+      versionNote,
+    );
     expect(
-      (screen.getByLabelText("Note for version 2") as HTMLTextAreaElement)
-        .value,
-    ).toBe(versionNote);
-    expect(
-      screen
-        .getByTestId("version-favorite-button-2")
-        .querySelector("svg")
-        ?.getAttribute("class"),
+      screen.getByTestId("version-favorite-button-2").querySelector("svg")?.getAttribute("class"),
     ).toMatch(/(?:^|\s)fill-\[#6c55dc\]/);
 
     searchVersions("Stable landing");

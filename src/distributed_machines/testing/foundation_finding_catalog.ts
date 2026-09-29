@@ -56,11 +56,7 @@ export const FOUNDATION_FINDINGS = [
   finding(4098, 3649631430, scenario("disposal-with-unresolved-work")),
   finding(4099, 3649639006, prohibition("explicit-key-intent-relationship")),
   finding(4099, 3649660218, prohibition("explicit-key-intent-relationship")),
-  finding(
-    4099,
-    3649660220,
-    invariant("projection-key-identity", "src/app_run/transport.test.ts"),
-  ),
+  finding(4099, 3649660220, invariant("projection-key-identity", "src/app_run/transport.test.ts")),
   finding(4099, 3649673766, prohibition("explicit-key-intent-relationship")),
   finding(4100, 3649652336, scenario("construction-disposal-recreation")),
   finding(4100, 3649682002, scenario("retention-deadline-refresh")),
@@ -77,20 +73,14 @@ export const FOUNDATION_FINDINGS = [
   finding(
     4100,
     3649889618,
-    invariant(
-      "applied-requires-committed-snapshot",
-      "src/state_machines/dispatcher.test.ts",
-    ),
+    invariant("applied-requires-committed-snapshot", "src/state_machines/dispatcher.test.ts"),
   ),
   finding(4100, 3649898974, scenario("activation-reentry")),
   finding(4101, 3649653015, scenario("abort-terminal-settlement")),
   finding(
     4101,
     3649679630,
-    invariant(
-      "readiness-is-invocation-correlated",
-      "src/ipc/services/app_runtime_service.test.ts",
-    ),
+    invariant("readiness-is-invocation-correlated", "src/ipc/services/app_runtime_service.test.ts"),
   ),
   finding(4101, 3649679631, scenario("abort-terminal-settlement")),
   finding(4101, 3649682382, scenario("abort-terminal-settlement")),

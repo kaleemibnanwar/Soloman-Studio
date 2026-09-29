@@ -43,8 +43,7 @@ export function RuntimeModeSelector() {
   const { userBudget } = useUserBudgetInfo();
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const currentAppUrl = useCurrentAppUrl(selectedAppId);
-  const [pendingRuntimeMode, setPendingRuntimeMode] =
-    useState<RuntimeMode2 | null>(null);
+  const [pendingRuntimeMode, setPendingRuntimeMode] = useState<RuntimeMode2 | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   if (!settings) {
@@ -68,10 +67,7 @@ export function RuntimeModeSelector() {
   };
 
   const handleRuntimeModeChange = (value: RuntimeMode2) => {
-    if (
-      value === "cloud" &&
-      (!hasCloudSandboxAccess || !showCloudSandboxOption)
-    ) {
+    if (value === "cloud" && (!hasCloudSandboxAccess || !showCloudSandboxOption)) {
       return;
     }
 
@@ -119,9 +115,7 @@ export function RuntimeModeSelector() {
           <button
             type="button"
             className="underline font-medium cursor-pointer text-primary"
-            onClick={() =>
-              ipc.system.openExternalUrl("https://octopusStudio.sh/pro#ai")
-            }
+            onClick={() => ipc.system.openExternalUrl("https://octopusStudio.sh/pro#ai")}
           >
             Upgrade to Pro
           </button>
@@ -134,9 +128,7 @@ export function RuntimeModeSelector() {
             type="button"
             className="underline font-medium cursor-pointer"
             onClick={() =>
-              ipc.system.openExternalUrl(
-                "https://www.docker.com/products/docker-desktop/",
-              )
+              ipc.system.openExternalUrl("https://www.docker.com/products/docker-desktop/")
             }
           >
             Docker Desktop
@@ -146,8 +138,8 @@ export function RuntimeModeSelector() {
       )}
       {isCloudMode && hasCloudSandboxAccess && (
         <div className="text-sm text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/30 p-2 rounded">
-          Cloud Sandbox runs previews remotely and gives you a shareable preview
-          link. Note: running in cloud mode consumes Pro credits.
+          Cloud Sandbox runs previews remotely and gives you a shareable preview link. Note: running
+          in cloud mode consumes Pro credits.
         </div>
       )}
       <AlertDialog
@@ -161,9 +153,7 @@ export function RuntimeModeSelector() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("general.runtimeModeSwitchTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("general.runtimeModeSwitchTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("general.runtimeModeSwitchDescription")}
             </AlertDialogDescription>

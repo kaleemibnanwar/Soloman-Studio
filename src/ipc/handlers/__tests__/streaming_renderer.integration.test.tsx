@@ -2,10 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { cleanup, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("streaming renderer (integration)", () => {
@@ -31,10 +28,7 @@ describe("streaming renderer (integration)", () => {
     const chatId = await harness.createChat();
     harness.mount({ chatId });
 
-    const { send } = await harness.typeInChat(
-      "tc=streaming-render-multi-write",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=streaming-render-multi-write", { chatId });
     send();
 
     await screen.findByText(
@@ -44,14 +38,8 @@ describe("streaming renderer (integration)", () => {
       },
       { timeout: 30_000 },
     );
-    await screen.findByText(
-      "StreamingRenderBlockE.tsx",
-      { exact: true },
-      { timeout: 30_000 },
-    );
-    expect(
-      screen.getByText("StreamingRenderBlockA.tsx", { exact: true }),
-    ).toBeTruthy();
+    await screen.findByText("StreamingRenderBlockE.tsx", { exact: true }, { timeout: 30_000 });
+    expect(screen.getByText("StreamingRenderBlockA.tsx", { exact: true })).toBeTruthy();
 
     await harness.waitForStreamEnd(chatId, 60_000);
 
@@ -70,22 +58,15 @@ describe("streaming renderer (integration)", () => {
     const chatId = await harness.createChat();
     harness.mount({ chatId });
 
-    const { send } = await harness.typeInChat(
-      "tc=streaming-render-large-block",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=streaming-render-large-block", { chatId });
     send();
 
     await screen.findByText("Writing...", {}, { timeout: 30_000 });
-    expect(
-      screen.getByText("StreamingRenderLargeBlock.tsx", { exact: true }),
-    ).toBeTruthy();
+    expect(screen.getByText("StreamingRenderLargeBlock.tsx", { exact: true })).toBeTruthy();
 
     await harness.waitForStreamEnd(chatId, 60_000);
 
-    expect(
-      screen.getByText("StreamingRenderLargeBlock.tsx", { exact: true }),
-    ).toBeTruthy();
+    expect(screen.getByText("StreamingRenderLargeBlock.tsx", { exact: true })).toBeTruthy();
     await waitFor(() => expect(screen.queryByText("Writing...")).toBeNull());
   }, 60_000);
 
@@ -94,23 +75,16 @@ describe("streaming renderer (integration)", () => {
     harness.mount({ chatId });
     const eventStart = harness.bridge.sentEvents.length;
 
-    const { send } = await harness.typeInChat(
-      "tc=streaming-render-multi-write",
-      {
-        chatId,
-      },
-    );
+    const { send } = await harness.typeInChat("tc=streaming-render-multi-write", {
+      chatId,
+    });
     send();
     await harness.waitForStreamEnd(chatId, 60_000);
 
     const payloads = harness.bridge.sentEvents
       .slice(eventStart)
       .filter((event) =>
-        [
-          "chat:stream:start",
-          "chat:response:chunk",
-          "chat:response:end",
-        ].includes(event.channel),
+        ["chat:stream:start", "chat:response:chunk", "chat:response:end"].includes(event.channel),
       )
       .map(
         (event) =>
@@ -124,17 +98,11 @@ describe("streaming renderer (integration)", () => {
           },
       )
       .filter((payload) => payload.chatId === chatId)
-      .filter(
-        (payload) =>
-          !payload.invocationRef?.operationId.startsWith("window-bootstrap:"),
-      );
+      .filter((payload) => !payload.invocationRef?.operationId.startsWith("window-bootstrap:"));
 
     expect(payloads.length).toBeGreaterThan(0);
     expect(payloads.every((payload) => payload.invocationRef)).toBe(true);
-    expect(
-      new Set(payloads.map((payload) => JSON.stringify(payload.invocationRef)))
-        .size,
-    ).toBe(1);
+    expect(new Set(payloads.map((payload) => JSON.stringify(payload.invocationRef))).size).toBe(1);
     expect(payloads[0]?.invocationRef).toMatchObject({
       kind: "chat-stream",
       entityKey: chatId,

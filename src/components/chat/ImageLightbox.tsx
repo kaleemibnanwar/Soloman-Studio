@@ -94,13 +94,63 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
           <X size={20} />
         </button>
       </div>
-      <img
-        src={imageUrl}
-        alt={alt}
-        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
-        onClick={(e) => e.stopPropagation()}
-        onError={onError}
-      />
+      {(() => {
+        const urlStr = imageUrl.toLowerCase();
+        const isVideo =
+          /\.(mp4|m4v|webm|mov|mkv|avi|ogv)$/.test(urlStr) || urlStr.startsWith("data:video");
+        const isAudio =
+          /\.(mp3|wav|ogg|m4a|aac|flac|opus|wma)$/.test(urlStr) || urlStr.startsWith("data:audio");
+        // We handle svg via iframe or img. img is usually fine but let's keep it in image.
+        const isImage =
+          /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|avif)$/.test(urlStr) ||
+          urlStr.startsWith("data:image");
+
+        if (isVideo) {
+          return (
+            <video
+              src={imageUrl}
+              controls
+              autoPlay
+              className="max-w-[90vw] max-h-[90vh] rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+              onError={onError}
+            />
+          );
+        }
+        if (isAudio) {
+          return (
+            <audio
+              src={imageUrl}
+              controls
+              autoPlay
+              className="max-w-xl w-full"
+              onClick={(e) => e.stopPropagation()}
+              onError={onError}
+            />
+          );
+        }
+        if (isImage) {
+          return (
+            <img
+              src={imageUrl}
+              alt={alt}
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+              onError={onError}
+            />
+          );
+        }
+        // Fallback to iframe for everything else (text, pdf, html, ms docs, csv, md, etc)
+        return (
+          <iframe
+            src={imageUrl}
+            title={alt}
+            className="w-[90vw] h-[90vh] bg-white rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+            onError={onError}
+          />
+        );
+      })()}
     </div>
   );
 };

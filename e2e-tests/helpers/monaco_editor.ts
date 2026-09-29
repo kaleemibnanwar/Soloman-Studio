@@ -9,9 +9,7 @@ function normalizeLineEndings(value: string | null) {
 // Extracted so specs that exercise editor interactions (editing, saving,
 // committing) don't each re-implement the same window.monaco plumbing.
 
-export async function getActiveEditorModelPath(
-  page: Page,
-): Promise<string | null> {
+export async function getActiveEditorModelPath(page: Page): Promise<string | null> {
   return page.evaluate(() => {
     // Monaco attaches itself to the window in the packaged app.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,9 +30,7 @@ export async function getActiveEditorModelPath(
   });
 }
 
-export async function getActiveEditorModelContent(
-  page: Page,
-): Promise<string | null> {
+export async function getActiveEditorModelContent(page: Page): Promise<string | null> {
   return page.evaluate(() => {
     // Monaco attaches itself to the window in the packaged app.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,9 +69,8 @@ export async function replaceEditorContent(page: Page, content: string) {
   await page.keyboard.press("Backspace");
   await page.keyboard.insertText(content);
   await expect
-    .poll(
-      async () => normalizeLineEndings(await getActiveEditorModelContent(page)),
-      { timeout: Timeout.MEDIUM },
-    )
+    .poll(async () => normalizeLineEndings(await getActiveEditorModelContent(page)), {
+      timeout: Timeout.MEDIUM,
+    })
     .toEqual(normalizeLineEndings(content));
 }

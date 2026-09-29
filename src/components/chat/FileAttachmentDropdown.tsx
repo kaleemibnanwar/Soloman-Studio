@@ -3,17 +3,11 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useRef } from "react";
 
 interface FileAttachmentDropdownProps {
-  onFileSelect: (
-    files: FileList,
-    type: "chat-context" | "upload-to-codebase",
-  ) => void;
+  onFileSelect: (files: FileList, type: "chat-context" | "upload-to-codebase") => void;
   closeMenu?: () => void;
 }
 
-export function FileAttachmentDropdown({
-  onFileSelect,
-  closeMenu,
-}: FileAttachmentDropdownProps) {
+export function FileAttachmentDropdown({ onFileSelect, closeMenu }: FileAttachmentDropdownProps) {
   const chatContextFileInputRef = useRef<HTMLInputElement>(null);
   const uploadToCodebaseFileInputRef = useRef<HTMLInputElement>(null);
 

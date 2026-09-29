@@ -27,8 +27,7 @@ export class BrowserNotifications {
 
       class FakeNotification {
         static permission: NotificationPermission = "granted";
-        static requestPermission: () => Promise<NotificationPermission> =
-          async () => "granted";
+        static requestPermission: () => Promise<NotificationPermission> = async () => "granted";
 
         title: string;
         options: NotificationOptions;
@@ -124,17 +123,13 @@ export class BrowserNotifications {
       .toBeTruthy();
 
     const notifications = await this.getCreatedNotifications();
-    return notifications.find(
-      (n) => n.title.includes(title) && (!body || n.body?.includes(body)),
-    )!;
+    return notifications.find((n) => n.title.includes(title) && (!body || n.body?.includes(body)))!;
   }
 
   async clickNotificationWithTag(tag: string) {
     await this.page.evaluate((targetTag) => {
       const notifications = (window as any).__createdNotifications ?? [];
-      const notification = notifications.find(
-        (n: any) => n.options?.tag === targetTag,
-      );
+      const notification = notifications.find((n: any) => n.options?.tag === targetTag);
       if (notification?.onclick) {
         notification.onclick.call(notification);
       }
@@ -144,9 +139,7 @@ export class BrowserNotifications {
   async closeNotificationWithTag(tag: string) {
     await this.page.evaluate((targetTag) => {
       const notifications = (window as any).__createdNotifications ?? [];
-      const notification = notifications.find(
-        (n: any) => n.options?.tag === targetTag,
-      );
+      const notification = notifications.find((n: any) => n.options?.tag === targetTag);
       if (notification) {
         notification.close();
       }

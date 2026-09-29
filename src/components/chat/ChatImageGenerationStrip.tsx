@@ -13,44 +13,30 @@ interface ChatImageGenerationStripProps {
   onGenerateImage: () => void;
 }
 
-export function ChatImageGenerationStrip({
-  onGenerateImage,
-}: ChatImageGenerationStripProps) {
+export function ChatImageGenerationStrip({ onGenerateImage }: ChatImageGenerationStripProps) {
   const jobs = useChatImageGenerationJobs();
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const { start, cancel } = useGenerateImage();
-  const [dismissedJobIds, setDismissedJobIds] = useAtom(
-    dismissedImageGenerationJobIdsAtom,
-  );
-  const [lightboxJob, setLightboxJob] = useState<ImageGenerationJobView | null>(
-    null,
-  );
+  const [dismissedJobIds, setDismissedJobIds] = useAtom(dismissedImageGenerationJobIdsAtom);
+  const [lightboxJob, setLightboxJob] = useState<ImageGenerationJobView | null>(null);
   const retryingJobIdsRef = useRef(new Set<string>());
-  const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(() => new Set());
 
   // Prune stale dismissed IDs that no longer correspond to active jobs
   useEffect(() => {
     const validJobIds = new Set(jobs.map((j) => j.id));
     if ([...dismissedJobIds].some((id) => !validJobIds.has(id))) {
-      setDismissedJobIds(
-        new Set([...dismissedJobIds].filter((id) => validJobIds.has(id))),
-      );
+      setDismissedJobIds(new Set([...dismissedJobIds].filter((id) => validJobIds.has(id))));
     }
   }, [jobs, dismissedJobIds, setDismissedJobIds]);
 
   // Only show jobs for the currently selected app
-  const appJobs = selectedAppId
-    ? jobs.filter((job) => job.targetAppId === selectedAppId)
-    : jobs;
+  const appJobs = selectedAppId ? jobs.filter((job) => job.targetAppId === selectedAppId) : jobs;
 
   const visibleJobs = appJobs.filter(
     (job) =>
       !dismissedJobIds.has(job.id) &&
-      (job.status === "pending" ||
-        job.status === "success" ||
-        job.status === "error"),
+      (job.status === "pending" || job.status === "success" || job.status === "error"),
   );
 
   if (visibleJobs.length === 0) return null;
@@ -96,18 +82,13 @@ export function ChatImageGenerationStrip({
             {job.status === "pending" ? (
               <>
                 <div className="w-12 h-12 rounded-md bg-muted-foreground/10 animate-pulse flex items-center justify-center shrink-0">
-                  <Loader2
-                    size={16}
-                    className="animate-spin text-muted-foreground"
-                  />
+                  <Loader2 size={16} className="animate-spin text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="text-muted-foreground truncate block max-w-[120px]">
                     {job.prompt}
                   </span>
-                  <span className="text-muted-foreground/60 text-[10px]">
-                    Generating...
-                  </span>
+                  <span className="text-muted-foreground/60 text-[10px]">Generating...</span>
                 </div>
                 <button
                   onClick={() => handleCancel(job.id)}
@@ -120,10 +101,7 @@ export function ChatImageGenerationStrip({
             ) : job.status === "error" ? (
               <>
                 <div className="w-12 h-12 rounded-md bg-destructive/15 flex items-center justify-center shrink-0">
-                  <AlertCircle
-                    size={16}
-                    className="text-destructive-foreground"
-                  />
+                  <AlertCircle size={16} className="text-destructive-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <span
@@ -158,10 +136,7 @@ export function ChatImageGenerationStrip({
               <>
                 {job.result && (
                   <img
-                    src={buildOctopusStudioMediaUrlForApp(
-                      job.result.appId,
-                      job.result.fileName,
-                    )}
+                    src={buildOctopusStudioMediaUrlForApp(job.result.appId, job.result.fileName)}
                     alt={job.prompt}
                     className="w-12 h-12 rounded-md object-cover shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => setLightboxJob(job)}

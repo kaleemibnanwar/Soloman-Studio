@@ -22,10 +22,7 @@ export function useAppCollections() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (params: {
-      name: string;
-      appIds?: number[];
-    }): Promise<AppCollection> => {
+    mutationFn: async (params: { name: string; appIds?: number[] }): Promise<AppCollection> => {
       return ipc.appCollection.create(params);
     },
     onSuccess: invalidateAll,
@@ -33,11 +30,7 @@ export function useAppCollections() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (params: {
-      id: number;
-      name: string;
-      appIds?: number[];
-    }): Promise<void> => {
+    mutationFn: async (params: { id: number; name: string; appIds?: number[] }): Promise<void> => {
       return ipc.appCollection.update(params);
     },
     onSuccess: invalidateAll,

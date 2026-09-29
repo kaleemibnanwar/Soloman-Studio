@@ -40,9 +40,7 @@ export function transition(
       return change(
         {
           ...state,
-          readyWindows: state.readyWindows.filter(
-            (window) => window !== event.window,
-          ),
+          readyWindows: state.readyWindows.filter((window) => window !== event.window),
         },
         event.window === state.target ? [{ type: "MarkQueueNotReady" }] : [],
       );
@@ -53,7 +51,5 @@ export function transition(
 }
 
 function assertNever(value: never): never {
-  throw new Error(
-    `Unhandled deep-link window readiness event: ${String(value)}`,
-  );
+  throw new Error(`Unhandled deep-link window readiness event: ${String(value)}`);
 }

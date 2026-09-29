@@ -1,9 +1,9 @@
-import type { z } from 'zod';
-import { jsonrepair } from 'jsonrepair';
-import { createLogger } from '@src/background/log';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import type { z } from "zod";
+import { jsonrepair } from "jsonrepair";
+import { createLogger } from "@src/background/log";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
-const logger = createLogger('Utils');
+const logger = createLogger("Utils");
 
 export function getCurrentTimestampStr(): string {
   /**
@@ -13,16 +13,16 @@ export function getCurrentTimestampStr(): string {
    * @returns Formatted datetime string in local time
    */
   return new Date()
-    .toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+    .toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
       hour12: false,
     })
-    .replace(',', '');
+    .replace(",", "");
 }
 
 /**
@@ -33,12 +33,18 @@ export function repairJsonString(actionString: string): string {
   try {
     // Use jsonrepair to fix malformed JSON
     const repairedJson = jsonrepair(actionString.trim());
-    logger.info('Successfully repaired JSON string', { original: actionString, repaired: repairedJson });
+    logger.info("Successfully repaired JSON string", {
+      original: actionString,
+      repaired: repairedJson,
+    });
     return repairedJson;
   } catch (error) {
     // If jsonrepair fails, log the error and return the original string
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.warning('jsonrepair failed to fix JSON string', { original: actionString, error: errorMessage });
+    logger.warning("jsonrepair failed to fix JSON string", {
+      original: actionString,
+      error: errorMessage,
+    });
     return actionString.trim();
   }
 }
@@ -46,28 +52,28 @@ export function repairJsonString(actionString: string): string {
 // Helper function to capitalize first letter and convert to proper title case
 function capitalizeFirstLetter(str: string): string {
   // Handle snake_case: convert to Title Case
-  if (str.includes('_')) {
+  if (str.includes("_")) {
     return str
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
   }
 
   // Handle camelCase: add spaces before capital letters and capitalize
-  const withSpaces = str.replace(/([a-z])([A-Z])/g, '$1 $2');
+  const withSpaces = str.replace(/([a-z])([A-Z])/g, "$1 $2");
   return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
 // Post-process callback to add titles to properties
 function addTitlesToProperties(jsonSchema: Record<string, unknown>): Record<string, unknown> {
-  if (!jsonSchema || typeof jsonSchema !== 'object') {
+  if (!jsonSchema || typeof jsonSchema !== "object") {
     return jsonSchema;
   }
 
   // If this object has properties, add titles to them
-  if (jsonSchema.properties && typeof jsonSchema.properties === 'object') {
+  if (jsonSchema.properties && typeof jsonSchema.properties === "object") {
     for (const [propertyName, propertySchema] of Object.entries(jsonSchema.properties)) {
-      if (propertySchema && typeof propertySchema === 'object') {
+      if (propertySchema && typeof propertySchema === "object") {
         const schema = propertySchema as Record<string, unknown>;
         // Only add title if it doesn't already exist
         if (!schema.title) {
@@ -104,17 +110,21 @@ function addTitlesToProperties(jsonSchema: Record<string, unknown>): Record<stri
   return jsonSchema;
 }
 
-export function convertZodToJsonSchema(zodSchema: z.ZodType, name: string, addTitle = false): Record<string, unknown> {
+export function convertZodToJsonSchema(
+  zodSchema: z.ZodType,
+  name: string,
+  addTitle = false,
+): Record<string, unknown> {
   const jsonSchema = zodToJsonSchema(zodSchema, {
     name: name,
-    nameStrategy: 'title',
-    target: 'openApi3',
+    nameStrategy: "title",
+    target: "openApi3",
     allowedAdditionalProperties: undefined,
     rejectedAdditionalProperties: undefined,
     postProcess: addTitle
-      ? schema => {
+      ? (schema) => {
           // Titles of the properties of the schema will make some models follow the schema better, especially for Haiku
-          if (schema && typeof schema === 'object') {
+          if (schema && typeof schema === "object") {
             return addTitlesToProperties(schema as Record<string, unknown>);
           }
           return schema;

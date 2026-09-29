@@ -67,9 +67,7 @@ describe("hybrid chat harness guards", () => {
     // A channel OUTSIDE the preload whitelist throws synchronously, exactly
     // like preload.ts does in the packaged app.
     expect(() =>
-      (window as TestWindow).electron.ipcRenderer.invoke(
-        "missing:test-channel",
-      ),
+      (window as TestWindow).electron.ipcRenderer.invoke("missing:test-channel"),
     ).toThrow("Invalid channel: missing:test-channel");
 
     // A whitelisted channel with no registered handler (the test:* channels
@@ -95,9 +93,7 @@ describe("hybrid chat harness guards", () => {
     });
 
     try {
-      expect(() => harness.advanceFirstPromptClock(1)).toThrow(
-        "mountSurface() must be called",
-      );
+      expect(() => harness.advanceFirstPromptClock(1)).toThrow("mountSurface() must be called");
 
       harness.mountSurface({ route: "/settings" });
       expect(() => harness.advanceFirstPromptClock(60_000)).not.toThrow();

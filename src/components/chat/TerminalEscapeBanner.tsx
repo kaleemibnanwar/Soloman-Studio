@@ -8,10 +8,7 @@ interface TerminalEscapeBannerProps {
   onExit: () => void;
 }
 
-export function TerminalEscapeBanner({
-  cwd,
-  onExit,
-}: TerminalEscapeBannerProps) {
+export function TerminalEscapeBanner({ cwd, onExit }: TerminalEscapeBannerProps) {
   const { t } = useTranslation("chat");
 
   return (
@@ -28,9 +25,7 @@ export function TerminalEscapeBanner({
       >
         <X className="size-4" />
       </button>
-      <span className="shrink-0 font-medium leading-none">
-        {t("terminal.bannerMode")}
-      </span>
+      <span className="shrink-0 font-medium leading-none">{t("terminal.bannerMode")}</span>
       <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
         {cwd ?? ""}
       </span>

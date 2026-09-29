@@ -160,10 +160,7 @@ function highlightAtOffset(
     const segment = overlappingSegments[index];
     const { node: textNode } = segment;
     const startInNode = Math.max(0, startOffset - segment.startOffset);
-    const endInNode = Math.min(
-      textNode.textContent?.length ?? 0,
-      endOffset - segment.startOffset,
-    );
+    const endInNode = Math.min(textNode.textContent?.length ?? 0, endOffset - segment.startOffset);
     const charsToHighlight = endInNode - startInNode;
 
     if (charsToHighlight <= 0 || !textNode.parentNode) {
@@ -241,19 +238,13 @@ export function getPlanSelectionSnapshot(
     return null;
   }
 
-  const rawSelectedText = readPlanTextFromSegments(
-    segments,
-    rawStartOffset,
-    rawSelectionLength,
-  );
+  const rawSelectedText = readPlanTextFromSegments(segments, rawStartOffset, rawSelectionLength);
   if (!rawSelectedText) {
     return null;
   }
 
-  const leadingWhitespace =
-    rawSelectedText.length - rawSelectedText.trimStart().length;
-  const trailingWhitespace =
-    rawSelectedText.length - rawSelectedText.trimEnd().length;
+  const leadingWhitespace = rawSelectedText.length - rawSelectedText.trimStart().length;
+  const trailingWhitespace = rawSelectedText.length - rawSelectedText.trimEnd().length;
   const selectedText = rawSelectedText.trim();
 
   if (selectedText.length === 0) {
@@ -263,8 +254,7 @@ export function getPlanSelectionSnapshot(
   return {
     selectedText,
     startOffset: rawStartOffset + leadingWhitespace,
-    selectionLength:
-      rawSelectionLength - leadingWhitespace - trailingWhitespace,
+    selectionLength: rawSelectionLength - leadingWhitespace - trailingWhitespace,
   };
 }
 
@@ -310,10 +300,7 @@ export function applyPlanAnnotationHighlights(
         return false;
       }
 
-      if (
-        annotation.startOffset + annotation.selectionLength >
-        totalTextLength
-      ) {
+      if (annotation.startOffset + annotation.selectionLength > totalTextLength) {
         return false;
       }
 
@@ -327,8 +314,7 @@ export function applyPlanAnnotationHighlights(
     })
     .sort(
       (left, right) =>
-        left.startOffset - right.startOffset ||
-        right.selectionLength - left.selectionLength,
+        left.startOffset - right.startOffset || right.selectionLength - left.selectionLength,
     );
 
   const nonOverlappingAnnotations: PlanAnnotation[] = [];

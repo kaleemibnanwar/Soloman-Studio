@@ -1,10 +1,15 @@
-import { createLogger } from '@src/background/log';
-import type { BuildDomTreeArgs, RawDomTreeNode, RawDomElementNode, BuildDomTreeResult } from './raw_types';
-import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
-import type { ViewportInfo } from './history/view';
-import { isNewTabPage } from '../util';
+import { createLogger } from "@src/background/log";
+import type {
+  BuildDomTreeArgs,
+  RawDomTreeNode,
+  RawDomElementNode,
+  BuildDomTreeResult,
+} from "./raw_types";
+import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from "./views";
+import type { ViewportInfo } from "./history/view";
+import { isNewTabPage } from "../util";
 
-const logger = createLogger('DOMService');
+const logger = createLogger("DOMService");
 
 function isNotNull<T>(item: T | null | undefined): item is T {
   return item != null;
@@ -49,15 +54,15 @@ declare global {
 export async function getMarkdownContent(tabId: number, selector?: string): Promise<string> {
   const results = await chrome.scripting.executeScript({
     target: { tabId: tabId },
-    func: sel => {
+    func: (sel) => {
       return window.turn2Markdown(sel);
     },
-    args: [selector || ''], // Pass the selector as an argument
+    args: [selector || ""], // Pass the selector as an argument
   });
 
   const result = results[0]?.result;
   if (!result) {
-    throw new Error('Failed to get markdown content');
+    throw new Error("Failed to get markdown content");
   }
   return result as string;
 }
@@ -76,7 +81,7 @@ export async function getReadabilityContent(tabId: number): Promise<ReadabilityR
   });
   const result = results[0]?.result;
   if (!result) {
-    throw new Error('Failed to get readability content');
+    throw new Error("Failed to get readability content");
   }
   return result as ReadabilityResult;
 }
@@ -118,10 +123,10 @@ async function _buildDomTree(
   debugMode = false,
 ): Promise<[DOMElementNode, Map<number, DOMElementNode>]> {
   // If URL is provided and it's about:blank, return a minimal DOM tree
-  if (isNewTabPage(url) || url.startsWith('chrome://')) {
+  if (isNewTabPage(url) || url.startsWith("chrome://")) {
     const elementTree = new DOMElementNode({
-      tagName: 'body',
-      xpath: '',
+      tagName: "body",
+      xpath: "",
       attributes: {},
       children: [],
       isVisible: false,
@@ -137,7 +142,7 @@ async function _buildDomTree(
 
   const mainFrameResult = await chrome.scripting.executeScript({
     target: { tabId },
-    func: args => {
+    func: (args) => {
       // Access buildDomTree from the window context of the target page
       return window.buildDomTree(args);
     },
@@ -156,11 +161,11 @@ async function _buildDomTree(
   // First cast to unknown, then to BuildDomTreeResult
   let mainFramePage = mainFrameResult[0]?.result as unknown as BuildDomTreeResult;
   if (!mainFramePage || !mainFramePage.map || !mainFramePage.rootId) {
-    throw new Error('Failed to build DOM tree: No result returned or invalid structure');
+    throw new Error("Failed to build DOM tree: No result returned or invalid structure");
   }
 
   if (debugMode && mainFramePage.perfMetrics) {
-    logger.debug('DOM Tree Building Performance Metrics (main-frame):', mainFramePage.perfMetrics);
+    logger.debug("DOM Tree Building Performance Metrics (main-frame):", mainFramePage.perfMetrics);
   }
 
   // If the root frame was unable to parse child iframes (e.g. cross-origin frame policies),
@@ -169,15 +174,17 @@ async function _buildDomTree(
   const visibleIframesFailedLoadingCount = Object.values(visibleIframesFailedLoading).length;
   if (visibleIframesFailedLoadingCount > 0) {
     const tabFrames = await chrome.webNavigation.getAllFrames({ tabId });
-    const subFrames = (tabFrames ?? []).filter(frame => frame.frameId !== mainFrameResult[0].frameId).sort();
+    const subFrames = (tabFrames ?? [])
+      .filter((frame) => frame.frameId !== mainFrameResult[0].frameId)
+      .sort();
 
     // Get sub-frames info, so that we can run the buildDomTree only on the frames that failed,
     // to avoid double parsing & highlighting on the frames that succeeded.
     const frameInfoResultsRaw = await Promise.all(
-      subFrames.map(async frame => {
+      subFrames.map(async (frame) => {
         const result = await chrome.scripting.executeScript({
           target: { tabId, frameIds: [frame.frameId] },
-          func: frameId => ({
+          func: (frameId) => ({
             frameId,
             computedHeight: window.innerHeight,
             computedWidth: window.innerWidth,
@@ -221,15 +228,15 @@ async function constructFrameTree(
   startingHighlightIndex: number,
 ): Promise<{ maxNodeId: number; maxHighlightIndex: number; resultPage: BuildDomTreeResult }> {
   const parentIframesFailedLoading = _visibleIFramesFailedLoading(parentFramePage);
-  const failedLoadingFrames = allFramesInfo.filter(frameInfo => {
+  const failedLoadingFrames = allFramesInfo.filter((frameInfo) => {
     return _locateMatchingIframeNode(parentIframesFailedLoading, frameInfo) != null;
   });
   const parentIframesFailedCount = Object.values(parentIframesFailedLoading).length;
   if (parentIframesFailedCount > failedLoadingFrames.length) {
     logger.warning(
-      'Failed to locate some iframes that failed to load:',
+      "Failed to locate some iframes that failed to load:",
       parentIframesFailedCount,
-      'vs',
+      "vs",
       failedLoadingFrames.length,
     );
   }
@@ -241,7 +248,7 @@ async function constructFrameTree(
     // Processing one frame at a time, to start from the proper highlightIndex and element id.
     const subFrameResult = await chrome.scripting.executeScript({
       target: { tabId, frameIds: [subFrame.frameId] },
-      func: args => {
+      func: (args) => {
         // Access buildDomTree from the window context of the target page
         return window.buildDomTree({ ...args });
       },
@@ -259,11 +266,11 @@ async function constructFrameTree(
 
     const subFramePage = subFrameResult[0]?.result as unknown as BuildDomTreeResult;
     if (!subFramePage || !subFramePage.map || !subFramePage.rootId) {
-      throw new Error('Failed to build DOM tree: No result returned or invalid structure');
+      throw new Error("Failed to build DOM tree: No result returned or invalid structure");
     }
     if (debugMode && subFramePage.perfMetrics) {
       logger.debug(
-        'DOM Tree Building Performance Metrics (sub-frame' + subFrameResult[0].frameId + '):',
+        "DOM Tree Building Performance Metrics (sub-frame" + subFrameResult[0].frameId + "):",
         subFramePage.perfMetrics,
       );
     }
@@ -284,7 +291,12 @@ async function constructFrameTree(
     const iframeNode = _locateMatchingIframeNode(parentIframesFailedLoading, subFrame);
     if (iframeNode == null) {
       const subFrameRootElement = subFramePage.map[subFramePage.rootId];
-      console.warn('Cannot locate the iframe node for:', subFrame, 'with root element:', subFrameRootElement);
+      console.warn(
+        "Cannot locate the iframe node for:",
+        subFrame,
+        "with root element:",
+        subFrameRootElement,
+      );
     } else {
       // Stiching together subframe DOM results with the main frame result
       // while keeping the subset of iframe node trees, that succeded to load their contents.
@@ -321,8 +333,8 @@ function _getMaxHighlighIndex(result: BuildDomTreeResult, priorMaxHighlightIndex
   return Math.max(
     priorMaxHighlightIndex ?? -1,
     ...Object.values(_getRawDomTreeNodes(result))
-      .filter(node => node.highlightIndex != null)
-      .map(node => node.highlightIndex ?? -1),
+      .filter((node) => node.highlightIndex != null)
+      .map((node) => node.highlightIndex ?? -1),
   );
 }
 
@@ -337,12 +349,12 @@ function _locateMatchingIframeNode(
   frameInfo: FrameInfo,
   strictComparison: boolean = true,
 ): RawDomElementNode | undefined {
-  const result = Object.values(iframeNodes).find(iframeNode => {
-    const frameHeight = parseInt(iframeNode.attributes['computedHeight']);
-    const frameWidth = parseInt(iframeNode.attributes['computedWidth']);
-    const frameName = iframeNode.attributes['name'];
-    const frameUrl = iframeNode.attributes['src'];
-    const frameTitle = iframeNode.attributes['title'];
+  const result = Object.values(iframeNodes).find((iframeNode) => {
+    const frameHeight = parseInt(iframeNode.attributes["computedHeight"]);
+    const frameWidth = parseInt(iframeNode.attributes["computedWidth"]);
+    const frameName = iframeNode.attributes["name"];
+    const frameUrl = iframeNode.attributes["src"];
+    const frameTitle = iframeNode.attributes["title"];
     let heightMatch = false;
     let widthMatch = false;
     const nameMatch = !frameName || !frameInfo.name || frameInfo.name === frameName;
@@ -356,9 +368,12 @@ function _locateMatchingIframeNode(
     } else {
       const heightDifference = Math.abs(frameInfo.computedHeight - frameHeight);
       heightMatch =
-        heightDifference < 10 || heightDifference / Math.max(frameInfo.computedHeight, frameHeight, 1) < 0.1;
+        heightDifference < 10 ||
+        heightDifference / Math.max(frameInfo.computedHeight, frameHeight, 1) < 0.1;
       const widthDifference = Math.abs(frameInfo.computedWidth - frameWidth);
-      widthMatch = widthDifference < 10 || widthDifference / Math.max(frameInfo.computedWidth, frameWidth, 1) < 0.1;
+      widthMatch =
+        widthDifference < 10 ||
+        widthDifference / Math.max(frameInfo.computedWidth, frameWidth, 1) < 0.1;
       urlMatch = true;
       titleMatch = true;
     }
@@ -370,10 +385,13 @@ function _locateMatchingIframeNode(
   return result;
 }
 
-function _getRawDomTreeNodes(result: BuildDomTreeResult, tagName?: string): Record<string, RawDomElementNode> {
+function _getRawDomTreeNodes(
+  result: BuildDomTreeResult,
+  tagName?: string,
+): Record<string, RawDomElementNode> {
   const nodes: Record<string, RawDomElementNode> = {};
   for (const [id, nodeData] of Object.entries(result.map)) {
-    if (nodeData == null || ('type' in nodeData && nodeData.type === 'TEXT_NODE')) {
+    if (nodeData == null || ("type" in nodeData && nodeData.type === "TEXT_NODE")) {
       continue;
     }
     const elementData = nodeData as Exclude<RawDomTreeNode, { type: string }>;
@@ -385,14 +403,16 @@ function _getRawDomTreeNodes(result: BuildDomTreeResult, tagName?: string): Reco
   return nodes;
 }
 
-function _visibleIFramesFailedLoading(result: BuildDomTreeResult): Record<string, RawDomElementNode> {
-  const iframeNodes = _getRawDomTreeNodes(result, 'iframe');
+function _visibleIFramesFailedLoading(
+  result: BuildDomTreeResult,
+): Record<string, RawDomElementNode> {
+  const iframeNodes = _getRawDomTreeNodes(result, "iframe");
   return Object.fromEntries(
     Object.entries(iframeNodes).filter(([, iframeNode]) => {
-      const error = iframeNode.attributes['error'];
-      const height = parseInt(iframeNode.attributes['computedHeight']);
-      const width = parseInt(iframeNode.attributes['computedWidth']);
-      const skipped = iframeNode.attributes['skipped'];
+      const error = iframeNode.attributes["error"];
+      const height = parseInt(iframeNode.attributes["computedHeight"]);
+      const width = parseInt(iframeNode.attributes["computedWidth"]);
+      const skipped = iframeNode.attributes["skipped"];
 
       // Only consider iframes that have errors AND are visible AND not skipped
       return error != null && height > 1 && width > 1 && !skipped;
@@ -405,7 +425,9 @@ function _visibleIFramesFailedLoading(result: BuildDomTreeResult): Record<string
  * @param evalPage - The result of building the DOM tree.
  * @returns A tuple containing the DOM element tree and selector map.
  */
-function _constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<number, DOMElementNode>] {
+function _constructDomTree(
+  evalPage: BuildDomTreeResult,
+): [DOMElementNode, Map<number, DOMElementNode>] {
   const jsNodeMap = evalPage.map;
   const jsRootId = evalPage.rootId;
 
@@ -422,7 +444,11 @@ function _constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<n
     nodeMap[id] = node;
 
     // Add to selector map if it has a highlight index
-    if (node instanceof DOMElementNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
+    if (
+      node instanceof DOMElementNode &&
+      node.highlightIndex !== undefined &&
+      node.highlightIndex !== null
+    ) {
       selectorMap.set(node.highlightIndex, node);
     }
   }
@@ -431,7 +457,7 @@ function _constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<n
   for (const [id, node] of Object.entries(nodeMap)) {
     if (node instanceof DOMElementNode) {
       const nodeData = jsNodeMap[id];
-      const childrenIds = 'children' in nodeData ? nodeData.children : [];
+      const childrenIds = "children" in nodeData ? nodeData.children : [];
 
       for (const childId of childrenIds) {
         if (!(childId in nodeMap)) {
@@ -449,7 +475,7 @@ function _constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<n
   const htmlToDict = nodeMap[jsRootId];
 
   if (htmlToDict === undefined || !(htmlToDict instanceof DOMElementNode)) {
-    throw new Error('Failed to parse HTML to dictionary');
+    throw new Error("Failed to parse HTML to dictionary");
   }
 
   return [htmlToDict, selectorMap];
@@ -466,7 +492,7 @@ export function _parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, stri
   }
 
   // Process text nodes immediately
-  if ('type' in nodeData && nodeData.type === 'TEXT_NODE') {
+  if ("type" in nodeData && nodeData.type === "TEXT_NODE") {
     const textNode = new DOMTextNode(nodeData.text, nodeData.isVisible, null);
     return [textNode, []];
   }
@@ -477,7 +503,7 @@ export function _parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, stri
 
   // Process viewport info if it exists
   let viewportInfo: ViewportInfo | undefined = undefined;
-  if ('viewport' in nodeData && typeof nodeData.viewport === 'object' && nodeData.viewport) {
+  if ("viewport" in nodeData && typeof nodeData.viewport === "object" && nodeData.viewport) {
     const viewportObj = nodeData.viewport as { width: number; height: number };
     viewportInfo = {
       width: viewportObj.width,
@@ -513,20 +539,22 @@ export async function removeHighlights(tabId: number): Promise<void> {
       target: { tabId, allFrames: true },
       func: () => {
         // Remove the highlight container and all its contents
-        const container = document.getElementById('playwright-highlight-container');
+        const container = document.getElementById("playwright-highlight-container");
         if (container) {
           container.remove();
         }
 
         // Remove highlight attributes from elements
-        const highlightedElements = document.querySelectorAll('[browser-user-highlight-id^="playwright-highlight-"]');
+        const highlightedElements = document.querySelectorAll(
+          '[browser-user-highlight-id^="playwright-highlight-"]',
+        );
         for (const el of Array.from(highlightedElements)) {
-          el.removeAttribute('browser-user-highlight-id');
+          el.removeAttribute("browser-user-highlight-id");
         }
       },
     });
   } catch (error) {
-    logger.error('Failed to remove highlights:', error);
+    logger.error("Failed to remove highlights:", error);
   }
 }
 
@@ -573,7 +601,7 @@ export async function getScrollInfo(tabId: number): Promise<[number, number, num
 
   const result = results[0]?.result;
   if (!result) {
-    throw new Error('Failed to get scroll information');
+    throw new Error("Failed to get scroll information");
   }
   return [result.scrollY, result.visualViewportHeight, result.scrollHeight];
 }
@@ -583,11 +611,11 @@ async function scriptInjectedFrames(tabId: number): Promise<Map<number, boolean>
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId, allFrames: true },
-      func: () => Object.prototype.hasOwnProperty.call(window, 'buildDomTree'),
+      func: () => Object.prototype.hasOwnProperty.call(window, "buildDomTree"),
     });
-    return new Map(results.map(result => [result.frameId, result.result || false]));
+    return new Map(results.map((result) => [result.frameId, result.result || false]));
   } catch (err) {
-    console.error('Failed to check script injection status:', err);
+    console.error("Failed to check script injection status:", err);
     return new Map();
   }
 }
@@ -604,7 +632,7 @@ export async function injectBuildDomTreeScripts(tabId: number) {
       try {
         await chrome.scripting.executeScript({
           target: { tabId },
-          files: ['buildDomTree.js'],
+          files: ["buildDomTree.js"],
         });
       } catch (injectionErr) {
         // Silently ignore - script might already be injected or frame might be inaccessible
@@ -613,22 +641,24 @@ export async function injectBuildDomTreeScripts(tabId: number) {
     }
 
     // Check if all frames already have the script
-    if (Array.from(injectedFrames.values()).every(injected => injected)) {
+    if (Array.from(injectedFrames.values()).every((injected) => injected)) {
       return;
     }
 
     // Inject only in frames that don't have the script
-    const frameIdsToInject = Array.from(injectedFrames.keys()).filter(id => !injectedFrames.get(id));
+    const frameIdsToInject = Array.from(injectedFrames.keys()).filter(
+      (id) => !injectedFrames.get(id),
+    );
     if (frameIdsToInject.length > 0) {
       await chrome.scripting.executeScript({
         target: {
           tabId,
           frameIds: frameIdsToInject,
         },
-        files: ['buildDomTree.js'],
+        files: ["buildDomTree.js"],
       });
     }
   } catch (err) {
-    console.error('Failed to inject scripts:', err);
+    console.error("Failed to inject scripts:", err);
   }
 }

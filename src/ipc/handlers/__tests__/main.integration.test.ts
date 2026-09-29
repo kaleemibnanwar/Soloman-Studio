@@ -8,16 +8,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 function errorEvents(harness: HybridChatHarness) {
-  return harness.bridge.sentEvents.filter(
-    (e) => e.channel === "chat:response:error",
-  );
+  return harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
 }
 
 describe("main chat flow (hybrid)", () => {
@@ -71,9 +66,7 @@ describe("main chat flow (hybrid)", () => {
     expect(userMessage.role).toBe("user");
     expect(userMessage.content).toBe("hi");
     expect(assistantMessage.role).toBe("assistant");
-    expect(assistantMessage.content).toContain(
-      '<octopus-studio-write path="file1.txt">',
-    );
+    expect(assistantMessage.content).toContain('<octopus-studio-write path="file1.txt">');
     expect(assistantMessage.content).toContain("EOM");
 
     // The octopus-studio-write was applied and committed (auto-approve).
@@ -91,10 +84,9 @@ describe("main chat flow (hybrid)", () => {
     // messages from the first turn); this second turn appends to it, exactly
     // like the node harness's sequential streamChat.
     harness.mount();
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     const { send } = await harness.typeInChat("tc=basic");
     send();
@@ -102,13 +94,9 @@ describe("main chat flow (hybrid)", () => {
     await waitFor(() => expect(screen.getByText("tc=basic")).toBeTruthy(), {
       timeout: 15_000,
     });
-    await waitFor(
-      () =>
-        expect(
-          screen.getByText(/This is a simple basic response/),
-        ).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/This is a simple basic response/)).toBeTruthy(), {
+      timeout: 20_000,
+    });
 
     await harness.waitForStreamEnd(harness.chatId);
     expect(errorEvents(harness)).toHaveLength(0);
@@ -121,8 +109,6 @@ describe("main chat flow (hybrid)", () => {
     expect(userMessage.role).toBe("user");
     expect(userMessage.content).toBe("tc=basic");
     expect(assistantMessage.role).toBe("assistant");
-    expect(assistantMessage.content.trim()).toBe(
-      "This is a simple basic response",
-    );
+    expect(assistantMessage.content.trim()).toBe("This is a simple basic response");
   }, 60_000);
 });

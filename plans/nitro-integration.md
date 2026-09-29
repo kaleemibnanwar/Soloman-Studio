@@ -166,14 +166,10 @@ import { ToolDefinition } from "./types";
 const enableNitroSchema = z.object({
   reason: z
     .string()
-    .describe(
-      "One sentence explaining why server-side code is needed for this prompt.",
-    ),
+    .describe("One sentence explaining why server-side code is needed for this prompt."),
 });
 
-export const enableNitroTool: ToolDefinition<
-  z.infer<typeof enableNitroSchema>
-> = {
+export const enableNitroTool: ToolDefinition<z.infer<typeof enableNitroSchema>> = {
   name: "enable_nitro",
   description: `
 Add a Nitro server layer to this Vite app so it can run secure server-side code

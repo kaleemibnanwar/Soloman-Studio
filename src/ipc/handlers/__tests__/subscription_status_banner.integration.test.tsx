@@ -1,10 +1,7 @@
 import { createServer, type Server } from "node:http";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, screen } from "@testing-library/react";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("subscription status banner (integration)", () => {
@@ -14,8 +11,7 @@ describe("subscription status banner (integration)", () => {
   let previousSubscriptionStatusUrl: string | undefined;
 
   beforeAll(async () => {
-    previousSubscriptionStatusUrl =
-      process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_URL;
+    previousSubscriptionStatusUrl = process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_URL;
     server = createServer((request, response) => {
       receivedAuthorization = request.headers.authorization;
       response.writeHead(200, { "Content-Type": "application/json" });
@@ -23,14 +19,11 @@ describe("subscription status banner (integration)", () => {
         JSON.stringify({
           alert: "subscription_paused",
           effectiveAt: "2026-08-03T00:00:00.000Z",
-          actionUrl:
-            "https://academy.octopusStudio.sh/subscription?source=integration",
+          actionUrl: "https://academy.octopusStudio.sh/subscription?source=integration",
         }),
       );
     });
-    await new Promise<void>((resolve) =>
-      server.listen(0, "127.0.0.1", resolve),
-    );
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address();
     if (!address || typeof address === "string") {
       throw new Error("Failed to start subscription status test server");
@@ -59,8 +52,7 @@ describe("subscription status banner (integration)", () => {
     if (previousSubscriptionStatusUrl === undefined) {
       delete process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_URL;
     } else {
-      process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_URL =
-        previousSubscriptionStatusUrl;
+      process.env.OCTOPUS_STUDIO_SUBSCRIPTION_STATUS_URL = previousSubscriptionStatusUrl;
     }
   });
 

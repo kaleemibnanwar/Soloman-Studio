@@ -13,8 +13,7 @@ export const fixture: LocalAgentFixture = {
             user_prompt: "Build me a beautiful notes app",
             template_id: "react",
             theme_id: "default",
-            design_direction:
-              "Clean and polished productivity interface with warm accents.",
+            design_direction: "Clean and polished productivity interface with warm accents.",
             primary_color: "#F59E0B",
             visuals: [
               {

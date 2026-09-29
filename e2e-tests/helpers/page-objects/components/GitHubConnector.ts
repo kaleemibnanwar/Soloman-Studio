@@ -18,9 +18,7 @@ export class GitHubConnector {
     await expect(this.page.getByText("FAKE-CODE")).toBeVisible({
       timeout: Timeout.MEDIUM,
     });
-    await expect(
-      this.page.getByText("https://github.com/login/device"),
-    ).toBeVisible();
+    await expect(this.page.getByText("https://github.com/login/device")).toBeVisible();
   }
 
   getSetupRepo() {
@@ -30,9 +28,9 @@ export class GitHubConnector {
   async createRepo(name: string, branch = "main") {
     await expect(this.getSetupRepo()).toBeVisible({ timeout: Timeout.MEDIUM });
     await this.page.getByTestId("github-create-repo-name-input").fill(name);
-    await expect(
-      this.page.getByText("Repository name is available!"),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(this.page.getByText("Repository name is available!")).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
     if (branch !== "main") {
       await this.page.getByTestId("github-new-repo-branch-input").fill(branch);
     }
@@ -44,12 +42,8 @@ export class GitHubConnector {
     // Disconnect remounts the setup card collapsed. Clicking the header is a
     // no-op when already expanded and otherwise lets its transition complete
     // before Playwright targets the mode button underneath it.
-    await this.page
-      .getByRole("button", { name: "Set up your GitHub repo" })
-      .click();
-    await this.page
-      .getByRole("button", { name: "Connect to existing repo" })
-      .click();
+    await this.page.getByRole("button", { name: "Set up your GitHub repo" }).click();
+    await this.page.getByRole("button", { name: "Connect to existing repo" }).click();
     await this.page.getByTestId("github-repo-select").click();
     await this.page.getByRole("option", { name: repo }).click();
     await this.page.getByTestId("github-branch-select").click();
@@ -64,21 +58,19 @@ export class GitHubConnector {
   }
 
   async disconnectRepo() {
-    await this.page
-      .getByRole("button", { name: "Disconnect from repo" })
-      .click();
+    await this.page.getByRole("button", { name: "Disconnect from repo" }).click();
     await expect(this.getSetupRepo()).toBeVisible({ timeout: Timeout.MEDIUM });
   }
 
   async waitForSyncToFinish() {
     const connectedRepo = this.page.getByTestId("github-connected-repo");
     await expect(connectedRepo).toBeVisible({ timeout: Timeout.LONG });
-    await expect(
-      connectedRepo.getByText("Successfully pushed to GitHub!"),
-    ).toBeVisible({ timeout: Timeout.LONG });
-    await expect(
-      connectedRepo.getByRole("button", { name: "Sync to GitHub" }),
-    ).toBeEnabled({ timeout: Timeout.LONG });
+    await expect(connectedRepo.getByText("Successfully pushed to GitHub!")).toBeVisible({
+      timeout: Timeout.LONG,
+    });
+    await expect(connectedRepo.getByRole("button", { name: "Sync to GitHub" })).toBeEnabled({
+      timeout: Timeout.LONG,
+    });
   }
 
   async clearPushEvents() {

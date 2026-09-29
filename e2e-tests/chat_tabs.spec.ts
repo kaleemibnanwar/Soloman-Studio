@@ -23,10 +23,7 @@ test("tabs appear after navigating between chats", async ({ po }) => {
   }).toPass({ timeout: Timeout.MEDIUM });
 });
 
-test("restores previously open tabs after reload", async ({
-  po,
-  electronApp,
-}) => {
+test("restores previously open tabs after reload", async ({ po, electronApp }) => {
   await po.setUp({ autoApprove: true });
   await po.importApp("minimal");
 
@@ -44,10 +41,7 @@ test("restores previously open tabs after reload", async ({
   }).toPass({ timeout: Timeout.MEDIUM });
 
   const appPath = await electronApp.evaluate(({ app }) => app.getAppPath());
-  const rendererIndexPath = path.join(
-    appPath,
-    ".vite/renderer/main_window/index.html",
-  );
+  const rendererIndexPath = path.join(appPath, ".vite/renderer/main_window/index.html");
   await electronApp.evaluate(async ({ BrowserWindow }, rendererIndexPath) => {
     const window = BrowserWindow.getAllWindows()[0];
     try {
@@ -101,9 +95,9 @@ test("clicking a tab switches to that chat", async ({ po }) => {
   await inactiveTab.locator("button").first().click();
 
   // After clicking, chat 1's message should be visible
-  await expect(
-    po.page.getByText("First chat unique message alpha"),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.page.getByText("First chat unique message alpha")).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 });
 
 test("closing a tab removes it and selects adjacent tab", async ({ po }) => {
@@ -264,9 +258,7 @@ test("right-click context menu: Reopen closed tab", async ({ po }) => {
   await expect(reopenItem).toBeVisible();
 
   // Verify shortcut label symbols
-  const shortcut = po.page
-    .locator("span")
-    .filter({ hasText: /⇧⌘T|Ctrl\+⇧\+T|Ctrl\+Shift\+T/ });
+  const shortcut = po.page.locator("span").filter({ hasText: /⇧⌘T|Ctrl\+⇧\+T|Ctrl\+Shift\+T/ });
   await expect(shortcut).toBeVisible();
 
   await reopenItem.click();
@@ -277,9 +269,7 @@ test("right-click context menu: Reopen closed tab", async ({ po }) => {
   }).toPass({ timeout: Timeout.MEDIUM });
 });
 
-test("group by app: new chat joins its app's group (grouping sticks)", async ({
-  po,
-}) => {
+test("group by app: new chat joins its app's group (grouping sticks)", async ({ po }) => {
   await po.setUp({ autoApprove: true });
 
   // Imported apps are named after their fixture folder (see import_handlers).
@@ -292,13 +282,7 @@ test("group by app: new chat joins its app's group (grouping sticks)", async ({
     const count = await tabs.count();
     const names: string[] = [];
     for (let i = 0; i < count; i++) {
-      const name = await tabs
-        .nth(i)
-        .locator("button")
-        .first()
-        .locator("span")
-        .first()
-        .innerText();
+      const name = await tabs.nth(i).locator("button").first().locator("span").first().innerText();
       names.push(name.trim());
     }
     return names;

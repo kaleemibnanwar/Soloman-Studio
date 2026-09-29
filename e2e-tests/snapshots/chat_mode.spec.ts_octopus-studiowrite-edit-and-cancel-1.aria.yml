@@ -2,7 +2,7 @@
 - button "file1.txt file1.txt Cancel"
 - text: typescript
 - button "Copy":
-  - img
+    - img
 - paragraph: More EOM
 - img
 - text: Approved
@@ -11,6 +11,6 @@
 - img
 - text: wrote 1 file(s)
 - button "Undo":
-  - img
+    - img
 - button "Retry":
-  - img
+    - img

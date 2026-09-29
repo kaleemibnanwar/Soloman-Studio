@@ -381,9 +381,7 @@
       "expected": "found",
       "gold_answer": "GritScore — the composite weekly metric combining consistency against your own plan, effort versus your own trailing baseline, and PR bonuses, with capped daily contributions.",
       "gold_atoms": [["GritScore"]],
-      "gold_evidence": [
-        { "chat": "social_engagement_mechanics", "message_index": 5 }
-      ],
+      "gold_evidence": [{ "chat": "social_engagement_mechanics", "message_index": 5 }],
       "judge_notes": "Correct iff the answer names the metric GritScore. Partial iff it accurately describes the composite formula (consistency, effort versus own baseline, PR bonuses) but cannot produce the name. Incorrect iff it gives a different name (e.g. Momentum Index or FlexRank, which were rejected candidates, or the 'weekly volume score' idea from the feed discussion) or says no name was chosen."
     },
     {
@@ -392,9 +390,7 @@
       "expected": "found",
       "gold_answer": "A streak freeze costs 35 Surge Tokens. Surge Tokens are the earnable in-app currency paid out for completing weekly challenges.",
       "gold_atoms": [["Surge Tokens"], ["35"]],
-      "gold_evidence": [
-        { "chat": "social_engagement_mechanics", "message_index": 9 }
-      ],
+      "gold_evidence": [{ "chat": "social_engagement_mechanics", "message_index": 9 }],
       "judge_notes": "Correct iff the answer gives both the price of 35 and the currency name Surge Tokens. Partial iff it gives exactly one of the two (the price without the currency name, or the currency name without the price). Incorrect iff it gives a different price or a different currency name, says freezes cost real money, or claims pricing was never settled."
     },
     {

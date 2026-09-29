@@ -103,8 +103,7 @@ function buildBenchmarkArgs() {
   const tasks = values.tasks ?? defaults.tasks;
   const concurrency = values.concurrency ?? defaults.concurrency;
   const shouldFetch = !values["skip-fetch"] && defaults.fetchRepos;
-  const shouldInstall =
-    !values["skip-install"] && (values.install || defaults.install);
+  const shouldInstall = !values["skip-install"] && (values.install || defaults.install);
 
   if (repos) args.push("--repos", repos);
   if (tasks) args.push("--tasks", tasks);
@@ -179,9 +178,7 @@ function run(command, args) {
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
-    throw new Error(
-      `${command} ${args.join(" ")} failed with ${result.status}`,
-    );
+    throw new Error(`${command} ${args.join(" ")} failed with ${result.status}`);
   }
 }
 
@@ -190,9 +187,7 @@ function listRunIds() {
   return fs
     .readdirSync(RESULTS_DIR)
     .filter((entry) => /^run-\d{4}-/.test(entry))
-    .filter((entry) =>
-      fs.existsSync(path.join(RESULTS_DIR, entry, "summary.json")),
-    )
+    .filter((entry) => fs.existsSync(path.join(RESULTS_DIR, entry, "summary.json")))
     .sort();
 }
 
@@ -220,12 +215,8 @@ function writePreviousComparison(runId, previousRunId) {
     "",
     `Current: \`${runId}\``,
     `Previous: \`${previousRunId}\``,
-    current.primaryCompareArm
-      ? `Current primary compare arm: ${current.primaryCompareArm}`
-      : "",
-    previous.primaryCompareArm
-      ? `Previous primary compare arm: ${previous.primaryCompareArm}`
-      : "",
+    current.primaryCompareArm ? `Current primary compare arm: ${current.primaryCompareArm}` : "",
+    previous.primaryCompareArm ? `Previous primary compare arm: ${previous.primaryCompareArm}` : "",
     "",
     "## By Arm",
     "",
@@ -242,10 +233,7 @@ function writePreviousComparison(runId, previousRunId) {
     taskDeltasTable(current),
     "",
   ].join("\n");
-  fs.writeFileSync(
-    path.join(RESULTS_DIR, runId, "comparison-to-previous.md"),
-    markdown,
-  );
+  fs.writeFileSync(path.join(RESULTS_DIR, runId, "comparison-to-previous.md"), markdown);
 }
 
 function updateBenchmarkMarkdown(runId, previousRunId) {
@@ -260,9 +248,7 @@ function updateBenchmarkMarkdown(runId, previousRunId) {
     `Trials: ${summary.trials}`,
     `OK: ${summary.ok}`,
     `Errors: ${summary.errors}`,
-    summary.primaryCompareArm
-      ? `Primary compare arm: ${summary.primaryCompareArm}`
-      : "",
+    summary.primaryCompareArm ? `Primary compare arm: ${summary.primaryCompareArm}` : "",
     "",
     "### By Arm",
     "",
@@ -324,11 +310,7 @@ function updateBenchmarkMarkdown(runId, previousRunId) {
 }
 
 function allArms(...summaries) {
-  return [
-    ...new Set(
-      summaries.flatMap((summary) => Object.keys(summary.byArm ?? {})),
-    ),
-  ].sort();
+  return [...new Set(summaries.flatMap((summary) => Object.keys(summary.byArm ?? {})))].sort();
 }
 
 function armDeltasTable(summary) {
@@ -368,14 +350,11 @@ function taskDeltasTable(summary) {
 }
 
 function compareLabel(summary) {
-  return summary.primaryCompareArm
-    ? ` (${summary.primaryCompareArm} vs baseline)`
-    : "";
+  return summary.primaryCompareArm ? ` (${summary.primaryCompareArm} vs baseline)` : "";
 }
 
 function exploreTaskCohortsTable(summary) {
-  const rows =
-    summary.exploreTaskCohorts ?? summarizeExploreTaskCohorts(summary);
+  const rows = summary.exploreTaskCohorts ?? summarizeExploreTaskCohorts(summary);
   if (rows.length === 0) return "_No explore task cohort data available._";
   return [
     "| Cohort | Tasks | Primary uncached input delta | Value token delta | Combined token delta | Spend delta | Primary tool-call delta | Value tool-call delta | Total tool-call delta | Elapsed delta ms |",
@@ -388,12 +367,7 @@ function exploreTaskCohortsTable(summary) {
 
 function summarizeExploreTaskCohorts(summary) {
   const rows = summary.taskDeltas ?? [];
-  const statuses = [
-    "available-used",
-    "partially-used",
-    "available-unused",
-    "unavailable",
-  ];
+  const statuses = ["available-used", "partially-used", "available-unused", "unavailable"];
   return statuses.map((status) => {
     const cohort = rows.filter((row) => exploreTaskStatus(row) === status);
     return {
@@ -424,9 +398,7 @@ function exploreTaskStatus(item) {
 }
 
 function readSummary(runId) {
-  return JSON.parse(
-    fs.readFileSync(path.join(RESULTS_DIR, runId, "summary.json"), "utf8"),
-  );
+  return JSON.parse(fs.readFileSync(path.join(RESULTS_DIR, runId, "summary.json"), "utf8"));
 }
 
 function escapeRegExp(value) {

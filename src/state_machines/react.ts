@@ -21,8 +21,7 @@ export interface DisposableManager {
 }
 
 type MachineProviderProps<M, OwnedProps extends object> = PropsWithChildren<
-  | ({ manager: M } & Partial<OwnedProps>)
-  | ({ manager?: undefined } & OwnedProps)
+  ({ manager: M } & Partial<OwnedProps>) | ({ manager?: undefined } & OwnedProps)
 >;
 
 export function createMachineProvider<
@@ -40,10 +39,7 @@ export function createMachineProvider<
   const useOwnedManager = options.useOwnedManager;
   const useOnMount = options.useOnMount ?? (() => undefined);
 
-  function ManagerBoundary({
-    manager,
-    children,
-  }: PropsWithChildren<{ manager: M }>) {
+  function ManagerBoundary({ manager, children }: PropsWithChildren<{ manager: M }>) {
     useManagerLifecycle(manager);
     useOnMount(manager);
     return createElement(ManagerContext.Provider, { value: manager }, children);
@@ -59,25 +55,15 @@ export function createMachineProvider<
 
   function Provider(props: MachineProviderProps<M, OwnedProps>) {
     if (props.manager) {
-      return createElement(
-        ManagerBoundary,
-        { manager: props.manager },
-        props.children,
-      );
+      return createElement(ManagerBoundary, { manager: props.manager }, props.children);
     }
-    return createElement(
-      OwnedManagerBoundary,
-      { ownedProps: props as OwnedProps },
-      props.children,
-    );
+    return createElement(OwnedManagerBoundary, { ownedProps: props as OwnedProps }, props.children);
   }
 
   function useManager(): M {
     const manager = useContext(ManagerContext);
     if (!manager) {
-      throw new Error(
-        `use${options.name}Manager requires ${options.name}Provider`,
-      );
+      throw new Error(`use${options.name}Manager requires ${options.name}Provider`);
     }
     return manager;
   }
@@ -85,17 +71,11 @@ export function createMachineProvider<
   return { Provider, useManager };
 }
 
-const EntityDisposalContext = createContext<EntityDisposalRegistry | null>(
-  null,
-);
+const EntityDisposalContext = createContext<EntityDisposalRegistry | null>(null);
 
 export function EntityDisposalProvider({ children }: PropsWithChildren) {
   const [registry] = useState(() => new EntityDisposalRegistry());
-  return createElement(
-    EntityDisposalContext.Provider,
-    { value: registry },
-    children,
-  );
+  return createElement(EntityDisposalContext.Provider, { value: registry }, children);
 }
 
 export function useEntityDisposal(): EntityDisposalRegistry {
@@ -106,16 +86,11 @@ export function useEntityDisposal(): EntityDisposalRegistry {
   return registry;
 }
 
-export function useRegisterEntityDisposer(
-  scope: "app" | "chat",
-  dispose: EntityDisposer,
-): void {
+export function useRegisterEntityDisposer(scope: "app" | "chat", dispose: EntityDisposer): void {
   const registry = useContext(EntityDisposalContext);
   useEffect(() => {
     if (!registry) return;
-    return scope === "app"
-      ? registry.onAppDeleted(dispose)
-      : registry.onChatDeleted(dispose);
+    return scope === "app" ? registry.onAppDeleted(dispose) : registry.onChatDeleted(dispose);
   }, [dispose, registry, scope]);
 }
 
@@ -173,9 +148,7 @@ export function useManagerPagehideDisposal(manager: DisposableManager): void {
  * Releases this renderer's subscription to main-hosted state without
  * disposing the authoritative main actor.
  */
-export function useMainHostedSubscriptionPagehideRelease(
-  releaseSubscription: () => void,
-): void {
+export function useMainHostedSubscriptionPagehideRelease(releaseSubscription: () => void): void {
   usePagehideTeardown(releaseSubscription);
 }
 
@@ -218,19 +191,11 @@ export function useKeyedMachineSelector<K, Snapshot, Selection>(
     [source, key],
   );
   const getSnapshot = useCallback(() => source.getSnapshot(key), [source, key]);
-  return useSyncExternalStoreWithSelector(
-    subscribe,
-    getSnapshot,
-    undefined,
-    selector,
-    isEqual,
-  );
+  return useSyncExternalStoreWithSelector(subscribe, getSnapshot, undefined, selector, isEqual);
 }
 
 /** Subscribes to a reference-stable projection snapshot without Jotai. */
-export function useProjectionSource<Snapshot>(
-  source: ProjectionSource<Snapshot>,
-): Snapshot {
+export function useProjectionSource<Snapshot>(source: ProjectionSource<Snapshot>): Snapshot {
   return useSyncExternalStore(source.subscribe, source.getSnapshot);
 }
 
@@ -250,20 +215,12 @@ export function useKeyedController<K, Snapshot>(
   ) => Snapshot = defaultSelectSnapshot,
 ): Snapshot {
   return useSyncExternalStore(
-    useCallback(
-      (listener) => source.subscribeKey(key, listener),
-      [source, key],
-    ),
-    useCallback(
-      () => selectSnapshot(source, key),
-      [source, key, selectSnapshot],
-    ),
+    useCallback((listener) => source.subscribeKey(key, listener), [source, key]),
+    useCallback(() => selectSnapshot(source, key), [source, key, selectSnapshot]),
   );
 }
 
 /** React binding for a controller that does not need keyed host selection. */
-export function useControllerSnapshot<Snapshot>(
-  controller: KeyedController<Snapshot>,
-): Snapshot {
+export function useControllerSnapshot<Snapshot>(controller: KeyedController<Snapshot>): Snapshot {
   return useProjectionSource(controller);
 }

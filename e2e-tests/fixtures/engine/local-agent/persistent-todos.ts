@@ -14,8 +14,7 @@ import type { LocalAgentFixture } from "../../../../testing/fake-llm-server/loca
  * that the handler loads the persisted todos and injects a synthetic message.
  */
 export const fixture: LocalAgentFixture = {
-  description:
-    "Turn 1: Create todos, partially complete, leave rest for next turn",
+  description: "Turn 1: Create todos, partially complete, leave rest for next turn",
   passes: [
     {
       // First pass: Create todos and partially complete them
@@ -56,7 +55,7 @@ export const fixture: LocalAgentFixture = {
               args: {
                 path: "src/lib/utils.ts",
                 content:
-                  'export function formatDate(d: Date): string {\n  return d.toISOString();\n}\n',
+                  "export function formatDate(d: Date): string {\n  return d.toISOString();\n}\n",
                 description: "Create utility module",
               },
             },

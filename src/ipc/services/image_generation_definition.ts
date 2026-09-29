@@ -44,10 +44,7 @@ import { imageGenerationOperationService } from "./image_generation_operation_se
 
 export const IMAGE_GENERATION_TERMINAL_RETENTION_MS = 30 * 60 * 1000;
 
-type GenerateImageCommand = Extract<
-  ImageGenerationCommand,
-  { readonly type: "GenerateImage" }
->;
+type GenerateImageCommand = Extract<ImageGenerationCommand, { readonly type: "GenerateImage" }>;
 
 interface GenerationFailure {
   readonly message: string;
@@ -72,9 +69,7 @@ const imageGenerationEffectHandlers = defineCorrelatedEffectHandlers<
       type: "JOB_SUCCEEDED",
       jobId: command.jobId,
       invocationRef: command.invocationRef,
-      result: result as Awaited<
-        ReturnType<typeof imageGenerationService.generate>
-      >,
+      result: result as Awaited<ReturnType<typeof imageGenerationService.generate>>,
     }),
     failed: (command, failure) => {
       const typed = failure as GenerationFailure;
@@ -132,10 +127,9 @@ function createCommandRunner(
             console.error("Unexpected image generation effect failure", error),
         });
       case "RequestCancel": {
-        const cancelled = imageGenerationService.cancel(
-          command.invocationRef.operationId,
-          { retainIfMissing: true },
-        );
+        const cancelled = imageGenerationService.cancel(command.invocationRef.operationId, {
+          retainIfMissing: true,
+        });
         context.send({
           type: "CANCEL_CONFIRMED",
           jobId: command.jobId,
@@ -154,16 +148,10 @@ function createCommandRunner(
         );
         return Promise.resolve();
       case "Present":
-        imageGenerationPresentationService.present(
-          context.getSnapshot(),
-          command.jobId,
-        );
+        imageGenerationPresentationService.present(context.getSnapshot(), command.jobId);
         return Promise.resolve();
       case "RecordInitiator":
-        imageGenerationPresentationService.recordInitiator(
-          command.jobId,
-          command.windowSessionId,
-        );
+        imageGenerationPresentationService.recordInitiator(command.jobId, command.windowSessionId);
         return Promise.resolve();
       case "InvalidateMediaQueries":
         queryInvalidationBus.publish([{ family: "media" }]);
@@ -256,8 +244,7 @@ export const imageGenerationDefinition = defineFrameworkCoveredRemoteMachine({
     keyCodec: ImageGenerationKeySchema,
     encodeKey: () => getImageGenerationKey(),
     canonicalizeKeyAfterAuthorization: () => getImageGenerationKey(),
-    eventCodec:
-      ImageGenerationIntentEventSchema as z.ZodType<ImageGenerationEvent>,
+    eventCodec: ImageGenerationIntentEventSchema as z.ZodType<ImageGenerationEvent>,
     snapshotCodec: ImageGenerationRemoteSnapshotSchema,
     keyToString: () => "jobs",
     projectSnapshot: (state, _key, metadata) =>
@@ -268,31 +255,20 @@ export const imageGenerationDefinition = defineFrameworkCoveredRemoteMachine({
     authorizeDispatch: async ({ sender, event, currentState }) => {
       const intent = event as ImageGenerationIntentEvent;
       if (intent.type === "SUBMIT") {
-        imageGenerationService.assertAcceptingGenerations(
-          intent.job.targetAppId,
-        );
+        imageGenerationService.assertAcceptingGenerations(intent.job.targetAppId);
         if (!(await appExists(intent.job.targetAppId))) {
-          throw new OctopusStudioError(
-            "Target app not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Target app not found", OctopusStudioErrorKind.NotFound);
         }
-        imageGenerationService.assertAcceptingGenerations(
-          intent.job.targetAppId,
-        );
+        imageGenerationService.assertAcceptingGenerations(intent.job.targetAppId);
         intent.initiatorWindowSessionId = sender.windowSessionId;
         return;
       }
       const job = currentState?.jobs.find(
-        ({ job }: ImageGenerationActorState["jobs"][number]) =>
-          job.id === intent.jobId,
+        ({ job }: ImageGenerationActorState["jobs"][number]) => job.id === intent.jobId,
       );
       if (
         intent.activeInvocationRef.entityKey !== intent.jobId ||
-        !sameImageGenerationInvocation(
-          job?.activeInvocationRef ?? null,
-          intent.activeInvocationRef,
-        )
+        !sameImageGenerationInvocation(job?.activeInvocationRef ?? null, intent.activeInvocationRef)
       ) {
         throw new OctopusStudioError(
           "Cancellation does not target the active image generation",
@@ -302,10 +278,7 @@ export const imageGenerationDefinition = defineFrameworkCoveredRemoteMachine({
       if (
         !job ||
         !sender.windowSessionId ||
-        !imageGenerationOperationService.owns(
-          job.requestId,
-          sender.windowSessionId,
-        )
+        !imageGenerationOperationService.owns(job.requestId, sender.windowSessionId)
       ) {
         throw new OctopusStudioError(
           "Cancellation does not belong to the initiating window",
@@ -319,7 +292,5 @@ export const imageGenerationDefinition = defineFrameworkCoveredRemoteMachine({
 } satisfies ImageGenerationDefinition);
 
 function assertNever(value: never): never {
-  throw new Error(
-    `Unexpected image-generation command: ${JSON.stringify(value)}`,
-  );
+  throw new Error(`Unexpected image-generation command: ${JSON.stringify(value)}`);
 }

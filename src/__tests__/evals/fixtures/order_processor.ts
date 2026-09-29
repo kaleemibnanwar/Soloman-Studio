@@ -1,12 +1,7 @@
 // order_processor.ts — core order processing logic
 
 import { createLogger } from "./logger";
-import type {
-  Order,
-  InventoryItem,
-  PaymentMethod,
-  ShippingAddress,
-} from "./types";
+import type { Order, InventoryItem, PaymentMethod, ShippingAddress } from "./types";
 
 const logger = createLogger("order-processor");
 
@@ -29,18 +24,12 @@ async function getInventory(_productId: string): Promise<InventoryItem | null> {
   return null;
 }
 
-async function reserveInventory(
-  _productId: string,
-  _quantity: number,
-): Promise<boolean> {
+async function reserveInventory(_productId: string, _quantity: number): Promise<boolean> {
   // Implementation elided — locks inventory for the order
   return true;
 }
 
-async function releaseInventory(
-  _productId: string,
-  _quantity: number,
-): Promise<void> {
+async function releaseInventory(_productId: string, _quantity: number): Promise<void> {
   // Implementation elided — releases a previously-reserved hold
 }
 
@@ -52,10 +41,7 @@ async function chargePayment(
   return { transactionId: "txn_placeholder" };
 }
 
-async function refundPayment(
-  transactionId: string,
-  amount: number,
-): Promise<RefundResult> {
+async function refundPayment(transactionId: string, amount: number): Promise<RefundResult> {
   // Implementation elided — issues a refund via the payment gateway
   return { refundId: "ref_placeholder", amount, status: "pending" };
 }
@@ -67,9 +53,7 @@ async function createShipment(
   // Implementation elided — hits the shipping API
   return {
     trackingNumber: "track_placeholder",
-    estimatedDelivery: new Date(
-      Date.now() + 5 * 24 * 3600 * 1000,
-    ).toISOString(),
+    estimatedDelivery: new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString(),
   };
 }
 
@@ -82,17 +66,11 @@ async function saveOrder(_order: Order): Promise<string> {
   return "order_placeholder";
 }
 
-async function updateOrderStatus(
-  _orderId: string,
-  _status: string,
-): Promise<void> {
+async function updateOrderStatus(_orderId: string, _status: string): Promise<void> {
   // Implementation elided — updates DB record
 }
 
-async function notifyOrderConfirmed(
-  _orderId: string,
-  _email: string,
-): Promise<void> {
+async function notifyOrderConfirmed(_orderId: string, _email: string): Promise<void> {
   // Implementation elided — sends confirmation email
 }
 
@@ -124,10 +102,7 @@ export async function processOrder(order: Order): Promise<ProcessResult> {
   }
 
   // Validate payment method
-  if (
-    !order.payment.method ||
-    !["card", "paypal", "bank"].includes(order.payment.method)
-  ) {
+  if (!order.payment.method || !["card", "paypal", "bank"].includes(order.payment.method)) {
     return { success: false, error: "Invalid payment method" };
   }
   if (!order.payment.amount || order.payment.amount <= 0) {
@@ -163,10 +138,7 @@ export async function processOrder(order: Order): Promise<ProcessResult> {
   // Charge the customer
   let transaction: { transactionId: string };
   try {
-    transaction = await chargePayment(
-      order.payment.method,
-      order.payment.amount,
-    );
+    transaction = await chargePayment(order.payment.method, order.payment.amount);
   } catch (err) {
     logger.error("Payment failed", err);
     for (const r of reservations) {
@@ -199,9 +171,7 @@ export async function processOrder(order: Order): Promise<ProcessResult> {
   };
 
   const orderId = await saveOrder(enrichedOrder);
-  logger.info(
-    `Order ${orderId} confirmed (tracking: ${shipment.trackingNumber})`,
-  );
+  logger.info(`Order ${orderId} confirmed (tracking: ${shipment.trackingNumber})`);
 
   // Send confirmation email (best-effort — don't fail the order)
   try {
@@ -227,10 +197,7 @@ export async function cancelOrder(
   try {
     await cancelShipment(trackingNumber);
   } catch (err) {
-    logger.warn(
-      `Could not cancel shipment ${trackingNumber} for order ${orderId}`,
-      err,
-    );
+    logger.warn(`Could not cancel shipment ${trackingNumber} for order ${orderId}`, err);
   }
 
   let refundOk = false;
@@ -245,10 +212,7 @@ export async function cancelOrder(
     await releaseInventory(r.productId, r.quantity);
   }
 
-  await updateOrderStatus(
-    orderId,
-    refundOk ? "cancelled" : "cancellation_pending",
-  );
+  await updateOrderStatus(orderId, refundOk ? "cancelled" : "cancellation_pending");
   logger.info(`Order ${orderId} cancelled (refund ok: ${refundOk})`);
   return { success: true, orderId };
 }
@@ -291,9 +255,7 @@ export async function estimateDeliveryDate(
 ): Promise<string> {
   const baseDays = expedited ? 2 : 5;
   const regionBuffer = address.country !== "US" ? 7 : 0;
-  const estimate = new Date(
-    Date.now() + (baseDays + regionBuffer) * 24 * 3600 * 1000,
-  );
+  const estimate = new Date(Date.now() + (baseDays + regionBuffer) * 24 * 3600 * 1000);
   return estimate.toISOString();
 }
 
@@ -326,9 +288,7 @@ export async function processOrderIdempotent(
 ): Promise<ProcessResult> {
   const existing = checkIdempotency(idempotencyKey);
   if (existing) {
-    logger.info(
-      `Idempotency hit: returning existing order ${existing} for key ${idempotencyKey}`,
-    );
+    logger.info(`Idempotency hit: returning existing order ${existing} for key ${idempotencyKey}`);
     return { success: true, orderId: existing };
   }
   const result = await processOrder(order);

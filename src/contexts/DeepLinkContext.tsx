@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { DeepLinkData } from "../ipc/types";
 import { earlyDeepLinkEvents } from "@/app_wiring/early_renderer_events";
@@ -20,9 +14,9 @@ const DeepLinkContext = createContext<DeepLinkContextType>({
 });
 
 export function DeepLinkProvider({ children }: { children: React.ReactNode }) {
-  const [lastDeepLink, setLastDeepLink] = useState<
-    (DeepLinkData & { timestamp: number }) | null
-  >(null);
+  const [lastDeepLink, setLastDeepLink] = useState<(DeepLinkData & { timestamp: number }) | null>(
+    null,
+  );
   const navigate = useNavigate();
   useEffect(() => {
     const unsubscribe = earlyDeepLinkEvents.subscribe((data) => {

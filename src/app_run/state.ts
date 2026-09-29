@@ -4,10 +4,7 @@ import type { InvocationRef } from "@/state_machines/invocation_ref";
 import type { StaleOperationIgnoreReason } from "@/state_machines/types";
 
 export const APP_RUN_INVOCATION_KIND = "app-run" as const;
-export type AppRunInvocationRef = InvocationRef<
-  typeof APP_RUN_INVOCATION_KIND,
-  number
->;
+export type AppRunInvocationRef = InvocationRef<typeof APP_RUN_INVOCATION_KIND, number>;
 
 /**
  * Types for the per-app run-state machine.
@@ -202,9 +199,8 @@ export type AppRunIgnoreReason =
   | StaleOperationIgnoreReason
   | "no-change";
 
-export type TransitionResult =
-  import("@/state_machines/types").TransitionResult<
-    RunState,
-    RunCommand,
-    AppRunIgnoreReason
-  >;
+export type TransitionResult = import("@/state_machines/types").TransitionResult<
+  RunState,
+  RunCommand,
+  AppRunIgnoreReason
+>;

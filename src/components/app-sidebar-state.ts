@@ -2,9 +2,7 @@ export type AppSidebarPanel = "Apps" | "Settings" | "Library";
 
 export type AppSidebarItemTitle = "Settings" | "Library";
 
-export function getRouteSidebarPanel(
-  pathname: string,
-): AppSidebarPanel | null {
+export function getRouteSidebarPanel(pathname: string): AppSidebarPanel | null {
   // Apps, chat projects, the default-bucket chats, AND Tasks all share one
   // default listing (AppList) — there are no top-level nav items for them.
   // Tasks is an entry inside that listing, so /tasks still shows the merged

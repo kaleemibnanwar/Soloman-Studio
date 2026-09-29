@@ -1,10 +1,7 @@
 import { serialize } from "node:v8";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as schema from "@/db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   hasMatchingDueFollowUp,
   rejectDueFollowUp,
@@ -64,14 +61,8 @@ function liveRecordFor(intentId: string): LiveIntentRecord | undefined {
   return record?.intent ? (record as LiveIntentRecord) : undefined;
 }
 
-function assertMatchingIntent(
-  existing: IntentRecord,
-  intent: SerializableChatTurnIntent,
-): void {
-  if (
-    existing.chatId !== intent.chatId ||
-    existing.payloadHash !== intent.payloadHash
-  ) {
+function assertMatchingIntent(existing: IntentRecord, intent: SerializableChatTurnIntent): void {
+  if (existing.chatId !== intent.chatId || existing.payloadHash !== intent.payloadHash) {
     throw new OctopusStudioError(
       "Intent id was already used with a different immutable payload",
       OctopusStudioErrorKind.Conflict,
@@ -89,9 +80,7 @@ function replay(existing: IntentRecord): PersistAdmissionResult {
   };
 }
 
-export function assertChatTurnPayloadHash(
-  intent: SerializableChatTurnIntent,
-): void {
+export function assertChatTurnPayloadHash(intent: SerializableChatTurnIntent): void {
   const expected = computeChatTurnPayloadHash(intent);
   if (expected !== intent.payloadHash) {
     throw new OctopusStudioError(
@@ -101,9 +90,7 @@ export function assertChatTurnPayloadHash(
   }
 }
 
-export function toQueueEntry(
-  intent: SerializableChatTurnIntent,
-): ChatQueueEntry {
+export function toQueueEntry(intent: SerializableChatTurnIntent): ChatQueueEntry {
   return {
     itemId: intent.intentId,
     intentId: intent.intentId,
@@ -309,9 +296,7 @@ export function ensureIntentRecord(intent: SerializableChatTurnIntent): void {
   });
 }
 
-export function getIntentAcceptance(
-  intentId: string,
-): IntentRecord["acceptance"] | undefined {
+export function getIntentAcceptance(intentId: string): IntentRecord["acceptance"] | undefined {
   return recordFor(intentId)?.acceptance;
 }
 
@@ -324,17 +309,11 @@ export function getRetainedIntentPayloadBytes(intentId: string): number {
   return intent ? serialize(intent).byteLength : 0;
 }
 
-export function markIntentAccepted(
-  intentId: string | undefined,
-  acceptedMessageId: number,
-): void {
+export function markIntentAccepted(intentId: string | undefined, acceptedMessageId: number): void {
   if (!intentId) return;
   const record = recordFor(intentId);
   if (!record) {
-    throw new OctopusStudioError(
-      "Chat turn intent not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("Chat turn intent not found", OctopusStudioErrorKind.NotFound);
   }
   record.acceptance = "message-accepted";
   record.recovery = "started";
@@ -373,9 +352,7 @@ export async function mutateChatQueue(
           : [];
     if (
       mutation.type === "remove" &&
-      selected.some(
-        ({ record }) => record.intent.owner?.kind === "plan-handoff",
-      )
+      selected.some(({ record }) => record.intent.owner?.kind === "plan-handoff")
     ) {
       throw new OctopusStudioError(
         "Plan implementation turns cannot be removed while their handoff is active",
@@ -403,10 +380,7 @@ export async function mutateChatQueue(
       case "edit": {
         const selectedRecord = selected[0]?.record;
         if (!selectedRecord) {
-          throw new OctopusStudioError(
-            "Queued message not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Queued message not found", OctopusStudioErrorKind.NotFound);
         }
         const withoutHash = {
           ...selectedRecord.intent,
@@ -420,9 +394,7 @@ export async function mutateChatQueue(
         };
         assertQueueSnapshotWithinLimit(
           entries.map(({ record }) =>
-            record === selectedRecord
-              ? toQueueEntry(updatedIntent)
-              : toQueueEntry(record.intent),
+            record === selectedRecord ? toQueueEntry(updatedIntent) : toQueueEntry(record.intent),
           ),
         );
         selectedRecord.intent = updatedIntent;
@@ -443,25 +415,16 @@ export async function mutateChatQueue(
       }
       case "remove": {
         if (selected.length === 0) {
-          throw new OctopusStudioError(
-            "Queued message not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Queued message not found", OctopusStudioErrorKind.NotFound);
         }
         const removedId = selected[0].record.intent.intentId;
-        aggregate.intentIds = aggregate.intentIds.filter(
-          (intentId) => intentId !== removedId,
-        );
+        aggregate.intentIds = aggregate.intentIds.filter((intentId) => intentId !== removedId);
         selected[0].record.acceptance = "rejected";
         break;
       }
       case "clear": {
-        const removedIds = new Set(
-          selected.map(({ record }) => record.intent.intentId),
-        );
-        aggregate.intentIds = aggregate.intentIds.filter(
-          (intentId) => !removedIds.has(intentId),
-        );
+        const removedIds = new Set(selected.map(({ record }) => record.intent.intentId));
+        aggregate.intentIds = aggregate.intentIds.filter((intentId) => !removedIds.has(intentId));
         for (const { record } of selected) record.acceptance = "rejected";
         break;
       }
@@ -485,21 +448,14 @@ export async function mutateChatQueue(
         ),
       ),
     );
-    const failed = sessionRecords.filter(
-      (_, index) => settlements[index]?.status === "rejected",
-    );
+    const failed = sessionRecords.filter((_, index) => settlements[index]?.status === "rejected");
     if (failed.length > 0) {
-      const failedIds = new Set(
-        failed.map(({ record }) => record.intent.intentId),
-      );
+      const failedIds = new Set(failed.map(({ record }) => record.intent.intentId));
       aggregate.intentIds = [
         ...originalIntentIds.filter(
-          (intentId) =>
-            failedIds.has(intentId) || aggregate.intentIds.includes(intentId),
+          (intentId) => failedIds.has(intentId) || aggregate.intentIds.includes(intentId),
         ),
-        ...aggregate.intentIds.filter(
-          (intentId) => !originalIntentIds.includes(intentId),
-        ),
+        ...aggregate.intentIds.filter((intentId) => !originalIntentIds.includes(intentId)),
       ];
       for (const { record } of failed) record.acceptance = "queued";
       throw new AggregateError(
@@ -527,10 +483,7 @@ export function markIntentTerminal(
     if (intent.owner?.kind === "user-input-follow-up") {
       return loadChatQueue(database, intent.chatId);
     }
-    throw new OctopusStudioError(
-      "Chat turn intent not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("Chat turn intent not found", OctopusStudioErrorKind.NotFound);
   }
   const aggregate = queueFor(record.chatId);
   let changed = false;
@@ -591,10 +544,7 @@ export async function restoreClaimedQueueHead(
   return withChatQueueLock(chatId, async () => {
     const aggregate = queueFor(chatId);
     const record = liveRecordFor(intentId);
-    if (
-      record?.acceptance === "queued" &&
-      !aggregate.intentIds.includes(intentId)
-    ) {
+    if (record?.acceptance === "queued" && !aggregate.intentIds.includes(intentId)) {
       aggregate.intentIds.unshift(intentId);
       aggregate.revision += 1;
     }

@@ -1,9 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type {
-  VisibleEntity,
-  WindowSessionId,
-} from "@/window_infrastructure/types";
+import type { VisibleEntity, WindowSessionId } from "@/window_infrastructure/types";
 
 export const MAX_PRODUCT_WINDOWS = 8;
 const LEGACY_WINDOW_SESSION_FILE_NAME = "window-sessions.json";
@@ -22,9 +19,7 @@ export function restorableVisibleEntity(
   );
 }
 
-export async function clearLegacyWindowSessionPersistence(
-  userDataPath: string,
-): Promise<void> {
+export async function clearLegacyWindowSessionPersistence(userDataPath: string): Promise<void> {
   const filePath = path.join(userDataPath, LEGACY_WINDOW_SESSION_FILE_NAME);
   await Promise.all([
     fs.promises.rm(filePath, { force: true }),

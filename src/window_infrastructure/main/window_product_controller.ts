@@ -1,17 +1,9 @@
-import type {
-  VisibleEntity,
-  WindowSessionId,
-} from "@/window_infrastructure/types";
+import type { VisibleEntity, WindowSessionId } from "@/window_infrastructure/types";
 
 export interface WindowProductController {
   openEntityInNewWindow(entity: VisibleEntity): Promise<WindowSessionId>;
-  initialEntityForSession(
-    windowSessionId: WindowSessionId,
-  ): VisibleEntity | undefined;
-  setVisibleEntities(
-    windowSessionId: WindowSessionId,
-    entities: readonly VisibleEntity[],
-  ): void;
+  initialEntityForSession(windowSessionId: WindowSessionId): VisibleEntity | undefined;
+  setVisibleEntities(windowSessionId: WindowSessionId, entities: readonly VisibleEntity[]): void;
   mayMigrateLegacyChatTabSession(windowSessionId: WindowSessionId): boolean;
   restorableWindowSessionIds(): readonly WindowSessionId[];
 }
@@ -36,14 +28,10 @@ export async function awaitProductWindowRenderer<T>({
 
 let controller: WindowProductController | undefined;
 
-export function configureWindowProductController(
-  next: WindowProductController,
-): void {
+export function configureWindowProductController(next: WindowProductController): void {
   controller = next;
 }
 
-export function getWindowProductController():
-  | WindowProductController
-  | undefined {
+export function getWindowProductController(): WindowProductController | undefined {
   return controller;
 }

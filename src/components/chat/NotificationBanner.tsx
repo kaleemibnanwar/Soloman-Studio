@@ -29,10 +29,7 @@ export function NotificationBanner() {
           data-testid="notification-tip-banner"
         />
       )}
-      <MacNotificationGuideDialog
-        open={showMacGuide}
-        onClose={() => setShowMacGuide(false)}
-      />
+      <MacNotificationGuideDialog open={showMacGuide} onClose={() => setShowMacGuide(false)} />
     </>
   );
 }

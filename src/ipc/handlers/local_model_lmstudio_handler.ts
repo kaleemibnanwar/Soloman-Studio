@@ -3,10 +3,7 @@ import { getLmStudioBaseUrl } from "../utils/lm_studio_utils";
 import { createTypedHandler } from "./base";
 import { languageModelContracts } from "../types/language-model";
 import type { LocalModel } from "../types/language-model";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("lmstudio_handler");
 
@@ -31,9 +28,7 @@ export interface LMStudioModel {
 }
 
 export async function fetchLMStudioModels(): Promise<{ models: LocalModel[] }> {
-  const modelsResponse: Response = await fetch(
-    `${getLmStudioBaseUrl()}/api/v0/models`,
-  );
+  const modelsResponse: Response = await fetch(`${getLmStudioBaseUrl()}/api/v0/models`);
   if (!modelsResponse.ok) {
     throw new OctopusStudioError(
       "Failed to fetch models from LM Studio",

@@ -13,10 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local-agent code_search (integration)", () => {
@@ -63,22 +60,18 @@ describe("local-agent code_search (integration)", () => {
     await waitFor(() => expect(screen.getByText("Code Search")).toBeTruthy(), {
       timeout: 20_000,
     });
-    await waitFor(
-      () => expect(screen.getByText("React component rendering")).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText("React component rendering")).toBeTruthy(), {
+      timeout: 20_000,
+    });
     // The agent's final message text also renders.
-    await waitFor(
-      () => expect(screen.getByText(/I found the relevant files/)).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/I found the relevant files/)).toBeTruthy(), {
+      timeout: 20_000,
+    });
 
     // Gate main-side (db) assertions on the real end-of-stream event.
     await harness.waitForStreamEnd(harness.chatId);
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const messages = await harness.db.query.messages.findMany({
@@ -89,9 +82,7 @@ describe("local-agent code_search (integration)", () => {
     expect(assistant.role).toBe("assistant");
     const content = assistant.content;
 
-    expect(content).toContain(
-      "I'll search for files related to React components in the codebase.",
-    );
+    expect(content).toContain("I'll search for files related to React components in the codebase.");
     expect(content).toContain(
       "I found the relevant files! The main React component is in src/App.tsx which handles the app rendering.",
     );
@@ -105,9 +96,7 @@ describe("local-agent code_search (integration)", () => {
     const resultText = xmlMatch![1];
     expect(resultText).not.toContain("No relevant files found.");
     // Three " - <path>" entries from the fake endpoint (slice(0, 3)).
-    const entries = resultText
-      .split("\n")
-      .filter((line) => line.startsWith(" - "));
+    const entries = resultText.split("\n").filter((line) => line.startsWith(" - "));
     expect(entries).toHaveLength(3);
 
     // Every channel the UI invoked had a real handler.

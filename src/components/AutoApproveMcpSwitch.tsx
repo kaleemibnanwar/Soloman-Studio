@@ -24,9 +24,9 @@ export function AutoApproveMcpSwitch() {
         </Label>
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
-        In Agent mode, use a fast model to judge each MCP tool call and skip the
-        consent prompt for ones that look safe. Risky actions (deleting data,
-        sending messages, changing access) still ask.
+        In Agent mode, use a fast model to judge each MCP tool call and skip the consent prompt for
+        ones that look safe. Risky actions (deleting data, sending messages, changing access) still
+        ask.
       </div>
     </div>
   );

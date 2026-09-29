@@ -9,9 +9,7 @@ const DEFAULT_REPO = "octopus-studio";
 
 class GithubRequestError extends Error {
   constructor({ path, response, text }) {
-    super(
-      `GitHub API GET ${path} failed: ${response.status} ${response.statusText}\n${text}`,
-    );
+    super(`GitHub API GET ${path} failed: ${response.status} ${response.statusText}\n${text}`);
     this.name = "GithubRequestError";
     this.status = response.status;
   }
@@ -26,18 +24,15 @@ function readPackageVersion(packageJsonPath) {
 }
 
 async function githubRequest({ owner, path, repo, token }) {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}${path}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "User-Agent": "octopusStudio-release-tag-preparer",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
+  const response = await fetch(`https://api.github.com/repos/${owner}/${repo}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "octopusStudio-release-tag-preparer",
+      "X-GitHub-Api-Version": "2022-11-28",
     },
-  );
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -68,9 +63,7 @@ async function findReleaseByTag({ owner, repo, tagName, token }) {
       repo,
       token,
     });
-    const release = releases.find(
-      (candidate) => candidate.tag_name === tagName,
-    );
+    const release = releases.find((candidate) => candidate.tag_name === tagName);
 
     if (release) {
       return release;
@@ -86,9 +79,7 @@ async function findReleaseByTag({ owner, repo, tagName, token }) {
 
 function assertReleaseCanMoveTag({ release, tagName }) {
   if (release && !release.draft) {
-    throw new Error(
-      `Release ${tagName} is already published; refusing to move its tag.`,
-    );
+    throw new Error(`Release ${tagName} is already published; refusing to move its tag.`);
   }
 }
 
@@ -106,12 +97,8 @@ function getRemoteTagShaFromOutput({ output, tagName }) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  const dereferencedLine = lines.find((line) =>
-    line.endsWith(`refs/tags/${tagName}^{}`),
-  );
-  const tagLine =
-    dereferencedLine ??
-    lines.find((line) => line.endsWith(`refs/tags/${tagName}`));
+  const dereferencedLine = lines.find((line) => line.endsWith(`refs/tags/${tagName}^{}`));
+  const tagLine = dereferencedLine ?? lines.find((line) => line.endsWith(`refs/tags/${tagName}`));
 
   if (!tagLine) {
     return null;
@@ -122,12 +109,7 @@ function getRemoteTagShaFromOutput({ output, tagName }) {
 }
 
 function getRemoteTagSha(tagName) {
-  const output = runGit([
-    "ls-remote",
-    "--tags",
-    "origin",
-    `refs/tags/${tagName}`,
-  ]);
+  const output = runGit(["ls-remote", "--tags", "origin", `refs/tags/${tagName}`]);
   if (!output) {
     return null;
   }
@@ -142,9 +124,7 @@ function verifyRemoteTagSha({ currentSha, tagName }) {
   }
 
   if (tagSha !== currentSha) {
-    throw new Error(
-      `Remote tag ${tagName} points to ${tagSha}, expected ${currentSha}.`,
-    );
+    throw new Error(`Remote tag ${tagName} points to ${tagSha}, expected ${currentSha}.`);
   }
 }
 
@@ -159,9 +139,7 @@ function writeGithubOutputs({ outputPath, outputs }) {
       .map(([key, value]) => {
         const stringValue = String(value);
         if (stringValue.includes("\n")) {
-          throw new Error(
-            `GitHub output values must not contain newlines: ${key}`,
-          );
+          throw new Error(`GitHub output values must not contain newlines: ${key}`);
         }
         return `${key}=${stringValue}`;
       })
@@ -252,9 +230,7 @@ async function main() {
     const result = verifyPreparedReleaseTag({
       currentSha: process.env.GITHUB_SHA,
     });
-    console.log(
-      `Verified ${result.tagName} points to ${process.env.GITHUB_SHA}.`,
-    );
+    console.log(`Verified ${result.tagName} points to ${process.env.GITHUB_SHA}.`);
     return;
   }
 

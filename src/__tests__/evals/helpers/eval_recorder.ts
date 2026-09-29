@@ -123,9 +123,7 @@ function fsTimestamp(iso: string): string {
   return iso.replace(/[:.]/g, "-");
 }
 
-export function normalizeUsage(
-  u: LanguageModelUsage | undefined,
-): NormalizedUsage {
+export function normalizeUsage(u: LanguageModelUsage | undefined): NormalizedUsage {
   const input = u?.inputTokens ?? 0;
   const output = u?.outputTokens ?? 0;
   const total = u?.totalTokens ?? input + output;
@@ -196,9 +194,7 @@ export function renderEvalRunAsText(record: EvalRunRecord): string {
   lines.push(
     `Model:     ${record.model.label} ` +
       `[${record.model.provider}/${record.model.modelName}]` +
-      (record.model.responseModelId
-        ? ` → ${record.model.responseModelId}`
-        : ""),
+      (record.model.responseModelId ? ` → ${record.model.responseModelId}` : ""),
   );
   lines.push(`Timestamp: ${record.timestamp}`);
   lines.push(`Passed:    ${record.passed}`);
@@ -266,28 +262,17 @@ export function renderEvalRunAsText(record: EvalRunRecord): string {
   return lines.join("\n");
 }
 
-export function recordDirFor(
-  suite: string,
-  caseName: string,
-  modelLabel: string,
-): string {
+export function recordDirFor(suite: string, caseName: string, modelLabel: string): string {
   const runDirName = `${fsTimestamp(RUN_START_TIMESTAMP)}__${sanitize(modelLabel)}`;
   return resolve(RESULTS_ROOT, sanitize(suite), runDirName, sanitize(caseName));
 }
 
 export async function recordEvalRun(record: EvalRunRecord): Promise<void> {
-  const recordDir = recordDirFor(
-    record.suite,
-    record.caseName,
-    record.model.label,
-  );
+  const recordDir = recordDirFor(record.suite, record.caseName, record.model.label);
   await mkdir(recordDir, { recursive: true });
 
   const writes: Promise<void>[] = [
-    writeFile(
-      resolve(recordDir, "record.json"),
-      JSON.stringify(record, null, 2) + "\n",
-    ),
+    writeFile(resolve(recordDir, "record.json"), JSON.stringify(record, null, 2) + "\n"),
     writeFile(resolve(recordDir, "record.txt"), renderEvalRunAsText(record)),
     writeDetailsFolder(recordDir, record),
   ];
@@ -299,10 +284,7 @@ export async function recordEvalRun(record: EvalRunRecord): Promise<void> {
   await Promise.all(writes);
 }
 
-async function writeToolCallsFolder(
-  recordDir: string,
-  record: EvalRunRecord,
-): Promise<void> {
+async function writeToolCallsFolder(recordDir: string, record: EvalRunRecord): Promise<void> {
   const toolCallsDir = resolve(recordDir, "tool_calls");
   await mkdir(toolCallsDir, { recursive: true });
   const padWidth = Math.max(2, String(record.toolCalls.length).length);
@@ -363,10 +345,7 @@ async function writeToolCallsFolder(
   );
 }
 
-async function writeDetailsFolder(
-  recordDir: string,
-  record: EvalRunRecord,
-): Promise<void> {
+async function writeDetailsFolder(recordDir: string, record: EvalRunRecord): Promise<void> {
   const detailsDir = resolve(recordDir, "details");
   await mkdir(detailsDir, { recursive: true });
   const ext = extensionFor(record.file.name);
@@ -393,19 +372,10 @@ async function writeDetailsFolder(
     writeFile(resolve(detailsDir, `file_after${ext}`), record.file.after),
     writeFile(resolve(detailsDir, "diff.patch"), record.diff || ""),
     writeFile(resolve(detailsDir, "system_prompt.txt"), record.prompt.system),
-    writeFile(
-      resolve(detailsDir, "instructions.txt"),
-      record.prompt.instructions,
-    ),
+    writeFile(resolve(detailsDir, "instructions.txt"), record.prompt.instructions),
     writeFile(resolve(detailsDir, "user_prompt.txt"), record.prompt.user),
-    writeFile(
-      resolve(detailsDir, "metadata.json"),
-      JSON.stringify(metadata, null, 2) + "\n",
-    ),
-    writeFile(
-      resolve(detailsDir, "metadata.txt"),
-      renderMetadataAsText(metadata),
-    ),
+    writeFile(resolve(detailsDir, "metadata.json"), JSON.stringify(metadata, null, 2) + "\n"),
+    writeFile(resolve(detailsDir, "metadata.txt"), renderMetadataAsText(metadata)),
   ]);
 }
 

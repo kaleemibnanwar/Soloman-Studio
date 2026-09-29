@@ -15,9 +15,7 @@ import {
 } from "./transport";
 import type { ImageGenerationIntentEvent } from "./state";
 
-type ImageGenerationRendererIntent = z.infer<
-  typeof ImageGenerationIntentEventSchema
->;
+type ImageGenerationRendererIntent = z.infer<typeof ImageGenerationIntentEventSchema>;
 
 export const imageGenerationRemoteIntentContract = defineRemoteIntentContract<
   ImageGenerationKey,
@@ -51,8 +49,7 @@ export const imageGenerationRemoteIntentContract = defineRemoteIntentContract<
   keyIntentRelationship: {
     kind: "validate",
     validate: (_key, intent) =>
-      intent.type !== "CANCEL_REQUESTED" ||
-      intent.activeInvocationRef.entityKey === intent.jobId,
+      intent.type !== "CANCEL_REQUESTED" || intent.activeInvocationRef.entityKey === intent.jobId,
   },
   intents: {
     SUBMIT: {

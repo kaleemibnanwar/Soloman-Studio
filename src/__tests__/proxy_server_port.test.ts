@@ -4,13 +4,7 @@ import { Worker } from "node:worker_threads";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-const WORKER_PATH = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "worker",
-  "proxy_server.js",
-);
+const WORKER_PATH = path.resolve(__dirname, "..", "..", "worker", "proxy_server.js");
 
 /** Binds a TCP listener and resolves once it is actively occupying `port`. */
 function occupyPort(port: number): Promise<net.Server> {
@@ -104,9 +98,7 @@ describe("proxy worker port fallback", () => {
       maxPortAttempts: 20,
     });
 
-    const startMsg = await waitFor((m) =>
-      m.startsWith("proxy-server-start url="),
-    );
+    const startMsg = await waitFor((m) => m.startsWith("proxy-server-start url="));
 
     expect(startMsg).toContain(`:${fallbackPortStart}`);
     expect(startMsg).not.toContain(`:${base}`);

@@ -10,14 +10,8 @@ import { ImageGenerationProgressButton } from "@/components/ImageGenerationProgr
 import { filterMediaAppsByQuery } from "@/lib/mediaUtils";
 
 export default function MediaPage() {
-  const {
-    mediaApps,
-    isLoading,
-    renameMediaFile,
-    deleteMediaFile,
-    moveMediaFile,
-    isMutatingMedia,
-  } = useAppMediaFiles();
+  const { mediaApps, isLoading, renameMediaFile, deleteMediaFile, moveMediaFile, isMutatingMedia } =
+    useAppMediaFiles();
   const { apps: allApps } = useLoadApps();
   const [searchQuery, setSearchQuery] = useState("");
   const [imageGeneratorOpen, setImageGeneratorOpen] = useState(false);
@@ -78,10 +72,7 @@ export default function MediaPage() {
         )}
       </div>
 
-      <ImageGeneratorDialog
-        open={imageGeneratorOpen}
-        onOpenChange={setImageGeneratorOpen}
-      />
+      <ImageGeneratorDialog open={imageGeneratorOpen} onOpenChange={setImageGeneratorOpen} />
     </div>
   );
 }

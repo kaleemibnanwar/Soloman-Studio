@@ -38,12 +38,8 @@ export function findLegacyOctopusStudioData(): LegacyOctopusStudioData | null {
     return null;
   }
 
-  const hasSettings = fs.existsSync(
-    path.join(legacyUserDataPath, LEGACY_SETTINGS_FILE),
-  );
-  const hasDatabase = fs.existsSync(
-    path.join(legacyUserDataPath, LEGACY_DB_FILE),
-  );
+  const hasSettings = fs.existsSync(path.join(legacyUserDataPath, LEGACY_SETTINGS_FILE));
+  const hasDatabase = fs.existsSync(path.join(legacyUserDataPath, LEGACY_DB_FILE));
   if (!hasSettings && !hasDatabase) {
     return null;
   }
@@ -103,10 +99,7 @@ async function importLegacyDatabase(
   }
 }
 
-function importLegacySettings(
-  legacyUserDataPath: string,
-  currentUserDataPath: string,
-): boolean {
+function importLegacySettings(legacyUserDataPath: string, currentUserDataPath: string): boolean {
   try {
     fs.copyFileSync(
       path.join(legacyUserDataPath, LEGACY_SETTINGS_FILE),
@@ -156,8 +149,7 @@ export async function maybeOfferLegacyOctopusStudioImport(): Promise<void> {
       defaultId: 0,
       cancelId: 1,
       title: "Import from OctopusStudio?",
-      message:
-        "We found an existing OctopusStudio installation on this computer.",
+      message: "We found an existing OctopusStudio installation on this computer.",
       detail:
         "Octopus Studio can import your settings, chats, and app history from it so you don't have to set up again.\n\n" +
         "Note: because of how your operating system secures saved credentials, provider API keys and connected-service logins (GitHub, Supabase, Neon, etc.) will need to be re-entered after importing.",

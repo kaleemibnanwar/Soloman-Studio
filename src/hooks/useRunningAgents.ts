@@ -8,9 +8,7 @@ const POLL_INTERVAL_MS = 1000;
  * Sub-agent tasks for a chat, polled while any are still in flight (so the
  * composer's status list stays live during a run and stops polling once done).
  */
-export function useRunningAgents(
-  chatId: number | undefined,
-): AgentTaskSnapshot[] {
+export function useRunningAgents(chatId: number | undefined): AgentTaskSnapshot[] {
   const [tasks, setTasks] = useState<AgentTaskSnapshot[]>([]);
 
   useEffect(() => {
@@ -25,7 +23,7 @@ export function useRunningAgents(
       try {
         const result = await ipc.agentTask.listForChat({ chatId });
         if (cancelled) return;
-        setTasks(result);
+        setTasks(result.filter((t) => t.status === "running" || t.status === "pending"));
         const stillActive = result.some(
           (task) => task.status === "running" || task.status === "pending",
         );

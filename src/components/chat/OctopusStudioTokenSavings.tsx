@@ -1,22 +1,19 @@
 import React from "react";
 import { Zap } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
-import {
-  OctopusStudioCard,
-  OctopusStudioCardHeader,
-} from "./OctopusStudioCardPrimitives";
+import { OctopusStudioCard, OctopusStudioCardHeader } from "./OctopusStudioCardPrimitives";
 
 interface OctopusStudioTokenSavingsProps {
   originalTokens: number;
   smartContextTokens: number;
 }
 
-export const OctopusStudioTokenSavings: React.FC<
-  OctopusStudioTokenSavingsProps
-> = ({ originalTokens, smartContextTokens }) => {
+export const OctopusStudioTokenSavings: React.FC<OctopusStudioTokenSavingsProps> = ({
+  originalTokens,
+  smartContextTokens,
+}) => {
   const tokensSaved = originalTokens - smartContextTokens;
-  const percentageSaved =
-    originalTokens > 0 ? Math.round((tokensSaved / originalTokens) * 100) : 0;
+  const percentageSaved = originalTokens > 0 ? Math.round((tokensSaved / originalTokens) * 100) : 0;
 
   return (
     <Tooltip>
@@ -30,9 +27,7 @@ export const OctopusStudioTokenSavings: React.FC<
         </OctopusStudioCard>
       </TooltipTrigger>
       <TooltipContent side="top" align="center">
-        <div className="text-left">
-          Saved {Math.round(tokensSaved).toLocaleString()} tokens
-        </div>
+        <div className="text-left">Saved {Math.round(tokensSaved).toLocaleString()} tokens</div>
       </TooltipContent>
     </Tooltip>
   );

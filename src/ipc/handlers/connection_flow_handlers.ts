@@ -1,10 +1,7 @@
 import { BrowserWindow, type WebContents } from "electron";
 import log from "electron-log";
 import { createTypedHandler } from "./base";
-import {
-  connectionFlowContracts,
-  connectionFlowEvents,
-} from "../types/connection_flow";
+import { connectionFlowContracts, connectionFlowEvents } from "../types/connection_flow";
 import {
   createConnectionFlowRegistry,
   type ClaimReturnResult,
@@ -17,10 +14,7 @@ import {
 } from "../../connection_flow/state";
 import { safeSend } from "../utils/safe_sender";
 import { publishQueryInvalidations } from "../utils/query_invalidation_delivery";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("connection_flow");
 
@@ -79,10 +73,7 @@ export interface ConnectionFlowProviderHooks {
   dispose?: () => void | Promise<void>;
 }
 
-const providerHooks = new Map<
-  ConnectionFlowProvider,
-  ConnectionFlowProviderHooks
->();
+const providerHooks = new Map<ConnectionFlowProvider, ConnectionFlowProviderHooks>();
 const providerWork = new Map<string, AbortController>();
 
 function providerWorkKey(invocationRef: ConnectionFlowInvocationRef): string {
@@ -114,9 +105,7 @@ export const connectionFlowRegistry = createConnectionFlowRegistry({
   onStateChange: (provider, state) => {
     logger.debug(
       `[${provider}] flow state -> ${state.status}` +
-        ("invocationRef" in state
-          ? ` (${state.invocationRef.operationId})`
-          : ""),
+        ("invocationRef" in state ? ` (${state.invocationRef.operationId})` : ""),
     );
     if (isTerminalFlowState(state) && "invocationRef" in state) {
       endProviderWork(provider, state.invocationRef);
@@ -124,9 +113,7 @@ export const connectionFlowRegistry = createConnectionFlowRegistry({
     broadcast(connectionFlowEvents.stateChanged.channel, { provider, state });
   },
   onUnsolicitedReturn: (provider) => {
-    logger.info(
-      `[${provider}] unsolicited OAuth return processed (no active flow)`,
-    );
+    logger.info(`[${provider}] unsolicited OAuth return processed (no active flow)`);
     broadcast(connectionFlowEvents.unsolicitedReturn.channel, { provider });
   },
   onIgnoredEvent: (provider, event, reason) => {
@@ -210,24 +197,21 @@ export async function runOAuthReturnExchange(
 }
 
 export async function disposeConnectionFlowsForShutdown(): Promise<void> {
-  const active = Object.entries(connectionFlowRegistry.getSnapshot()).flatMap(
-    ([provider, state]) =>
-      "invocationRef" in state
-        ? [
-            {
-              provider: provider as ConnectionFlowProvider,
-              invocationRef: state.invocationRef,
-            },
-          ]
-        : [],
+  const active = Object.entries(connectionFlowRegistry.getSnapshot()).flatMap(([provider, state]) =>
+    "invocationRef" in state
+      ? [
+          {
+            provider: provider as ConnectionFlowProvider,
+            invocationRef: state.invocationRef,
+          },
+        ]
+      : [],
   );
   connectionFlowRegistry.dispose();
   for (const { provider, invocationRef } of active) {
     endProviderWork(provider, invocationRef);
   }
-  await Promise.all(
-    [...providerHooks.values()].map((hooks) => hooks.dispose?.()),
-  );
+  await Promise.all([...providerHooks.values()].map((hooks) => hooks.dispose?.()));
 }
 
 // -----------------------------------------------------------------------------
@@ -237,10 +221,7 @@ export async function disposeConnectionFlowsForShutdown(): Promise<void> {
 export function registerConnectionFlowHandlers(): void {
   createTypedHandler(connectionFlowContracts.start, async (event, params) => {
     rememberSubscriber(event.sender);
-    const result = connectionFlowRegistry.start(
-      params.provider,
-      params.expectedRevision,
-    );
+    const result = connectionFlowRegistry.start(params.provider, params.expectedRevision);
     if (!result.admitted) {
       throw new OctopusStudioError(
         `Connection flow changed before ${params.provider} start was admitted.`,
@@ -260,10 +241,7 @@ export function registerConnectionFlowHandlers(): void {
       } else {
         // Deep-link providers (Supabase/Neon) have no async preparation:
         // the flow goes straight to awaiting the octopusStudio:// return.
-        connectionFlowRegistry.markPrepared(
-          params.provider,
-          result.invocationRef,
-        );
+        connectionFlowRegistry.markPrepared(params.provider, result.invocationRef);
       }
     }
     return {
@@ -278,23 +256,20 @@ export function registerConnectionFlowHandlers(): void {
     connectionFlowRegistry.cancel(params.provider, params.invocationRef);
   });
 
-  createTypedHandler(
-    connectionFlowContracts.acknowledge,
-    async (event, params) => {
-      rememberSubscriber(event.sender);
-      const result = connectionFlowRegistry.acknowledge(
-        params.provider,
-        params.invocationRef,
-        params.expectedRevision,
+  createTypedHandler(connectionFlowContracts.acknowledge, async (event, params) => {
+    rememberSubscriber(event.sender);
+    const result = connectionFlowRegistry.acknowledge(
+      params.provider,
+      params.invocationRef,
+      params.expectedRevision,
+    );
+    if (!result.admitted) {
+      throw new OctopusStudioError(
+        `Connection flow changed before ${params.provider} acknowledgement was admitted.`,
+        OctopusStudioErrorKind.Conflict,
       );
-      if (!result.admitted) {
-        throw new OctopusStudioError(
-          `Connection flow changed before ${params.provider} acknowledgement was admitted.`,
-          OctopusStudioErrorKind.Conflict,
-        );
-      }
-    },
-  );
+    }
+  });
 
   createTypedHandler(connectionFlowContracts.getStates, async (event) => {
     rememberSubscriber(event.sender);

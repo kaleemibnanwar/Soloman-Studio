@@ -2,11 +2,7 @@ import { atom } from "jotai";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import type { TestSpec, TestResult, TestIsolation } from "@/ipc/types";
 import type { RunAppTestsResult } from "@/ipc/types/tests";
-import {
-  buildSingleTestFileResult,
-  reconcileResultFile,
-  testKey,
-} from "@/lib/testResultUtils";
+import { buildSingleTestFileResult, reconcileResultFile, testKey } from "@/lib/testResultUtils";
 
 /**
  * Apps for which the user dismissed the "move legacy tests to e2e-tests/" offer
@@ -14,9 +10,7 @@ import {
  * files from `tests/`, so detection stops returning them and the banner clears
  * on its own — this only suppresses the banner when the user declines.
  */
-export const dismissedLegacyTestMigrationAppIdsAtom = atom<Set<number>>(
-  new Set<number>(),
-);
+export const dismissedLegacyTestMigrationAppIdsAtom = atom<Set<number>>(new Set<number>());
 
 /**
  * Result-state taxonomy for a single test (see plan's "Result-State Model").
@@ -25,11 +19,7 @@ export const dismissedLegacyTestMigrationAppIdsAtom = atom<Set<number>>(
  * - "running": currently executing (spinner).
  * - "not-run": never executed this session (gray).
  */
-export type TestStatus =
-  | TestResult["status"]
-  | "partial"
-  | "running"
-  | "not-run";
+export type TestStatus = TestResult["status"] | "partial" | "running" | "not-run";
 
 export type RuntimeTestResult = Omit<TestResult, "status"> & {
   status: TestResult["status"] | "partial";
@@ -94,32 +84,24 @@ export const appendTestRunOutputAtom = atom(
   (_get, set, { appId, chunk }: { appId: number; chunk: string }) => {
     set(testRunOutputByAppIdAtom, (prev) => {
       const next = new Map(prev);
-      next.set(
-        appId,
-        ((prev.get(appId) ?? "") + chunk).slice(-MAX_OUTPUT_LENGTH),
-      );
+      next.set(appId, ((prev.get(appId) ?? "") + chunk).slice(-MAX_OUTPUT_LENGTH));
       return next;
     });
   },
 );
 
-export const clearTestRunOutputForAppAtom = atom(
-  null,
-  (_get, set, appId: number) => {
-    set(testRunOutputByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-  },
-);
+export const clearTestRunOutputForAppAtom = atom(null, (_get, set, appId: number) => {
+  set(testRunOutputByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+});
 
 // Per-app maps keep test discovery and execution state isolated by app.
 export const testSpecsByAppIdAtom = atom<Map<number, TestSpec[]>>(new Map());
-export const testRunStateByAppIdAtom = atom<Map<number, TestRunState>>(
-  new Map(),
-);
+export const testRunStateByAppIdAtom = atom<Map<number, TestRunState>>(new Map());
 
 export const currentTestSpecsAtom = atom((get) => {
   const appId = get(selectedAppIdAtom);
@@ -189,11 +171,7 @@ export const setTestRunStateForAppAtom = atom(
  * leaf `test()` names. Callers fall back to spinning the whole file, which is
  * the honest answer when we don't know the subset.
  */
-function grepMatchedTestKeys(
-  grep: string,
-  specs: TestSpec[],
-  testFile: string,
-): string[] | null {
+function grepMatchedTestKeys(grep: string, specs: TestSpec[], testFile: string): string[] | null {
   let regex: RegExp;
   try {
     regex = new RegExp(grep);
@@ -201,9 +179,7 @@ function grepMatchedTestKeys(
     return null;
   }
   const cases = specs.find((s) => s.file === testFile)?.tests ?? [];
-  const matched = cases
-    .filter((c) => regex.test(c.title))
-    .map((c) => testKey(testFile, c.line));
+  const matched = cases.filter((c) => regex.test(c.title)).map((c) => testKey(testFile, c.line));
   return matched.length > 0 ? matched : null;
 }
 
@@ -254,9 +230,7 @@ export const applyTestRunStartedAtom = atom(
         results: isPartialRun
           ? prev.results
           : Object.fromEntries(
-              Object.entries(prev.results).filter(
-                ([f]) => !targetFiles.includes(f),
-              ),
+              Object.entries(prev.results).filter(([f]) => !targetFiles.includes(f)),
             ),
         runError: undefined,
         isolation: undefined,
@@ -297,10 +271,7 @@ export const applyTestRunFinishedAtom = atom(
     set(setTestRunStateForAppAtom, {
       appId,
       update: (prev) => {
-        if (
-          expectedStartedAt !== undefined &&
-          prev.startedAt !== expectedStartedAt
-        ) {
+        if (expectedStartedAt !== undefined && prev.startedAt !== expectedStartedAt) {
           return prev;
         }
         const nextResults = { ...prev.results };
@@ -324,9 +295,7 @@ export const applyTestRunFinishedAtom = atom(
           runningFiles: [],
           runningTests: [],
           results: nextResults,
-          runError: res.infraError
-            ? { message: res.infraError.message, kind: "infra" }
-            : undefined,
+          runError: res.infraError ? { message: res.infraError.message, kind: "infra" } : undefined,
           isolation: res.isolation,
         };
       },
@@ -334,26 +303,23 @@ export const applyTestRunFinishedAtom = atom(
   },
 );
 
-export const clearTestRuntimeForAppAtom = atom(
-  null,
-  (_get, set, appId: number) => {
-    set(testSpecsByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-    set(testRunStateByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-    set(testRunOutputByAppIdAtom, (prev) => {
-      if (!prev.has(appId)) return prev;
-      const next = new Map(prev);
-      next.delete(appId);
-      return next;
-    });
-  },
-);
+export const clearTestRuntimeForAppAtom = atom(null, (_get, set, appId: number) => {
+  set(testSpecsByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+  set(testRunStateByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+  set(testRunOutputByAppIdAtom, (prev) => {
+    if (!prev.has(appId)) return prev;
+    const next = new Map(prev);
+    next.delete(appId);
+    return next;
+  });
+});

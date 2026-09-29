@@ -100,14 +100,9 @@ export const AssertionProposalPayloadSchema = z.object({
    * reached the file — recovering from `items` would latch a card claiming
    * checks the spec on disk does not contain.
    */
-  pendingWriteItems: z
-    .array(AssertionPlanItemSchema)
-    .max(MAX_PLAN_ITEMS)
-    .optional(),
+  pendingWriteItems: z.array(AssertionPlanItemSchema).max(MAX_PLAN_ITEMS).optional(),
 });
-export type AssertionProposalPayload = z.infer<
-  typeof AssertionProposalPayloadSchema
->;
+export type AssertionProposalPayload = z.infer<typeof AssertionProposalPayloadSchema>;
 
 export function isAssertionItem(
   item: AssertionPlanItem,
@@ -183,11 +178,7 @@ export function buildPlanItems({
   let droppedAssertionCount = 0;
   for (const assertion of assertions) {
     const after = assertion.afterStep;
-    if (
-      !Number.isInteger(after) ||
-      after < -1 ||
-      after >= bodyStatements.length
-    ) {
+    if (!Number.isInteger(after) || after < -1 || after >= bodyStatements.length) {
       droppedAssertionCount++;
       continue;
     }
@@ -211,9 +202,7 @@ export function buildPlanItems({
     items.push({
       kind: "step",
       stepIndex,
-      text: truncateStepText(
-        descriptionByIndex.get(stepIndex) ?? statementFallbackText(statement),
-      ),
+      text: truncateStepText(descriptionByIndex.get(stepIndex) ?? statementFallbackText(statement)),
     });
     for (const raw of byAfterStep.get(stepIndex) ?? []) items.push(toItem(raw));
   });

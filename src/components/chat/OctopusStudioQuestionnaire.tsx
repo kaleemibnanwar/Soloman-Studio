@@ -49,9 +49,7 @@ const TYPE_META: Record<string, { icon: React.ReactNode; label: string }> = {
   },
 };
 
-export function OctopusStudioQuestionnaire({
-  children,
-}: OctopusStudioQuestionnaireProps) {
+export function OctopusStudioQuestionnaire({ children }: OctopusStudioQuestionnaireProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const entries = useMemo(
@@ -72,9 +70,7 @@ export function OctopusStudioQuestionnaire({
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ClipboardList className="text-primary" size={20} />
-          <span className="font-semibold text-foreground">
-            Questionnaire Responses
-          </span>
+          <span className="font-semibold text-foreground">Questionnaire Responses</span>
           <span className="flex items-center text-xs text-primary px-2 py-0.5 bg-primary/10 rounded-md font-medium">
             {entries.length} answered
           </span>
@@ -107,9 +103,7 @@ export function OctopusStudioQuestionnaire({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
               Answer
             </p>
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              {current.answer}
-            </p>
+            <p className="text-sm text-foreground/90 leading-relaxed">{current.answer}</p>
           </div>
         </div>
 

@@ -27,11 +27,7 @@ interface StoredPreview {
 const plansById = new Map<string, StoredPreview>();
 const idByAppId = new Map<number, string>();
 
-export function storePreview(
-  appId: number,
-  statements: string[],
-  target: PreviewTarget,
-): string {
+export function storePreview(appId: number, statements: string[], target: PreviewTarget): string {
   const existingId = idByAppId.get(appId);
   if (existingId) {
     plansById.delete(existingId);

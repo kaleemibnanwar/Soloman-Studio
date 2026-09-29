@@ -123,14 +123,8 @@ export function salesByRegion(
   const revenueByRegion = new Map<string, number>();
   const unitsByRegion = new Map<string, number>();
   for (const s of inRange) {
-    revenueByRegion.set(
-      s.region,
-      (revenueByRegion.get(s.region) ?? 0) + s.unitPrice * s.quantity,
-    );
-    unitsByRegion.set(
-      s.region,
-      (unitsByRegion.get(s.region) ?? 0) + s.quantity,
-    );
+    revenueByRegion.set(s.region, (revenueByRegion.get(s.region) ?? 0) + s.unitPrice * s.quantity);
+    unitsByRegion.set(s.region, (unitsByRegion.get(s.region) ?? 0) + s.quantity);
   }
 
   const rows: Array<{ region: string; revenue: string; units: number }> = [];
@@ -221,10 +215,7 @@ export function refundsByReason(
   const amountByReason = new Map<string, number>();
   const countByReason = new Map<string, number>();
   for (const r of inRange) {
-    amountByReason.set(
-      r.reason,
-      (amountByReason.get(r.reason) ?? 0) + r.amount,
-    );
+    amountByReason.set(r.reason, (amountByReason.get(r.reason) ?? 0) + r.amount);
     countByReason.set(r.reason, (countByReason.get(r.reason) ?? 0) + 1);
   }
 
@@ -244,11 +235,7 @@ export function refundsByReason(
   return rows;
 }
 
-export function refundRate(
-  sales: Sale[],
-  refunds: Refund[],
-  range: ReportRange,
-): string {
+export function refundRate(sales: Sale[], refunds: Refund[], range: ReportRange): string {
   const fromTs = Date.parse(range.from);
   const toTs = Date.parse(range.to);
 
@@ -332,8 +319,7 @@ export function churnRate(subs: Subscription[], range: ReportRange): string {
   for (const sub of subs) {
     const started = Date.parse(sub.startedAt);
     const canceled = sub.canceledAt ? Date.parse(sub.canceledAt) : null;
-    const wasActiveAtStart =
-      started < fromTs && (canceled === null || canceled >= fromTs);
+    const wasActiveAtStart = started < fromTs && (canceled === null || canceled >= fromTs);
     if (wasActiveAtStart) activeAtStart++;
     if (canceled !== null && canceled >= fromTs && canceled < toTs) {
       canceledInRange++;
@@ -361,10 +347,7 @@ export function topCustomersByRevenue(
 
   const buckets = new Map<string, number>();
   for (const s of inRange) {
-    buckets.set(
-      s.customerId,
-      (buckets.get(s.customerId) ?? 0) + s.unitPrice * s.quantity,
-    );
+    buckets.set(s.customerId, (buckets.get(s.customerId) ?? 0) + s.unitPrice * s.quantity);
   }
 
   const rows = Array.from(buckets.entries())

@@ -53,23 +53,19 @@ const TASKS_PAGE_SIZE = 10;
 
 type SchedulePreset = "manual" | "hourly" | "daily" | "weekly" | "custom";
 
-const PRESET_MINUTES: Record<
-  Exclude<SchedulePreset, "custom" | "manual">,
-  number
-> = {
+const PRESET_MINUTES: Record<Exclude<SchedulePreset, "custom" | "manual">, number> = {
   hourly: 60,
   daily: 1440,
   weekly: 10080,
 };
 
-const PRESET_OPTIONS: { value: SchedulePreset; label: string; hint: string }[] =
-  [
-    { value: "manual", label: "Manual", hint: "Run on demand" },
-    { value: "hourly", label: "Hourly", hint: "Every 60 min" },
-    { value: "daily", label: "Daily", hint: "Every 24 h" },
-    { value: "weekly", label: "Weekly", hint: "Every 7 days" },
-    { value: "custom", label: "Custom", hint: "Set interval" },
-  ];
+const PRESET_OPTIONS: { value: SchedulePreset; label: string; hint: string }[] = [
+  { value: "manual", label: "Manual", hint: "Run on demand" },
+  { value: "hourly", label: "Hourly", hint: "Every 60 min" },
+  { value: "daily", label: "Daily", hint: "Every 24 h" },
+  { value: "weekly", label: "Weekly", hint: "Every 7 days" },
+  { value: "custom", label: "Custom", hint: "Set interval" },
+];
 
 function minutesToPreset(minutes: number | null): {
   preset: SchedulePreset;
@@ -139,15 +135,11 @@ export default function TasksPage() {
   const [page, setPage] = useState(1);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [tokenTotals, setTokenTotals] = useState<Record<number, number>>({});
-  const [loadingTokenIds, setLoadingTokenIds] = useState<Set<number>>(
-    new Set(),
-  );
+  const [loadingTokenIds, setLoadingTokenIds] = useState<Set<number>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [form, setForm] = useState<TaskFormState>(emptyForm());
-  const [mcpServers, setMcpServers] = useState<
-    Awaited<ReturnType<typeof ipc.mcp.listServers>>
-  >([]);
+  const [mcpServers, setMcpServers] = useState<Awaited<ReturnType<typeof ipc.mcp.listServers>>>([]);
   const [directoryBusy, setDirectoryBusy] = useState(false);
 
   const { data: modelsByProviders } = useLanguageModelsByProviders();
@@ -208,9 +200,7 @@ export default function TasksPage() {
       });
       await refreshApps();
     } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to choose directory",
-      );
+      showError(error instanceof Error ? error.message : "Failed to choose directory");
     } finally {
       setDirectoryBusy(false);
     }
@@ -291,8 +281,7 @@ export default function TasksPage() {
     }
   };
 
-  const patch = (partial: Partial<TaskFormState>) =>
-    setForm((prev) => ({ ...prev, ...partial }));
+  const patch = (partial: Partial<TaskFormState>) => setForm((prev) => ({ ...prev, ...partial }));
 
   const openCreate = () => {
     setEditingTask(null);
@@ -310,9 +299,7 @@ export default function TasksPage() {
       customMinutes: custom,
       projectId: task.projectId != null ? String(task.projectId) : "default",
       mcpServerIds: new Set(task.mcpServerIds ?? []),
-      modelSelection: task.modelSelection
-        ? JSON.stringify(task.modelSelection)
-        : "default",
+      modelSelection: task.modelSelection ? JSON.stringify(task.modelSelection) : "default",
       enabled: task.enabled,
     });
     setDialogOpen(true);
@@ -344,10 +331,7 @@ export default function TasksPage() {
       scheduleMinutes: minutes,
       projectId: form.projectId !== "default" ? Number(form.projectId) : null,
       mcpServerIds: form.mcpServerIds.size ? [...form.mcpServerIds] : null,
-      modelSelection:
-        form.modelSelection !== "default"
-          ? JSON.parse(form.modelSelection)
-          : null,
+      modelSelection: form.modelSelection !== "default" ? JSON.parse(form.modelSelection) : null,
     };
     try {
       if (editingTask) {
@@ -365,9 +349,7 @@ export default function TasksPage() {
       }
     } catch (error) {
       showError(
-        error instanceof Error
-          ? `Failed to save task: ${error.message}`
-          : "Failed to save task",
+        error instanceof Error ? `Failed to save task: ${error.message}` : "Failed to save task",
       );
     }
   };
@@ -421,8 +403,7 @@ export default function TasksPage() {
 
   const mcpNames = useMemo(() => {
     const byId = new Map(mcpServers.map((s) => [s.id, s.name]));
-    return (ids: number[] | null) =>
-      (ids ?? []).map((id) => byId.get(id) ?? `#${id}`);
+    return (ids: number[] | null) => (ids ?? []).map((id) => byId.get(id) ?? `#${id}`);
   }, [mcpServers]);
 
   return (
@@ -431,8 +412,8 @@ export default function TasksPage() {
         <div>
           <h1 className="text-2xl font-bold">Tasks</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Saved prompts that run on a schedule or on demand, in a chat. Full
-            control over schedule, target project, tools, and model.
+            Saved prompts that run on a schedule or on demand, in a chat. Full control over
+            schedule, target project, tools, and model.
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -447,8 +428,8 @@ export default function TasksPage() {
           <div>
             <p className="text-sm font-medium text-foreground">No tasks yet.</p>
             <p className="mt-1 text-xs">
-              Create a task to run a prompt now, on a schedule, or both — in any
-              code or codeless project.
+              Create a task to run a prompt now, on a schedule, or both — in any code or codeless
+              project.
             </p>
           </div>
         </div>
@@ -479,9 +460,7 @@ export default function TasksPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="truncate font-medium">
-                          {task.title}
-                        </span>
+                        <span className="truncate font-medium">{task.title}</span>
                         <Badge
                           variant={task.enabled ? "default" : "secondary"}
                           className="shrink-0"
@@ -534,19 +513,10 @@ export default function TasksPage() {
                     >
                       <Power
                         size={15}
-                        className={
-                          task.enabled
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }
+                        className={task.enabled ? "text-primary" : "text-muted-foreground"}
                       />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Edit"
-                      onClick={() => openEdit(task)}
-                    >
+                    <Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(task)}>
                       <Pencil size={15} />
                     </Button>
                     <Button
@@ -583,9 +553,7 @@ export default function TasksPage() {
                       <span>
                         Tokens:{" "}
                         <span className="font-medium text-foreground">
-                          {tokensLoading
-                            ? "Loading…"
-                            : (tokenTotal ?? 0).toLocaleString()}
+                          {tokensLoading ? "Loading…" : (tokenTotal ?? 0).toLocaleString()}
                         </span>
                       </span>
                     </div>
@@ -598,8 +566,7 @@ export default function TasksPage() {
           {totalCount > TASKS_PAGE_SIZE && (
             <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
               <span>
-                {totalCount} task{totalCount === 1 ? "" : "s"} · Page {page} of{" "}
-                {totalPages}
+                {totalCount} task{totalCount === 1 ? "" : "s"} · Page {page} of {totalPages}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -742,9 +709,7 @@ export default function TasksPage() {
                   <div className="flex items-center gap-2">
                     <FolderOpen size={15} className="text-muted-foreground" />
                     <div>
-                      <div className="text-sm font-medium">
-                        Workspace folder
-                      </div>
+                      <div className="text-sm font-medium">Workspace folder</div>
                       <div className="text-xs text-muted-foreground">
                         Read &amp; write Markdown docs here for context.
                       </div>
@@ -789,9 +754,7 @@ export default function TasksPage() {
               <Label>Model</Label>
               <Select
                 value={form.modelSelection}
-                onValueChange={(value) =>
-                  patch({ modelSelection: value ?? "" })
-                }
+                onValueChange={(value) => patch({ modelSelection: value ?? "" })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Default model" />
@@ -831,9 +794,7 @@ export default function TasksPage() {
                       <span>
                         {server.name}
                         {!server.enabled && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            (disabled)
-                          </span>
+                          <span className="ml-2 text-xs text-muted-foreground">(disabled)</span>
                         )}
                       </span>
                     </label>
@@ -846,8 +807,7 @@ export default function TasksPage() {
               <div>
                 <div className="text-sm font-medium">Enabled</div>
                 <div className="text-xs text-muted-foreground">
-                  Recurring tasks only run while enabled. Manual tasks can still
-                  be run on demand.
+                  Recurring tasks only run while enabled. Manual tasks can still be run on demand.
                 </div>
               </div>
               <Switch
@@ -861,9 +821,7 @@ export default function TasksPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              {editingTask ? "Save changes" : "Create task"}
-            </Button>
+            <Button onClick={handleSave}>{editingTask ? "Save changes" : "Create task"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -68,9 +68,7 @@ export function useAppOutputSubscription() {
     hasSettings: Boolean(settings),
     showWarning: shouldShowPnpmMinimumReleaseAgeWarning(settings),
   });
-  const syncErrorToastRef = useRef(
-    new Map<number, { message: string; shownAt: number }>(),
-  );
+  const syncErrorToastRef = useRef(new Map<number, { message: string; shownAt: number }>());
 
   useEffect(() => {
     selectedAppIdRef.current = appId;
@@ -140,8 +138,7 @@ export function useAppOutputSubscription() {
       if (
         output.type === "package-manager-warning" &&
         (output.warningKind === "pnpm-migration" ||
-          (pnpmWarningSettingRef.current.hasSettings &&
-            pnpmWarningSettingRef.current.showWarning))
+          (pnpmWarningSettingRef.current.hasSettings && pnpmWarningSettingRef.current.showWarning))
       ) {
         packageWarnings.setWarning(output.appId, {
           kind: output.warningKind ?? "release-age",
@@ -159,9 +156,7 @@ export function useAppOutputSubscription() {
 
       const logEntry = {
         level:
-          output.type === "stderr" ||
-          output.type === "client-error" ||
-          output.type === "sync-error"
+          output.type === "stderr" || output.type === "client-error" || output.type === "sync-error"
             ? ("error" as const)
             : ("info" as const),
         type: "server" as const,
@@ -192,10 +187,7 @@ export function useAppOutputSubscription() {
 
   useEffect(() => {
     const unsubscribe = ipc.events.misc.onAppOutputBatch((outputs) => {
-      const entriesByAppId = new Map<
-        number,
-        NonNullable<ReturnType<typeof processAppOutput>>[]
-      >();
+      const entriesByAppId = new Map<number, NonNullable<ReturnType<typeof processAppOutput>>[]>();
       for (const output of outputs) {
         const entry = processAppOutput(output);
         if (entry) {

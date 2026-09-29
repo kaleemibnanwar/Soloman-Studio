@@ -1,9 +1,4 @@
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 import {
   MachineAddressSchema,
   MachineDispatchEnvelopeSchema,
@@ -52,9 +47,5 @@ export const distributedMachineEvents = {
   }),
 } as const;
 
-export const distributedMachineClient = createClient(
-  distributedMachineContracts,
-);
-export const distributedMachineEventClient = createEventClient(
-  distributedMachineEvents,
-);
+export const distributedMachineClient = createClient(distributedMachineContracts);
+export const distributedMachineEventClient = createEventClient(distributedMachineEvents);

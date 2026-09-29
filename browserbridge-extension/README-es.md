@@ -2,7 +2,6 @@
     <img src="https://github.com/user-attachments/assets/ec60b0c4-87ba-48f4-981a-c55ed0e8497b" height="100" width="375" alt="banner" /><br>
 </h1>
 
-
 <div align="center">
 
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nanobrowser)
@@ -37,7 +36,6 @@ Nanobrowser es una herramienta de automatización web con IA que se ejecuta en t
 
 > **Nota:** Actualmente ofrecemos soporte para OpenAI, Anthropic, Gemini, Ollama y proveedores personalizados compatibles con OpenAI, próximamente se ofrecerá soporte a más proveedores.
 
-
 ## 📊 Funciones Clave
 
 - **Sistema Multiagente**: Agentes de IA especializados colaboran para realizar flujos de trabajo de navegador complejos
@@ -47,74 +45,76 @@ Nanobrowser es una herramienta de automatización web con IA que se ejecuta en t
 - **Historial de Conversaciones**: Accede y gestiona fácilmente el historial de interacciones con tu agente de IA
 - **Soporte de Múltiples LLM**: Conéctate a tus proveedores de LLM preferidos y asigna distintos modelos a diferentes agentes
 
-
 ## 🚀 Inicio Rápido
 
 1. **Instala desde Chrome Web Store** (Versión Estable):
-   * Visita la [página de Nanobrowser en Chrome Web Store](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
-   * Haz clic en el botón "Añadir a Chrome"
-   * Confirma la instalación cuando se te solicite
+   - Visita la [página de Nanobrowser en Chrome Web Store](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
+   - Haz clic en el botón "Añadir a Chrome"
+   - Confirma la instalación cuando se te solicite
 
 > **Nota Importante**: Para acceder a las funciones más recientes, instala desde ["Instalar Última Versión Manualmente"](#-instalar-última-versión-manualmente) abajo, ya que la versión de Chrome Web Store puede tardar en actualizarse debido al proceso de revisión.
 
 2. **Configurar Modelos de Agente**:
-   * Haz clic en el icono de Nanobrowser ubicado en la barra de herramientas para abrir el panel lateral
-   * Haz clic en el icono de `Settings` (arriba a la derecha)
-   * Agrega tus claves de API del LLM
-   * Elige qué modelo usar para cada agente (Navigator, Planner)
+   - Haz clic en el icono de Nanobrowser ubicado en la barra de herramientas para abrir el panel lateral
+   - Haz clic en el icono de `Settings` (arriba a la derecha)
+   - Agrega tus claves de API del LLM
+   - Elige qué modelo usar para cada agente (Navigator, Planner)
 
 ## 🔧 Instalar Última Versión Manualmente
 
 Para obtener la versión más reciente con todas las funciones nuevas:
 
 1. **Descargar**
-    * Descarga el archivo `nanobrowser.zip` más reciente desde la [página de lanzamientos](https://github.com/nanobrowser/nanobrowser/releases) oficial en GitHub.
+   - Descarga el archivo `nanobrowser.zip` más reciente desde la [página de lanzamientos](https://github.com/nanobrowser/nanobrowser/releases) oficial en GitHub.
 
 2. **Instalar**:
-    * Extrae el archivo `nanobrowser.zip`.
-    * Abre `chrome://extensions/` en Chrome
-    * Habilita el `Modo de desarrollador` (arriba a la derecha)
-    * Haz clic en `Cargar extensión sin empaquetar` (arriba a la izquierda)
-    * Selecciona la carpeta descomprimida de `nanobrowser`.
+   - Extrae el archivo `nanobrowser.zip`.
+   - Abre `chrome://extensions/` en Chrome
+   - Habilita el `Modo de desarrollador` (arriba a la derecha)
+   - Haz clic en `Cargar extensión sin empaquetar` (arriba a la izquierda)
+   - Selecciona la carpeta descomprimida de `nanobrowser`.
 
 3. **Configurar Modelos de Agente**
-    * Haz clic en el icono de Nanobrowser en la barra de herramientas para abrir el panel lateral
-    * Haz clic en el icono de `Settings` (arriba a la derecha).
-    * Agrega tus claves de API del LLM
-    * Elige qué modelo usar para cada agente (Navigator, Planner)
+   - Haz clic en el icono de Nanobrowser en la barra de herramientas para abrir el panel lateral
+   - Haz clic en el icono de `Settings` (arriba a la derecha).
+   - Agrega tus claves de API del LLM
+   - Elige qué modelo usar para cada agente (Navigator, Planner)
 
 4. **Actualizar**:
-    * Descarga el archivo `nanobrowser.zip` más reciente desde la página de lanzamientos.
-    * Extrae y reemplaza los archivos existentes de Nanobrowser con los nuevos.
-    * Ve a `chrome://extensions/` en Chrome y haz clic en el icono de actualizar en la tarjeta de Nanobrowser.
+   - Descarga el archivo `nanobrowser.zip` más reciente desde la página de lanzamientos.
+   - Extrae y reemplaza los archivos existentes de Nanobrowser con los nuevos.
+   - Ve a `chrome://extensions/` en Chrome y haz clic en el icono de actualizar en la tarjeta de Nanobrowser.
 
 ## 🛠️ Compilar desde el Código Fuente
 
 Si prefieres compilar Nanobrowser por ti mismo, sigue estos pasos:
 
 1. **Requisitos Previos**:
-   * [Node.js](https://nodejs.org/) (v22.12.0 o superior)
-   * [pnpm](https://pnpm.io/installation) (v9.15.1 o superior)
+   - [Node.js](https://nodejs.org/) (v22.12.0 o superior)
+   - [pnpm](https://pnpm.io/installation) (v9.15.1 o superior)
 
 2. **Clonar el Repositorio**:
+
    ```bash
    git clone https://github.com/nanobrowser/nanobrowser.git
    cd nanobrowser
    ```
 
 3. **Instalar Dependencias**:
+
    ```bash
    pnpm install
    ```
 
 4. **Compilar la Extensión**:
+
    ```bash
    pnpm build
    ```
 
 5. **Cargar la Extensión**:
-   * La extensión compilada estará en la carpeta `dist`
-   * Sigue los pasos de instalación de la sección Instalar Última Versión Manualmente para cargar la extensión a tu navegador
+   - La extensión compilada estará en la carpeta `dist`
+   - Sigue los pasos de instalación de la sección Instalar Última Versión Manualmente para cargar la extensión a tu navegador
 
 6. **Modo Desarrollador** (opcional):
    ```bash
@@ -126,6 +126,7 @@ Si prefieres compilar Nanobrowser por ti mismo, sigue estos pasos:
 Nanobrowser te permite configurar distintos modelos LLM para cada agente para equilibrar costo y rendimiento. Aquí están las configuraciones recomendadas:
 
 ### Mejor Rendimiento
+
 - **Planner**: Claude Sonnet 4
   - Mejores capacidades de razonamiento y planificación
 - **Navigator**: Claude Haiku 3.5
@@ -133,6 +134,7 @@ Nanobrowser te permite configurar distintos modelos LLM para cada agente para eq
   - Buen equilibrio entre rendimiento y costo
 
 ### Configuración Económica
+
 - **Planner**: Claude Haiku or GPT-4o
   - Rendimiento razonable a menor costo
   - Puede requerir más iteraciones para tareas complejas
@@ -141,6 +143,7 @@ Nanobrowser te permite configurar distintos modelos LLM para cada agente para eq
   - Adecuado para tareas básicas de navegación
 
 ### Modelos Locales
+
 - **Opciones de Configuración**:
   - Usa Ollama u otros proveedores compatibles con OpenAI para ejecutar modelos localmente
   - Sin costos de API y con privacidad total, sin datos que salgan de tu máquina
@@ -168,9 +171,11 @@ Nanobrowser te permite configurar distintos modelos LLM para cada agente para eq
 Aquí tienes algunas tareas poderosas que puedes realizar con solo una frase:
 
 1. **Resumen de Noticias**:
+
    > "Ve a TechCrunch y extrae los 10 principales titulares de las últimas 24 horas"
 
 2. **Investigación en GitHub**:
+
    > "Busca los repositorios de Python en tendencia con más estrellas"
 
 3. **Investigación de Compras**:
@@ -180,24 +185,22 @@ Aquí tienes algunas tareas poderosas que puedes realizar con solo una frase:
 
 Estamos desarrollando activamente Nanobrowser con características emocionantes en el horizonte. ¡Te invitamos a unirte!
 
-Consulta nuestra hoja de ruta detallada y las características próximas en nuestras [Discusiones de GitHub](https://github.com/nanobrowser/nanobrowser/discussions/85). 
+Consulta nuestra hoja de ruta detallada y las características próximas en nuestras [Discusiones de GitHub](https://github.com/nanobrowser/nanobrowser/discussions/85).
 
 ## 🤝 Contribuciones
 
-**Necesitamos tu ayuda para hacer que Nanobrowser sea aún mejor!**  Se aceptan contribuciones de todo tipo:
+**Necesitamos tu ayuda para hacer que Nanobrowser sea aún mejor!** Se aceptan contribuciones de todo tipo:
 
-*  **Comparte Prompts y Casos de Uso** 
-   * Únete a nuestro [servidor de Discord](https://discord.gg/NN3ABHggMK).
-   * Comparte cómo estás usando Nanobrowser. Ayúdanos a construir una biblioteca de prompts útiles y casos de uso reales.
-*  **Proporciona Retroalimentación** 
-   * Prueba Nanobrowser y danos tu opinión sobre su rendimiento o sugiere mejoras en nuestro [servidor de Discord](https://discord.gg/NN3ABHggMK).
-* **Contribuye con Código**
-   * Consulta nuestro [CONTRIBUTING.md](CONTRIBUTING.md) para conocer las pautas sobre cómo contribuir con código al proyecto.
-   * Envía pull requests para corrección de errores, funciones, o mejoras en la documentación.
-
+- **Comparte Prompts y Casos de Uso**
+  - Únete a nuestro [servidor de Discord](https://discord.gg/NN3ABHggMK).
+  - Comparte cómo estás usando Nanobrowser. Ayúdanos a construir una biblioteca de prompts útiles y casos de uso reales.
+- **Proporciona Retroalimentación**
+  - Prueba Nanobrowser y danos tu opinión sobre su rendimiento o sugiere mejoras en nuestro [servidor de Discord](https://discord.gg/NN3ABHggMK).
+- **Contribuye con Código**
+  - Consulta nuestro [CONTRIBUTING.md](CONTRIBUTING.md) para conocer las pautas sobre cómo contribuir con código al proyecto.
+  - Envía pull requests para corrección de errores, funciones, o mejoras en la documentación.
 
 Creemos en el poder del código abierto y la colaboración comunitaria. ¡Únete a nosotros para construir el futuro de la automatización web!
-
 
 ## 🔒 Seguridad
 
@@ -225,7 +228,6 @@ Nanobrowser se construye sobre otros increíbles proyectos de código abierto:
 - [LangChain](https://github.com/langchain-ai/langchainjs)
 
 ¡Un enorme agradecimiento a sus creadores y colaboradores!
-
 
 ## 📄 Licencia
 

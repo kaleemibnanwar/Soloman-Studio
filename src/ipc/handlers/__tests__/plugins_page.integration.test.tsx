@@ -8,10 +8,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import { ipc } from "@/ipc/types";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("Plugins page (integration)", () => {
@@ -48,10 +45,9 @@ describe("Plugins page (integration)", () => {
     fireEvent.change(within(dialog).getByPlaceholderText("node"), {
       target: { value: "node" },
     });
-    fireEvent.change(
-      within(dialog).getByPlaceholderText("path/to/mcp-server.js --flag"),
-      { target: { value: harness.mcp.fakeStdioServerPath } },
-    );
+    fireEvent.change(within(dialog).getByPlaceholderText("path/to/mcp-server.js --flag"), {
+      target: { value: harness.mcp.fakeStdioServerPath },
+    });
     fireEvent.click(within(dialog).getByRole("button", { name: "Add Plugin" }));
 
     // Adding opens the new plugin's page, which is where env vars are
@@ -84,10 +80,7 @@ describe("Plugins page (integration)", () => {
     // so the test can release the in-flight listTools invoke after the
     // assertions instead of holding it into harness teardown; the 60s
     // self-exit is a backstop against a leak when an assertion fails.
-    const sentinel = path.join(
-      os.tmpdir(),
-      `octopus-studio-hanging-mcp-${process.pid}.sentinel`,
-    );
+    const sentinel = path.join(os.tmpdir(), `octopus-studio-hanging-mcp-${process.pid}.sentinel`);
     await ipc.mcp.createServer({
       name: "hanging-mcp-server",
       transport: "stdio",
@@ -110,9 +103,7 @@ describe("Plugins page (integration)", () => {
       });
       expect(card.textContent).toContain("hanging-mcp-server");
       expect(card.textContent).toContain("— tools");
-      expect(screen.getByTestId("plugins-stats").textContent).toBe(
-        "1 plugin · — tools enabled",
-      );
+      expect(screen.getByTestId("plugins-stats").textContent).toBe("1 plugin · — tools enabled");
     } finally {
       fs.writeFileSync(sentinel, "");
       try {
@@ -141,7 +132,7 @@ describe("Plugins page (integration)", () => {
     // re-listing through the enabled toggle (each update invalidates
     // the tools query). The failed listing must fall back to the
     // placeholder, not report "0 tools".
-    const { mcpManager } = await import("@/ipc/utils/mcp_manager");
+    const { mcpManager } = await import("@/ipc/mcp/mcp_manager");
     await mcpManager.dispose(server.id);
     await stop();
     const enabledSwitch = within(card).getByRole("switch");
@@ -159,18 +150,14 @@ describe("Plugins page (integration)", () => {
         expect(card.textContent).toContain("tools unavailable");
         // The unreachable server contributes zero usable tools; the
         // aggregate is not held on the discovery placeholder.
-        expect(screen.getByTestId("plugins-stats").textContent).toBe(
-          "1 plugin · 0 tools enabled",
-        );
+        expect(screen.getByTestId("plugins-stats").textContent).toBe("1 plugin · 0 tools enabled");
       },
       { timeout: 20_000 },
     );
     expect(card.textContent).not.toMatch(/\d+ tools/);
 
     // The detail page shows the failed-discovery message.
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Open testing-mcp-server" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Open testing-mcp-server" }));
     const detail = await screen.findByTestId("plugin-detail");
     await within(detail).findByText("Tool discovery failed.");
   }, 40_000);
@@ -179,9 +166,7 @@ describe("Plugins page (integration)", () => {
     const server = await harness.mcp.addStdioServer();
     harness.mountSurface({ route: "/settings" });
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Open testing-mcp-server" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Open testing-mcp-server" }));
     const detail = await screen.findByTestId("plugin-detail");
     await within(detail).findByText("calculator_add");
 
@@ -189,10 +174,7 @@ describe("Plugins page (integration)", () => {
     const toolRow = within(detail)
       .getByText("calculator_add")
       .closest("div[class*='border']") as HTMLElement;
-    await harness.selectFromBaseUiSelect(
-      within(toolRow).getByRole("combobox"),
-      "Always allow",
-    );
+    await harness.selectFromBaseUiSelect(within(toolRow).getByRole("combobox"), "Always allow");
     await waitFor(async () => {
       const consents = await ipc.mcp.getToolConsents();
       expect(consents).toContainEqual(
@@ -205,10 +187,7 @@ describe("Plugins page (integration)", () => {
     });
 
     // Denying a tool removes it from the enabled-tools count.
-    await harness.selectFromBaseUiSelect(
-      within(toolRow).getByRole("combobox"),
-      "Deny",
-    );
+    await harness.selectFromBaseUiSelect(within(toolRow).getByRole("combobox"), "Deny");
     await waitFor(async () => {
       const consents = await ipc.mcp.getToolConsents();
       expect(consents).toContainEqual(
@@ -232,15 +211,11 @@ describe("Plugins page (integration)", () => {
     );
 
     // Back into the detail page to delete it.
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Open testing-mcp-server" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Open testing-mcp-server" }));
     const detailAgain = await screen.findByTestId("plugin-detail");
 
     // Delete asks for confirmation, then returns to the list.
-    fireEvent.click(
-      within(detailAgain).getByRole("button", { name: "Delete" }),
-    );
+    fireEvent.click(within(detailAgain).getByRole("button", { name: "Delete" }));
     const confirm = await screen.findByRole("alertdialog");
     fireEvent.click(within(confirm).getByRole("button", { name: "Delete" }));
 

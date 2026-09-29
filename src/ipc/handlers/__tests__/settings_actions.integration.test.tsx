@@ -3,10 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import { readSettings, writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import type { UserSettings } from "@/lib/schemas";
 
@@ -66,9 +63,7 @@ describe("settings actions (integration)", () => {
     harness.mountSurface({ route: "/", withPrivacyBanner: true });
     fireEvent.click(await screen.findByTestId("telemetry-accept-button"));
 
-    await waitFor(() =>
-      expect(readSettings().telemetryConsent).toBe("opted_in"),
-    );
+    await waitFor(() => expect(readSettings().telemetryConsent).toBe("opted_in"));
     expect(screen.queryByTestId("telemetry-accept-button")).toBeNull();
   });
 
@@ -78,9 +73,7 @@ describe("settings actions (integration)", () => {
     harness.mountSurface({ route: "/", withPrivacyBanner: true });
     fireEvent.click(await screen.findByTestId("telemetry-reject-button"));
 
-    await waitFor(() =>
-      expect(readSettings().telemetryConsent).toBe("opted_out"),
-    );
+    await waitFor(() => expect(readSettings().telemetryConsent).toBe("opted_out"));
     expect(screen.queryByTestId("telemetry-reject-button")).toBeNull();
   });
 
@@ -90,9 +83,7 @@ describe("settings actions (integration)", () => {
     harness.mountSurface({ route: "/", withPrivacyBanner: true });
     fireEvent.click(await screen.findByTestId("telemetry-later-button"));
 
-    await waitFor(() =>
-      expect(screen.queryByTestId("telemetry-later-button")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByTestId("telemetry-later-button")).toBeNull());
     expect(readSettings().telemetryConsent).toBe("unset");
   });
 
@@ -111,26 +102,18 @@ describe("settings actions (integration)", () => {
     await waitFor(() => expect(readSettings().maxToolCallSteps).toBe(200));
 
     await harness.selectFromBaseUiSelect(trigger, "Default (100)");
-    await waitFor(() =>
-      expect(readSettings().maxToolCallSteps).toBeUndefined(),
-    );
+    await waitFor(() => expect(readSettings().maxToolCallSteps).toBeUndefined());
   });
 
   it("persists smart context options from the Pro mode popover", async () => {
     resetSettings(PRO_SETTINGS);
 
     harness.mount();
-    await harness.openPopover(
-      await screen.findByRole("button", { name: /Pro/ }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Build mode settings" }),
-    );
+    await harness.openPopover(await screen.findByRole("button", { name: /Pro/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Build mode settings" }));
 
     const smartContext = await screen.findByTestId("smart-context-selector");
-    fireEvent.click(
-      within(smartContext).getByRole("button", { name: "Balanced" }),
-    );
+    fireEvent.click(within(smartContext).getByRole("button", { name: "Balanced" }));
     await waitFor(() => {
       const settings = readSettings();
       expect(settings.enableProSmartFilesContextMode).toBe(true);
@@ -156,26 +139,18 @@ describe("settings actions (integration)", () => {
     resetSettings(PRO_SETTINGS);
 
     harness.mount();
-    await harness.openPopover(
-      await screen.findByRole("button", { name: /Pro/ }),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Build mode settings" }),
-    );
+    await harness.openPopover(await screen.findByRole("button", { name: /Pro/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Build mode settings" }));
 
     const turboEdits = await screen.findByTestId("turbo-edits-selector");
-    fireEvent.click(
-      within(turboEdits).getByRole("button", { name: "Classic" }),
-    );
+    fireEvent.click(within(turboEdits).getByRole("button", { name: "Classic" }));
     await waitFor(() => {
       const settings = readSettings();
       expect(settings.enableProLazyEditsMode).toBe(true);
       expect(settings.proLazyEditsMode).toBe("v1");
     });
 
-    fireEvent.click(
-      within(turboEdits).getByRole("button", { name: "Search & replace" }),
-    );
+    fireEvent.click(within(turboEdits).getByRole("button", { name: "Search & replace" }));
     await waitFor(() => {
       const settings = readSettings();
       expect(settings.enableProLazyEditsMode).toBe(true);
@@ -207,15 +182,9 @@ describe("settings actions (integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save Key" }));
 
     const dialog = await screen.findByRole("alertdialog");
-    expect(
-      within(dialog).getByRole("heading", { name: "API key rejected" }),
-    ).toBeTruthy();
-    expect(
-      within(dialog).getByText(/OctopusStudio rejected this API key/),
-    ).toBeTruthy();
-    fireEvent.click(
-      within(dialog).getByRole("button", { name: "Try another API key" }),
-    );
+    expect(within(dialog).getByRole("heading", { name: "API key rejected" })).toBeTruthy();
+    expect(within(dialog).getByText(/OctopusStudio rejected this API key/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Try another API key" }));
     await waitFor(() => expect(dialog.isConnected).toBe(false));
     expect(readSettings().providerSettings.auto).toBeUndefined();
     expect(readSettings().enableOctopusStudioPro).not.toBe(true);
@@ -226,9 +195,7 @@ describe("settings actions (integration)", () => {
     await screen.findByText("Current Key (Settings)");
     await waitFor(() => {
       const settings = readSettings();
-      expect(settings.providerSettings.auto?.apiKey?.value).toBe(
-        "testOctopusStudiokey",
-      );
+      expect(settings.providerSettings.auto?.apiKey?.value).toBe("testOctopusStudiokey");
       expect(settings.enableOctopusStudioPro).toBe(true);
     });
   }, 60_000);
@@ -243,13 +210,9 @@ describe("settings actions (integration)", () => {
     expect(migrationSwitch.getAttribute("aria-checked")).toBe("false");
 
     await harness.setSwitch(migrationSwitch, true);
-    await waitFor(() =>
-      expect(readSettings().enableSupabaseWriteSqlMigration).toBe(true),
-    );
+    await waitFor(() => expect(readSettings().enableSupabaseWriteSqlMigration).toBe(true));
 
     await harness.setSwitch(migrationSwitch, false);
-    await waitFor(() =>
-      expect(readSettings().enableSupabaseWriteSqlMigration).toBe(false),
-    );
+    await waitFor(() => expect(readSettings().enableSupabaseWriteSqlMigration).toBe(false));
   });
 });

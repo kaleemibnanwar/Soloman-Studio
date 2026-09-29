@@ -7,18 +7,12 @@ export function getDisplayedVersionDiffPath(
 ): string | null {
   if (!changes?.length) return null;
 
-  return (
-    changes.find((file) => file.path === selectedPath)?.path ?? changes[0].path
-  );
+  return changes.find((file) => file.path === selectedPath)?.path ?? changes[0].path;
 }
 
 export function getDisplayedStagedDiffPath(
   files: UncommittedFile[],
   selectedPath: string | null,
 ): string | null {
-  return (
-    files.find((file) => file.path === selectedPath)?.path ??
-    files[0]?.path ??
-    null
-  );
+  return files.find((file) => file.path === selectedPath)?.path ?? files[0]?.path ?? null;
 }

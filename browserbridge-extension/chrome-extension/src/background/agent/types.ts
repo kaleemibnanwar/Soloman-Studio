@@ -1,11 +1,11 @@
-import { z } from 'zod';
-import type BrowserContext from '../browser/context';
-import { DEFAULT_INCLUDE_ATTRIBUTES } from '../browser/dom/views';
-import type { DOMHistoryElement } from '../browser/dom/history/view';
-import type MessageManager from './messages/service';
-import type { EventManager } from './event/manager';
-import { type Actors, type ExecutionState, AgentEvent } from './event/types';
-import { AgentStepHistory } from './history';
+import { z } from "zod";
+import type BrowserContext from "../browser/context";
+import { DEFAULT_INCLUDE_ATTRIBUTES } from "../browser/dom/views";
+import type { DOMHistoryElement } from "../browser/dom/history/view";
+import type MessageManager from "./messages/service";
+import type { EventManager } from "./event/manager";
+import { type Actors, type ExecutionState, AgentEvent } from "./event/types";
+import { AgentStepHistory } from "./history";
 
 export interface AgentOptions {
   maxSteps: number;
@@ -158,7 +158,7 @@ export const agentBrainSchema = z
     memory: z.string(),
     next_goal: z.string(),
   })
-  .describe('Current state of the agent');
+  .describe("Current state of the agent");
 
 export type AgentBrain = z.infer<typeof agentBrainSchema>;
 

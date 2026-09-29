@@ -25,16 +25,14 @@ import { getOpenRouterAppAttributionHeaders } from "@/ipc/utils/openrouter_attri
 
 const logger = log.scope("provider_api_key_validation");
 
-const VALIDATION_PROMPT =
-  "What number is after four? Reply with only the number.";
+const VALIDATION_PROMPT = "What number is after four? Reply with only the number.";
 const VALIDATION_TIMEOUT_MS = 20_000;
 
-const PROVIDER_DISPLAY_NAMES: Record<ProviderApiKeyValidationProvider, string> =
-  {
-    google: "Google",
-    openrouter: "OpenRouter",
-    auto: "OctopusStudio",
-  };
+const PROVIDER_DISPLAY_NAMES: Record<ProviderApiKeyValidationProvider, string> = {
+  google: "Google",
+  openrouter: "OpenRouter",
+  auto: "OctopusStudio",
+};
 
 export async function validateProviderApiKey({
   provider,
@@ -47,10 +45,7 @@ export async function validateProviderApiKey({
   const providerDisplayName = PROVIDER_DISPLAY_NAMES[provider];
 
   if (!normalizedApiKey) {
-    throw new OctopusStudioError(
-      "API Key cannot be empty.",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("API Key cannot be empty.", OctopusStudioErrorKind.Validation);
   }
 
   const invalidCharacter = findInvalidProviderApiKeyCharacter(normalizedApiKey);
@@ -105,9 +100,7 @@ export async function validateProviderApiKey({
     }
     return { ok: true };
   } catch (error) {
-    const rootError = isOctopusStudioError(error)
-      ? error
-      : (streamError ?? error);
+    const rootError = isOctopusStudioError(error) ? error : (streamError ?? error);
     throw classifyValidationError(rootError, providerDisplayName);
   } finally {
     if (timer) {
@@ -181,17 +174,13 @@ function getOpenRouterBaseUrl() {
   return "https://openrouter.ai/api/v1";
 }
 
-function classifyValidationError(
-  error: unknown,
-  providerDisplayName: string,
-): OctopusStudioError {
+function classifyValidationError(error: unknown, providerDisplayName: string): OctopusStudioError {
   if (isOctopusStudioError(error)) {
     return error;
   }
 
   const errorMessage = extractErrorMessage(error);
-  const statusCode =
-    extractStatusCode(error) ?? extractStatusCodeFromMessage(errorMessage);
+  const statusCode = extractStatusCode(error) ?? extractStatusCodeFromMessage(errorMessage);
 
   logger.info(
     `Validation failed for ${providerDisplayName}: status=${statusCode ?? "unknown"} authError=${isAuthError(errorMessage)}`,
@@ -204,10 +193,7 @@ function classifyValidationError(
     );
   }
 
-  if (
-    statusCode === 429 ||
-    /rate.?limit|too many requests/i.test(errorMessage)
-  ) {
+  if (statusCode === 429 || /rate.?limit|too many requests/i.test(errorMessage)) {
     return new OctopusStudioError(
       `${providerDisplayName} rate limited the API key check. You can try again later or keep this key anyway.`,
       OctopusStudioErrorKind.RateLimited,
@@ -241,8 +227,7 @@ function extractStatusCode(error: unknown, depth = 0): number | undefined {
     response?: { status?: unknown };
     cause?: unknown;
   };
-  const status =
-    candidate.statusCode ?? candidate.status ?? candidate.response?.status;
+  const status = candidate.statusCode ?? candidate.status ?? candidate.response?.status;
   if (typeof status === "number") {
     return status;
   }

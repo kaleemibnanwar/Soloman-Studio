@@ -34,11 +34,10 @@ export type TransitionResult<
     };
 
 /** Explicitly marks a deliberate no-op in a total transition matrix. */
-export function ignore<
-  State,
-  Command = never,
-  Reason extends IgnoreReason = IgnoreReason,
->(state: State, reason: Reason): TransitionResult<State, Command, Reason> {
+export function ignore<State, Command = never, Reason extends IgnoreReason = IgnoreReason>(
+  state: State,
+  reason: Reason,
+): TransitionResult<State, Command, Reason> {
   return { kind: "ignored", state, reason };
 }
 
@@ -104,19 +103,12 @@ export interface TransitionObserver<
   Command,
   Reason extends IgnoreReason = IgnoreReason,
 > {
-  onTransitionApplied?(
-    transition: AppliedTransition<State, Event, Command>,
-  ): void;
+  onTransitionApplied?(transition: AppliedTransition<State, Event, Command>): void;
   onEventIgnored?(event: IgnoredEvent<State, Event, Reason>): void;
 }
 
 /** Notify an observer without making controllers duplicate result plumbing. */
-export function observeTransition<
-  State,
-  Event,
-  Command,
-  Reason extends IgnoreReason,
->(
+export function observeTransition<State, Event, Command, Reason extends IgnoreReason>(
   observer: TransitionObserver<State, Event, Command, Reason> | undefined,
   previous: State,
   event: Event,

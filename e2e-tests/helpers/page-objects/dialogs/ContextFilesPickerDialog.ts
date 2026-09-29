@@ -18,23 +18,15 @@ export class ContextFilesPickerDialog {
 
   async addAutoIncludeContextFile(path: string) {
     await this.page.getByTestId("auto-include-context-files-input").fill(path);
-    await this.page
-      .getByTestId("auto-include-context-files-add-button")
-      .click();
+    await this.page.getByTestId("auto-include-context-files-add-button").click();
   }
 
   async removeManualContextFile() {
-    await this.page
-      .getByTestId("manual-context-files-remove-button")
-      .first()
-      .click();
+    await this.page.getByTestId("manual-context-files-remove-button").first().click();
   }
 
   async removeAutoIncludeContextFile() {
-    await this.page
-      .getByTestId("auto-include-context-files-remove-button")
-      .first()
-      .click();
+    await this.page.getByTestId("auto-include-context-files-remove-button").first().click();
   }
 
   async addExcludeContextFile(path: string) {
@@ -43,9 +35,6 @@ export class ContextFilesPickerDialog {
   }
 
   async removeExcludeContextFile() {
-    await this.page
-      .getByTestId("exclude-context-files-remove-button")
-      .first()
-      .click();
+    await this.page.getByTestId("exclude-context-files-remove-button").first().click();
   }
 }

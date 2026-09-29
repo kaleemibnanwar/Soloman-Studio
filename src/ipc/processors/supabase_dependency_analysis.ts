@@ -10,9 +10,7 @@ import { typescriptUtilityProcessScheduler } from "./typescript_utility_process_
 const TIMEOUT_MS = 60_000;
 const SHUTDOWN_GRACE_MS = 5_000;
 
-function runWorker(
-  input: SupabaseDependencyAnalysisInput,
-): Promise<SupabaseFunctionImpact> {
+function runWorker(input: SupabaseDependencyAnalysisInput): Promise<SupabaseFunctionImpact> {
   return new Promise((resolve, reject) => {
     const child = utilityProcess.fork(
       path.join(__dirname, "supabase_dependency_analysis_worker.js"),
@@ -43,9 +41,7 @@ function runWorker(
       if (shutdownTimeout) clearTimeout(shutdownTimeout);
       if (failure) return reject(failure);
       if (!response) {
-        return reject(
-          new Error("Supabase dependency analysis worker did not reply"),
-        );
+        return reject(new Error("Supabase dependency analysis worker did not reply"));
       }
       if (!response.success) return reject(new Error(response.error));
       resolve(response.data);
@@ -56,9 +52,7 @@ function runWorker(
       shutdownTimeout ??= setTimeout(finish, SHUTDOWN_GRACE_MS);
     };
 
-    let registration: ReturnType<
-      typeof typescriptUtilityProcessScheduler.registerResidentProcess
-    >;
+    let registration: ReturnType<typeof typescriptUtilityProcessScheduler.registerResidentProcess>;
     try {
       registration = typescriptUtilityProcessScheduler.registerResidentProcess({
         kind: "supabase-dependency-analysis",
@@ -75,9 +69,7 @@ function runWorker(
     }
 
     const analysisTimeout = setTimeout(() => {
-      failure ??= new Error(
-        `Supabase dependency analysis timed out after ${TIMEOUT_MS / 1000}s`,
-      );
+      failure ??= new Error(`Supabase dependency analysis timed out after ${TIMEOUT_MS / 1000}s`);
       finishAfterShutdownGrace();
     }, TIMEOUT_MS);
 
@@ -97,9 +89,7 @@ function runWorker(
           ? new Error(
               "Supabase dependency analysis ran out of memory. This can happen with very large apps.",
             )
-          : new Error(
-              `Supabase dependency analysis worker failed: ${type} at ${location}`,
-            );
+          : new Error(`Supabase dependency analysis worker failed: ${type} at ${location}`);
       clearTimeout(analysisTimeout);
       finishAfterShutdownGrace();
     });
@@ -119,8 +109,7 @@ function runWorker(
 export function runSupabaseDependencyAnalysis(
   input: SupabaseDependencyAnalysisInput,
 ): Promise<SupabaseFunctionImpact> {
-  return typescriptUtilityProcessScheduler.runExclusive(
-    "supabase-dependency-analysis",
-    () => runWorker(input),
+  return typescriptUtilityProcessScheduler.runExclusive("supabase-dependency-analysis", () =>
+    runWorker(input),
   );
 }

@@ -37,9 +37,7 @@ test.describe("queued messages", () => {
 
     // Verify the queued message indicator is visible
     // The UI shows "{count} Queued" followed by "- {status}"
-    await expect(
-      po.page.getByText(/\d+ Queued.*will send after current response/),
-    ).toBeVisible();
+    await expect(po.page.getByText(/\d+ Queued.*will send after current response/)).toBeVisible();
 
     // Wait for the first stream to complete
     await po.chatActions.waitForChatCompletion();
@@ -103,9 +101,7 @@ test.describe("queued messages", () => {
     await chatInput.press("Enter");
 
     // Verify the edited text appears in the queue
-    await expect(
-      po.page.locator("li", { hasText: "tc=first-edited" }),
-    ).toBeVisible();
+    await expect(po.page.locator("li", { hasText: "tc=first-edited" })).toBeVisible();
 
     // Wait for the initial stream to finish, then the queued messages to send
     await po.chatActions.waitForChatCompletion();
@@ -133,9 +129,7 @@ test.describe("queued messages", () => {
     await queueMessage(po.page, chatInput, "tc=2");
 
     // Verify the queued message indicator is visible
-    await expect(
-      po.page.getByText(/\d+ Queued.*will send after current response/),
-    ).toBeVisible();
+    await expect(po.page.getByText(/\d+ Queued.*will send after current response/)).toBeVisible();
 
     // Navigate away from the chat page while streaming + queue are active
     await po.sleep(1_000);
@@ -143,15 +137,12 @@ test.describe("queued messages", () => {
 
     // Wait for the in-progress indicator to disappear, meaning both the
     // first stream and the queued message have completed in the background
-    await expect(
-      po.page.locator('[aria-label="Chat in progress"]'),
-    ).not.toBeVisible({ timeout: 30_000 });
+    await expect(po.page.locator('[aria-label="Chat in progress"]')).not.toBeVisible({
+      timeout: 30_000,
+    });
 
     // Navigate back to the chat to verify both messages were sent
-    const chatTab = po.page
-      .locator("button")
-      .filter({ hasText: /Chat/ })
-      .first();
+    const chatTab = po.page.locator("button").filter({ hasText: /Chat/ }).first();
     await chatTab.click();
 
     const messagesList = po.page.locator('[data-testid="messages-list"]');
@@ -160,14 +151,8 @@ test.describe("queued messages", () => {
   });
 });
 
-test("keeps queued prompts across renderer reload", async ({
-  po,
-  electronApp,
-}) => {
-  const queuedPrompts = [
-    "renderer reload queued one",
-    "renderer reload queued two",
-  ];
+test("keeps queued prompts across renderer reload", async ({ po, electronApp }) => {
+  const queuedPrompts = ["renderer reload queued one", "renderer reload queued two"];
 
   await po.setUp({ autoApprove: true });
   const chatInput = po.chatActions.getChatInput();
@@ -187,10 +172,7 @@ test("keeps queued prompts across renderer reload", async ({
   await expect(queueHeader).toContainText("Paused");
 
   const appPath = await electronApp.evaluate(({ app }) => app.getAppPath());
-  const rendererIndexPath = path.join(
-    appPath,
-    ".vite/renderer/main_window/index.html",
-  );
+  const rendererIndexPath = path.join(appPath, ".vite/renderer/main_window/index.html");
   await electronApp.evaluate(async ({ BrowserWindow }, rendererIndexPath) => {
     const window = BrowserWindow.getAllWindows()[0];
     try {
@@ -207,9 +189,7 @@ test("keeps queued prompts across renderer reload", async ({
     timeout: Timeout.EXTRA_LONG,
   });
   await expect(queueHeader).toContainText("Paused");
-  await expect(
-    po.page.getByRole("button", { name: "Resume queue" }),
-  ).toBeVisible();
+  await expect(po.page.getByRole("button", { name: "Resume queue" })).toBeVisible();
 
   for (const prompt of queuedPrompts) {
     await expect(po.page.locator("li", { hasText: prompt })).toBeVisible();

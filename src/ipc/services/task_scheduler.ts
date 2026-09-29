@@ -3,10 +3,7 @@ import log from "electron-log";
 import { db } from "@/db";
 import { apps, chats, tasks } from "@/db/schema";
 import { ensureDefaultChatProject } from "@/db/default_chat_project";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { createChatForApp } from "../utils/chat_creation_utils";
 import { dispatchScheduledTaskTurn } from "./chat_actor_service";
 
@@ -23,15 +20,10 @@ const TICK_INTERVAL_MS = 60_000; // check once a minute
  * `lastRunAt`/`lastChatId` are only updated after the turn is accepted, so a
  * failed dispatch is retried on the next tick.
  */
-export async function runTask(
-  taskId: number,
-): Promise<{ chatId: number; appId: number }> {
+export async function runTask(taskId: number): Promise<{ chatId: number; appId: number }> {
   const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
   if (!task) {
-    throw new OctopusStudioError(
-      "Task not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("Task not found", OctopusStudioErrorKind.NotFound);
   }
 
   // Target the task's project, else the default chat project.
@@ -53,10 +45,7 @@ export async function runTask(
   });
 
   if (task.modelSelection) {
-    await db
-      .update(chats)
-      .set({ modelSelection: task.modelSelection })
-      .where(eq(chats.id, chatId));
+    await db.update(chats).set({ modelSelection: task.modelSelection }).where(eq(chats.id, chatId));
   }
 
   // Dispatches the intent and fires the model turn. The actor inserts the user

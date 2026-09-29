@@ -28,9 +28,7 @@ export function showUserInputNotification({
   if (Notification.permission !== "granted") return;
   if (document.hasFocus()) return;
 
-  const app = appId
-    ? queryClient.getQueryData<App | null>(queryKeys.apps.detail({ appId }))
-    : null;
+  const app = appId ? queryClient.getQueryData<App | null>(queryKeys.apps.detail({ appId })) : null;
 
   new Notification(app?.name ?? "Octopus Studio", {
     body,

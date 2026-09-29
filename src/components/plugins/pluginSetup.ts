@@ -19,9 +19,6 @@ function isInputSatisfied(server: McpServer, input: CatalogInput): boolean {
 // A catalog server needs setup while any input it declares is still
 // unfilled, independent of enabled state: disabling a configured server
 // must not send it back through setup.
-export function serverNeedsSetup(
-  server: McpServer,
-  inputs: CatalogInput[],
-): boolean {
+export function serverNeedsSetup(server: McpServer, inputs: CatalogInput[]): boolean {
   return inputs.some((input) => !isInputSatisfied(server, input));
 }

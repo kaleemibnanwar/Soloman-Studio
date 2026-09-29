@@ -12,9 +12,7 @@ import { showUserInputNotification } from "@/lib/userInputNotification";
  * clears UI-only provider choices when the request settles.
  */
 export function useIntegrationEvents() {
-  const setIntegrationProviderSelection = useSetAtom(
-    integrationProviderSelectionAtom,
-  );
+  const setIntegrationProviderSelection = useSetAtom(integrationProviderSelectionAtom);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const queryClient = useQueryClient();
   const { settings } = useSettings();
@@ -25,28 +23,24 @@ export function useIntegrationEvents() {
   settingsRef.current = settings;
 
   useEffect(() => {
-    const unsubscribeRequested = ipc.events.userInput.onRequested(
-      (descriptor) => {
-        if (descriptor.kind !== "integration") return;
-        showUserInputNotification({
-          appId: selectedAppIdRef.current,
-          queryClient,
-          settings: settingsRef.current,
-          body: "Database integration setup needs your input",
-          requireInteraction: true,
-        });
-      },
-    );
-    const unsubscribeSettled = ipc.events.userInput.onSettled(
-      ({ requestId }) => {
-        setIntegrationProviderSelection((prev) => {
-          if (!prev.has(requestId)) return prev;
-          const next = new Map(prev);
-          next.delete(requestId);
-          return next;
-        });
-      },
-    );
+    const unsubscribeRequested = ipc.events.userInput.onRequested((descriptor) => {
+      if (descriptor.kind !== "integration") return;
+      showUserInputNotification({
+        appId: selectedAppIdRef.current,
+        queryClient,
+        settings: settingsRef.current,
+        body: "Database integration setup needs your input",
+        requireInteraction: true,
+      });
+    });
+    const unsubscribeSettled = ipc.events.userInput.onSettled(({ requestId }) => {
+      setIntegrationProviderSelection((prev) => {
+        if (!prev.has(requestId)) return prev;
+        const next = new Map(prev);
+        next.delete(requestId);
+        return next;
+      });
+    });
     return () => {
       unsubscribeRequested();
       unsubscribeSettled();

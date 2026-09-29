@@ -1,7 +1,4 @@
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { assertNoActiveRecording } from "./recording_registry";
 
 export const APP_OPERATION_RESOURCES = [
@@ -113,13 +110,8 @@ function requestsConflict(
   right: NormalizedAppOperationRequest,
 ): boolean {
   for (const leftAccess of left.resources) {
-    const rightAccess = right.resources.find(
-      ({ resource }) => resource === leftAccess.resource,
-    );
-    if (
-      rightAccess &&
-      (leftAccess.mode === "write" || rightAccess.mode === "write")
-    ) {
+    const rightAccess = right.resources.find(({ resource }) => resource === leftAccess.resource);
+    if (rightAccess && (leftAccess.mode === "write" || rightAccess.mode === "write")) {
       return true;
     }
   }
@@ -137,10 +129,7 @@ function requestsConflict(
 export class AppOperationCoordinator {
   private readonly states = new Map<number, AppOperationState>();
 
-  run<Result>(
-    request: AppOperationRequest,
-    operation: () => Promise<Result>,
-  ): Promise<Result> {
+  run<Result>(request: AppOperationRequest, operation: () => Promise<Result>): Promise<Result> {
     const state = this.getOrCreateState(request.appId);
     if (state.deletion) {
       return Promise.reject(
@@ -230,9 +219,7 @@ export class AppOperationCoordinator {
           );
         }
         if (exclusiveRunning) {
-          throw new Error(
-            `App ${appId} deletion already has an exclusive operation in progress`,
-          );
+          throw new Error(`App ${appId} deletion already has an exclusive operation in progress`);
         }
         exclusiveRunning = true;
         try {
@@ -245,9 +232,7 @@ export class AppOperationCoordinator {
         if (released) return;
         assertOwner();
         if (exclusiveRunning) {
-          throw new Error(
-            `App ${appId} deletion cannot be released during an exclusive operation`,
-          );
+          throw new Error(`App ${appId} deletion cannot be released during an exclusive operation`);
         }
         released = true;
         state.deletion = undefined;
@@ -326,8 +311,6 @@ export class AppOperationCoordinator {
 
 export const appOperationCoordinator = new AppOperationCoordinator();
 
-export function readAppResource(
-  resource: AppOperationResource,
-): AppOperationAccess {
+export function readAppResource(resource: AppOperationResource): AppOperationAccess {
   return { resource, mode: "read" };
 }

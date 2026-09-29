@@ -19,30 +19,17 @@ import { userInputRegistry } from "@/user_input/main";
 import { db } from "@/db";
 import { chats } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import {
-  PLAN_HANDOFF_MACHINE_ID,
-  planHandoffKey,
-} from "@/plan_handoff/transport";
+import { PLAN_HANDOFF_MACHINE_ID, planHandoffKey } from "@/plan_handoff/transport";
 import { entityDisposalBus } from "@/window_infrastructure/main/entity_disposal_bus";
 import { randomUUID } from "crypto";
 
-export async function settleChatActorsForDeletion(
-  chatId: number,
-): Promise<void> {
-  await remoteMachineHost.entityDeleted(
-    PLAN_HANDOFF_MACHINE_ID,
-    planHandoffKey(chatId),
-  );
+export async function settleChatActorsForDeletion(chatId: number): Promise<void> {
+  await remoteMachineHost.entityDeleted(PLAN_HANDOFF_MACHINE_ID, planHandoffKey(chatId));
   await waitForChatActorIdle(chatId, { cancelActive: true });
-  await remoteMachineHost.entityDeleted(
-    chatStreamDefinition.id,
-    chatStreamKey(chatId),
-  );
+  await remoteMachineHost.entityDeleted(chatStreamDefinition.id, chatStreamKey(chatId));
 }
 
-export async function deleteOwnedChatAfterSettlingActors(
-  chatId: number,
-): Promise<void> {
+export async function deleteOwnedChatAfterSettlingActors(chatId: number): Promise<void> {
   const releaseAdmission = beginChatActorDeletion(chatId);
   try {
     await userInputRegistry.settleChat(chatId);
@@ -125,9 +112,7 @@ export async function waitForAppChatActorsIdle(
   return cancellationResults.some(Boolean);
 }
 
-export async function beginAppChatActorMutation(
-  appId: number,
-): Promise<() => void> {
+export async function beginAppChatActorMutation(appId: number): Promise<() => void> {
   const releaseChatCreation = beginAppChatMutation(appId);
   const releaseActorAdmissions: Array<() => void> = [];
   try {
@@ -135,9 +120,7 @@ export async function beginAppChatActorMutation(
       columns: { id: true },
       where: eq(chats.appId, appId),
     });
-    releaseActorAdmissions.push(
-      ...appChats.map(({ id }) => beginChatActorMutation(id)),
-    );
+    releaseActorAdmissions.push(...appChats.map(({ id }) => beginChatActorMutation(id)));
   } catch (error) {
     releaseChatCreation();
     throw error;
@@ -163,10 +146,7 @@ export async function dispatchChatIntentAndWait(
   // must honor the same destructive-operation admission fence before reusing
   // a retained local actor.
   assertChatActorAdmissionOpen(intent.chatId);
-  const actor = remoteMachineHost.localRef(
-    chatStreamDefinition,
-    chatStreamKey(intent.chatId),
-  );
+  const actor = remoteMachineHost.localRef(chatStreamDefinition, chatStreamKey(intent.chatId));
   const settled = new Promise<"accepted" | "rejected">((resolve, reject) => {
     const abort = () => {
       unsubscribe();
@@ -179,16 +159,14 @@ export async function dispatchChatIntentAndWait(
       if (
         (acceptance?.intentId === intent.intentId &&
           acceptance.acceptance === "message-accepted") ||
-        (acceptance?.intentId === intent.intentId &&
-          acceptance.acceptance === "replayed") ||
+        (acceptance?.intentId === intent.intentId && acceptance.acceptance === "replayed") ||
         persistedAcceptance === "message-accepted"
       ) {
         unsubscribe();
         signal?.removeEventListener("abort", abort);
         resolve("accepted");
       } else if (
-        (acceptance?.intentId === intent.intentId &&
-          acceptance.acceptance === "rejected") ||
+        (acceptance?.intentId === intent.intentId && acceptance.acceptance === "rejected") ||
         persistedAcceptance === "rejected" ||
         snapshot.lastCompletion?.intentId === intent.intentId
       ) {

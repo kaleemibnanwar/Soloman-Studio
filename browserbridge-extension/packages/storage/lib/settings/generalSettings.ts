@@ -1,6 +1,6 @@
-import { StorageEnum } from '../base/enums';
-import { createStorage } from '../base/base';
-import type { BaseStorage } from '../base/types';
+import { StorageEnum } from "../base/enums";
+import { createStorage } from "../base/base";
+import type { BaseStorage } from "../base/types";
 
 // Interface for general settings configuration
 export interface GeneralSettingsConfig {
@@ -34,7 +34,7 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettingsConfig = {
   replayHistoricalTasks: false,
 };
 
-const storage = createStorage<GeneralSettingsConfig>('general-settings', DEFAULT_GENERAL_SETTINGS, {
+const storage = createStorage<GeneralSettingsConfig>("general-settings", DEFAULT_GENERAL_SETTINGS, {
   storageEnum: StorageEnum.Local,
   liveUpdate: true,
 });

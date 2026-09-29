@@ -33,7 +33,7 @@ import {
   gitAddAll,
   getGitUncommittedFiles,
   hasStagedChanges,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 import { readSettings } from "@/main/settings";
 import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { writeMigrationFile } from "../utils/file_utils";
@@ -161,7 +161,7 @@ export function applySearchReplace(content: string, diffBlock: string): ApplySea
 
   return { success: true, content: working, error: "" };
 }
-import { storeDbTimestampAtCurrentVersion } from "../utils/neon_timestamp_utils";
+import { storeDbTimestampAtCurrentVersion } from "../neon/neon_timestamp_utils";
 import { executeNeonSql } from "../../neon_admin/neon_context";
 import { executeCopyFile } from "../utils/copy_file_utils";
 import { escapeXmlAttr, escapeXmlContent } from "../../../shared/xmlEscape";

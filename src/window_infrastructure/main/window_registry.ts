@@ -50,10 +50,7 @@ export interface WindowRegistryOptions {
 export class WindowRegistry {
   private readonly byWebContentsId = new Map<number, WindowRecord>();
   private readonly webContentsIdBySession = new Map<WindowSessionId, number>();
-  private readonly activeLeaseByCapability = new Map<
-    string,
-    MutableCapabilityLease
-  >();
+  private readonly activeLeaseByCapability = new Map<string, MutableCapabilityLease>();
   private readonly unregisterListeners = new Set<(id: number) => void>();
   private focusSequence = 0;
 
@@ -110,10 +107,7 @@ export class WindowRegistry {
     if (record) record.focusSequence = ++this.focusSequence;
   }
 
-  setVisibleEntities(
-    windowSessionId: WindowSessionId,
-    entities: readonly VisibleEntity[],
-  ): void {
+  setVisibleEntities(windowSessionId: WindowSessionId, entities: readonly VisibleEntity[]): void {
     const record = this.recordForSession(windowSessionId);
     if (!record) return;
     record.visibleEntityKeys = new Set(entities.map(visibleEntityKey));
@@ -127,26 +121,14 @@ export class WindowRegistry {
       .map((record) => record.sessionId);
   }
 
-  setChatTabOwnership(
-    windowSessionId: WindowSessionId,
-    tabs: readonly ChatTabOwnership[],
-  ): void {
+  setChatTabOwnership(windowSessionId: WindowSessionId, tabs: readonly ChatTabOwnership[]): void {
     const record = this.recordForSession(windowSessionId);
     if (!record) return;
-    record.chatTabs = new Map(
-      tabs.map((tab) => [tab.chatId, tab.tabInstanceId]),
-    );
+    record.chatTabs = new Map(tabs.map((tab) => [tab.chatId, tab.tabInstanceId]));
   }
 
-  ownsChatTab(
-    windowSessionId: WindowSessionId,
-    chatId: number,
-    tabInstanceId: string,
-  ): boolean {
-    return (
-      this.recordForSession(windowSessionId)?.chatTabs.get(chatId) ===
-      tabInstanceId
-    );
+  ownsChatTab(windowSessionId: WindowSessionId, chatId: number, tabInstanceId: string): boolean {
+    return this.recordForSession(windowSessionId)?.chatTabs.get(chatId) === tabInstanceId;
   }
 
   refreshChatTabOwnershipForTransfer(
@@ -185,11 +167,7 @@ export class WindowRegistry {
       if (this.options.development) {
         const fallbackAnswer = this.routeWithFullFallback(request, records);
         if (fallbackAnswer !== identityAnswer) {
-          this.options.onSingleWindowDivergence?.(
-            request,
-            identityAnswer,
-            fallbackAnswer,
-          );
+          this.options.onSingleWindowDivergence?.(request, identityAnswer, fallbackAnswer);
         }
       }
       return identityAnswer;
@@ -197,14 +175,11 @@ export class WindowRegistry {
     return this.routeWithFullFallback(request, records);
   }
 
-  presentationTargets(
-    request: PresentationRouteRequest,
-  ): readonly WindowSessionId[] {
+  presentationTargets(request: PresentationRouteRequest): readonly WindowSessionId[] {
     const records = this.liveRecords();
     if (records.length === 1) return [records[0].sessionId];
     if (
-      (request.effect === "inline-shared-error" ||
-        request.effect === "user-input") &&
+      (request.effect === "inline-shared-error" || request.effect === "user-input") &&
       request.entity
     ) {
       return this.findWindowsShowing(request.entity);
@@ -233,24 +208,15 @@ export class WindowRegistry {
     }
   }
 
-  withdrawScreenshotCapability(
-    windowSessionId: WindowSessionId,
-    appId: number,
-  ): void {
-    this.recordForSession(windowSessionId)?.screenshotCapabilities.delete(
-      appId,
-    );
-    const lease = this.activeLeaseByCapability.get(
-      this.capabilityKey("screenshot", appId),
-    );
+  withdrawScreenshotCapability(windowSessionId: WindowSessionId, appId: number): void {
+    this.recordForSession(windowSessionId)?.screenshotCapabilities.delete(appId);
+    const lease = this.activeLeaseByCapability.get(this.capabilityKey("screenshot", appId));
     if (lease?.holderWindowSessionId === windowSessionId) {
       this.revokeLease(lease, "capability-withdrawn");
     }
   }
 
-  claimCapability(
-    request: WindowCapabilityRequest,
-  ): WindowCapabilityLease | null {
+  claimCapability(request: WindowCapabilityRequest): WindowCapabilityLease | null {
     const key = this.capabilityKey(request.kind, request.appId);
     const existing = this.activeLeaseByCapability.get(key);
     if (existing?.active) return this.readonlyLease(existing);
@@ -259,16 +225,10 @@ export class WindowRegistry {
       record.screenshotCapabilities.has(request.appId),
     );
     const preferred = request.preferredWindowSessionId
-      ? candidates.find(
-          (candidate) =>
-            candidate.sessionId === request.preferredWindowSessionId,
-        )
+      ? candidates.find((candidate) => candidate.sessionId === request.preferredWindowSessionId)
       : undefined;
     const holder =
-      preferred ??
-      candidates.sort(
-        (left, right) => right.focusSequence - left.focusSequence,
-      )[0];
+      preferred ?? candidates.sort((left, right) => right.focusSequence - left.focusSequence)[0];
     if (!holder) return null;
     const lease: MutableCapabilityLease = {
       leaseId: randomUUID(),
@@ -319,14 +279,9 @@ export class WindowRegistry {
     records: readonly WindowRecord[],
   ): WindowSessionId | null {
     if (request.effect === "important-completion") return null;
-    if (
-      request.effect === "operation-toast" ||
-      request.effect === "navigation"
-    ) {
+    if (request.effect === "operation-toast" || request.effect === "navigation") {
       return request.initiatorWindowSessionId &&
-        records.some(
-          (record) => record.sessionId === request.initiatorWindowSessionId,
-        )
+        records.some((record) => record.sessionId === request.initiatorWindowSessionId)
         ? request.initiatorWindowSessionId
         : null;
     }
@@ -340,9 +295,7 @@ export class WindowRegistry {
       const showing = this.findWindowsShowing(request.entity);
       if (showing.length > 0) return showing[0];
     }
-    const focused = [...records].sort(
-      (left, right) => right.focusSequence - left.focusSequence,
-    )[0];
+    const focused = [...records].sort((left, right) => right.focusSequence - left.focusSequence)[0];
     return focused && focused.focusSequence > 0 ? focused.sessionId : null;
   }
 
@@ -358,9 +311,7 @@ export class WindowRegistry {
     return live;
   }
 
-  private recordForSession(
-    windowSessionId: WindowSessionId,
-  ): WindowRecord | undefined {
+  private recordForSession(windowSessionId: WindowSessionId): WindowRecord | undefined {
     const id = this.webContentsIdBySession.get(windowSessionId);
     return id === undefined ? undefined : this.byWebContentsId.get(id);
   }
@@ -369,15 +320,10 @@ export class WindowRegistry {
     return `${kind}:${appId}`;
   }
 
-  private revokeLease(
-    lease: MutableCapabilityLease,
-    reason: CapabilityLeaseLossReason,
-  ): void {
+  private revokeLease(lease: MutableCapabilityLease, reason: CapabilityLeaseLossReason): void {
     lease.active = false;
     lease.reason = reason;
-    this.activeLeaseByCapability.delete(
-      this.capabilityKey(lease.kind, lease.appId),
-    );
+    this.activeLeaseByCapability.delete(this.capabilityKey(lease.kind, lease.appId));
   }
 
   private readonlyLease(lease: MutableCapabilityLease): WindowCapabilityLease {

@@ -6,14 +6,9 @@ export { FAKE_LLM_BASE_PORT };
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
-const playwrightParallelism = parseInt(
-  process.env.PLAYWRIGHT_PARALLELISM ?? "1",
-  10,
-);
+const playwrightParallelism = parseInt(process.env.PLAYWRIGHT_PARALLELISM ?? "1", 10);
 const workerCount =
-  Number.isFinite(playwrightParallelism) && playwrightParallelism > 0
-    ? playwrightParallelism
-    : 1;
+  Number.isFinite(playwrightParallelism) && playwrightParallelism > 0 ? playwrightParallelism : 1;
 
 function generateWebServerConfigs(): PlaywrightTestConfig["webServer"] {
   return Array.from({ length: workerCount }, (_, index) => {
@@ -35,16 +30,12 @@ function generateWebServerConfigs(): PlaywrightTestConfig["webServer"] {
 const config: PlaywrightTestConfig = {
   testDir: "./e2e-tests",
   workers: workerCount,
-  retries: parseInt(
-    process.env.PLAYWRIGHT_RETRIES ?? (process.env.CI ? "2" : "0"),
-    10,
-  ),
+  retries: parseInt(process.env.PLAYWRIGHT_RETRIES ?? (process.env.CI ? "2" : "0"), 10),
   timeout: process.env.CI ? 180_000 : 75_000,
   // Use a custom snapshot path template because Playwright's default
   // is platform-specific which isn't necessary for OctopusStudio e2e tests
   // which should be platform agnostic (we don't do screenshots; only textual diffs).
-  snapshotPathTemplate:
-    "{testDir}/{testFileDir}/snapshots/{testFileName}_{arg}{ext}",
+  snapshotPathTemplate: "{testDir}/{testFileDir}/snapshots/{testFileName}_{arg}{ext}",
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   // Why not use GitHub reporter? Because we're using matrix and it's discouraged:

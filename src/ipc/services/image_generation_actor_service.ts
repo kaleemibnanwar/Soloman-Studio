@@ -21,18 +21,12 @@ export interface ImageGenerationDeletionFence {
   readonly appId: number;
   readonly handle: FenceHandle<ReturnType<typeof getImageGenerationKey>>;
   readonly actor:
-    | HostedActorRef<
-        ImageGenerationActorState,
-        ImageGenerationEvent,
-        ImageGenerationIgnoreReason
-      >
+    | HostedActorRef<ImageGenerationActorState, ImageGenerationEvent, ImageGenerationIgnoreReason>
     | undefined;
 }
 
 export class ImageGenerationActorService {
-  constructor(
-    private readonly host: ImageGenerationActorHost = remoteMachineHost,
-  ) {}
+  constructor(private readonly host: ImageGenerationActorHost = remoteMachineHost) {}
 
   beginAppDeletion(appId: number): ImageGenerationDeletionFence {
     imageGenerationService.beginAppDeletion(appId);
@@ -72,27 +66,17 @@ export class ImageGenerationActorService {
     await fence.handle.seal();
   }
 
-  async finishAppDeletion(
-    fence: ImageGenerationDeletionFence,
-    committed: boolean,
-  ): Promise<void> {
+  async finishAppDeletion(fence: ImageGenerationDeletionFence, committed: boolean): Promise<void> {
     try {
       if (committed) {
         if (!fence.handle.commit()) {
-          throw new Error(
-            "Image-generation deletion fence is no longer current",
-          );
+          throw new Error("Image-generation deletion fence is no longer current");
         }
         if (!fence.handle.release()) {
-          throw new Error(
-            "Image-generation deletion fence could not be released",
-          );
+          throw new Error("Image-generation deletion fence could not be released");
         }
         if (fence.actor) {
-          imageGenerationPresentationService.forgetApp(
-            fence.appId,
-            fence.actor.getSnapshot(),
-          );
+          imageGenerationPresentationService.forgetApp(fence.appId, fence.actor.getSnapshot());
           await fence.actor.enqueue({
             type: "APP_DELETED",
             appId: fence.appId,

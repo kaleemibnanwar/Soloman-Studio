@@ -19,10 +19,7 @@ export interface FakeClock extends Clock {
 export function createFakeClock(startAt = 0): FakeClock {
   let currentTime = startAt;
   let nextHandle = 1;
-  const timers = new Map<
-    number,
-    { callback: () => void; deadline: number; order: number }
-  >();
+  const timers = new Map<number, { callback: () => void; deadline: number; order: number }>();
 
   return {
     now: () => currentTime,
@@ -45,8 +42,7 @@ export function createFakeClock(startAt = 0): FakeClock {
         const due = [...timers.entries()]
           .filter(([, timer]) => timer.deadline <= target)
           .sort(
-            ([, left], [, right]) =>
-              left.deadline - right.deadline || left.order - right.order,
+            ([, left], [, right]) => left.deadline - right.deadline || left.order - right.order,
           )[0];
         if (!due) break;
         const [handle, timer] = due;
@@ -83,9 +79,7 @@ export interface CapabilityRepresentativeEvents<Event, Reason> {
 }
 
 export interface CapabilityConsistencyCase<State, Event, Reason> {
-  readonly representativeEvents: (
-    state: State,
-  ) => CapabilityRepresentativeEvents<Event, Reason>;
+  readonly representativeEvents: (state: State) => CapabilityRepresentativeEvents<Event, Reason>;
   /**
    * When supplied, valid payloads for disabled states must be ignored for this
    * reason. Return undefined when the domain does not promise a reason for a
@@ -110,23 +104,14 @@ export function assertCapabilityTransitionConsistency<
 >(options: {
   states: readonly State[];
   selectCapabilities: (state: State) => Capabilities;
-  transition: (
-    state: State,
-    event: Event,
-  ) => TransitionResult<State, Command, Reason>;
+  transition: (state: State, event: Event) => TransitionResult<State, Command, Reason>;
   cases: {
-    readonly [Capability in keyof Capabilities]: CapabilityConsistencyCase<
-      State,
-      Event,
-      Reason
-    >;
+    readonly [Capability in keyof Capabilities]: CapabilityConsistencyCase<State, Event, Reason>;
   };
 }): void {
   for (const state of options.states) {
     const capabilities = options.selectCapabilities(state);
-    for (const capability of Object.keys(
-      capabilities,
-    ) as (keyof Capabilities)[]) {
+    for (const capability of Object.keys(capabilities) as (keyof Capabilities)[]) {
       const capabilityCase = options.cases[capability];
       const representatives = capabilityCase.representativeEvents(state);
 
@@ -208,10 +193,7 @@ export function driveTransitionMatrix<
 >(options: {
   states: readonly State[];
   events: readonly Event[];
-  transition: (
-    state: State,
-    event: Event,
-  ) => TransitionResult<State, Command, Reason>;
+  transition: (state: State, event: Event) => TransitionResult<State, Command, Reason>;
 }): TransitionResult<State, Command, Reason>[] {
   const results: TransitionResult<State, Command, Reason>[] = [];
   for (const state of options.states) {
@@ -240,10 +222,7 @@ export interface ReachableStateEdge<State, Event, Command, Reason> {
 export interface ReachableStateGraph<State, Event, Command, Reason> {
   readonly nodes: readonly ReachableStateNode<State, Event>[];
   readonly edges: readonly ReachableStateEdge<State, Event, Command, Reason>[];
-  readonly predecessors: ReadonlyMap<
-    string,
-    ReachableStateEdge<State, Event, Command, Reason>
-  >;
+  readonly predecessors: ReadonlyMap<string, ReachableStateEdge<State, Event, Command, Reason>>;
 }
 
 /**
@@ -258,10 +237,7 @@ export function exploreReachableStates<
 >(options: {
   initialState: State;
   events: readonly Event[] | ((state: State) => readonly Event[]);
-  transition: (
-    state: State,
-    event: Event,
-  ) => TransitionResult<State, Command, Reason>;
+  transition: (state: State, event: Event) => TransitionResult<State, Command, Reason>;
   stateKey: (state: State) => string;
   maxStates?: number;
 }): ReachableStateGraph<State, Event, Command, Reason> {
@@ -274,17 +250,12 @@ export function exploreReachableStates<
   const nodes: ReachableStateNode<State, Event>[] = [initial];
   const byKey = new Map([[initial.key, initial]]);
   const edges: ReachableStateEdge<State, Event, Command, Reason>[] = [];
-  const predecessors = new Map<
-    string,
-    ReachableStateEdge<State, Event, Command, Reason>
-  >();
+  const predecessors = new Map<string, ReachableStateEdge<State, Event, Command, Reason>>();
 
   for (let index = 0; index < nodes.length; index += 1) {
     const source = nodes[index];
     const events =
-      typeof options.events === "function"
-        ? options.events(source.state)
-        : options.events;
+      typeof options.events === "function" ? options.events(source.state) : options.events;
     for (const event of events) {
       const result = options.transition(source.state, event);
       validateTransitionResult(source.state, event, result, source.path);
@@ -331,9 +302,7 @@ function assertInventoryCovered<Kind extends string>(
   produced: ReadonlySet<Kind>,
   exclusions: readonly InventoryExclusion<Kind>[],
 ): void {
-  const excluded = new Map(
-    exclusions.map(({ kind, reason }) => [kind, reason]),
-  );
+  const excluded = new Map(exclusions.map(({ kind, reason }) => [kind, reason]));
   for (const kind of inventory) {
     if (produced.has(kind)) continue;
     const reason = excluded.get(kind);
@@ -346,10 +315,7 @@ function assertInventoryCovered<Kind extends string>(
 type ExplorationOptions<State, Event, Command, Reason extends IgnoreReason> = {
   initialState: State;
   events: readonly Event[] | ((state: State) => readonly Event[]);
-  transition: (
-    state: State,
-    event: Event,
-  ) => TransitionResult<State, Command, Reason>;
+  transition: (state: State, event: Event) => TransitionResult<State, Command, Reason>;
   stateKey: (state: State) => string;
   maxStates?: number;
 };
@@ -398,36 +364,23 @@ export function assertAllCommandsProducible<
       produced.add(options.commandKind(command));
     }
   }
-  assertInventoryCovered(
-    "Command",
-    options.inventory,
-    produced,
-    options.exclusions ?? [],
-  );
+  assertInventoryCovered("Command", options.inventory, produced, options.exclusions ?? []);
   return graph;
 }
 
-export function assertReferenceStability<
-  State,
-  Command,
-  Reason extends IgnoreReason,
->(
+export function assertReferenceStability<State, Command, Reason extends IgnoreReason>(
   previous: State,
   result: TransitionResult<State, Command, Reason>,
   areEqual: (left: State, right: State) => boolean,
 ): void {
   if (result.kind === "ignored") {
     if (result.state !== previous) {
-      throw new Error(
-        "Ignored transitions must retain the state reference and emit no commands",
-      );
+      throw new Error("Ignored transitions must retain the state reference and emit no commands");
     }
     return;
   }
   if (areEqual(previous, result.state) && previous !== result.state) {
-    throw new Error(
-      "A value-equal transition must not return a new state reference",
-    );
+    throw new Error("A value-equal transition must not return a new state reference");
   }
 }
 
@@ -452,28 +405,12 @@ export interface ConformanceController<State, Event> {
   dispose(): void;
 }
 
-export interface ControllerConformanceAdapter<
-  State,
-  Event,
-  Command,
-  Reason extends IgnoreReason,
-> {
+export interface ControllerConformanceAdapter<State, Event, Command, Reason extends IgnoreReason> {
   initialState: State;
-  transition(
-    state: State,
-    event: Event,
-  ): TransitionResult<State, Command, Reason>;
+  transition(state: State, event: Event): TransitionResult<State, Command, Reason>;
   create(options: {
-    runCommand(
-      command: Command,
-      emit: (event: Event) => void,
-    ): void | Promise<void>;
-    observer?: import("./types").TransitionObserver<
-      State,
-      Event,
-      Command,
-      Reason
-    >;
+    runCommand(command: Command, emit: (event: Event) => void): void | Promise<void>;
+    observer?: import("./types").TransitionObserver<State, Event, Command, Reason>;
     beforeCommit?(previous: State, next: State): void;
     project?(state: State): void;
     reportError?(error: unknown): void;
@@ -519,9 +456,7 @@ async function flushConformancePromises(): Promise<void> {
   await Promise.resolve();
 }
 
-function createDeferredLifecycleDriver<
-  Controller extends { dispose(): void },
->() {
+function createDeferredLifecycleDriver<Controller extends { dispose(): void }>() {
   const generations = new Map<Controller, number>();
   return {
     mount(controller: Controller): () => void {
@@ -550,9 +485,7 @@ export async function runControllerConformanceSuite<
   Event,
   Command,
   Reason extends IgnoreReason,
->(
-  adapter: ControllerConformanceAdapter<State, Event, Command, Reason>,
-): Promise<void> {
+>(adapter: ControllerConformanceAdapter<State, Event, Command, Reason>): Promise<void> {
   {
     const order: string[] = [];
     let controller: ConformanceController<State, Event>;
@@ -570,8 +503,7 @@ export async function runControllerConformanceSuite<
       adapter.stateKey(controller.getSnapshot()) ===
         adapter.stateKey(
           adapter.transition(
-            adapter.transition(adapter.initialState, adapter.events.enterA)
-              .state,
+            adapter.transition(adapter.initialState, adapter.events.enterA).state,
             adapter.events.enterB,
           ).state,
         ),
@@ -604,15 +536,10 @@ export async function runControllerConformanceSuite<
       },
     });
     controller.send(commandEvent);
-    const commandState = adapter.transition(
-      adapter.initialState,
-      commandEvent,
-    ).state;
+    const commandState = adapter.transition(adapter.initialState, commandEvent).state;
     conformanceAssert(
       adapter.stateKey(controller.getSnapshot()) ===
-        adapter.stateKey(
-          adapter.transition(commandState, adapter.events.enterB).state,
-        ),
+        adapter.stateKey(adapter.transition(commandState, adapter.events.enterB).state),
       "synchronous command emission",
       "the emitted event was not drained",
     );
@@ -630,19 +557,12 @@ export async function runControllerConformanceSuite<
       reportError: (error) => errors.push(error),
     });
     controller.send(commandEvent);
-    const commandState = adapter.transition(
-      adapter.initialState,
-      commandEvent,
-    ).state;
+    const commandState = adapter.transition(adapter.initialState, commandEvent).state;
     conformanceAssert(
       errors.length === 2 &&
-        errors.every(
-          (error) => adapter.errorStage(error) === "before-commit",
-        ) &&
+        errors.every((error) => adapter.errorStage(error) === "before-commit") &&
         adapter.stateKey(controller.getSnapshot()) ===
-          adapter.stateKey(
-            adapter.transition(commandState, adapter.events.enterB).state,
-          ),
+          adapter.stateKey(adapter.transition(commandState, adapter.events.enterB).state),
       "before-commit failure preserves progress",
       "the failure was not reported, commit was vetoed, or synchronous follow-up work stopped",
     );
@@ -662,8 +582,7 @@ export async function runControllerConformanceSuite<
     controller.send(adapter.events.enterA);
     conformanceAssert(
       errors.length === 1 &&
-        adapter.stateKey(controller.getSnapshot()) !==
-          adapter.stateKey(adapter.initialState),
+        adapter.stateKey(controller.getSnapshot()) !== adapter.stateKey(adapter.initialState),
       "synchronous runner throw",
       "the error was not reported or the queue wedged",
     );
@@ -684,8 +603,7 @@ export async function runControllerConformanceSuite<
     await flushConformancePromises();
     conformanceAssert(
       errors.length === 1 &&
-        adapter.stateKey(controller.getSnapshot()) !==
-          adapter.stateKey(adapter.initialState),
+        adapter.stateKey(controller.getSnapshot()) !== adapter.stateKey(adapter.initialState),
       "asynchronous runner rejection",
       "the rejection was not reported or later events stopped",
     );
@@ -713,8 +631,7 @@ export async function runControllerConformanceSuite<
     deferred.resolve();
     await flushConformancePromises();
     conformanceAssert(
-      adapter.stateKey(controller.getSnapshot()) ===
-        adapter.stateKey(snapshotAtDispose),
+      adapter.stateKey(controller.getSnapshot()) === adapter.stateKey(snapshotAtDispose),
       "dispose during await",
       "a completion changed state after disposal",
     );
@@ -725,8 +642,7 @@ export async function runControllerConformanceSuite<
     controller.dispose();
     controller.send(adapter.events.enterA);
     conformanceAssert(
-      adapter.stateKey(controller.getSnapshot()) ===
-        adapter.stateKey(adapter.initialState),
+      adapter.stateKey(controller.getSnapshot()) === adapter.stateKey(adapter.initialState),
       "post-dispose emit",
       "an event was admitted after disposal",
     );
@@ -735,10 +651,7 @@ export async function runControllerConformanceSuite<
   {
     const stale = adapter.commands.awaitThen(adapter.events.enterB);
     let generation = 0;
-    const host = new KeyedControllerHost<
-      string,
-      ConformanceController<State, Event>
-    >(() => {
+    const host = new KeyedControllerHost<string, ConformanceController<State, Event>>(() => {
       generation += 1;
       return adapter.create({
         runCommand(command, emit) {
@@ -759,9 +672,7 @@ export async function runControllerConformanceSuite<
     stale.resolve();
     conformanceAssert(
       adapter.stateKey(replacement.getSnapshot()) ===
-        adapter.stateKey(
-          adapter.transition(adapter.initialState, adapter.events.enterA).state,
-        ),
+        adapter.stateKey(adapter.transition(adapter.initialState, adapter.events.enterA).state),
       "key dispose/recreate with stale events",
       "an old controller affected its replacement",
     );
@@ -785,8 +696,7 @@ export async function runControllerConformanceSuite<
     replayed.send(adapter.events.enterA);
     conformanceAssert(
       disposalCount() === 0 &&
-        adapter.stateKey(replayed.getSnapshot()) !==
-          adapter.stateKey(adapter.initialState),
+        adapter.stateKey(replayed.getSnapshot()) !== adapter.stateKey(adapter.initialState),
       "StrictMode replay",
       "the replayed setup did not cancel deferred disposal",
     );
@@ -825,8 +735,7 @@ export async function runControllerConformanceSuite<
     conformanceAssert(
       aDisposeCount() === 1 &&
         bDisposeCount() === 0 &&
-        adapter.stateKey(b.getSnapshot()) !==
-          adapter.stateKey(adapter.initialState),
+        adapter.stateKey(b.getSnapshot()) !== adapter.stateKey(adapter.initialState),
       "A to B to A to B replacement",
       "a prior generation disposed the final replacement",
     );
@@ -923,15 +832,12 @@ export function replayTrace<State, Event, Command, SerializedEvent>(options: {
               ),
             };
       if (!valuesAreEqual(actual, entry.outcome)) {
-        throw new Error(
-          `expected ${describe(entry.outcome)}, received ${describe(actual)}`,
-        );
+        throw new Error(`expected ${describe(entry.outcome)}, received ${describe(actual)}`);
       }
       state = result.state;
       replayedEvents.push(event);
     } catch (error) {
-      const detail =
-        error instanceof Error ? error.message : `threw ${describe(error)}`;
+      const detail = error instanceof Error ? error.message : `threw ${describe(error)}`;
       throw new Error(`Replay diverged at prefix ${index + 1}: ${detail}`);
     }
   }
@@ -939,17 +845,11 @@ export function replayTrace<State, Event, Command, SerializedEvent>(options: {
 }
 
 export function createRecordingCommandRunner<Command, Event>(
-  implementation?: (
-    command: Command,
-    emit: (event: Event) => void,
-  ) => void | Promise<void>,
+  implementation?: (command: Command, emit: (event: Event) => void) => void | Promise<void>,
 ) {
   const commands: Command[] = [];
   const events: Event[] = [];
-  const run = async (
-    command: Command,
-    emit: (event: Event) => void,
-  ): Promise<void> => {
+  const run = async (command: Command, emit: (event: Event) => void): Promise<void> => {
     commands.push(command);
     await implementation?.(command, (event) => {
       events.push(event);

@@ -8,9 +8,11 @@ interface AppBlueprintDesignDirectionProps {
   onEdit?: (value: string) => void;
 }
 
-export const AppBlueprintDesignDirection: React.FC<
-  AppBlueprintDesignDirectionProps
-> = ({ direction, isApproved, onEdit }) => {
+export const AppBlueprintDesignDirection: React.FC<AppBlueprintDesignDirectionProps> = ({
+  direction,
+  isApproved,
+  onEdit,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(direction);
   const canEdit = !isApproved && !!onEdit;

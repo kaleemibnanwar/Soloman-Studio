@@ -13,10 +13,7 @@ const UNSAFE_ERROR_CONTENT = [
  * persisted in diagnostics, or observed by a different window, so they carry
  * only bounded messages that do not expose repository locations or remotes.
  */
-export function safeGithubOpsErrorMessage(
-  error: unknown,
-  fallback: string,
-): string {
+export function safeGithubOpsErrorMessage(error: unknown, fallback: string): string {
   const raw =
     error instanceof Error && error.message
       ? error.message.replaceAll(/[\u0000-\u001f\u007f]/g, " ").trim()

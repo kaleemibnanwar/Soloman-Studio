@@ -4,34 +4,23 @@ import os from "node:os";
 import path from "node:path";
 
 import { apps } from "@/db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { registerAppHandlers } from "@/ipc/handlers/app_handlers";
-import {
-  setupHandlerTestHarness,
-  type HandlerTestHarness,
-} from "@/testing/handler_test_harness";
+import { setupHandlerTestHarness, type HandlerTestHarness } from "@/testing/handler_test_harness";
 
 const mocks = vi.hoisted(() => ({
   getSupabaseProjectName: vi.fn(),
   readSettings: vi.fn(),
 }));
 
-vi.mock(
-  "@/supabase_admin/supabase_management_client",
-  async (importOriginal) => {
-    const actual =
-      await importOriginal<
-        typeof import("@/supabase_admin/supabase_management_client")
-      >();
-    return {
-      ...actual,
-      getSupabaseProjectName: mocks.getSupabaseProjectName,
-    };
-  },
-);
+vi.mock("@/supabase_admin/supabase_management_client", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/supabase_admin/supabase_management_client")>();
+  return {
+    ...actual,
+    getSupabaseProjectName: mocks.getSupabaseProjectName,
+  };
+});
 
 vi.mock("@/main/settings", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/main/settings")>();
@@ -46,9 +35,7 @@ describe("get-app with unavailable Supabase metadata (integration)", () => {
   let appDirectory: string;
 
   beforeEach(() => {
-    appDirectory = fs.mkdtempSync(
-      path.join(os.tmpdir(), "octopus-studio-get-app-supabase-"),
-    );
+    appDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "octopus-studio-get-app-supabase-"));
     fs.writeFileSync(path.join(appDirectory, "index.ts"), "// app");
 
     mocks.readSettings.mockReturnValue({
@@ -99,10 +86,7 @@ describe("get-app with unavailable Supabase metadata (integration)", () => {
       supabaseProjectName: string | null;
     }>("get-app", inserted.id);
 
-    expect(mocks.getSupabaseProjectName).toHaveBeenCalledWith(
-      "test-project",
-      "test-organization",
-    );
+    expect(mocks.getSupabaseProjectName).toHaveBeenCalledWith("test-project", "test-organization");
     expect(app).toMatchObject({
       id: inserted.id,
       name: "TidyDay",

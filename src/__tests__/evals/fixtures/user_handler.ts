@@ -81,18 +81,13 @@ function buildWhereClause(query: ListUsersQuery): {
 
 // ── Handlers ───────────────────────────────────────────────────────────────
 
-export async function createUserHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function createUserHandler(req: Request, res: Response): Promise<void> {
   const email = req.body.email as string;
   const name = req.body.name as string;
   const age = req.body.age as number;
   const role = req.body.role as "admin" | "member" | "guest";
 
-  const existing = await db.query("SELECT id FROM users WHERE email = ?", [
-    email,
-  ]);
+  const existing = await db.query("SELECT id FROM users WHERE email = ?", [email]);
   if (existing.length > 0) {
     res.status(409).json({ error: "email already in use" });
     return;
@@ -107,10 +102,7 @@ export async function createUserHandler(
   res.status(201).json(rows[0]);
 }
 
-export async function getUserHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getUserHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   if (!id) {
     res.status(400).json({ error: "missing id" });
@@ -127,10 +119,7 @@ export async function getUserHandler(
   res.json(rows[0]);
 }
 
-export async function listUsersHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function listUsersHandler(req: Request, res: Response): Promise<void> {
   const query = req.query as ListUsersQuery;
   const page = parseIntParam(query.page, 1);
   const limit = parseIntParam(query.limit, 20);
@@ -161,10 +150,7 @@ export async function listUsersHandler(
   res.json(response);
 }
 
-export async function updateUserHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function updateUserHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   if (!id) {
     res.status(400).json({ error: "missing id" });
@@ -184,10 +170,7 @@ export async function updateUserHandler(
     return;
   }
 
-  if (
-    body.age !== undefined &&
-    (typeof body.age !== "number" || body.age < 0)
-  ) {
+  if (body.age !== undefined && (typeof body.age !== "number" || body.age < 0)) {
     res.status(400).json({ error: "age must be a non-negative number" });
     return;
   }
@@ -216,10 +199,7 @@ export async function updateUserHandler(
   res.json(rows[0]);
 }
 
-export async function deleteUserHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function deleteUserHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   if (!id) {
     res.status(400).json({ error: "missing id" });
@@ -237,10 +217,7 @@ export async function deleteUserHandler(
   res.status(204).send();
 }
 
-export async function changeRoleHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function changeRoleHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   const { role } = req.body as { role: UserRole };
 
@@ -249,9 +226,7 @@ export async function changeRoleHandler(
     return;
   }
 
-  const existing = await db.query("SELECT id, role FROM users WHERE id = ?", [
-    id,
-  ]);
+  const existing = await db.query("SELECT id, role FROM users WHERE id = ?", [id]);
   if (existing.length === 0) {
     res.status(404).json({ error: "user not found" });
     return;
@@ -268,16 +243,10 @@ export async function changeRoleHandler(
   res.json({ id, role });
 }
 
-export async function deactivateUserHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function deactivateUserHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
 
-  const existing = await db.query(
-    "SELECT id, is_active FROM users WHERE id = ?",
-    [id],
-  );
+  const existing = await db.query("SELECT id, is_active FROM users WHERE id = ?", [id]);
   if (existing.length === 0) {
     res.status(404).json({ error: "user not found" });
     return;
@@ -288,19 +257,16 @@ export async function deactivateUserHandler(
     return;
   }
 
-  await db.query(
-    "UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?",
-    [new Date().toISOString(), id],
-  );
+  await db.query("UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?", [
+    new Date().toISOString(),
+    id,
+  ]);
 
   logger.info(`deactivated user ${id}`);
   res.json({ id, isActive: false });
 }
 
-export async function getUsersByRoleHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getUsersByRoleHandler(req: Request, res: Response): Promise<void> {
   const { role } = req.params;
 
   if (!["admin", "member", "guest"].includes(role)) {
@@ -317,10 +283,7 @@ export async function getUsersByRoleHandler(
   res.json({ role, users: rows });
 }
 
-export async function searchUsersHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function searchUsersHandler(req: Request, res: Response): Promise<void> {
   const { q } = req.query as { q?: string };
   if (!q || q.trim().length < 2) {
     res.status(400).json({ error: "query must be at least 2 characters" });

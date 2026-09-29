@@ -1,8 +1,5 @@
 import type { GithubOperation, GithubOpsBanner, GithubOpsState } from "./state";
-import {
-  selectGithubOpsCapabilities,
-  type GithubOpsCapabilities,
-} from "./capabilities";
+import { selectGithubOpsCapabilities, type GithubOpsCapabilities } from "./capabilities";
 import { continuationOperation } from "./transition";
 
 export interface GithubOpsProjection {
@@ -58,13 +55,9 @@ export function projectGithubOps(state: GithubOpsState): GithubOpsProjection {
     capabilities: selectGithubOpsCapabilities(state),
     banner: state.banner,
     completedOperation:
-      state.banner?.kind === "success"
-        ? (state.banner.completedOperation ?? null)
-        : null,
+      state.banner?.kind === "success" ? (state.banner.completedOperation ?? null) : null,
     isOperationInFlight: state.type === "running",
-    isSyncing:
-      state.type === "running" &&
-      (state.op.type === "push" || state.op.type === "rebase"),
+    isSyncing: state.type === "running" && (state.op.type === "push" || state.op.type === "rebase"),
     conflicts: state.type === "conflicted" ? state.files : EMPTY_CONFLICTS,
     conflictRecoveryStage:
       state.type === "conflicted"
@@ -78,8 +71,7 @@ export function projectGithubOps(state: GithubOpsState): GithubOpsProjection {
                 ? "ready-to-sync"
                 : "conflicted"
         : null,
-    conflictResolutionChatId:
-      state.type === "conflicted" ? (state.resolutionChatId ?? null) : null,
+    conflictResolutionChatId: state.type === "conflicted" ? (state.resolutionChatId ?? null) : null,
     conflictVerificationError:
       state.type === "conflicted" ? (state.verificationError ?? null) : null,
     syncContinuationOperation:
@@ -100,12 +92,8 @@ export function projectGithubOps(state: GithubOpsState): GithubOpsProjection {
             : state.op.type === "push" && state.op.mode === "lease"
               ? "safe-push"
               : null,
-    showForcePush:
-      state.banner?.kind === "error" &&
-      state.banner.code === "NON_FAST_FORWARD",
-    showRebaseAndSync:
-      state.banner?.kind === "error" &&
-      state.banner.code === "DIVERGENT_BRANCHES",
+    showForcePush: state.banner?.kind === "error" && state.banner.code === "NON_FAST_FORWARD",
+    showRebaseAndSync: state.banner?.kind === "error" && state.banner.code === "DIVERGENT_BRANCHES",
     showRebaseRecoveryOptions: state.type === "rebase-paused",
     abortOperation:
       state.type === "rebase-paused" ||
@@ -120,8 +108,7 @@ export function projectGithubOps(state: GithubOpsState): GithubOpsProjection {
     isMergingBranch: runningOperation?.type === "merge",
     isPulling: runningOperation?.type === "pull",
     isCancellingSync:
-      runningOperation?.type === "merge-abort" ||
-      runningOperation?.type === "rebase-abort",
+      runningOperation?.type === "merge-abort" || runningOperation?.type === "rebase-abort",
     switchBlocked:
       state.type === "switch-blocked"
         ? {
@@ -136,7 +123,5 @@ export function projectGithubOps(state: GithubOpsState): GithubOpsProjection {
 }
 
 function isRebaseFamily(type: GithubOperation["type"] | "reconcile"): boolean {
-  return (
-    type === "rebase" || type === "rebase-continue" || type === "rebase-abort"
-  );
+  return type === "rebase" || type === "rebase-continue" || type === "rebase-abort";
 }

@@ -1,10 +1,5 @@
 import { SnapshotStore } from "@/state_machines/snapshot_store";
-import {
-  CLOSED_STATE,
-  type PreviewEvent,
-  type PreviewSession,
-  type PreviewState,
-} from "./state";
+import { CLOSED_STATE, type PreviewEvent, type PreviewSession, type PreviewState } from "./state";
 
 type PresentationState =
   | { readonly type: "closed" }
@@ -68,9 +63,7 @@ export class VersionPreviewPresentationStore {
         }
         return;
       case "CLOSE_VERSION_DIFF":
-        store.setState(
-          current.type === "viewing-diff" ? CLOSED_PRESENTATION : current,
-        );
+        store.setState(current.type === "viewing-diff" ? CLOSED_PRESENTATION : current);
         return;
       case "CLOSE":
       case "APP_CHANGED":
@@ -108,12 +101,10 @@ function presentationSession(
   return {
     appId,
     originBranch: null,
-    targetVersionId:
-      presentation.type === "viewing-diff" ? presentation.versionId : null,
+    targetVersionId: presentation.type === "viewing-diff" ? presentation.versionId : null,
     checkedOutVersionId: null,
     exitIntent: { type: "none" },
-    selectedDiffFile:
-      presentation.type === "viewing-diff" ? presentation.file : null,
+    selectedDiffFile: presentation.type === "viewing-diff" ? presentation.file : null,
     isDiffVisible: presentation.type === "viewing-diff",
   };
 }
@@ -131,11 +122,7 @@ export function combineVersionPreviewState(
   ) {
     return remote;
   }
-  if (
-    remote.type !== "closed" &&
-    remote.type !== "browsing" &&
-    remote.type !== "viewing-diff"
-  ) {
+  if (remote.type !== "closed" && remote.type !== "browsing" && remote.type !== "viewing-diff") {
     const isDiffVisible =
       presentation.type === "viewing-diff" &&
       presentation.versionId === remote.session.targetVersionId;

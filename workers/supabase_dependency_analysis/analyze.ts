@@ -2,16 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SupabaseFunctionImpact } from "../../shared/supabase_dependency_analysis_types";
 
-const SOURCE_EXTENSIONS = [
-  ".ts",
-  ".tsx",
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".cjs",
-  ".mts",
-  ".cts",
-];
+const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"];
 const SUPPORTED_SOURCE_EXTENSIONS = new Set(SOURCE_EXTENSIONS);
 
 function normalizeRelativePath(filePath: string): string {
@@ -21,8 +12,7 @@ function normalizeRelativePath(filePath: string): string {
 function isPathWithin(parent: string, child: string): boolean {
   const relative = path.relative(parent, child);
   return (
-    relative === "" ||
-    (!!relative && !relative.startsWith("..") && !path.isAbsolute(relative))
+    relative === "" || (!!relative && !relative.startsWith("..") && !path.isAbsolute(relative))
   );
 }
 
@@ -85,9 +75,7 @@ async function resolveLocalImport(
     : [
         resolvedBase,
         ...SOURCE_EXTENSIONS.map((ext) => resolvedBase + ext),
-        ...SOURCE_EXTENSIONS.map((ext) =>
-          path.join(resolvedBase, `index${ext}`),
-        ),
+        ...SOURCE_EXTENSIONS.map((ext) => path.join(resolvedBase, `index${ext}`)),
       ];
   for (const candidate of candidates) {
     try {
@@ -124,9 +112,8 @@ async function collectDependencies(
   } catch {
     return { kind: "all", reason: `parse_failure:${filePath}` };
   }
-  const parseDiagnostics = (
-    sourceFile as unknown as { parseDiagnostics?: readonly unknown[] }
-  ).parseDiagnostics;
+  const parseDiagnostics = (sourceFile as unknown as { parseDiagnostics?: readonly unknown[] })
+    .parseDiagnostics;
   if (!parseDiagnostics || parseDiagnostics.length > 0) {
     return { kind: "all", reason: `parse_failure:${filePath}` };
   }
@@ -138,17 +125,11 @@ async function collectDependencies(
   };
   const visit = (node: import("typescript").Node) => {
     if (unsafeReason) return;
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier
-    ) {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
       addSpecifier(node.moduleSpecifier);
       return;
     }
-    if (
-      ts.isCallExpression(node) &&
-      node.expression.kind === ts.SyntaxKind.ImportKeyword
-    ) {
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
       const [specifier] = node.arguments;
       if (specifier) addSpecifier(specifier);
       else unsafeReason = `missing_dynamic_import_specifier:${filePath}`;
@@ -162,10 +143,7 @@ async function collectDependencies(
       unsafeReason = `commonjs_require:${filePath}`;
       return;
     }
-    if (
-      ts.isImportEqualsDeclaration(node) &&
-      ts.isExternalModuleReference(node.moduleReference)
-    ) {
+    if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
       unsafeReason = `import_equals_require:${filePath}`;
       return;
     }
@@ -176,11 +154,7 @@ async function collectDependencies(
   const dependencies: string[] = [];
   for (const specifier of specifiers) {
     if (specifier.startsWith("./") || specifier.startsWith("../")) {
-      const resolved = await resolveLocalImport(
-        filePath,
-        specifier,
-        functionsDir,
-      );
+      const resolved = await resolveLocalImport(filePath, specifier, functionsDir);
       if (typeof resolved !== "string") return resolved;
       dependencies.push(resolved);
     } else if (!isClearlyExternalSpecifier(specifier)) {

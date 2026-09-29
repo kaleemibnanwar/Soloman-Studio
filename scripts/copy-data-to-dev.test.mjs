@@ -32,9 +32,7 @@ test("resolves Electron's production user data path on each platform", () => {
 });
 
 test("reports unique processes using production data", () => {
-  const root = mkdtempSync(
-    path.join(os.tmpdir(), "octopusStudio-copy-processes-"),
-  );
+  const root = mkdtempSync(path.join(os.tmpdir(), "octopusStudio-copy-processes-"));
   writeFileSync(path.join(root, "sqlite.db"), "database");
 
   assert.deepEqual(
@@ -50,8 +48,7 @@ test("reports the production OctopusStudio process on Windows", () => {
   assert.deepEqual(
     getProcessesUsingDataDirectories([], {
       platform: "win32",
-      runSync: () =>
-        '"octopusStudio.exe","789","Console","1","123,456 K"\r\nINFO: No other tasks',
+      runSync: () => '"octopusStudio.exe","789","Console","1","123,456 K"\r\nINFO: No other tasks',
     }),
     ["789"],
   );
@@ -68,10 +65,7 @@ test("replaces development data only after copying durable production data", () 
   mkdirSync(destination);
   writeFileSync(path.join(source, "sqlite.db"), "production database");
   writeFileSync(path.join(source, "user-settings.json"), "settings");
-  writeFileSync(
-    path.join(source, "octopusStudio-apps", "my-app", "index.ts"),
-    "app",
-  );
+  writeFileSync(path.join(source, "octopusStudio-apps", "my-app", "index.ts"), "app");
   writeFileSync(path.join(source, "Cache", "cache.bin"), "cache");
   writeFileSync(path.join(destination, "stale.txt"), "stale");
 
@@ -83,19 +77,11 @@ test("replaces development data only after copying durable production data", () 
     now: () => 123,
   });
 
+  assert.equal(readFileSync(path.join(destination, "sqlite.db"), "utf8"), "production database");
   assert.equal(
-    readFileSync(path.join(destination, "sqlite.db"), "utf8"),
-    "production database",
-  );
-  assert.equal(
-    readFileSync(
-      path.join(destination, "octopusStudio-apps", "my-app", "index.ts"),
-      "utf8",
-    ),
+    readFileSync(path.join(destination, "octopusStudio-apps", "my-app", "index.ts"), "utf8"),
     "app",
   );
   assert.throws(() => readFileSync(path.join(destination, "stale.txt")));
-  assert.throws(() =>
-    readFileSync(path.join(destination, "Cache", "cache.bin")),
-  );
+  assert.throws(() => readFileSync(path.join(destination, "Cache", "cache.bin")));
 });

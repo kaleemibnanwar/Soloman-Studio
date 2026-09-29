@@ -70,10 +70,7 @@ export function normalizeMcpCallIds(dump: any): void {
 export function normalizeGitContextHashes(dump: any): void {
   const scrub = (value: string): string =>
     value.replace(/<octopusStudio-git-context\b[^>]*>/g, (tag) =>
-      tag.replace(
-        /\b(commit|source_commit)="[0-9a-f]{40,64}"/gi,
-        '$1="[[GIT_COMMIT]]"',
-      ),
+      tag.replace(/\b(commit|source_commit)="[0-9a-f]{40,64}"/gi, '$1="[[GIT_COMMIT]]"'),
     );
 
   const visit = (value: unknown, set: (next: unknown) => void): void => {
@@ -206,10 +203,7 @@ export function normalizeVersionedFiles(dump: any): void {
   // Update messageIndexToFilePathToFileId
   if (vf.messageIndexToFilePathToFileId) {
     for (const pathToId of Object.values(
-      vf.messageIndexToFilePathToFileId as Record<
-        string,
-        Record<string, string>
-      >,
+      vf.messageIndexToFilePathToFileId as Record<string, Record<string, string>>,
     )) {
       for (const [filePath, id] of Object.entries(pathToId)) {
         pathToId[filePath] = oldToNewId[id] ?? id;

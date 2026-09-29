@@ -5,13 +5,7 @@ import { Worker } from "node:worker_threads";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-const WORKER_PATH = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "worker",
-  "proxy_server.js",
-);
+const WORKER_PATH = path.resolve(__dirname, "..", "..", "worker", "proxy_server.js");
 const PROXY_FRAME_ANCESTORS_CSP =
   "frame-ancestors 'self' file: http://localhost:* http://127.0.0.1:* http://[::1]:*";
 
@@ -119,17 +113,13 @@ describe("proxy worker Content-Security-Policy", () => {
       });
     return {
       waitForStart: async () => {
-        const msg = await waitFor((m) =>
-          m.startsWith("proxy-server-start url="),
-        );
+        const msg = await waitFor((m) => m.startsWith("proxy-server-start url="));
         return Number(msg.match(/:(\d+)\b/)?.[1]);
       },
     };
   }
 
-  async function proxyResponse(
-    upstreamOpts?: Parameters<typeof startUpstream>[0],
-  ) {
+  async function proxyResponse(upstreamOpts?: Parameters<typeof startUpstream>[0]) {
     const upstream = await startUpstream(upstreamOpts);
     cleanup.push(upstream.close);
 
@@ -147,20 +137,17 @@ describe("proxy worker Content-Security-Policy", () => {
       headers: http.IncomingHttpHeaders;
       rawHeaders: string[];
     }>((resolve, reject) => {
-      const req = http.get(
-        { host: "localhost", path: "/", port: proxyPort },
-        (res) => {
-          const chunks: Buffer[] = [];
-          res.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-          res.on("end", () =>
-            resolve({
-              body: Buffer.concat(chunks).toString("utf8"),
-              headers: res.headers,
-              rawHeaders: res.rawHeaders,
-            }),
-          );
-        },
-      );
+      const req = http.get({ host: "localhost", path: "/", port: proxyPort }, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+        res.on("end", () =>
+          resolve({
+            body: Buffer.concat(chunks).toString("utf8"),
+            headers: res.headers,
+            rawHeaders: res.rawHeaders,
+          }),
+        );
+      });
       req.once("error", reject);
     });
   }
@@ -168,9 +155,9 @@ describe("proxy worker Content-Security-Policy", () => {
   it("adds the proxy frame-ancestors policy when the app has no CSP", async () => {
     const response = await proxyResponse();
 
-    expect(
-      rawHeaderValues(response.rawHeaders, "content-security-policy"),
-    ).toEqual([PROXY_FRAME_ANCESTORS_CSP]);
+    expect(rawHeaderValues(response.rawHeaders, "content-security-policy")).toEqual([
+      PROXY_FRAME_ANCESTORS_CSP,
+    ]);
   });
 
   it("preserves an app CSP as an independently enforced header", async () => {
@@ -181,9 +168,10 @@ describe("proxy worker Content-Security-Policy", () => {
       },
     });
 
-    expect(
-      rawHeaderValues(response.rawHeaders, "content-security-policy"),
-    ).toEqual([appCsp, PROXY_FRAME_ANCESTORS_CSP]);
+    expect(rawHeaderValues(response.rawHeaders, "content-security-policy")).toEqual([
+      appCsp,
+      PROXY_FRAME_ANCESTORS_CSP,
+    ]);
   });
 
   it("keeps app CSP independent on the HTML injection path", async () => {
@@ -197,8 +185,9 @@ describe("proxy worker Content-Security-Policy", () => {
     });
 
     expect(response.body).toContain("<body>hello</body>");
-    expect(
-      rawHeaderValues(response.rawHeaders, "content-security-policy"),
-    ).toEqual([appCsp, PROXY_FRAME_ANCESTORS_CSP]);
+    expect(rawHeaderValues(response.rawHeaders, "content-security-policy")).toEqual([
+      appCsp,
+      PROXY_FRAME_ANCESTORS_CSP,
+    ]);
   });
 });

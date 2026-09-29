@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Worker } from "node:worker_threads";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type { SandboxHostCallObserver } from "./capabilities";
 import {
   executeSandboxScriptInProcess,
@@ -208,10 +205,7 @@ function runSandboxScriptInWorker(params: {
       }
 
       if (message.type === "error") {
-        settle(
-          () => reject(deserializeSandboxWorkerError(message.error)),
-          true,
-        );
+        settle(() => reject(deserializeSandboxWorkerError(message.error)), true);
         return;
       }
 
@@ -255,13 +249,8 @@ export async function runSandboxScript(params: {
   persistFullOutput?: boolean;
   onHostCall?: SandboxHostCallObserver;
 }): Promise<SandboxRunResult> {
-  if (
-    Buffer.byteLength(params.script, "utf8") > SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES
-  ) {
-    throw new OctopusStudioError(
-      "Sandbox script is too large.",
-      OctopusStudioErrorKind.Validation,
-    );
+  if (Buffer.byteLength(params.script, "utf8") > SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES) {
+    throw new OctopusStudioError("Sandbox script is too large.", OctopusStudioErrorKind.Validation);
   }
 
   const timeoutMs = clampSandboxTimeoutMs(params.timeoutMs);

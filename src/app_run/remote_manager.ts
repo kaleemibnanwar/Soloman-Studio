@@ -30,10 +30,7 @@ export type AppRunRemoteConnection = RemoteMachineClientConnection & {
   start?: () => () => void;
 };
 
-export type AppRunRemoteStateChangedListener = (
-  appId: number,
-  state: AppRunRemoteSnapshot,
-) => void;
+export type AppRunRemoteStateChangedListener = (appId: number, state: AppRunRemoteSnapshot) => void;
 
 export type AppRunOperationInput =
   | { type: "START"; startedAt: number }
@@ -77,9 +74,7 @@ export class AppRunRemoteManager {
     private readonly connection: AppRunRemoteConnection = new IpcRemoteMachineConnection(),
   ) {
     this.client = new RemoteMachineClient(this.connection, ids);
-    this.requestScope = new PreparedRequestScope(
-      this.ids.next("app-run-window-session"),
-    );
+    this.requestScope = new PreparedRequestScope(this.ids.next("app-run-window-session"));
   }
 
   start(): void {
@@ -94,8 +89,7 @@ export class AppRunRemoteManager {
     this.stopConnection = undefined;
   }
 
-  getSnapshot = (appId: number): AppRunRemoteSnapshot =>
-    this.actor(appId).getSnapshot();
+  getSnapshot = (appId: number): AppRunRemoteSnapshot => this.actor(appId).getSnapshot();
 
   getView = (appId: number) => this.actor(appId).getView();
 
@@ -107,9 +101,7 @@ export class AppRunRemoteManager {
     });
   };
 
-  subscribeRunStateChanged = (
-    listener: AppRunRemoteStateChangedListener,
-  ): (() => void) => {
+  subscribeRunStateChanged = (listener: AppRunRemoteStateChangedListener): (() => void) => {
     if (this.disposed) return () => undefined;
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -131,9 +123,7 @@ export class AppRunRemoteManager {
     const view = actor.getView();
     const observed =
       capturedObserved ??
-      (view.snapshot.kind === "available"
-        ? view.snapshot.observedRevision
-        : undefined);
+      (view.snapshot.kind === "available" ? view.snapshot.observedRevision : undefined);
     let runtimeOperationId: string | undefined;
     const requestActor = createRemoteRequestActor<
       PreparedRunOperation,
@@ -208,14 +198,12 @@ export class AppRunRemoteManager {
           expected: operation.observed ?? currentObserved,
         };
       },
-      fingerprint: (_identity, operation) =>
-        JSON.stringify({ appId, operation }),
+      fingerprint: (_identity, operation) => JSON.stringify({ appId, operation }),
       selectOutcome: (current, requestId) => {
         const settlement = current.state.lastSettlement;
         if (
           !settlement ||
-          (settlement.operationId !== requestId &&
-            settlement.operationId !== runtimeOperationId)
+          (settlement.operationId !== requestId && settlement.operationId !== runtimeOperationId)
         ) {
           return undefined;
         }
@@ -261,10 +249,7 @@ export class AppRunRemoteManager {
     appId: number,
     input: AppRunOperationInput,
     prepared: AppRunPreparedRequest,
-    settlement?: PreparedRequestSettlement<
-      AppRunOperationOutcome,
-      AppRunRefusal
-    >,
+    settlement?: PreparedRequestSettlement<AppRunOperationOutcome, AppRunRefusal>,
   ): Promise<void> {
     const result = settlement ?? (await prepared.settled);
     return this.applyPublicSettlement(appId, input, result);
@@ -304,9 +289,7 @@ export class AppRunRemoteManager {
       if (result.refusal === "not-running") return;
       if (result.refusal === "host-disposing") return;
       if (result.reason === "disposed") return;
-      throw new Error(
-        `App run request rejected: ${result.refusal ?? result.reason}`,
-      );
+      throw new Error(`App run request rejected: ${result.refusal ?? result.reason}`);
     }
     if (result.kind === "detached") return;
     if (result.outcome.kind === "cancelled") return;
@@ -354,10 +337,7 @@ export class AppRunRemoteManager {
     return this.client.actor(appRunClientDefinition, appRunKey(appId));
   }
 
-  private handleActorSnapshot(
-    appId: number,
-    snapshot: AppRunRemoteSnapshot,
-  ): void {
+  private handleActorSnapshot(appId: number, snapshot: AppRunRemoteSnapshot): void {
     for (const listener of this.listeners) {
       try {
         listener(appId, snapshot);

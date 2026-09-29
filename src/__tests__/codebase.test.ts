@@ -23,7 +23,7 @@ vi.mock("@/main/settings", () => ({
   })),
 }));
 
-vi.mock("@/ipc/utils/git_utils", () => ({
+vi.mock("@/ipc/git/git_utils", () => ({
   gitListFilesNative: vi.fn(async () => {
     throw new Error("Git unavailable in filesystem traversal tests");
   }),
@@ -53,10 +53,7 @@ describe("extractCodebase", () => {
       path.join(appDir, "src", "shaders", "material.frag"),
       "void main() { gl_FragColor = vec4(1.0); }",
     );
-    await fs.promises.writeFile(
-      path.join(appDir, "src", "notes.shader"),
-      "custom shader notes",
-    );
+    await fs.promises.writeFile(path.join(appDir, "src", "notes.shader"), "custom shader notes");
 
     const result = await extractCodebase({
       appPath: appDir,
@@ -86,10 +83,7 @@ describe("extractCodebase", () => {
   it("excludes git metadata policy files from context", async () => {
     appDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "codebase-"));
 
-    await fs.promises.writeFile(
-      path.join(appDir, ".gitattributes"),
-      "* text=auto eol=lf\n",
-    );
+    await fs.promises.writeFile(path.join(appDir, ".gitattributes"), "* text=auto eol=lf\n");
     await fs.promises.writeFile(path.join(appDir, ".gitignore"), "dist\n");
     await fs.promises.writeFile(path.join(appDir, "src.ts"), "export {};\n");
 
@@ -101,10 +95,7 @@ describe("extractCodebase", () => {
       },
     });
 
-    expect(result.files.map((file) => file.path).sort()).toEqual([
-      ".gitignore",
-      "src.ts",
-    ]);
+    expect(result.files.map((file) => file.path).sort()).toEqual([".gitignore", "src.ts"]);
     expect(result.formattedOutput).not.toContain(".gitattributes");
   });
 
@@ -114,18 +105,9 @@ describe("extractCodebase", () => {
     await fs.promises.mkdir(path.join(appDir, "private"), {
       recursive: true,
     });
-    await fs.promises.writeFile(
-      path.join(appDir, ".gitignore"),
-      "secret.json\nprivate/\n",
-    );
-    await fs.promises.writeFile(
-      path.join(appDir, "src", ".gitignore"),
-      "ignored.ts\n",
-    );
-    await fs.promises.writeFile(
-      path.join(appDir, "secret.json"),
-      '{"token":"secret"}',
-    );
+    await fs.promises.writeFile(path.join(appDir, ".gitignore"), "secret.json\nprivate/\n");
+    await fs.promises.writeFile(path.join(appDir, "src", ".gitignore"), "ignored.ts\n");
+    await fs.promises.writeFile(path.join(appDir, "secret.json"), '{"token":"secret"}');
     await fs.promises.writeFile(
       path.join(appDir, "private", "credentials.ts"),
       'export const password = "secret";',
@@ -153,9 +135,7 @@ describe("extractCodebase", () => {
       "src/visible.ts",
     ]);
     expect(result.formattedOutput).not.toContain('{"token":"secret"}');
-    expect(result.formattedOutput).not.toContain(
-      'export const password = "secret";',
-    );
+    expect(result.formattedOutput).not.toContain('export const password = "secret";');
   });
 
   it("lists file metadata without reading file contents", async () => {

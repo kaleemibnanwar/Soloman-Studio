@@ -1,13 +1,7 @@
-import {
-  windowRegistry,
-  type WindowRegistry,
-} from "@/window_infrastructure/main/window_registry";
+import { windowRegistry, type WindowRegistry } from "@/window_infrastructure/main/window_registry";
 import type { WindowSessionId } from "@/window_infrastructure/types";
 import type { VersionCommandResult } from "@/ipc/types";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { safeSend } from "../utils/safe_sender";
 
 export class VersionPreviewPresentationService {
@@ -22,10 +16,7 @@ export class VersionPreviewPresentationService {
 
   constructor(private readonly windows: WindowRegistry = windowRegistry) {}
 
-  recordInitiator(
-    operationId: string,
-    windowSessionId: string | undefined,
-  ): void {
+  recordInitiator(operationId: string, windowSessionId: string | undefined): void {
     if (!windowSessionId) return;
     const existing = this.initiatorByOperationId.get(operationId);
     if (existing) {
@@ -45,21 +36,14 @@ export class VersionPreviewPresentationService {
       expiry: null as ReturnType<typeof setTimeout> | null,
     };
     entry.expiry = setTimeout(() => {
-      if (
-        this.initiatorByOperationId.get(operationId) === entry &&
-        !entry.confirmed
-      ) {
+      if (this.initiatorByOperationId.get(operationId) === entry && !entry.confirmed) {
         this.initiatorByOperationId.delete(operationId);
       }
     }, 0);
     this.initiatorByOperationId.set(operationId, entry);
   }
 
-  publishResult(
-    appId: number,
-    operationId: string,
-    result: VersionCommandResult,
-  ): void {
+  publishResult(appId: number, operationId: string, result: VersionCommandResult): void {
     this.send(appId, operationId, {
       notification: result.notification,
       affectedChatId: result.affectedChatId,
@@ -91,9 +75,7 @@ export class VersionPreviewPresentationService {
 
   originEndpointFor(operationId: string) {
     const entry = this.initiatorByOperationId.get(operationId);
-    return entry
-      ? this.windows.endpointForSession(entry.windowSessionId)
-      : undefined;
+    return entry ? this.windows.endpointForSession(entry.windowSessionId) : undefined;
   }
 
   private send(
@@ -119,5 +101,4 @@ export class VersionPreviewPresentationService {
   }
 }
 
-export const versionPreviewPresentationService =
-  new VersionPreviewPresentationService();
+export const versionPreviewPresentationService = new VersionPreviewPresentationService();

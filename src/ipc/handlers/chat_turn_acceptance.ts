@@ -8,17 +8,11 @@ import {
   getAcceptedMessageId,
   markIntentAccepted,
 } from "@/chat_stream/persistence";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type { ChatMode, ModelSelection, StoredChatMode } from "@/lib/schemas";
 import type { SerializableChatTurnIntent } from "@/chat_stream/transport";
 
-type ChatTurnDatabase = Pick<
-  BetterSQLite3Database<typeof schema>,
-  "transaction"
->;
+type ChatTurnDatabase = Pick<BetterSQLite3Database<typeof schema>, "transaction">;
 
 export interface AcceptChatTurnInput {
   chatId: number;
@@ -45,10 +39,7 @@ export function acceptChatTurn(
   if (input.chatTurnIntent) {
     ensureIntentRecord(input.chatTurnIntent);
   }
-  if (
-    input.chatTurnIntentId &&
-    getAcceptedMessageId(input.chatTurnIntentId) !== undefined
-  ) {
+  if (input.chatTurnIntentId && getAcceptedMessageId(input.chatTurnIntentId) !== undefined) {
     return {
       userMessageId: null,
       authoritativeChatMode: null,

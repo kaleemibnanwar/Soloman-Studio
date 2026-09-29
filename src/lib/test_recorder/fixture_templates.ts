@@ -4,10 +4,7 @@
  * the helper reads the isolated-session credentials OctopusStudio injects into the run.
  */
 
-export type RecorderAuthMode =
-  | "none"
-  | "neon-better-auth"
-  | "supabase-password";
+export type RecorderAuthMode = "none" | "neon-better-auth" | "supabase-password";
 
 /**
  * Marker stamped into a generated fixture, naming its auth mode. How the writer
@@ -19,9 +16,7 @@ export function fixtureMarker(mode: Exclude<RecorderAuthMode, "none">): string {
 }
 
 /** The auth mode a fixture declares, or null when it isn't OctopusStudio-generated. */
-export function readFixtureMode(
-  source: string,
-): Exclude<RecorderAuthMode, "none"> | null {
+export function readFixtureMode(source: string): Exclude<RecorderAuthMode, "none"> | null {
   for (const mode of ["neon-better-auth", "supabase-password"] as const) {
     if (source.includes(fixtureMarker(mode))) return mode;
   }
@@ -112,12 +107,7 @@ const SUPABASE_PASSWORD_FIXTURE: string[] = [
 ];
 
 /** Generate the `e2e-tests/fixtures/test-user.ts` source for the given auth mode. */
-export function generateTestUserFixtureSource(
-  mode: Exclude<RecorderAuthMode, "none">,
-): string {
-  const body =
-    mode === "neon-better-auth"
-      ? NEON_BETTER_AUTH_FIXTURE
-      : SUPABASE_PASSWORD_FIXTURE;
+export function generateTestUserFixtureSource(mode: Exclude<RecorderAuthMode, "none">): string {
+  const body = mode === "neon-better-auth" ? NEON_BETTER_AUTH_FIXTURE : SUPABASE_PASSWORD_FIXTURE;
   return [fixtureMarker(mode), ...body].join("\n");
 }

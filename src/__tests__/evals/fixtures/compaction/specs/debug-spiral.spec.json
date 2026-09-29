@@ -43,15 +43,9 @@
       "id": "p3",
       "goal": "Hypothesis 2 is disproven: the totals are still wrong after a hard reload with React Query caching fully disabled (plant F4, the T2 current evidence). The assistant forms hypothesis 3, suspecting floating point rounding in the currency math is dropping cents (plant trap T3 superseded evidence) and digs into the cents-based money helpers and currency formatting. The user states a hard constraint: we cannot touch the schema, created_at stays an ISO 8601 UTC string (plant F10). While auditing currency formatting the assistant also generates a large locale strings file for currency labels.",
       "turns": 5,
-      "activeFiles": [
-        "src/lib/money.ts",
-        "src/lib/queryClient.ts",
-        "src/locales/en.json"
-      ],
+      "activeFiles": ["src/lib/money.ts", "src/lib/queryClient.ts", "src/locales/en.json"],
       "factIds": ["F4", "F10"],
-      "bulk": [
-        { "asset": "locale-json", "path": "src/locales/en.json", "count": 380 }
-      ]
+      "bulk": [{ "asset": "locale-json", "path": "src/locales/en.json", "count": 380 }]
     },
     {
       "id": "p4",

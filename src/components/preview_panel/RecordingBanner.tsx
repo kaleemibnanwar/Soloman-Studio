@@ -1,12 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  ChevronRight,
-  CircleDot,
-  Loader2,
-  Sparkles,
-  Square,
-  X,
-} from "lucide-react";
+import { ChevronRight, CircleDot, Loader2, Sparkles, Square, X } from "lucide-react";
 
 import type { TestRecorderController } from "@/hooks/useTestRecorder";
 import { draftTitle } from "@/lib/test_recorder/draft";
@@ -32,9 +25,7 @@ const PRIMARY_BUTTON_CLASSES =
 const DETAILS_ID = "preview-recording-details";
 
 /** Status line for the recorder's non-interactive (spinner) phases. */
-export function recordingStatusMessage(
-  recorder: TestRecorderController,
-): string {
+export function recordingStatusMessage(recorder: TestRecorderController): string {
   switch (recorder.phase) {
     case "finishing":
       return "Wrapping up the recording…";
@@ -81,9 +72,7 @@ export function RecordingBanner({
   }, [recorder.phase, recorder.draft?.draftId]);
 
   const details: ReactNode =
-    recorder.phase === "reviewing" ? (
-      <RecordedStepsList steps={recorder.draftSteps} />
-    ) : null;
+    recorder.phase === "reviewing" ? <RecordedStepsList steps={recorder.draftSteps} /> : null;
 
   // The status line is split into the label the disclosure toggles and the rest
   // of the row (metadata plus this phase's actions), which stays clickable.
@@ -110,10 +99,7 @@ export function RecordingBanner({
           <CircleDot size={14} className="animate-pulse" />
           Recording
         </span>
-        <span
-          className="shrink-0 text-muted-foreground"
-          data-testid="preview-recording-step-count"
-        >
+        <span className="shrink-0 text-muted-foreground" data-testid="preview-recording-step-count">
           {recorder.entryCount} step{recorder.entryCount === 1 ? "" : "s"}
         </span>
         {recorder.isolation &&
@@ -138,10 +124,7 @@ export function RecordingBanner({
           type="button"
           onClick={() => void recorder.stopAndReview("")}
           data-testid="preview-recording-stop-button"
-          className={cn(
-            PRIMARY_BUTTON_CLASSES,
-            "col-start-3 row-start-1 @xl:col-start-4",
-          )}
+          className={cn(PRIMARY_BUTTON_CLASSES, "col-start-3 row-start-1 @xl:col-start-4")}
         >
           <Square size={12} /> Stop
         </button>
@@ -185,8 +168,7 @@ export function RecordingBanner({
           ) : (
             <>
               {recorder.draftSteps.length} step
-              {recorder.draftSteps.length === 1 ? "" : "s"} recorded — not saved
-              yet
+              {recorder.draftSteps.length === 1 ? "" : "s"} recorded — not saved yet
             </>
           )}
         </span>
@@ -334,10 +316,7 @@ export function RecordingBanner({
       )}
 
       {details && isExpanded && (
-        <div
-          id={DETAILS_ID}
-          className="border-t border-purple-200/60 dark:border-purple-900/40"
-        >
+        <div id={DETAILS_ID} className="border-t border-purple-200/60 dark:border-purple-900/40">
           {details}
         </div>
       )}

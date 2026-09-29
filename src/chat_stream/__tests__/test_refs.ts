@@ -1,9 +1,6 @@
 import type { ChatStreamInvocationRef } from "../invocation";
 
-export function makeChatStreamRef(
-  index: number,
-  chatId: number,
-): ChatStreamInvocationRef {
+export function makeChatStreamRef(index: number, chatId: number): ChatStreamInvocationRef {
   return {
     kind: "chat-stream",
     entityKey: chatId,

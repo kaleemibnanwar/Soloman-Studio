@@ -1,8 +1,8 @@
-import type { Config } from 'tailwindcss/types/config';
+import type { Config } from "tailwindcss/types/config";
 
 export default {
   theme: {
     extend: {},
   },
   plugins: [],
-} as Omit<Config, 'content'>;
+} as Omit<Config, "content">;

@@ -22,16 +22,9 @@ export function PluginsList({
   const navigate = useNavigate();
   // Gate on the servers query alone: tool discovery can take seconds,
   // and the cards already render a placeholder count until it lands.
-  const {
-    servers,
-    toolsByServer,
-    statusByServer,
-    consentsMap,
-    isServersLoading,
-    toggleEnabled,
-  } = useMcp();
-  const { connectingServerId, feedbackFor, onServerCreated, onConnect } =
-    usePluginConnect();
+  const { servers, toolsByServer, statusByServer, consentsMap, isServersLoading, toggleEnabled } =
+    useMcp();
+  const { connectingServerId, feedbackFor, onServerCreated, onConnect } = usePluginConnect();
 
   const oauthStorageEncrypted = useOauthStorageEncrypted();
 
@@ -58,8 +51,7 @@ export function PluginsList({
       ),
     [servers],
   );
-  const showPlaintextBanner =
-    oauthStorageEncrypted === false && hasStoredSecret;
+  const showPlaintextBanner = oauthStorageEncrypted === false && hasStoredSecret;
 
   // Still-loading, unreachable, or unauthorized servers have no tool
   // list; the card shows a placeholder instead of a misleading zero.
@@ -68,9 +60,8 @@ export function PluginsList({
 
   const enabledToolCountFor = (serverId: number): number | null =>
     toolsByServer[serverId]
-      ? toolsByServer[serverId].filter(
-          (t) => consentsMap[`${serverId}:${t.name}`] !== "denied",
-        ).length
+      ? toolsByServer[serverId].filter((t) => consentsMap[`${serverId}:${t.name}`] !== "denied")
+          .length
       : null;
 
   // A settled status with no tool list means the listing failed
@@ -103,14 +94,12 @@ export function PluginsList({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {servers.map((s) => {
             const needsSetup =
-              !!s.catalogSlug &&
-              serverNeedsSetup(s, inputsBySlug.get(s.catalogSlug) ?? []);
+              !!s.catalogSlug && serverNeedsSetup(s, inputsBySlug.get(s.catalogSlug) ?? []);
             // A disabled catalog server might still need setup while its
             // catalog is loading, so lock its controls until the fetch
             // settles rather than for as long as data is missing.
             const setupLocked =
-              needsSetup ||
-              (!!s.catalogSlug && catalogQuery.isLoading && !s.enabled);
+              needsSetup || (!!s.catalogSlug && catalogQuery.isLoading && !s.enabled);
             return (
               <PluginSummaryCard
                 key={s.id}
@@ -135,9 +124,7 @@ export function PluginsList({
             );
           })}
           {servers.length === 0 && (
-            <div className="col-span-full text-sm text-muted-foreground">
-              No plugins added yet.
-            </div>
+            <div className="col-span-full text-sm text-muted-foreground">No plugins added yet.</div>
           )}
         </div>
       )}

@@ -58,10 +58,7 @@ export function MediaFileThumbnail({
         className="group w-[120px] h-[120px] relative cursor-pointer"
         onClick={() => onPreviewImage(file)}
         onKeyDown={(e) => {
-          if (
-            e.target === e.currentTarget &&
-            (e.key === "Enter" || e.key === " ")
-          ) {
+          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
             e.preventDefault();
             onPreviewImage(file);
           }
@@ -146,10 +143,7 @@ export function MediaFileThumbnail({
         )}
       </div>
       <div className="p-1.5">
-        <p
-          className="text-xs truncate text-muted-foreground"
-          title={file.fileName}
-        >
+        <p className="text-xs truncate text-muted-foreground" title={file.fileName}>
           {file.fileName}
         </p>
       </div>

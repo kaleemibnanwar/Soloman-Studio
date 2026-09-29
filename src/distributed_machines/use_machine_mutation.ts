@@ -4,10 +4,7 @@ import type {
   PreparedRequest,
   PreparedRequestSettlement,
 } from "./prepared_request";
-import type {
-  ObservedRevisionToken,
-  RemoteConnectionStatus,
-} from "./remote_client";
+import type { ObservedRevisionToken, RemoteConnectionStatus } from "./remote_client";
 
 export type MachineMutationAdmission<Admission, Refusal> =
   | { readonly kind: "idle" }
@@ -36,13 +33,7 @@ export type MachineMutationTerminalExecution<Failure = unknown> = Exclude<
   { readonly kind: "idle" } | { readonly kind: "running" }
 >;
 
-export interface UseMachineMutationOptions<
-  Input,
-  Admission,
-  Outcome,
-  Refusal,
-  Failure,
-> {
+export interface UseMachineMutationOptions<Input, Admission, Outcome, Refusal, Failure> {
   readonly connection: RemoteConnectionStatus;
   readonly snapshot:
     | { readonly kind: "unavailable" }
@@ -54,9 +45,7 @@ export interface UseMachineMutationOptions<
     input: Input,
     observedRevision: ObservedRevisionToken | undefined,
   ) => PreparedRequest<Admission, Outcome, Refusal>;
-  readonly classifyOutcome: (
-    outcome: Outcome,
-  ) => MachineMutationTerminalExecution<Failure>;
+  readonly classifyOutcome: (outcome: Outcome) => MachineMutationTerminalExecution<Failure>;
   readonly onUnexpectedError?: (error: unknown) => void;
   /**
    * Parallel ownership preserves every caller's authoritative promise while
@@ -84,27 +73,13 @@ export interface MachineMutation<Input, Admission, Outcome, Refusal, Failure> {
  * Handwritten framework helper. Presentation remains domain-owned; this hook
  * only exposes orthogonal transport, snapshot, admission, and execution facts.
  */
-export function useMachineMutation<
-  Input,
-  Admission,
-  Outcome,
-  Refusal,
-  Failure = unknown,
->(
-  options: UseMachineMutationOptions<
-    Input,
-    Admission,
-    Outcome,
-    Refusal,
-    Failure
-  >,
+export function useMachineMutation<Input, Admission, Outcome, Refusal, Failure = unknown>(
+  options: UseMachineMutationOptions<Input, Admission, Outcome, Refusal, Failure>,
 ): MachineMutation<Input, Admission, Outcome, Refusal, Failure> {
-  const [admission, setAdmission] = useState<
-    MachineMutationAdmission<Admission, Refusal>
-  >({ kind: "idle" });
-  const [execution, setExecution] = useState<MachineMutationExecution<Failure>>(
-    { kind: "idle" },
-  );
+  const [admission, setAdmission] = useState<MachineMutationAdmission<Admission, Refusal>>({
+    kind: "idle",
+  });
+  const [execution, setExecution] = useState<MachineMutationExecution<Failure>>({ kind: "idle" });
   const active = useRef<
     | {
         generation: number;
@@ -112,14 +87,11 @@ export function useMachineMutation<
       }
     | undefined
   >(undefined);
-  const inFlight = useRef(
-    new Set<PreparedRequest<Admission, Outcome, Refusal>>(),
-  );
+  const inFlight = useRef(new Set<PreparedRequest<Admission, Outcome, Refusal>>());
   const mounted = useRef(true);
   const nextGeneration = useRef(0);
   const { request, snapshot, classifyOutcome, onUnexpectedError } = options;
-  const observedRevision =
-    snapshot.kind === "available" ? snapshot.observedRevision : undefined;
+  const observedRevision = snapshot.kind === "available" ? snapshot.observedRevision : undefined;
   const reportUnexpected = useCallback(
     (error: unknown): void => {
       try {
@@ -142,10 +114,7 @@ export function useMachineMutation<
   }, []);
 
   const applyAdmission = useCallback(
-    (
-      generation: number,
-      result: PreparedAdmission<Admission, Refusal>,
-    ): void => {
+    (generation: number, result: PreparedAdmission<Admission, Refusal>): void => {
       if (!mounted.current || active.current?.generation !== generation) return;
       switch (result.kind) {
         case "admitted":
@@ -187,9 +156,7 @@ export function useMachineMutation<
   );
 
   const mutate = useCallback(
-    async (
-      input: Input,
-    ): Promise<PreparedRequestSettlement<Outcome, Refusal>> => {
+    async (input: Input): Promise<PreparedRequestSettlement<Outcome, Refusal>> => {
       if (!mounted.current) {
         return { kind: "not-admitted", reason: "disposed" };
       }
@@ -226,8 +193,7 @@ export function useMachineMutation<
         const isCurrent =
           mounted.current &&
           nextGeneration.current === generation &&
-          (active.current === undefined ||
-            active.current.generation === generation);
+          (active.current === undefined || active.current.generation === generation);
         if (isCurrent) {
           if (!authoritativeAdmissionAccepted) {
             setAdmission({ kind: "idle" });
@@ -263,8 +229,7 @@ export function useMachineMutation<
       applyAdmission(current.generation, result);
       return result;
     } catch (error) {
-      const isCurrent =
-        mounted.current && nextGeneration.current === current.generation;
+      const isCurrent = mounted.current && nextGeneration.current === current.generation;
       if (isCurrent) {
         setAdmission(previousAdmission);
         setExecution({ kind: "failed", error: error as Failure });

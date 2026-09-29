@@ -58,9 +58,7 @@ export class Navigation {
     const appList = this.page.getByTestId("app-list-container");
     const chatList = this.page.getByTestId("chat-list-container");
     await expect(async () => {
-      expect((await chatList.isVisible()) || (await appList.isVisible())).toBe(
-        true,
-      );
+      expect((await chatList.isVisible()) || (await appList.isVisible())).toBe(true);
     }).toPass({ timeout: 60000 });
   }
 
@@ -90,9 +88,7 @@ export class Navigation {
       exact: true,
     });
     await expect(async () => {
-      expect(
-        (await existingChat.count()) > 0 || (await emptyChatList.isVisible()),
-      ).toBe(true);
+      expect((await existingChat.count()) > 0 || (await emptyChatList.isVisible())).toBe(true);
     }).toPass({ timeout: 60000 });
 
     if ((await existingChat.count()) > 0) {

@@ -1,12 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  ImageIcon,
-  Box,
-  Camera,
-  Layers,
-  Sparkles,
-  Loader2,
-} from "lucide-react";
+import { ImageIcon, Box, Camera, Layers, Sparkles, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -86,8 +79,7 @@ export function ImageGeneratorDialog({
 
   const { apps } = useLoadApps();
   const { start } = useGenerateImage();
-  const { userBudget, isLoadingUserBudget: isBudgetLoading } =
-    useUserBudgetInfo();
+  const { userBudget, isLoadingUserBudget: isBudgetLoading } = useUserBudgetInfo();
   const { settings, updateSettings } = useSettings();
   const { data: providers } = useLanguageModelProviders();
 
@@ -116,17 +108,10 @@ export function ImageGeneratorDialog({
     [],
   );
 
-  const effectiveTargetAppId =
-    targetAppId ?? (apps.length === 1 ? apps[0].id : null);
+  const effectiveTargetAppId = targetAppId ?? (apps.length === 1 ? apps[0].id : null);
 
   const handleGenerate = async () => {
-    if (
-      isSubmitting ||
-      !prompt.trim() ||
-      effectiveTargetAppId === null ||
-      !canGenerate
-    )
-      return;
+    if (isSubmitting || !prompt.trim() || effectiveTargetAppId === null || !canGenerate) return;
 
     const targetApp = apps.find((a) => a.id === effectiveTargetAppId);
     if (!targetApp) return;
@@ -183,9 +168,7 @@ export function ImageGeneratorDialog({
                 <ImageModelConfigSection
                   providers={providers}
                   selectedImageModel={settings?.selectedImageModel}
-                  onSave={(model) =>
-                    updateSettings({ selectedImageModel: model })
-                  }
+                  onSave={(model) => updateSettings({ selectedImageModel: model })}
                 />
               )}
 
@@ -273,10 +256,7 @@ export function ImageGeneratorDialog({
             <Button
               onClick={handleGenerate}
               disabled={
-                isSubmitting ||
-                !prompt.trim() ||
-                effectiveTargetAppId === null ||
-                !canGenerate
+                isSubmitting || !prompt.trim() || effectiveTargetAppId === null || !canGenerate
               }
             >
               {isSubmitting ? "Starting..." : "Generate"}
@@ -325,9 +305,8 @@ function ImageModelConfigSection({
     <div className="space-y-2 rounded-lg border border-border p-3">
       <Label>Image model</Label>
       <p className="text-xs text-muted-foreground">
-        No OctopusStudio Pro subscription needed — pick any configured provider
-        (including a custom provider pointed at a local
-        Gemini/ChatGPT-compatible server) and its image model.
+        No OctopusStudio Pro subscription needed — pick any configured provider (including a custom
+        provider pointed at a local Gemini/ChatGPT-compatible server) and its image model.
       </p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Select value={provider} onValueChange={(v) => v && setProvider(v)}>

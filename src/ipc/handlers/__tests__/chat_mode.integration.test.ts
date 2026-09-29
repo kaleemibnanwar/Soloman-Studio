@@ -18,18 +18,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { chats, messages } from "@/db/schema";
 import { readSettings, writeSettings } from "@/main/settings";
 
 function errorEvents(harness: HybridChatHarness) {
-  return harness.bridge.sentEvents.filter(
-    (e) => e.channel === "chat:response:error",
-  );
+  return harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
 }
 
 describe("chat mode (integration)", () => {
@@ -92,10 +87,9 @@ describe("chat mode (integration)", () => {
     // chatMode onto the chat row via ipc.chat.updateChat).
     const askChatId = await harness.createChat();
     harness.mount({ chatId: askChatId });
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     // Drive the REAL Base UI Select to "ask" (persists chatMode onto the chat
     // row). The harness helper encapsulates the happy-dom choreography (focus +
@@ -165,10 +159,7 @@ describe("chat mode (integration)", () => {
 
   it("honors a requested per-turn mode without replacing the stored mode", async () => {
     const overrideChatId = await harness.createChat();
-    await harness.db
-      .update(chats)
-      .set({ chatMode: "build" })
-      .where(eq(chats.id, overrideChatId));
+    await harness.db.update(chats).set({ chatMode: "build" }).where(eq(chats.id, overrideChatId));
 
     const result = await harness.streamChat("[dump] per-turn ask", {
       chatId: overrideChatId,

@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { X, Move, Square, Palette, Type } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ComponentSelection } from "@/ipc/types";
@@ -83,8 +79,7 @@ export function VisualEditingToolbar({
     radius: "",
     color: "#000000",
   });
-  const [currentBackgroundColor, setCurrentBackgroundColor] =
-    useState("#ffffff");
+  const [currentBackgroundColor, setCurrentBackgroundColor] = useState("#ffffff");
   const [currentTextStyles, setCurrentTextStyles] = useState({
     fontSize: "",
     fontWeight: "",
@@ -92,19 +87,13 @@ export function VisualEditingToolbar({
     color: "#000000",
   });
   const setPendingChanges = useSetAtom(pendingVisualChangesAtom);
-  const setSelectedComponentsPreview = useSetAtom(
-    selectedComponentsPreviewAtom,
-  );
-  const setVisualEditingSelectedComponent = useSetAtom(
-    visualEditingSelectedComponentAtom,
-  );
+  const setSelectedComponentsPreview = useSetAtom(selectedComponentsPreviewAtom);
+  const setVisualEditingSelectedComponent = useSetAtom(visualEditingSelectedComponentAtom);
 
   const handleDeselectComponent = () => {
     if (!selectedComponent) return;
 
-    setSelectedComponentsPreview((prev) =>
-      prev.filter((c) => c.id !== selectedComponent.id),
-    );
+    setSelectedComponentsPreview((prev) => prev.filter((c) => c.id !== selectedComponent.id));
     setVisualEditingSelectedComponent(null);
 
     if (iframeRef.current?.contentWindow) {
@@ -223,8 +212,7 @@ export function VisualEditingToolbar({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "octopus-studio-component-styles") {
-        const { margin, padding, border, backgroundColor, text } =
-          event.data.data;
+        const { margin, padding, border, backgroundColor, text } = event.data.data;
 
         const marginX = margin?.left === margin?.right ? margin.left : "";
         const marginY = margin?.top === margin?.bottom ? margin.top : "";
@@ -252,11 +240,7 @@ export function VisualEditingToolbar({
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const handleSpacingChange = (
-    type: "margin" | "padding",
-    axis: "x" | "y",
-    value: string,
-  ) => {
+  const handleSpacingChange = (type: "margin" | "padding", axis: "x" | "y", value: string) => {
     const setter = type === "margin" ? setCurrentMargin : setCurrentPadding;
     setter((prev) => ({ ...prev, [axis]: value }));
 
@@ -271,10 +255,7 @@ export function VisualEditingToolbar({
     }
   };
 
-  const handleBorderChange = (
-    property: "width" | "radius" | "color",
-    value: string,
-  ) => {
+  const handleBorderChange = (property: "width" | "radius" | "color", value: string) => {
     const newBorder = { ...currentBorder, [property]: value };
     setCurrentBorder(newBorder);
 
@@ -287,10 +268,7 @@ export function VisualEditingToolbar({
       if (property === "width" || property === "color") {
         sendStyleModification({
           border: {
-            width:
-              property === "width"
-                ? processedValue
-                : currentBorder.width || "0px",
+            width: property === "width" ? processedValue : currentBorder.width || "0px",
             color: property === "color" ? processedValue : currentBorder.color,
           },
         });
@@ -387,11 +365,7 @@ export function VisualEditingToolbar({
         </div>
       ) : (
         <>
-          <StylePopover
-            icon={<Move size={16} />}
-            title="Margin"
-            tooltip="Margin"
-          >
+          <StylePopover icon={<Move size={16} />} title="Margin" tooltip="Margin">
             <div className="grid grid-cols-1 gap-2">
               <NumberInput
                 id="margin-x"
@@ -447,11 +421,7 @@ export function VisualEditingToolbar({
             </div>
           </StylePopover>
 
-          <StylePopover
-            icon={<Square size={16} />}
-            title="Border"
-            tooltip="Border"
-          >
+          <StylePopover icon={<Square size={16} />} title="Border" tooltip="Border">
             <div className="space-y-2">
               <NumberInput
                 id="border-width"
@@ -481,11 +451,7 @@ export function VisualEditingToolbar({
             </div>
           </StylePopover>
 
-          <StylePopover
-            icon={<Palette size={16} />}
-            title="Background Color"
-            tooltip="Background"
-          >
+          <StylePopover icon={<Palette size={16} />} title="Background Color" tooltip="Background">
             <div>
               <Label htmlFor="bg-color" className="text-xs">
                 Color
@@ -503,11 +469,7 @@ export function VisualEditingToolbar({
           </StylePopover>
 
           {hasStaticText && (
-            <StylePopover
-              icon={<Type size={16} />}
-              title="Text Style"
-              tooltip="Text Style"
-            >
+            <StylePopover icon={<Type size={16} />} title="Text Style" tooltip="Text Style">
               <div className="space-y-2">
                 <NumberInput
                   id="font-size"
@@ -524,9 +486,7 @@ export function VisualEditingToolbar({
                     id="font-weight"
                     className="mt-1 h-8 text-xs w-full rounded-md border border-input bg-background px-3 py-2"
                     value={currentTextStyles.fontWeight}
-                    onChange={(e) =>
-                      handleTextStyleChange("fontWeight", e.target.value)
-                    }
+                    onChange={(e) => handleTextStyleChange("fontWeight", e.target.value)}
                   >
                     {FONT_WEIGHT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -543,9 +503,7 @@ export function VisualEditingToolbar({
                     id="font-family"
                     className="mt-1 h-8 text-xs w-full rounded-md border border-input bg-background px-3 py-2"
                     value={currentTextStyles.fontFamily}
-                    onChange={(e) =>
-                      handleTextStyleChange("fontFamily", e.target.value)
-                    }
+                    onChange={(e) => handleTextStyleChange("fontFamily", e.target.value)}
                   >
                     {FONT_FAMILY_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>

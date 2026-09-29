@@ -1,17 +1,9 @@
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Accordion,
   AccordionItem,
@@ -64,8 +56,7 @@ export function ProModeSelector() {
   };
 
   const hasProKey = settings ? hasOctopusStudioProKey(settings) : false;
-  const proModeTogglable =
-    hasProKey && Boolean(settings?.enableOctopusStudioPro);
+  const proModeTogglable = hasProKey && Boolean(settings?.enableOctopusStudioPro);
 
   return (
     <Popover>
@@ -85,9 +76,7 @@ export function ProModeSelector() {
           <div className="space-y-1">
             <h4 className="font-medium flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-primary font-medium">
-                OctopusStudio Pro
-              </span>
+              <span className="text-primary font-medium">OctopusStudio Pro</span>
             </h4>
             <div className="h-px bg-gradient-to-r from-primary/50 via-primary/20 to-transparent" />
           </div>
@@ -171,10 +160,7 @@ function SelectorRow({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-1.5">
-        <Label
-          htmlFor={id}
-          className={!isTogglable ? "text-muted-foreground/50" : ""}
-        >
+        <Label htmlFor={id} className={!isTogglable ? "text-muted-foreground/50" : ""}>
           {label}
         </Label>
         <span title={tooltip}>
@@ -224,9 +210,7 @@ function TurboEditsSelector({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Label className={!isTogglable ? "text-muted-foreground/50" : ""}>
-          Turbo Edits
-        </Label>
+        <Label className={!isTogglable ? "text-muted-foreground/50" : ""}>Turbo Edits</Label>
         <span title="Edits files efficiently without full rewrites. Classic: Uses a smaller model to complete edits. Search & replace: Find and replaces specific text blocks.">
           <Info
             className={`h-4 w-4 cursor-help ${!isTogglable ? "text-muted-foreground/50" : "text-muted-foreground"}`}
@@ -267,9 +251,7 @@ function TurboEditsSelector({
           >
             Classic
           </TooltipTrigger>
-          <TooltipContent>
-            Uses a smaller model to complete edits
-          </TooltipContent>
+          <TooltipContent>Uses a smaller model to complete edits</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -285,9 +267,7 @@ function TurboEditsSelector({
           >
             Search & replace
           </TooltipTrigger>
-          <TooltipContent>
-            Find and replaces specific text blocks
-          </TooltipContent>
+          <TooltipContent>Find and replaces specific text blocks</TooltipContent>
         </Tooltip>
       </div>
     </div>
@@ -323,9 +303,7 @@ function SmartContextSelector({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Label className={!isTogglable ? "text-muted-foreground/50" : ""}>
-          Smart Context
-        </Label>
+        <Label className={!isTogglable ? "text-muted-foreground/50" : ""}>Smart Context</Label>
         <span title="Selects the most relevant files as context to save credits working on large codebases.">
           <Info
             className={`h-4 w-4 cursor-help ${!isTogglable ? "text-muted-foreground/50" : "text-muted-foreground"}`}
@@ -366,9 +344,7 @@ function SmartContextSelector({
           >
             Balanced
           </TooltipTrigger>
-          <TooltipContent>
-            Selects most relevant files with balanced context size
-          </TooltipContent>
+          <TooltipContent>Selects most relevant files with balanced context size</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -385,8 +361,8 @@ function SmartContextSelector({
             Deep
           </TooltipTrigger>
           <TooltipContent>
-            Experimental: Keeps full conversation history for maximum context
-            and cache-optimized to control costs
+            Experimental: Keeps full conversation history for maximum context and cache-optimized to
+            control costs
           </TooltipContent>
         </Tooltip>
       </div>

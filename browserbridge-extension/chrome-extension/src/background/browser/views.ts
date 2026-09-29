@@ -1,5 +1,5 @@
-import type { DOMState } from './dom/views';
-import type { DOMHistoryElement } from './dom/history/view';
+import type { DOMState } from "./dom/views";
+import type { DOMHistoryElement } from "./dom/history/view";
 
 export interface BrowserContextWindowSize {
   width: number;
@@ -88,7 +88,7 @@ export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
   allowedUrls: [],
   deniedUrls: [],
   includeDynamicAttributes: true,
-  homePageUrl: 'about:blank',
+  homePageUrl: "about:blank",
   displayHighlights: true,
 };
 
@@ -136,7 +136,7 @@ export class BrowserError extends Error {
    */
   constructor(message?: string) {
     super(message);
-    this.name = 'BrowserError';
+    this.name = "BrowserError";
   }
 }
 
@@ -146,6 +146,6 @@ export class URLNotAllowedError extends BrowserError {
    */
   constructor(message?: string) {
     super(message);
-    this.name = 'URLNotAllowedError';
+    this.name = "URLNotAllowedError";
   }
 }

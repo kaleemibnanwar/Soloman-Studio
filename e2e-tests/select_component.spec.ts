@@ -18,9 +18,7 @@ testSkipIfWindows("select component", async ({ po }) => {
 
   await po.sendPrompt("[dump] make it smaller");
   await po.previewPanel.snapshotPreview();
-  await expect(
-    po.previewPanel.getSelectedComponentsDisplay(),
-  ).not.toBeVisible();
+  await expect(po.previewPanel.getSelectedComponentsDisplay()).not.toBeVisible();
   await expect(po.previewPanel.getPreviewPickElementButton()).toBeEnabled();
   await expect(po.previewPanel.getPreviewPickElementButton()).toHaveAttribute(
     "aria-pressed",
@@ -57,9 +55,7 @@ testSkipIfWindows("select multiple components", async ({ po }) => {
 
   await po.sendPrompt("[dump] make both smaller");
   await po.previewPanel.snapshotPreview();
-  await expect(
-    po.previewPanel.getSelectedComponentsDisplay(),
-  ).not.toBeVisible();
+  await expect(po.previewPanel.getSelectedComponentsDisplay()).not.toBeVisible();
   await expect(po.previewPanel.getPreviewPickElementButton()).toBeEnabled();
   await expect(po.previewPanel.getPreviewPickElementButton()).toHaveAttribute(
     "aria-pressed",
@@ -88,45 +84,40 @@ testSkipIfWindows("deselect component", async ({ po }) => {
   await po.previewPanel.clickDeselectComponent();
 
   await po.previewPanel.snapshotPreview();
-  await expect(
-    po.previewPanel.getSelectedComponentsDisplay(),
-  ).not.toBeVisible();
+  await expect(po.previewPanel.getSelectedComponentsDisplay()).not.toBeVisible();
 
   // Send one more prompt to make sure it's a normal message.
   await po.sendPrompt("[dump] tc=basic");
   await po.snapshotServerDump("last-message");
 });
 
-testSkipIfWindows(
-  "deselect individual component from multiple",
-  async ({ po }) => {
-    await po.setUp();
-    await po.sendPrompt("tc=basic");
-    await po.previewPanel.ensurePreviewPanelOpen();
-    await po.previewPanel.clickPreviewPickElement();
+testSkipIfWindows("deselect individual component from multiple", async ({ po }) => {
+  await po.setUp();
+  await po.sendPrompt("tc=basic");
+  await po.previewPanel.ensurePreviewPanelOpen();
+  await po.previewPanel.clickPreviewPickElement();
 
-    await po.previewPanel
-      .getPreviewIframeElement()
-      .contentFrame()
-      .getByRole("heading", { name: "Welcome to Your Blank App" })
-      .click();
+  await po.previewPanel
+    .getPreviewIframeElement()
+    .contentFrame()
+    .getByRole("heading", { name: "Welcome to Your Blank App" })
+    .click();
 
-    await po.previewPanel
-      .getPreviewIframeElement()
-      .contentFrame()
-      .getByText("Made with OctopusStudio")
-      .click();
+  await po.previewPanel
+    .getPreviewIframeElement()
+    .contentFrame()
+    .getByText("Made with OctopusStudio")
+    .click();
 
-    await po.previewPanel.snapshotSelectedComponentsDisplay();
+  await po.previewPanel.snapshotSelectedComponentsDisplay();
 
-    await po.previewPanel.clickDeselectComponent({ index: 0 });
+  await po.previewPanel.clickDeselectComponent({ index: 0 });
 
-    await po.previewPanel.snapshotPreview();
-    await po.previewPanel.snapshotSelectedComponentsDisplay();
+  await po.previewPanel.snapshotPreview();
+  await po.previewPanel.snapshotSelectedComponentsDisplay();
 
-    await expect(po.previewPanel.getSelectedComponentsDisplay()).toBeVisible();
-  },
-);
+  await expect(po.previewPanel.getSelectedComponentsDisplay()).toBeVisible();
+});
 
 testSkipIfWindows("upgrade app to select component", async ({ po }) => {
   await po.setUp();

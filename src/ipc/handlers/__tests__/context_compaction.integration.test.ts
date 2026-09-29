@@ -24,10 +24,7 @@ import path from "node:path";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { ipc } from "@/ipc/types";
 import { versionPreviewHandlerService } from "@/ipc/handlers/version_handlers";
@@ -39,16 +36,14 @@ import {
   gitCommit,
   gitCurrentBranch,
   gitLog,
-} from "@/ipc/utils/git_utils";
+} from "@/ipc/git/git_utils";
 import type { RestoreRecovery } from "@/version_preview/state";
 
 describe("context compaction (integration)", () => {
   let harness: HybridChatHarness;
 
   const errorEvents = () =>
-    harness.bridge.sentEvents.filter(
-      (e) => e.channel === "chat:response:error",
-    );
+    harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
 
   beforeAll(async () => {
     harness = await setupHybridChatHarness({
@@ -112,9 +107,7 @@ describe("context compaction (integration)", () => {
     // ...and is persisted (original node assertion).
     const firstMessages = await loadChatMessages(harness.chatId);
     expect(
-      firstMessages.some((m) =>
-        m.content.includes("I've completed the initial analysis"),
-      ),
+      firstMessages.some((m) => m.content.includes("I've completed the initial analysis")),
     ).toBe(true);
 
     // Second message: the handler performs the pending compaction (summary
@@ -126,15 +119,11 @@ describe("context compaction (integration)", () => {
     // the "Conversation compacted" indicator with the summary underneath.
     await harness.waitForRenderedText("Conversation compacted");
     await harness.waitForRenderedText(/Key Decisions Made/);
-    await harness.waitForRenderedText(
-      /simple response from the Basic Agent mode/,
-    );
+    await harness.waitForRenderedText(/simple response from the Basic Agent mode/);
 
     const secondMessages = await loadChatMessages(harness.chatId);
     const contents = secondMessages.map((m) => m.content).join("\n");
-    expect(contents).toContain(
-      '<octopus-studio-compaction title="Conversation compacted"',
-    );
+    expect(contents).toContain('<octopus-studio-compaction title="Conversation compacted"');
     expect(contents).toContain("Key Decisions Made");
     expect(contents).toContain(
       "Hello! I understand your request. This is a simple response from the Basic Agent mode.",
@@ -145,19 +134,13 @@ describe("context compaction (integration)", () => {
     // must not carry the summary (which already includes the removed turn) into
     // the forked chat.
     const targetPrompt = secondMessages.find(
-      (message) =>
-        message.role === "user" &&
-        message.content === "tc=local-agent/simple-response",
+      (message) => message.role === "user" && message.content === "tc=local-agent/simple-response",
     );
-    const compactionSummary = secondMessages.find(
-      (message) => message.isCompactionSummary,
-    );
+    const compactionSummary = secondMessages.find((message) => message.isCompactionSummary);
     expect(targetPrompt).toBeDefined();
     expect(compactionSummary).toBeDefined();
     expect(compactionSummary!.id).toBeGreaterThan(targetPrompt!.id);
-    expect(compactionSummary!.createdAt.getTime()).toBeLessThan(
-      targetPrompt!.createdAt.getTime(),
-    );
+    expect(compactionSummary!.createdAt.getTime()).toBeLessThan(targetPrompt!.createdAt.getTime());
 
     const restoreResult = await versionPreviewHandlerService.restoreToMessage({
       appId: harness.appId,
@@ -166,14 +149,11 @@ describe("context compaction (integration)", () => {
       restoreCodebase: false,
     });
     expect(restoreResult).toHaveProperty("createdChatId");
-    const restoredMessages = await loadChatMessages(
-      restoreResult.createdChatId ?? -1,
-    );
+    const restoredMessages = await loadChatMessages(restoreResult.createdChatId ?? -1);
     expect(
       restoredMessages.some(
         (message) =>
-          message.content === "tc=local-agent/simple-response" ||
-          message.isCompactionSummary,
+          message.content === "tc=local-agent/simple-response" || message.isCompactionSummary,
       ),
     ).toBe(false);
 
@@ -182,9 +162,7 @@ describe("context compaction (integration)", () => {
     await sendTurn("[dump] hi", harness.chatId);
     const dump = harness.getServerDump({ type: "all-messages" });
     expect(dump.text).toContain("Key Decisions Made");
-    expect(dump.text).toContain(
-      "Conversation was compacted to save context space.",
-    );
+    expect(dump.text).toContain("Conversation was compacted to save context space.");
     expect(dump.text).not.toContain("tc=local-agent/compaction-trigger");
     expect(dump.text).toMatchSnapshot("compaction-post-summary-transcript");
 
@@ -194,31 +172,22 @@ describe("context compaction (integration)", () => {
     );
     expect(laterPrompt).toBeDefined();
 
-    const laterRestoreResult =
-      await versionPreviewHandlerService.restoreToMessage({
-        appId: harness.appId,
-        chatId: harness.chatId,
-        messageId: laterPrompt!.id,
-        restoreCodebase: false,
-      });
+    const laterRestoreResult = await versionPreviewHandlerService.restoreToMessage({
+      appId: harness.appId,
+      chatId: harness.chatId,
+      messageId: laterPrompt!.id,
+      restoreCodebase: false,
+    });
     expect(laterRestoreResult).toHaveProperty("createdChatId");
-    const laterRestoredMessages = await loadChatMessages(
-      laterRestoreResult.createdChatId ?? -1,
-    );
+    const laterRestoredMessages = await loadChatMessages(laterRestoreResult.createdChatId ?? -1);
     const copiedTrigger = laterRestoredMessages.find(
-      (message) =>
-        message.role === "user" &&
-        message.content === "tc=local-agent/simple-response",
+      (message) => message.role === "user" && message.content === "tc=local-agent/simple-response",
     );
-    const copiedSummary = laterRestoredMessages.find(
-      (message) => message.isCompactionSummary,
-    );
+    const copiedSummary = laterRestoredMessages.find((message) => message.isCompactionSummary);
     expect(copiedTrigger).toBeDefined();
     expect(copiedSummary).toBeDefined();
     expect(copiedSummary!.id).toBeGreaterThan(copiedTrigger!.id);
-    expect(copiedSummary!.createdAt.getTime()).toBeLessThan(
-      copiedTrigger!.createdAt.getTime(),
-    );
+    expect(copiedSummary!.createdAt.getTime()).toBeLessThan(copiedTrigger!.createdAt.getTime());
   }, 60_000);
 
   it("compaction can run mid-turn", async () => {
@@ -230,10 +199,9 @@ describe("context compaction (integration)", () => {
     const chatId = chatRow.id;
 
     harness.mount({ chatId });
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     await sendTurn("hi", chatId);
     expect(errorEvents()).toHaveLength(0);
@@ -250,9 +218,7 @@ describe("context compaction (integration)", () => {
 
     const messages = await loadChatMessages(chatId);
     const contents = messages.map((m) => m.content).join("\n");
-    expect(contents).toContain(
-      '<octopus-studio-compaction title="Conversation compacted"',
-    );
+    expect(contents).toContain('<octopus-studio-compaction title="Conversation compacted"');
     expect(contents).toContain("Key Decisions Made");
     // The agent still completes the response in the same turn.
     expect(contents).toContain("END OF COMPACTED TURN.");
@@ -428,9 +394,7 @@ describe("context compaction (integration)", () => {
           },
         ),
       ).rejects.toThrow("checkpoint failed before checkout");
-      await expect(
-        gitCurrentBranch({ path: harness.appDir }),
-      ).resolves.toBeNull();
+      await expect(gitCurrentBranch({ path: harness.appDir })).resolves.toBeNull();
 
       const result = await versionPreviewHandlerService.restoreToMessage({
         appId: harness.appId,
@@ -442,9 +406,7 @@ describe("context compaction (integration)", () => {
 
       expect(result).toHaveProperty("createdChatId");
       expect(result.repositoryOutcome).toBe("target-applied");
-      await expect(gitCurrentBranch({ path: harness.appDir })).resolves.toBe(
-        targetBranchName,
-      );
+      await expect(gitCurrentBranch({ path: harness.appDir })).resolves.toBe(targetBranchName);
     } finally {
       await gitCheckout({
         path: harness.appDir,
@@ -485,8 +447,7 @@ describe("context compaction (integration)", () => {
 
     await gitCheckout({ path: harness.appDir, ref: previewCommitHash });
     try {
-      const chatsBeforeCheckpointFailure =
-        await harness.db.query.chats.findMany();
+      const chatsBeforeCheckpointFailure = await harness.db.query.chats.findMany();
       await expect(
         versionPreviewHandlerService.restoreToMessage(
           {
@@ -599,10 +560,7 @@ describe("context compaction (integration)", () => {
         async () => {
           const activeMessages = await harness.db.query.messages.findMany({
             where: (message, { and, eq }) =>
-              and(
-                eq(message.chatId, backgroundChat.id),
-                eq(message.role, "assistant"),
-              ),
+              and(eq(message.chatId, backgroundChat.id), eq(message.role, "assistant")),
           });
           expect(activeMessages.length).toBeGreaterThan(0);
         },
@@ -630,17 +588,11 @@ describe("context compaction (integration)", () => {
       await backgroundStream;
 
       expect(result).toHaveProperty("createdChatId");
-      await expect(gitCurrentBranch({ path: harness.appDir })).resolves.toBe(
-        targetBranchName,
-      );
-      await expect(fs.promises.readFile(conflictFile, "utf8")).resolves.toBe(
-        "restore target\n",
-      );
+      await expect(gitCurrentBranch({ path: harness.appDir })).resolves.toBe(targetBranchName);
+      await expect(fs.promises.readFile(conflictFile, "utf8")).resolves.toBe("restore target\n");
       const versions = await gitLog({ path: harness.appDir });
       expect(
-        versions.some((version) =>
-          version.commit.message.includes("Saved partial changes"),
-        ),
+        versions.some((version) => version.commit.message.includes("Saved partial changes")),
       ).toBe(true);
     } finally {
       if (!backgroundSettled) {

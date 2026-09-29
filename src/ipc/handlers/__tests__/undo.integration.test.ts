@@ -18,18 +18,9 @@ import path from "node:path";
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  act,
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { messages as messagesTable } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
@@ -39,15 +30,7 @@ const INDEX_PATH = "src/pages/Index.tsx";
 function commitWithTestIdentity(cwd: string, message: string) {
   execFileSync(
     "git",
-    [
-      "-c",
-      "user.email=test@example.com",
-      "-c",
-      "user.name=Test User",
-      "commit",
-      "-m",
-      message,
-    ],
+    ["-c", "user.email=test@example.com", "-c", "user.name=Test User", "commit", "-m", message],
     { cwd },
   );
 }
@@ -62,9 +45,7 @@ describe("undo (integration)", () => {
     });
 
   const errorEvents = () =>
-    harness.bridge.sentEvents.filter(
-      (e) => e.channel === "chat:response:error",
-    );
+    harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
 
   const settleRendererActions = async () => {
     await act(async () => {
@@ -112,42 +93,31 @@ describe("undo (integration)", () => {
 
     // Two code-writing turns.
     await sendTurn("tc=write-index");
-    await waitFor(
-      () => expect(screen.getAllByText(/And it's done!/)).toHaveLength(1),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getAllByText(/And it's done!/)).toHaveLength(1), {
+      timeout: 15_000,
+    });
     expect(harness.readAppFile(INDEX_PATH)).toContain("Testing:write-index!");
 
     await sendTurn("tc=write-index-2");
-    await waitFor(
-      () => expect(screen.getAllByText(/And it's done!/)).toHaveLength(2),
-      { timeout: 15_000 },
-    );
-    expect(harness.readAppFile(INDEX_PATH)).toContain(
-      "Testing:write-index(2)!",
-    );
+    await waitFor(() => expect(screen.getAllByText(/And it's done!/)).toHaveLength(2), {
+      timeout: 15_000,
+    });
+    expect(harness.readAppFile(INDEX_PATH)).toContain("Testing:write-index(2)!");
     expect(await loadMessages()).toHaveLength(4);
 
     // First undo: back to the write-index version; the undone turn's messages
     // are deleted (from the db AND from the rendered messages list).
     await clickUndo();
-    await waitFor(() =>
-      expect(screen.getAllByText("Restored version").length).toBeGreaterThan(0),
-    );
-    await waitFor(
-      () => expect(screen.queryByText("tc=write-index-2")).toBeNull(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getAllByText("Restored version").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByText("tc=write-index-2")).toBeNull(), {
+      timeout: 15_000,
+    });
     await waitFor(async () => expect(await loadMessages()).toHaveLength(2), {
       timeout: 15_000,
     });
     expect(harness.readAppFile(INDEX_PATH)).toContain("Testing:write-index!");
-    expect(harness.readAppFile(INDEX_PATH)).not.toContain(
-      "Testing:write-index(2)!",
-    );
-    expect(harness.gitLog()[0]).toContain(
-      "Reverted all changes back to version",
-    );
+    expect(harness.readAppFile(INDEX_PATH)).not.toContain("Testing:write-index(2)!");
+    expect(harness.gitLog()[0]).toContain("Reverted all changes back to version");
 
     // Second undo: back to the pristine fixture (the e2e asserted the
     // scaffold's "Welcome to Your Blank App" page; in the minimal fixture the
@@ -156,13 +126,10 @@ describe("undo (integration)", () => {
     // commits relative to this older target, so confirmation is required.
     await clickUndo();
     fireEvent.click(await screen.findByTestId("confirm-revert-anyway-button"));
-    await waitFor(() =>
-      expect(screen.getAllByText("Restored version").length).toBeGreaterThan(0),
-    );
-    await waitFor(
-      () => expect(screen.queryByText("tc=write-index")).toBeNull(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getAllByText("Restored version").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByText("tc=write-index")).toBeNull(), {
+      timeout: 15_000,
+    });
     await waitFor(async () => expect(await loadMessages()).toHaveLength(0), {
       timeout: 15_000,
     });
@@ -171,10 +138,9 @@ describe("undo (integration)", () => {
     // "Send a message to get started" placeholder or a setup banner — with
     // no chat turns).
     expect(screen.queryByText(/And it's done!/)).toBeNull();
-    await waitFor(
-      () => expect(screen.getByTestId("messages-list")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("messages-list")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     // No error events were emitted during the whole cycle.
     expect(errorEvents()).toHaveLength(0);
@@ -207,16 +173,14 @@ describe("undo (integration)", () => {
 
   it("confirms before undoing an extra commit and supports cancellation", async () => {
     harness.mount();
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     await sendTurn("tc=write-index");
-    await waitFor(
-      () => expect(screen.getByText(/And it's done!/)).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/And it's done!/)).toBeTruthy(), {
+      timeout: 15_000,
+    });
     // The stream-end event can arrive just before the main-side handler has
     // finished its Git commit. Drain that invoke before starting another Git
     // operation, or both processes can contend for .git/index.lock.
@@ -236,32 +200,23 @@ describe("undo (integration)", () => {
     const undoButton = screen.getByRole("button", { name: /Undo/ });
     fireEvent.click(undoButton);
     fireEvent.click(undoButton);
+    expect(await screen.findByTestId("extra-commits-revert-dialog")).toBeTruthy();
     expect(
-      await screen.findByTestId("extra-commits-revert-dialog"),
-    ).toBeTruthy();
-    expect(
-      harness.bridge.invokeLog.filter(
-        (entry) => entry.channel === "list-versions",
-      ).length - versionInvokeBaseline,
+      harness.bridge.invokeLog.filter((entry) => entry.channel === "list-versions").length -
+        versionInvokeBaseline,
     ).toBe(1);
     expect(screen.getByText("Manual work after AI turn")).toBeTruthy();
     expect(fs.existsSync(manualPath)).toBe(true);
     expect(await loadMessages()).toHaveLength(2);
 
     harness.setSelectedAppId(null);
-    await waitFor(() =>
-      expect(screen.queryByTestId("extra-commits-revert-dialog")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByTestId("extra-commits-revert-dialog")).toBeNull());
     harness.setSelectedAppId(harness.appId);
-    await waitFor(() =>
-      expect(screen.queryByTestId("extra-commits-revert-dialog")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByTestId("extra-commits-revert-dialog")).toBeNull());
 
     await clickUndo();
     fireEvent.click(await screen.findByTestId("cancel-revert-button"));
-    await waitFor(() =>
-      expect(screen.queryByTestId("extra-commits-revert-dialog")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByTestId("extra-commits-revert-dialog")).toBeNull());
     expect(fs.existsSync(manualPath)).toBe(true);
     expect(await loadMessages()).toHaveLength(2);
 
@@ -289,18 +244,14 @@ describe("undo (integration)", () => {
 
   it("undo after assistant with no code", async () => {
     harness.mount();
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     // First prompt - no code generated, so no commit on the assistant message.
     await sendTurn("tc=no-code-response");
     await waitFor(
-      () =>
-        expect(
-          screen.getByText(/This is a response without any code changes/),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/This is a response without any code changes/)).toBeTruthy(),
       { timeout: 15_000 },
     );
     const noCodeMessages = await loadMessages();
@@ -310,21 +261,17 @@ describe("undo (integration)", () => {
 
     // Second prompt - generates code.
     await sendTurn("tc=write-index");
-    await waitFor(
-      () => expect(screen.getAllByText(/And it's done!/)).toHaveLength(1),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getAllByText(/And it's done!/)).toHaveLength(1), {
+      timeout: 15_000,
+    });
     expect(harness.readAppFile(INDEX_PATH)).toContain("Testing:write-index!");
 
     // Undo should work even though the first assistant had no commit.
     await clickUndo();
-    await waitFor(() =>
-      expect(screen.getAllByText("Restored version").length).toBeGreaterThan(0),
-    );
-    await waitFor(
-      () => expect(screen.queryByText("tc=write-index")).toBeNull(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getAllByText("Restored version").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByText("tc=write-index")).toBeNull(), {
+      timeout: 15_000,
+    });
     expect(harness.appFileExists(INDEX_PATH)).toBe(false);
 
     // Only the code-writing turn is deleted; the no-code turn remains (in the
@@ -335,9 +282,7 @@ describe("undo (integration)", () => {
     await waitFor(
       () => {
         expect(screen.getByText("tc=no-code-response")).toBeTruthy();
-        expect(
-          screen.getByText(/This is a response without any code changes/),
-        ).toBeTruthy();
+        expect(screen.getByText(/This is a response without any code changes/)).toBeTruthy();
       },
       { timeout: 15_000 },
     );

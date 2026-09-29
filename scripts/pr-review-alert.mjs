@@ -25,9 +25,7 @@ const parseRecipients = (value) => {
   }
 
   if (recipients.length === 0) {
-    throw new Error(
-      "PR_REVIEW_ALERT_EMAILS must contain at least one email address",
-    );
+    throw new Error("PR_REVIEW_ALERT_EMAILS must contain at least one email address");
   }
 
   return recipients;
@@ -75,9 +73,7 @@ const fetchPRsNeedingReview = async ({ apiBaseUrl, token, username }) => {
 
     if (!response.ok) {
       const body = await readResponseBody(response);
-      throw new Error(
-        `Failed to search PRs needing review: ${response.status} ${body}`,
-      );
+      throw new Error(`Failed to search PRs needing review: ${response.status} ${body}`);
     }
 
     const data = await response.json();
@@ -97,15 +93,7 @@ const fetchPRsNeedingReview = async ({ apiBaseUrl, token, username }) => {
   return allPRs;
 };
 
-const sendMailgunEmail = async ({
-  apiKey,
-  domain,
-  from,
-  recipients,
-  subject,
-  text,
-  html,
-}) => {
+const sendMailgunEmail = async ({ apiKey, domain, from, recipients, subject, text, html }) => {
   const response = await fetch(`${MAILGUN_API_BASE_URL}/${domain}/messages`, {
     method: "POST",
     headers: {
@@ -123,9 +111,7 @@ const sendMailgunEmail = async ({
 
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(
-      `Failed to send PR review alert email: ${response.status} ${body}`,
-    );
+    throw new Error(`Failed to send PR review alert email: ${response.status} ${body}`);
   }
 };
 
@@ -141,10 +127,8 @@ const main = async () => {
   const mailgunDomain = requireEnv("MAILGUN_DOMAIN");
   const fromEmail = requireEnv("MAILGUN_FROM_EMAIL");
   const recipients = parseRecipients(requireEnv("PR_REVIEW_ALERT_EMAILS"));
-  const githubApiBaseUrl =
-    process.env.GITHUB_API_URL?.trim() || "https://api.github.com";
-  const githubServerUrl =
-    process.env.GITHUB_SERVER_URL?.trim() || "https://github.com";
+  const githubApiBaseUrl = process.env.GITHUB_API_URL?.trim() || "https://api.github.com";
+  const githubServerUrl = process.env.GITHUB_SERVER_URL?.trim() || "https://github.com";
   const runId = process.env.GITHUB_RUN_ID?.trim();
   const repository = process.env.GITHUB_REPOSITORY?.trim() || "";
 
@@ -177,10 +161,7 @@ const main = async () => {
   const subject = `[Review] You have ${totalCount} PR${totalCount === 1 ? "" : "s"} awaiting review`;
 
   // Build plain text
-  const textLines = [
-    `PRs requesting review from ${username}: ${totalCount}`,
-    "",
-  ];
+  const textLines = [`PRs requesting review from ${username}: ${totalCount}`, ""];
 
   for (const [repo, repoPrs] of prsByRepo) {
     textLines.push(`${repo} (${repoPrs.length}):`);
@@ -191,9 +172,7 @@ const main = async () => {
     textLines.push("");
   }
 
-  const runUrl = runId
-    ? `${githubServerUrl}/${repository}/actions/runs/${runId}`
-    : null;
+  const runUrl = runId ? `${githubServerUrl}/${repository}/actions/runs/${runId}` : null;
   if (runUrl) {
     textLines.push(`Workflow run: ${runUrl}`);
   }

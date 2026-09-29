@@ -19,10 +19,7 @@ import type {
 } from "@/image_generation/state";
 import type { ImageGenerationKey } from "@/image_generation/transport";
 import { systemClock, type Clock } from "@/state_machines/clock";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export const IMAGE_GENERATION_MAX_PENDING_OPERATIONS = 64;
 export const IMAGE_GENERATION_MAX_RETAINED_OPERATIONS = 128;
@@ -159,10 +156,7 @@ export class ImageGenerationOperationService {
   }
 
   releaseApp(appId: number): number {
-    return this.registry.releaseOwned(
-      "key",
-      (owner) => owner.keyId === `app:${appId}`,
-    );
+    return this.registry.releaseOwned("key", (owner) => owner.keyId === `app:${appId}`);
   }
 
   settle(cause: OperationDisposalCause): number {
@@ -174,5 +168,4 @@ export class ImageGenerationOperationService {
   }
 }
 
-export const imageGenerationOperationService =
-  new ImageGenerationOperationService();
+export const imageGenerationOperationService = new ImageGenerationOperationService();

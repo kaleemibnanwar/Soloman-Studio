@@ -1,10 +1,7 @@
 import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import { assertTrustedRenderer } from "../utils/renderer_security";
 
-type IpcHandler = (
-  event: IpcMainInvokeEvent,
-  ...args: any[]
-) => Promise<any> | any;
+type IpcHandler = (event: IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any;
 
 type TrustFailureHandler = (
   error: unknown,

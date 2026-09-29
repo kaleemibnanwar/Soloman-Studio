@@ -29,8 +29,7 @@ interface UncommittedFilesBannerProps {
 }
 
 export function UncommittedFilesBanner({ appId }: UncommittedFilesBannerProps) {
-  const { uncommittedFiles, hasUncommittedFiles, isLoading } =
-    useUncommittedFiles(appId);
+  const { uncommittedFiles, hasUncommittedFiles, isLoading } = useUncommittedFiles(appId);
   const { commitChanges, isCommitting } = useCommitChanges();
   const { discardChanges, isDiscarding } = useDiscardChanges();
   const { send: sendPreviewEvent } = useVersionPreview(appId);
@@ -50,9 +49,7 @@ export function UncommittedFilesBanner({ appId }: UncommittedFilesBannerProps) {
   useEffect(() => {
     if (showDiscardConfirm) {
       confirmPanelRef.current
-        ?.querySelector<HTMLButtonElement>(
-          '[data-testid="confirm-discard-button"]',
-        )
+        ?.querySelector<HTMLButtonElement>('[data-testid="confirm-discard-button"]')
         ?.focus();
     }
   }, [showDiscardConfirm]);
@@ -171,17 +168,12 @@ export function UncommittedFilesBanner({ appId }: UncommittedFilesBannerProps) {
         >
           <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>Review & Commit Changes</DialogTitle>
-            <DialogDescription>
-              Review your changes and enter a commit message.
-            </DialogDescription>
+            <DialogDescription>Review your changes and enter a commit message.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 px-6 pb-4 overflow-y-auto flex-1 min-h-0">
             <div>
-              <label
-                htmlFor="commit-message"
-                className="text-sm font-medium mb-2 block"
-              >
+              <label htmlFor="commit-message" className="text-sm font-medium mb-2 block">
                 Commit message
               </label>
               <Input
@@ -194,9 +186,7 @@ export function UncommittedFilesBanner({ appId }: UncommittedFilesBannerProps) {
             </div>
 
             <div>
-              <p className="text-sm font-medium mb-2">
-                Changed files ({uncommittedFiles.length})
-              </p>
+              <p className="text-sm font-medium mb-2">Changed files ({uncommittedFiles.length})</p>
               <CommitFileList
                 files={uncommittedFiles}
                 onSelectFile={openStagedDiff}
@@ -216,10 +206,7 @@ export function UncommittedFilesBanner({ appId }: UncommittedFilesBannerProps) {
             >
               <TriangleAlert className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
               <div className="flex-1 space-y-2">
-                <p
-                  id="discard-confirm-title"
-                  className="text-sm text-destructive font-medium"
-                >
+                <p id="discard-confirm-title" className="text-sm text-destructive font-medium">
                   Discard changes to {uncommittedFiles.length}{" "}
                   {uncommittedFiles.length === 1 ? "file" : "files"}?{" "}
                   <span id="discard-confirm-desc">This cannot be undone.</span>

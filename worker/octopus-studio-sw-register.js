@@ -7,9 +7,7 @@
 (function () {
   // Check if Service Workers are supported
   if (!("serviceWorker" in navigator)) {
-    console.warn(
-      "[OctopusStudio] Service Workers are not supported in this browser",
-    );
+    console.warn("[OctopusStudio] Service Workers are not supported in this browser");
     return;
   }
 
@@ -17,10 +15,7 @@
   navigator.serviceWorker
     .register("/octopusStudio-sw.js", { scope: "/" })
     .then((registration) => {
-      console.log(
-        "[OctopusStudio] Service Worker registered:",
-        registration.scope,
-      );
+      console.log("[OctopusStudio] Service Worker registered:", registration.scope);
 
       // Handle updates
       registration.addEventListener("updatefound", () => {
@@ -28,10 +23,7 @@
       });
     })
     .catch((error) => {
-      console.error(
-        "[OctopusStudio] Service Worker registration failed:",
-        error,
-      );
+      console.error("[OctopusStudio] Service Worker registration failed:", error);
     });
 
   // Listen for messages from the Service Worker

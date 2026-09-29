@@ -1,11 +1,7 @@
 import React from "react";
 import { MessageSquare, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CommentCard } from "./CommentCard";
 import type { PlanAnnotation } from "@/atoms/planAtoms";
 
@@ -36,35 +32,19 @@ export const CommentsFloatingButton: React.FC<CommentsFloatingButtonProps> = ({
             {annotations.length}
           </span>
         </PopoverTrigger>
-        <PopoverContent
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          className="w-80 p-0"
-        >
+        <PopoverContent side="bottom" align="end" sideOffset={8} className="w-80 p-0">
           <div className="flex flex-col max-h-[400px]">
             <div className="flex items-center gap-2 p-3 border-b">
               <MessageSquare size={16} className="text-muted-foreground" />
-              <span className="text-sm font-medium">
-                Comments ({annotations.length})
-              </span>
+              <span className="text-sm font-medium">Comments ({annotations.length})</span>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {annotations.map((annotation) => (
-                <CommentCard
-                  key={annotation.id}
-                  annotation={annotation}
-                  chatId={chatId}
-                />
+                <CommentCard key={annotation.id} annotation={annotation} chatId={chatId} />
               ))}
             </div>
             <div className="border-t p-3">
-              <Button
-                onClick={onSendComments}
-                disabled={isSending}
-                className="w-full"
-                size="sm"
-              >
+              <Button onClick={onSendComments} disabled={isSending} className="w-full" size="sm">
                 <Send size={14} className="mr-2" />
                 {isSending ? "Sending\u2026" : "Send Comments"}
               </Button>

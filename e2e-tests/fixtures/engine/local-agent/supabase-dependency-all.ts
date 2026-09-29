@@ -1,8 +1,7 @@
 import type { LocalAgentFixture } from "../../../../testing/fake-llm-server/localAgentTypes";
 
 export const fixture: LocalAgentFixture = {
-  description:
-    "Change an unsupported shared file so every Supabase function deploys",
+  description: "Change an unsupported shared file so every Supabase function deploys",
   turns: [
     {
       text: "I'll update the shared Supabase configuration.",

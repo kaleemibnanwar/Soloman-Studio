@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
-import {
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-  Cog,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Cog, Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ConsoleEntry } from "@/ipc/types";
 import type { AppExit } from "@/app_run/selectors";
@@ -19,10 +12,7 @@ import { useStreamChat } from "@/hooks/useStreamChat";
 import { cn } from "@/lib/utils";
 import { useConsoleEntries } from "@/preview_console/hooks";
 
-const STARTUP_LOG_MESSAGES = new Set([
-  "Connecting to app...",
-  "Restarting app...",
-]);
+const STARTUP_LOG_MESSAGES = new Set(["Connecting to app...", "Restarting app..."]);
 const MAX_ERRORS_FOR_AI_FIX = 10;
 const MAX_ERROR_CHARS_FOR_AI_FIX = 2_000;
 
@@ -206,9 +196,7 @@ export function PreviewLoadingScreen({
       consoleEntries.filter(
         (entry) =>
           entry.timestamp >= sessionStartedAt &&
-          (entry.type === "server" ||
-            entry.level === "error" ||
-            entry.level === "warn"),
+          (entry.type === "server" || entry.level === "error" || entry.level === "warn"),
       ),
     [consoleEntries, sessionStartedAt],
   );
@@ -252,10 +240,7 @@ export function PreviewLoadingScreen({
   };
 
   const handleRebuild = () => {
-    runAppLifecycleInBackground(
-      "rebuild",
-      restartApp({ removeNodeModules: true }),
-    );
+    runAppLifecycleInBackground("rebuild", restartApp({ removeNodeModules: true }));
   };
 
   const handleFixAllErrors = () => {
@@ -308,9 +293,7 @@ export function PreviewLoadingScreen({
           </span>
           {latestServerLine && (
             <>
-              <span className="text-xs text-muted-foreground flex-shrink-0">
-                ·
-              </span>
+              <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
               <span
                 className="text-xs text-muted-foreground truncate font-mono min-w-0"
                 data-testid="preview-loading-latest-server-line"
@@ -334,9 +317,7 @@ export function PreviewLoadingScreen({
             data-testid="preview-loading-log-list"
           >
             {sessionEntries.length === 0 ? (
-              <p className="italic text-muted-foreground">
-                Waiting for server logs…
-              </p>
+              <p className="italic text-muted-foreground">Waiting for server logs…</p>
             ) : (
               sessionEntries.map((entry, i) => (
                 <LogRow key={`${entry.timestamp}-${i}`} entry={entry} />
@@ -373,9 +354,7 @@ export function PreviewLoadingScreen({
                 data-testid="preview-loading-error-toggle"
               >
                 <AlertTriangle size={14} className="flex-shrink-0" />
-                <span className="text-sm font-medium">
-                  {errorCount} error(s)
-                </span>
+                <span className="text-sm font-medium">{errorCount} error(s)</span>
                 {isErrorsExpanded ? (
                   <ChevronUp size={14} className="flex-shrink-0" />
                 ) : (
@@ -428,10 +407,7 @@ function LogRow({ entry }: { entry: ConsoleEntry }) {
         : "pl-[10px]";
   return (
     <div
-      className={cn(
-        "flex items-start gap-2 py-0.5 whitespace-pre-wrap break-words",
-        accentClass,
-      )}
+      className={cn("flex items-start gap-2 py-0.5 whitespace-pre-wrap break-words", accentClass)}
     >
       <span className="text-zinc-500 dark:text-zinc-500 shrink-0 select-none tabular-nums">
         {time}
@@ -444,9 +420,7 @@ function LogRow({ entry }: { entry: ConsoleEntry }) {
       >
         {level}
       </span>
-      <span className="flex-1 min-w-0 text-zinc-700 dark:text-zinc-200">
-        {entry.message}
-      </span>
+      <span className="flex-1 min-w-0 text-zinc-700 dark:text-zinc-200">{entry.message}</span>
     </div>
   );
 }

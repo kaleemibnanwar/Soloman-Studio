@@ -21,13 +21,10 @@ const REQUIRED_APIS = [
   "isStringLiteralLike",
 ] as const;
 
-function isCompatible(
-  candidate: unknown,
-): candidate is typeof import("typescript") {
+function isCompatible(candidate: unknown): candidate is typeof import("typescript") {
   if (typeof candidate !== "object" || candidate === null) return false;
   const compiler = candidate as Record<string, unknown>;
-  const isEnumObject = (value: unknown) =>
-    typeof value === "object" && value !== null;
+  const isEnumObject = (value: unknown) => typeof value === "object" && value !== null;
   return (
     REQUIRED_APIS.every((name) => typeof compiler[name] === "function") &&
     isEnumObject(compiler.ScriptKind) &&
@@ -44,9 +41,7 @@ function loadCompiler(appPath: string): typeof import("typescript") | null {
     return null;
   }
   try {
-    const local = require(
-      fs.realpathSync(getTypeScriptCompilerPath(packageJsonPath)),
-    ) as unknown;
+    const local = require(fs.realpathSync(getTypeScriptCompilerPath(packageJsonPath))) as unknown;
     if (isCompatible(local)) return local;
   } catch {
     // TS7 does not expose the legacy JavaScript compiler API.
@@ -86,16 +81,11 @@ export async function processSupabaseDependencyAnalysis(
 }
 
 interface UtilityProcessParentPort {
-  on(
-    event: "message",
-    listener: (event: { data: SupabaseDependencyAnalysisInput }) => void,
-  ): void;
+  on(event: "message", listener: (event: { data: SupabaseDependencyAnalysisInput }) => void): void;
   postMessage(message: SupabaseDependencyAnalysisOutput): void;
 }
 
-const parentPort = (
-  process as unknown as { parentPort?: UtilityProcessParentPort }
-).parentPort;
+const parentPort = (process as unknown as { parentPort?: UtilityProcessParentPort }).parentPort;
 
 if (parentPort) {
   parentPort.on("message", async (event) => {

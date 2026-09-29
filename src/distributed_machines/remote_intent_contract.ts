@@ -71,12 +71,7 @@ export interface DomainRevisionContext<Key, Intent, State> {
   readonly currentState: State;
 }
 
-export interface RemoteOperationAdmissionContext<
-  Key,
-  State,
-  RemoteIntent,
-  InternalEvent,
-> {
+export interface RemoteOperationAdmissionContext<Key, State, RemoteIntent, InternalEvent> {
   readonly key: Key;
   readonly intent: RemoteIntent;
   readonly event: InternalEvent;
@@ -135,15 +130,8 @@ export interface RemoteIntentPolicy {
   readonly completion: "admission-only" | "tracked-completion";
   readonly observedRevision: ObservedRevisionPolicy;
   readonly retry: RetryPolicy;
-  readonly acceptance:
-    | "admission"
-    | "durable-acceptance"
-    | "completion"
-    | "domain-event";
-  readonly inputDisposition:
-    | "preserve"
-    | "preserve-until-accepted"
-    | "preserve-until-completed";
+  readonly acceptance: "admission" | "durable-acceptance" | "completion" | "domain-event";
+  readonly inputDisposition: "preserve" | "preserve-until-accepted" | "preserve-until-completed";
 }
 
 export interface RemoteIntentRefusalMap {
@@ -189,9 +177,7 @@ export interface RemoteIntentContract<
     readonly invocationRefCodec: z.ZodType;
     readonly outcomeCodec: z.ZodType;
   };
-  readonly toTrustedEvent: (
-    context: AdmittedIntentContext<Key, RendererIntent>,
-  ) => TrustedEvent;
+  readonly toTrustedEvent: (context: AdmittedIntentContext<Key, RendererIntent>) => TrustedEvent;
   readonly authorization: {
     readonly subscribe: RemoteAuthorizationPolicy;
     readonly dispatch: RemoteAuthorizationPolicy;
@@ -219,9 +205,7 @@ export interface RuntimeRemoteIntentContract<
   "toTrustedEvent" | "authorization"
 > {
   readonly keyToString: (key: Key) => string;
-  readonly toInternalEvent: (
-    context: AdmittedIntentContext<Key, RemoteIntent>,
-  ) => InternalEvent;
+  readonly toInternalEvent: (context: AdmittedIntentContext<Key, RemoteIntent>) => InternalEvent;
   readonly authorizeSubscribe: (
     context: SubscribeAuthorizationContext<Key>,
   ) => RemoteAuthorizationDecision | Promise<RemoteAuthorizationDecision>;
@@ -232,12 +216,7 @@ export interface RuntimeRemoteIntentContract<
     context: DomainRevisionContext<Key, RemoteIntent, State>,
   ) => number;
   readonly finalizeOperation?: (
-    context: RemoteOperationAdmissionContext<
-      Key,
-      State,
-      RemoteIntent,
-      InternalEvent
-    >,
+    context: RemoteOperationAdmissionContext<Key, State, RemoteIntent, InternalEvent>,
     controls: {
       readonly assertFinalAdmission: () => void;
       readonly enqueue: () => unknown;
@@ -253,30 +232,14 @@ export function defineRuntimeRemoteIntentContract<
   InternalEvent,
   Snapshot,
 >(
-  contract: RuntimeRemoteIntentContract<
-    Key,
-    State,
-    RemoteIntent,
-    InternalEvent,
-    Snapshot
-  >,
-): RuntimeRemoteIntentContract<
-  Key,
-  State,
-  RemoteIntent,
-  InternalEvent,
-  Snapshot
-> {
-  const policies = contract.intents as Readonly<
-    Record<string, RemoteIntentPolicy>
-  >;
+  contract: RuntimeRemoteIntentContract<Key, State, RemoteIntent, InternalEvent, Snapshot>,
+): RuntimeRemoteIntentContract<Key, State, RemoteIntent, InternalEvent, Snapshot> {
+  const policies = contract.intents as Readonly<Record<string, RemoteIntentPolicy>>;
   const requiresDomainRevision = Object.values(policies).some(
     (policy) => policy.observedRevision.kind === "domain",
   );
   if (requiresDomainRevision && !contract.resolveDomainRevision) {
-    throw new Error(
-      "Native remote domain revision policies require resolveDomainRevision",
-    );
+    throw new Error("Native remote domain revision policies require resolveDomainRevision");
   }
   return Object.freeze(contract);
 }

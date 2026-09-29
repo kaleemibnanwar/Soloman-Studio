@@ -136,9 +136,7 @@ export function routeTask(
 ): RoutingDecision {
   const groups = independentFileGroups(graph, input.files);
   const score =
-    input.files.length +
-    0.5 * input.symbols.length +
-    Math.log(1 + input.estimatedDiffLoc);
+    input.files.length + 0.5 * input.symbols.length + Math.log(1 + input.estimatedDiffLoc);
   return {
     multiAgent: groups.length >= 2 && score > split1,
     score,

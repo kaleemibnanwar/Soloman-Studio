@@ -11,14 +11,7 @@ import { useNeon } from "@/hooks/useNeon";
 import { useIntegrationContinue } from "@/hooks/useIntegrationContinue";
 import { useTranslation } from "react-i18next";
 import { isNeonSupportedFramework } from "@/lib/framework_constants";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  Database,
-  ExternalLink,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Database, ExternalLink, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   OctopusStudioCard,
@@ -33,20 +26,18 @@ interface OctopusStudioAddIntegrationProps {
   provider?: "neon" | "supabase";
 }
 
-export const OctopusStudioAddIntegration: React.FC<
-  OctopusStudioAddIntegrationProps
-> = ({ children, provider: requestedProvider }) => {
+export const OctopusStudioAddIntegration: React.FC<OctopusStudioAddIntegrationProps> = ({
+  children,
+  provider: requestedProvider,
+}) => {
   const { t } = useTranslation("home");
   const appId = useAtomValue(selectedAppIdAtom);
   const chatId = useAtomValue(selectedChatIdAtom);
   const pendingIntegrationMap = usePendingIntegrations();
-  const setIntegrationProviderSelection = useSetAtom(
-    integrationProviderSelectionAtom,
-  );
+  const setIntegrationProviderSelection = useSetAtom(integrationProviderSelectionAtom);
   const setPreviewMode = useSetAtom(previewModeAtom);
   const setIsPreviewOpen = useSetAtom(isPreviewOpenAtom);
-  const pendingIntegration =
-    chatId != null ? pendingIntegrationMap.get(chatId) : undefined;
+  const pendingIntegration = chatId != null ? pendingIntegrationMap.get(chatId) : undefined;
   const { app } = useLoadApp(appId);
   const { projectInfo, isLoadingBranches } = useNeon(appId);
   const isNeonSupported = isNeonSupportedFramework({
@@ -57,9 +48,9 @@ export const OctopusStudioAddIntegration: React.FC<
   // Track explicit user choice. The effective `selectedProvider` is derived
   // below so it stays reactive to `pendingIntegration?.provider`, which can
   // arrive via IPC after this component mounts.
-  const [userSelectedProvider, setUserSelectedProvider] = useState<
-    "neon" | "supabase" | null
-  >(null);
+  const [userSelectedProvider, setUserSelectedProvider] = useState<"neon" | "supabase" | null>(
+    null,
+  );
   // True after the user clicks Next: the chat card collapses to a "finish in
   // the right panel" message with a Back button. Local-only — if the user
   // navigates between chats and returns, they restart from selection (which
@@ -70,9 +61,7 @@ export const OctopusStudioAddIntegration: React.FC<
     {
       id: "supabase" as const,
       name: t("integrations.databaseSetup.providers.supabase.name"),
-      description: t(
-        "integrations.databaseSetup.providers.supabase.description",
-      ),
+      description: t("integrations.databaseSetup.providers.supabase.description"),
       url: "https://supabase.com",
     },
     {
@@ -87,10 +76,7 @@ export const OctopusStudioAddIntegration: React.FC<
   // (from the IPC-driven read model), then default. Re-derives every render so a
   // late `pendingIntegration?.provider` is reflected without a sync effect.
   const selectedProvider =
-    userSelectedProvider ??
-    requestedProvider ??
-    pendingIntegration?.provider ??
-    "supabase";
+    userSelectedProvider ?? requestedProvider ?? pendingIntegration?.provider ?? "supabase";
 
   const lockedProvider = requestedProvider ?? pendingIntegration?.provider;
 
@@ -114,9 +100,7 @@ export const OctopusStudioAddIntegration: React.FC<
 
   // When only one provider is available, treat it as pre-selected
   const effectiveSelectedProvider =
-    availableProviders.length === 1
-      ? availableProviders[0].id
-      : selectedProvider;
+    availableProviders.length === 1 ? availableProviders[0].id : selectedProvider;
 
   const radioGroupRef = useRef<HTMLDivElement>(null);
 
@@ -125,19 +109,13 @@ export const OctopusStudioAddIntegration: React.FC<
     // navigation change the selection in non-interactive (historical) renders
     // or when only one provider is available.
     if (!pendingIntegration || availableProviders.length === 1) return;
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key))
-      return;
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
     e.preventDefault();
 
-    const buttons =
-      radioGroupRef.current?.querySelectorAll<HTMLButtonElement>(
-        '[role="radio"]',
-      );
+    const buttons = radioGroupRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
     if (!buttons || buttons.length === 0) return;
 
-    const currentIndex = Array.from(buttons).findIndex(
-      (btn) => btn === document.activeElement,
-    );
+    const currentIndex = Array.from(buttons).findIndex((btn) => btn === document.activeElement);
     const nextIndex =
       e.key === "ArrowRight" || e.key === "ArrowDown"
         ? (currentIndex + 1) % buttons.length
@@ -160,8 +138,7 @@ export const OctopusStudioAddIntegration: React.FC<
     completedProvider === "supabase" && app?.supabaseProjectName
       ? app.supabaseProjectName
       : completedProvider === "neon" && app?.neonProjectId
-        ? (projectInfo?.projectName ??
-          (isLoadingBranches ? null : app.neonProjectId))
+        ? (projectInfo?.projectName ?? (isLoadingBranches ? null : app.neonProjectId))
         : null;
   const showIntegrationLabelSkeleton =
     completedProvider === "neon" &&
@@ -170,13 +147,11 @@ export const OctopusStudioAddIntegration: React.FC<
     !projectInfo?.projectName;
 
   const handleNextClick = () => {
-    if (!effectiveSelectedProvider || chatId == null || !pendingIntegration)
-      return;
+    if (!effectiveSelectedProvider || chatId == null || !pendingIntegration) return;
     // Share the UI choice with the Configure panel without mutating the
     // main-authoritative request read model.
     setIntegrationProviderSelection((prev) => {
-      if (prev.get(pendingIntegration.requestId) === effectiveSelectedProvider)
-        return prev;
+      if (prev.get(pendingIntegration.requestId) === effectiveSelectedProvider) return prev;
       const next = new Map(prev);
       next.set(pendingIntegration.requestId, effectiveSelectedProvider);
       return next;
@@ -215,10 +190,7 @@ export const OctopusStudioAddIntegration: React.FC<
   if (completedProvider && !pendingIntegration) {
     return (
       <OctopusStudioCard accentColor="green" state="finished">
-        <OctopusStudioCardHeader
-          icon={<CheckCircle2 size={15} />}
-          accentColor="green"
-        >
+        <OctopusStudioCardHeader icon={<CheckCircle2 size={15} />} accentColor="green">
           <OctopusStudioBadge color="green">
             {t("integrations.databaseSetup.integrationComplete")}
           </OctopusStudioBadge>
@@ -262,17 +234,13 @@ export const OctopusStudioAddIntegration: React.FC<
         </span>
       </OctopusStudioCardHeader>
       <div className="px-3 pb-3">
-        {children && (
-          <div className="text-xs text-muted-foreground mb-3">{children}</div>
-        )}
+        {children && <div className="text-xs text-muted-foreground mb-3">{children}</div>}
         {isInteractive && inPanelMode && effectiveSelectedProvider ? (
           <>
             <div className="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
               <div className="flex items-center gap-2 font-medium">
                 <ArrowRight size={14} />
-                <span>
-                  {t("integrations.databaseSetup.configureInPanelTitle")}
-                </span>
+                <span>{t("integrations.databaseSetup.configureInPanelTitle")}</span>
               </div>
               <p className="mt-1 text-xs text-blue-800/90 dark:text-blue-200/80">
                 {t("integrations.databaseSetup.configureInPanelDescription", {
@@ -303,12 +271,7 @@ export const OctopusStudioAddIntegration: React.FC<
                 t("integrations.databaseSetup.continue")
               )}
             </Button>
-            <Button
-              onClick={handleBackClick}
-              variant="outline"
-              className="w-full mt-2"
-              size="sm"
-            >
+            <Button onClick={handleBackClick} variant="outline" className="w-full mt-2" size="sm">
               <ArrowLeft size={14} />
               {t("integrations.databaseSetup.back")}
             </Button>
@@ -324,18 +287,13 @@ export const OctopusStudioAddIntegration: React.FC<
             >
               {availableProviders.map((option, index) => {
                 const isSelected = effectiveSelectedProvider === option.id;
-                const disableSwitch =
-                  !isInteractive || availableProviders.length === 1;
+                const disableSwitch = !isInteractive || availableProviders.length === 1;
                 return (
                   <button
                     key={option.id}
                     type="button"
                     role="radio"
-                    tabIndex={
-                      isSelected || (!effectiveSelectedProvider && index === 0)
-                        ? 0
-                        : -1
-                    }
+                    tabIndex={isSelected || (!effectiveSelectedProvider && index === 0) ? 0 : -1}
                     onClick={() => {
                       if (disableSwitch) return;
                       setUserSelectedProvider(option.id);
@@ -349,9 +307,7 @@ export const OctopusStudioAddIntegration: React.FC<
                     } ${disableSwitch ? "cursor-default" : "cursor-pointer"}`}
                   >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-foreground">
-                        {option.name}
-                      </span>
+                      <span className="text-sm font-semibold text-foreground">{option.name}</span>
                       <span
                         onClick={(e) => {
                           e.stopPropagation();

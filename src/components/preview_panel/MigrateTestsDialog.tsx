@@ -32,10 +32,7 @@ export function MigrateTestsDialog({
 
   // A file can be moved only when its destination doesn't already exist;
   // conflicting ones are shown disabled so the user can't try to overwrite.
-  const selectableFiles = useMemo(
-    () => files.filter((f) => !f.targetExists),
-    [files],
-  );
+  const selectableFiles = useMemo(() => files.filter((f) => !f.targetExists), [files]);
 
   // Seed the default selection only on the closed→open transition. A background
   // refetch that changes `files` while the dialog is open must not reset the
@@ -58,13 +55,10 @@ export function MigrateTestsDialog({
     });
   };
 
-  const allSelected =
-    selectableFiles.length > 0 && selected.size === selectableFiles.length;
+  const allSelected = selectableFiles.length > 0 && selected.size === selectableFiles.length;
 
   const toggleAll = () => {
-    setSelected(
-      allSelected ? new Set() : new Set(selectableFiles.map((f) => f.file)),
-    );
+    setSelected(allSelected ? new Set() : new Set(selectableFiles.map((f) => f.file)));
   };
 
   const handleConfirm = async () => {
@@ -83,10 +77,9 @@ export function MigrateTestsDialog({
         <DialogHeader className="pb-2">
           <DialogTitle>Move end-to-end tests to e2e-tests/</DialogTitle>
           <DialogDescription className="text-xs">
-            Octopus Studio now keeps Playwright end-to-end tests in{" "}
-            <code>e2e-tests/</code>. Move the selected tests out of{" "}
-            <code>tests/</code> so they stay visible and runnable in this panel.
-            Fixtures and helpers they import move along with them.
+            Octopus Studio now keeps Playwright end-to-end tests in <code>e2e-tests/</code>. Move
+            the selected tests out of <code>tests/</code> so they stay visible and runnable in this
+            panel. Fixtures and helpers they import move along with them.
           </DialogDescription>
         </DialogHeader>
 
@@ -95,12 +88,7 @@ export function MigrateTestsDialog({
             <span className="text-xs text-muted-foreground">
               {selected.size} of {selectableFiles.length} selected
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleAll}
-              disabled={isSubmitting}
-            >
+            <Button variant="ghost" size="sm" onClick={toggleAll} disabled={isSubmitting}>
               {allSelected ? "Clear all" : "Select all"}
             </Button>
           </div>
@@ -128,9 +116,7 @@ export function MigrateTestsDialog({
                   disabled={f.targetExists || isSubmitting}
                   onCheckedChange={() => toggle(f.file)}
                 />
-                <span className="flex-1 truncate font-mono text-sm">
-                  {f.file}
-                </span>
+                <span className="flex-1 truncate font-mono text-sm">{f.file}</span>
                 {f.targetExists && (
                   <span className="shrink-0 text-[10px] italic text-muted-foreground">
                     already in e2e-tests/

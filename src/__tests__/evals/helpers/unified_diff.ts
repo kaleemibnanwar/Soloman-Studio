@@ -32,10 +32,7 @@ interface Hunk {
   lines: string[];
 }
 
-function computeLcsTable(
-  oldLines: readonly string[],
-  newLines: readonly string[],
-): number[][] {
+function computeLcsTable(oldLines: readonly string[], newLines: readonly string[]): number[][] {
   const m = oldLines.length;
   const n = newLines.length;
   const dp: number[][] = Array.from({ length: m + 1 }, () =>
@@ -95,13 +92,8 @@ function assignPositions(ops: readonly DiffOp[]): PositionedOp[] {
   return out;
 }
 
-function buildHunks(
-  positioned: readonly PositionedOp[],
-  context: number,
-): Hunk[] {
-  const include = Array.from<boolean>({ length: positioned.length }).fill(
-    false,
-  );
+function buildHunks(positioned: readonly PositionedOp[], context: number): Hunk[] {
+  const include = Array.from<boolean>({ length: positioned.length }).fill(false);
   for (let i = 0; i < positioned.length; i++) {
     if (positioned[i].op.type !== "keep") {
       const lo = Math.max(0, i - context);

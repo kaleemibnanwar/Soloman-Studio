@@ -23,10 +23,7 @@ import path from "node:path";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { apps, chats, messages as messagesTable } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
@@ -65,23 +62,16 @@ describe("local-agent list_files (integration)", () => {
     );
 
     // First turn: non-recursive listing.
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/list-files-non-recursive",
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/list-files-non-recursive");
     send();
 
     // The list_files tool card renders in the DOM — the same surface the e2e
     // asserted via aria snapshots.
+    await waitFor(() => expect(screen.getByTestId("octopus-studio-list-files")).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await waitFor(
-      () =>
-        expect(screen.getByTestId("octopus-studio-list-files")).toBeTruthy(),
-      { timeout: 20_000 },
-    );
-    await waitFor(
-      () =>
-        expect(
-          screen.getByText(/Here are the files in the src directory\./),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/Here are the files in the src directory\./)).toBeTruthy(),
       { timeout: 20_000 },
     );
 
@@ -89,9 +79,7 @@ describe("local-agent list_files (integration)", () => {
     // Note: the local-agent branch of chat:stream returns undefined (not the
     // chatId), so success is asserted via the absence of error events.
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const firstMessages = await harness.db.query.messages.findMany({
@@ -100,41 +88,28 @@ describe("local-agent list_files (integration)", () => {
     });
     const firstAssistant = firstMessages[firstMessages.length - 1];
     expect(firstAssistant.role).toBe("assistant");
-    expect(firstAssistant.content).toContain(
-      "I'll list the files in the src directory for you.",
-    );
-    expect(firstAssistant.content).toContain(
-      'directory="src" recursive="false"',
-    );
+    expect(firstAssistant.content).toContain("I'll list the files in the src directory for you.");
+    expect(firstAssistant.content).toContain('directory="src" recursive="false"');
     expect(firstAssistant.content).toContain("src/App.tsx");
     expect(firstAssistant.content).toContain("src/main.tsx");
     expect(firstAssistant.content).toContain("src/vite-env.d.ts");
-    expect(firstAssistant.content).toContain(
-      "Here are the files in the src directory.",
-    );
+    expect(firstAssistant.content).toContain("Here are the files in the src directory.");
 
     // Second turn: recursive listing. Baseline-aware end gate (turn 2 in the
     // same chat — plain waitForStreamEnd would match turn 1's stale event).
     const secondEnd = harness.waitForNextStreamEnd(harness.chatId);
-    const { send: sendSecond } = await harness.typeInChat(
-      "tc=local-agent/list-files-recursive",
-    );
+    const { send: sendSecond } = await harness.typeInChat("tc=local-agent/list-files-recursive");
     sendSecond();
 
     // A second list_files card renders for the recursive turn.
     await waitFor(
-      () =>
-        expect(
-          screen.getAllByTestId("octopus-studio-list-files").length,
-        ).toBeGreaterThan(1),
+      () => expect(screen.getAllByTestId("octopus-studio-list-files").length).toBeGreaterThan(1),
       { timeout: 20_000 },
     );
 
     await secondEnd;
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const secondMessages = await harness.db.query.messages.findMany({
@@ -143,9 +118,7 @@ describe("local-agent list_files (integration)", () => {
     });
     const secondAssistant = secondMessages[secondMessages.length - 1];
     expect(secondAssistant.role).toBe("assistant");
-    expect(secondAssistant.content).toContain(
-      'directory="src" recursive="true"',
-    );
+    expect(secondAssistant.content).toContain('directory="src" recursive="true"');
     expect(secondAssistant.content).toContain("src/App.tsx");
     expect(secondAssistant.content).toContain("src/main.tsx");
     expect(secondAssistant.content).toContain("src/vite-env.d.ts");
@@ -165,21 +138,12 @@ describe("local-agent list_files (integration)", () => {
       "import-app",
       "minimal-with-octopusStudio",
     );
-    const appDir = path.join(
-      path.dirname(harness.appDir),
-      "app-with-octopusStudio",
-    );
+    const appDir = path.join(path.dirname(harness.appDir), "app-with-octopusStudio");
     fs.cpSync(fixtureAppDir, appDir, { recursive: true });
     const git = (...args: string[]) =>
       execFileSync(
         "git",
-        [
-          "-c",
-          "user.email=test@example.com",
-          "-c",
-          "user.name=Test User",
-          ...args,
-        ],
+        ["-c", "user.email=test@example.com", "-c", "user.name=Test User", ...args],
         { cwd: appDir, stdio: "pipe" },
       );
     git("init");
@@ -190,10 +154,7 @@ describe("local-agent list_files (integration)", () => {
       .insert(apps)
       .values({ name: "minimal-with-octopusStudio", path: appDir })
       .returning();
-    const [chatRow] = await harness.db
-      .insert(chats)
-      .values({ appId: appRow.id })
-      .returning();
+    const [chatRow] = await harness.db.insert(chats).values({ appId: appRow.id }).returning();
 
     harness.mount({ chatId: chatRow.id, appId: appRow.id });
     await waitFor(
@@ -207,31 +168,23 @@ describe("local-agent list_files (integration)", () => {
     // Baseline-aware end gate: the previous it already produced
     // chat:response:end events on this bridge.
     const streamEnd = harness.waitForNextStreamEnd(chatRow.id);
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/list-files-include-ignored",
-      { chatId: chatRow.id },
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/list-files-include-ignored", {
+      chatId: chatRow.id,
+    });
     send();
 
     // The list_files tool card renders in the DOM with the ignored .octopusStudio file.
+    await waitFor(() => expect(screen.getByTestId("octopus-studio-list-files")).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await waitFor(
-      () =>
-        expect(screen.getByTestId("octopus-studio-list-files")).toBeTruthy(),
-      { timeout: 20_000 },
-    );
-    await waitFor(
-      () =>
-        expect(
-          screen.getByText(/Here are the ignored \.octopusStudio files\./),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/Here are the ignored \.octopusStudio files\./)).toBeTruthy(),
       { timeout: 20_000 },
     );
 
     await streamEnd;
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     // Read this chat's rows directly.
@@ -245,9 +198,7 @@ describe("local-agent list_files (integration)", () => {
       'directory=".octopusStudio" recursive="true" include_ignored="true"',
     );
     expect(assistant.content).toContain(".octopusStudio/plans/test-plan.md");
-    expect(assistant.content).toContain(
-      "Here are the ignored .octopusStudio files.",
-    );
+    expect(assistant.content).toContain("Here are the ignored .octopusStudio files.");
 
     // Every channel the UI invoked had a real handler.
     expect([...harness.bridge.missingChannels]).toEqual([]);

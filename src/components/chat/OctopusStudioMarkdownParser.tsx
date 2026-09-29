@@ -23,10 +23,7 @@ import { OctopusStudioThink } from "./OctopusStudioThink";
 import { CodeHighlight } from "./CodeHighlight";
 import { useAtomValue } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
-import {
-  useChatStreamPreview,
-  useChatStreamState,
-} from "@/hooks/useChatStream";
+import { useChatStreamPreview, useChatStreamState } from "@/hooks/useChatStream";
 import { isStreamActive } from "@/chat_stream/transition";
 import { CustomTagState } from "./stateTypes";
 import { OctopusStudioOutput } from "./OctopusStudioOutput";
@@ -34,6 +31,7 @@ import { OctopusStudioProblemSummary } from "./OctopusStudioProblemSummary";
 import { OctopusStudioSecurityFinding } from "./OctopusStudioSecurityFinding";
 import { ipc } from "@/ipc/types";
 import { OctopusStudioMcpToolCall } from "./OctopusStudioMcpToolCall";
+import { OctopusStudioSpawnSubagent } from "./OctopusStudioSpawnSubagent";
 import { OctopusStudioMcpToolResult } from "./OctopusStudioMcpToolResult";
 import {
   buildMcpPairing,
@@ -48,6 +46,7 @@ import { OctopusStudioWebSearch } from "./OctopusStudioWebSearch";
 import { OctopusStudioWebCrawl } from "./OctopusStudioWebCrawl";
 import { OctopusStudioWebFetch } from "./OctopusStudioWebFetch";
 import { OctopusStudioImageGeneration } from "./OctopusStudioImageGeneration";
+import { OctopusStudioVideoGeneration } from "./OctopusStudioVideoGeneration";
 import { OctopusStudioImageSearch } from "./OctopusStudioImageSearch";
 import { OctopusStudioCodeSearchResult } from "./OctopusStudioCodeSearchResult";
 import { OctopusStudioCodeSearch } from "./OctopusStudioCodeSearch";
@@ -87,13 +86,7 @@ interface OctopusStudioMarkdownParserProps {
   showStreamingPreview?: boolean;
 }
 
-const customLink = ({
-  node: _node,
-  ...props
-}: {
-  node?: any;
-  [key: string]: any;
-}) => (
+const customLink = ({ node: _node, ...props }: { node?: any; [key: string]: any }) => (
   <a
     {...props}
     onClick={(e) => {
@@ -127,9 +120,11 @@ export const VanillaMarkdownParser = ({ content }: { content: string }) => {
  * blocks keep referential identity across streaming chunks, so React.memo can
  * skip prior blocks and leave only the open trailing block to re-render.
  */
-export const OctopusStudioMarkdownParser: React.FC<
-  OctopusStudioMarkdownParserProps
-> = ({ content, messageId, showStreamingPreview = false }) => {
+export const OctopusStudioMarkdownParser: React.FC<OctopusStudioMarkdownParserProps> = ({
+  content,
+  messageId,
+  showStreamingPreview = false,
+}) => {
   const chatId = useAtomValue(selectedChatIdAtom);
   const streamState = useChatStreamState(chatId ?? undefined) ?? {
     type: "idle",
@@ -156,11 +151,7 @@ export const OctopusStudioMarkdownParser: React.FC<
 
   const parserState = useMemo(() => {
     const cached = parserCacheRef.current;
-    if (
-      cached &&
-      cached.messageId === messageId &&
-      contentToParse.startsWith(cached.content)
-    ) {
+    if (cached && cached.messageId === messageId && contentToParse.startsWith(cached.content)) {
       const state = advanceParser(cached.state, contentToParse);
       parserCacheRef.current = { messageId, content: contentToParse, state };
       return state;
@@ -177,10 +168,7 @@ export const OctopusStudioMarkdownParser: React.FC<
   // renderer can collapse the two into one card. Keyed on `closedBlocks`, which
   // only changes when a block closes (not per streamed token), so the scan
   // stays off the streaming hot path.
-  const mcpPairing = useMemo(
-    () => buildMcpPairing(closedBlocks),
-    [closedBlocks],
-  );
+  const mcpPairing = useMemo(() => buildMcpPairing(closedBlocks), [closedBlocks]);
 
   // The button is hidden while streaming, so avoid scanning the block list on
   // every chunk. Do the full scan only for settled content.
@@ -210,8 +198,7 @@ export const OctopusStudioMarkdownParser: React.FC<
     };
   }, [closedBlocks, isStreaming]);
 
-  const showFixAll =
-    errorCount > 1 && !isStreaming && chatId !== null && chatId !== undefined;
+  const showFixAll = errorCount > 1 && !isStreaming && chatId !== null && chatId !== undefined;
 
   return (
     <>
@@ -241,13 +228,7 @@ const EMPTY_ERROR_SCAN: {
   lastErrorIndex: number;
 } = { errorMessages: [], errorCount: 0, lastErrorIndex: -1 };
 
-function StreamingPreviewBlocks({
-  chatId,
-  isStreaming,
-}: {
-  chatId: number;
-  isStreaming: boolean;
-}) {
+function StreamingPreviewBlocks({ chatId, isStreaming }: { chatId: number; isStreaming: boolean }) {
   const previewXml = useChatStreamPreview(chatId);
   const previewBlocks = useMemo<Block[] | null>(() => {
     if (!previewXml) return null;
@@ -282,11 +263,7 @@ function renderBlock(block: Block, isStreaming: boolean): React.ReactNode {
 // Render the trailing open block, accounting for MCP pairing: an open
 // tool-call shows as a pending card; an open tool-result whose call already
 // has a card is hidden (the call card will absorb it once it closes).
-function renderOpenBlock(
-  block: Block,
-  isStreaming: boolean,
-  pairing: McpPairing,
-): React.ReactNode {
+function renderOpenBlock(block: Block, isStreaming: boolean, pairing: McpPairing): React.ReactNode {
   if (block.kind === "custom-tag") {
     const callId = block.attributes["call-id"];
     if (callId && block.tag === "octopus-studio-mcp-tool-call") {
@@ -298,11 +275,7 @@ function renderOpenBlock(
         />
       );
     }
-    if (
-      callId &&
-      block.tag === "octopus-studio-mcp-tool-result" &&
-      pairing.callIds.has(callId)
-    ) {
+    if (callId && block.tag === "octopus-studio-mcp-tool-result" && pairing.callIds.has(callId)) {
       return null;
     }
   }
@@ -336,11 +309,7 @@ function renderClosedBlock(
     }
     // Hide the standalone result only when its call is on screen to absorb it;
     // an unmatched result still renders on its own.
-    if (
-      callId &&
-      block.tag === "octopus-studio-mcp-tool-result" &&
-      callIds.has(callId)
-    ) {
+    if (callId && block.tag === "octopus-studio-mcp-tool-result" && callIds.has(callId)) {
       return null;
     }
   }
@@ -368,14 +337,28 @@ const MemoMcpToolPair = React.memo(
       : isError
         ? "aborted"
         : "finished";
+
+    const isSpawnSubagent = callBlock.attributes.tool === "spawn_subagent";
+
+    if (isSpawnSubagent) {
+      return (
+        <OctopusStudioSpawnSubagent
+          resultContent={resultBlock?.content}
+          state={state}
+          isError={isError}
+        >
+          {callBlock.content}
+        </OctopusStudioSpawnSubagent>
+      );
+    }
+
     return (
       <OctopusStudioMcpToolCall
         node={{
           properties: {
             serverName: callBlock.attributes.server || "",
             toolName: callBlock.attributes.tool || "",
-            autoApprovedReason:
-              callBlock.attributes["auto-approved-reason"] || "",
+            autoApprovedReason: callBlock.attributes["auto-approved-reason"] || "",
           },
         }}
         resultContent={resultBlock?.content}
@@ -422,17 +405,11 @@ const MemoClosedBlocks = React.memo(function MemoClosedBlocks({
       {blocks.map((block, index) => (
         <React.Fragment key={block.id}>
           {renderClosedBlock(block, mcpCtx)}
-          {showFixAll &&
-            index === lastErrorIndex &&
-            chatId !== null &&
-            chatId !== undefined && (
-              <div className="mt-3 w-full flex">
-                <FixAllErrorsButton
-                  errorMessages={errorMessages}
-                  chatId={chatId}
-                />
-              </div>
-            )}
+          {showFixAll && index === lastErrorIndex && chatId !== null && chatId !== undefined && (
+            <div className="mt-3 w-full flex">
+              <FixAllErrorsButton errorMessages={errorMessages} chatId={chatId} />
+            </div>
+          )}
         </React.Fragment>
       ))}
     </>
@@ -442,20 +419,29 @@ const MemoClosedBlocks = React.memo(function MemoClosedBlocks({
 // Module-level constants so MemoMarkdown never gets fresh refs for these
 // props, which would defeat ReactMarkdown's internal prop-equality checks.
 const REMARK_PLUGINS = [remarkGfm];
-const MARKDOWN_COMPONENTS = { code: CodeHighlight, a: customLink };
+const MARKDOWN_COMPONENTS = {
+  code: CodeHighlight,
+  a: customLink,
+  img: (props: any) => {
+    if (props.src?.match(/\.(mp4|webm|ogg)$/i)) {
+      return (
+        <video
+          controls
+          src={props.src}
+          className="max-w-full rounded-md mt-2 mb-2"
+          title={props.alt}
+        />
+      );
+    }
+    return <img {...props} />;
+  },
+};
 
 // Memoized markdown piece. Without this, ReactMarkdown re-parses every
 // completed segment's text into an AST on every streaming chunk.
-const MemoMarkdown = React.memo(function MemoMarkdown({
-  content,
-}: {
-  content: string;
-}) {
+const MemoMarkdown = React.memo(function MemoMarkdown({ content }: { content: string }) {
   return (
-    <ReactMarkdown
-      remarkPlugins={REMARK_PLUGINS}
-      components={MARKDOWN_COMPONENTS}
-    >
+    <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
       {content}
     </ReactMarkdown>
   );
@@ -520,11 +506,7 @@ function renderCustomTag(
 
   switch (tag) {
     case "octopus-studio-office-file":
-      return (
-        <OctopusStudioOfficeFile
-          node={{ properties: { path: attributes.path || "" } }}
-        />
-      );
+      return <OctopusStudioOfficeFile node={{ properties: { path: attributes.path || "" } }} />;
     case "octopus-studio-read":
       return (
         <OctopusStudioRead
@@ -865,11 +847,7 @@ function renderCustomTag(
       );
 
     case "octopus-studio-enable-nitro":
-      return (
-        <OctopusStudioEnableNitro
-          state={getState({ isStreaming, inProgress })}
-        />
-      );
+      return <OctopusStudioEnableNitro state={getState({ isStreaming, inProgress })} />;
 
     case "octopus-studio-edit":
       return (
@@ -943,7 +921,11 @@ function renderCustomTag(
           {content}
         </OctopusStudioMcpToolSchema>
       );
+
     case "octopus-studio-mcp-tool-call":
+      if (attributes.tool === "spawn_subagent") {
+        return <OctopusStudioSpawnSubagent>{content}</OctopusStudioSpawnSubagent>;
+      }
       return (
         <OctopusStudioMcpToolCall
           node={{
@@ -1007,10 +989,7 @@ function renderCustomTag(
 
     case "octopus-studio-security-finding":
       return (
-        <OctopusStudioSecurityFinding
-          title={attributes.title}
-          level={attributes.level}
-        >
+        <OctopusStudioSecurityFinding title={attributes.title} level={attributes.level}>
           {content}
         </OctopusStudioSecurityFinding>
       );
@@ -1035,8 +1014,7 @@ function renderCustomTag(
             properties: {
               directory: attributes.directory || "",
               recursive: attributes.recursive || "",
-              include_ignored:
-                attributes.include_ignored || attributes.include_hidden || "",
+              include_ignored: attributes.include_ignored || attributes.include_hidden || "",
               state: getState({ isStreaming, inProgress }),
               appName: attributes.app_name || "",
             },
@@ -1136,6 +1114,21 @@ function renderCustomTag(
         >
           {content}
         </OctopusStudioImageGeneration>
+      );
+
+    case "octopus-studio-video-generation":
+      return (
+        <OctopusStudioVideoGeneration
+          node={{
+            properties: {
+              prompt: attributes.prompt || "",
+              path: attributes.path || "",
+              state: getState({ isStreaming, inProgress }),
+            },
+          }}
+        >
+          {content}
+        </OctopusStudioVideoGeneration>
       );
 
     case "octopus-studio-status":

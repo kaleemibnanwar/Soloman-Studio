@@ -1,9 +1,9 @@
 - img
 - text: 1 error
 - button "Recheck":
-  - img
+    - img
 - button "Fix All":
-  - img
+    - img
 - img
 - img
 - text: src/bad-file.tsx 2:1

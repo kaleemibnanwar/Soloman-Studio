@@ -15,22 +15,19 @@ function getPayload(requestedState) {
       return {
         alert: "payment_past_due",
         effectiveAt: null,
-        actionUrl:
-          "https://academy.octopusStudio.sh/billing?source=desktop_fixture",
+        actionUrl: "https://academy.octopusStudio.sh/billing?source=desktop_fixture",
       };
     case "subscription_ending":
       return {
         alert: "subscription_ending",
         effectiveAt: futureDate(14),
-        actionUrl:
-          "https://academy.octopusStudio.sh/subscription?source=desktop_fixture",
+        actionUrl: "https://academy.octopusStudio.sh/subscription?source=desktop_fixture",
       };
     case "subscription_paused":
       return {
         alert: "subscription_paused",
         effectiveAt: futureDate(30),
-        actionUrl:
-          "https://academy.octopusStudio.sh/subscription?source=desktop_fixture",
+        actionUrl: "https://academy.octopusStudio.sh/subscription?source=desktop_fixture",
       };
     case "healthy":
       return { alert: null, effectiveAt: null, actionUrl: null };

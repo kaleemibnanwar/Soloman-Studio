@@ -18,9 +18,7 @@ export function KeepPreviewsRunningSwitch() {
           });
         }}
       />
-      <Label htmlFor="keep-previews-running">
-        Keep app previews running forever
-      </Label>
+      <Label htmlFor="keep-previews-running">Keep app previews running forever</Label>
     </div>
   );
 }

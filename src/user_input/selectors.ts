@@ -1,9 +1,6 @@
 import type { UserInputQuestionPayload } from "@/ipc/types/user_input";
 import type { SqlConsentMetadata } from "@/shared/sqlConsentMetadata";
-import type {
-  UserInputReadModelSnapshot,
-  UserInputRequests,
-} from "./read_model";
+import type { UserInputReadModelSnapshot, UserInputRequests } from "./read_model";
 
 export interface PendingQuestionnaire {
   chatId: number;
@@ -68,8 +65,7 @@ export function selectPendingIntegrations(
     pending.set(descriptor.chatId, {
       chatId: descriptor.chatId,
       requestId: descriptor.requestId,
-      provider:
-        selectedProviders.get(descriptor.requestId) ?? descriptor.provider,
+      provider: selectedProviders.get(descriptor.requestId) ?? descriptor.provider,
     });
   }
   return pending;
@@ -91,10 +87,7 @@ export function selectPendingToolConsents(
   for (const request of requests.values()) {
     if (request.status === "settled") continue;
     const descriptor = request.descriptor;
-    if (
-      descriptor.chatId !== chatId ||
-      respondingRequestIds.has(descriptor.requestId)
-    ) {
+    if (descriptor.chatId !== chatId || respondingRequestIds.has(descriptor.requestId)) {
       continue;
     }
     if (descriptor.kind === "agent-consent") {

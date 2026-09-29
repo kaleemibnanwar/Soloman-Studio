@@ -1,18 +1,9 @@
 import log from "electron-log";
-import {
-  getConnectionUri,
-  executeNeonSql,
-} from "../../neon_admin/neon_context";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { getConnectionUri, executeNeonSql } from "../../neon_admin/neon_context";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { IS_TEST_BUILD } from "../utils/test_utils";
-import { getAppWithNeonBranch, getProductionBranchId } from "./neon_utils";
-import type {
-  DestructiveStatement,
-  DestructiveStatementReason,
-} from "../types/migration";
+import { getAppWithNeonBranch, getProductionBranchId } from "../neon/neon_utils";
+import type { DestructiveStatement, DestructiveStatementReason } from "../types/migration";
 import {
   generateSchemaDiff,
   NotImplementedMigrationError,
@@ -59,8 +50,7 @@ const DESTRUCTIVE_PATTERNS: Array<{
     reason: "drop_column",
   },
   {
-    regex:
-      /\bALTER\s+TABLE\b[\s\S]*?\bALTER\s+COLUMN\b[\s\S]*?\b(SET\s+DATA\s+)?TYPE\b/i,
+    regex: /\bALTER\s+TABLE\b[\s\S]*?\bALTER\s+COLUMN\b[\s\S]*?\b(SET\s+DATA\s+)?TYPE\b/i,
     reason: "alter_column_type",
   },
 ];
@@ -75,19 +65,14 @@ export function detectDestructiveStatements(
       out.push({ index, reason: regexReason });
       return;
     }
-    if (
-      statement.type === "destructive" &&
-      !isRoutineIndexCreation(statement.sql)
-    ) {
+    if (statement.type === "destructive" && !isRoutineIndexCreation(statement.sql)) {
       out.push({ index, reason: "schema_hazard" });
     }
   });
   return out;
 }
 
-function destructiveReasonForSql(
-  sql: string,
-): DestructiveStatementReason | null {
+function destructiveReasonForSql(sql: string): DestructiveStatementReason | null {
   for (const { regex, reason } of DESTRUCTIVE_PATTERNS) {
     if (regex.test(sql)) {
       return reason;
@@ -176,20 +161,12 @@ function toMigrationDiffOctopusStudioError(error: unknown): OctopusStudioError {
       candidate.name === "UnsupportedPostgresVersionError",
   );
   if (unsupportedVersion) {
-    return new OctopusStudioError(
-      unsupportedVersion.message,
-      OctopusStudioErrorKind.Precondition,
-    );
+    return new OctopusStudioError(unsupportedVersion.message, OctopusStudioErrorKind.Precondition);
   }
 
   const message =
-    error instanceof PgSchemaDiffError || error instanceof Error
-      ? error.message
-      : String(error);
-  logger.error(
-    "Failed to compute migration plan. Cause chain:",
-    formatErrorCauseChain(error),
-  );
+    error instanceof PgSchemaDiffError || error instanceof Error ? error.message : String(error);
+  logger.error("Failed to compute migration plan. Cause chain:", formatErrorCauseChain(error));
   const causeSummary = formatErrorCauseSummary(error);
   return new OctopusStudioError(
     causeSummary
@@ -202,10 +179,7 @@ function toMigrationDiffOctopusStudioError(error: unknown): OctopusStudioError {
 function formatErrorCauseSummary(error: unknown): string | null {
   const seen = new Set<unknown>();
   const messages: string[] = [];
-  let current =
-    error instanceof Error
-      ? (error as Error & { cause?: unknown }).cause
-      : undefined;
+  let current = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
 
   while (current instanceof Error && !seen.has(current)) {
     seen.add(current);
@@ -234,17 +208,13 @@ function formatErrorCauseChain(error: unknown): string {
     lines.push(String(current));
   }
 
-  return lines
-    .map((line, index) => (index === 0 ? line : `caused by: ${line}`))
-    .join("\n");
+  return lines.map((line, index) => (index === 0 ? line : `caused by: ${line}`)).join("\n");
 }
 
 function formatErrorForLog(error: Error): string {
-  const details = [
-    error.name,
-    error.message,
-    error.stack ? `stack: ${error.stack}` : null,
-  ].filter(Boolean);
+  const details = [error.name, error.message, error.stack ? `stack: ${error.stack}` : null].filter(
+    Boolean,
+  );
   return details.join(": ");
 }
 

@@ -36,41 +36,34 @@ export function ExtraCommitsRevertDialog({
   const commitNoun = extraCommits.length === 1 ? "commit" : "commits";
   const isRetry = kind === "retry";
   const hasUncommittedChanges = uncommittedFileCount > 0;
-  const uncommittedLabel =
-    uncommittedFileCount === 1 ? "file change" : "file changes";
+  const uncommittedLabel = uncommittedFileCount === 1 ? "file change" : "file changes";
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent data-testid="extra-commits-revert-dialog">
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {isRetry
-              ? "How would you like to retry?"
-              : "Undo will revert additional changes"}
+            {isRetry ? "How would you like to retry?" : "Undo will revert additional changes"}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isRetry ? (
               hasUncommittedChanges ? (
                 <>
-                  Your app has {uncommittedFileCount} uncommitted{" "}
-                  {uncommittedLabel}
-                  {extraCommits.length > 0
-                    ? ` and ${extraCommits.length} newer ${commitNoun}`
-                    : ""}
-                  . Please commit your changes before using Restore and retry.
-                  You can still retry from the current code now.
+                  Your app has {uncommittedFileCount} uncommitted {uncommittedLabel}
+                  {extraCommits.length > 0 ? ` and ${extraCommits.length} newer ${commitNoun}` : ""}
+                  . Please commit your changes before using Restore and retry. You can still retry
+                  from the current code now.
                 </>
               ) : (
                 <>
-                  {extraCommits.length} newer {commitLabel} made after this
-                  response. Retry from the current code to keep them, or restore
-                  and retry to revert them:
+                  {extraCommits.length} newer {commitLabel} made after this response. Retry from the
+                  current code to keep them, or restore and retry to revert them:
                 </>
               )
             ) : (
               <>
-                Besides this message&apos;s changes, {extraCommits.length} more{" "}
-                {commitLabel} made afterwards. Undoing will also revert them:
+                Besides this message&apos;s changes, {extraCommits.length} more {commitLabel} made
+                afterwards. Undoing will also revert them:
               </>
             )}
           </AlertDialogDescription>
@@ -81,9 +74,7 @@ export function ExtraCommitsRevertDialog({
               <p className="font-medium text-foreground">
                 {uncommittedFileCount} uncommitted {uncommittedLabel}
               </p>
-              <p className="text-xs text-muted-foreground">
-                Not committed to version history
-              </p>
+              <p className="text-xs text-muted-foreground">Not committed to version history</p>
             </div>
           )}
           {extraCommits.map((commit) => (
@@ -120,10 +111,7 @@ export function ExtraCommitsRevertDialog({
               {isRetry ? "Restore and retry" : `${action} anyway`}
             </AlertDialogAction>
           )}
-          <AlertDialogCancel
-            data-testid="cancel-revert-button"
-            className="w-full"
-          >
+          <AlertDialogCancel data-testid="cancel-revert-button" className="w-full">
             Cancel
           </AlertDialogCancel>
         </AlertDialogFooter>

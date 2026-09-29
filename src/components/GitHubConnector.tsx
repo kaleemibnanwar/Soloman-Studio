@@ -35,10 +35,7 @@ import { GithubBranchManager } from "@/components/GithubBranchManager";
 import { useResolveMergeConflictsWithAI } from "@/hooks/useResolveMergeConflictsWithAI";
 import { useChatStreamState } from "@/hooks/useChatStream";
 import { slugifyAppPath } from "@/shared/slugify";
-import {
-  isAppliedGithubOpsReceipt,
-  useGithubOps,
-} from "@/github_ops/useGithubOps";
+import { isAppliedGithubOpsReceipt, useGithubOps } from "@/github_ops/useGithubOps";
 import {
   acknowledgeConnectionFlow,
   cancelConnectionFlow,
@@ -83,10 +80,7 @@ export interface UnconnectedGitHubConnectorProps {
   linkedRepo?: LinkedGitHubRepo;
 }
 
-function ConnectedGitHubConnector({
-  appId,
-  app,
-}: ConnectedGitHubConnectorProps) {
+function ConnectedGitHubConnector({ appId, app }: ConnectedGitHubConnectorProps) {
   const [showForceDialog, setShowForceDialog] = useState(false);
   const {
     projection,
@@ -136,9 +130,7 @@ function ConnectedGitHubConnector({
     onStartFailed: dispatchConflictResolutionCancelled,
   });
 
-  const conflictResolutionChat = useChatStreamState(
-    conflictResolutionChatId ?? undefined,
-  );
+  const conflictResolutionChat = useChatStreamState(conflictResolutionChatId ?? undefined);
 
   useEffect(() => {
     if (
@@ -176,8 +168,7 @@ function ConnectedGitHubConnector({
       githubOpsState.origin.type === "rebase" ||
       githubOpsState.origin.type === "rebase-continue");
   const showErrorBanner =
-    banner?.kind === "error" &&
-    (banner.code !== "MERGE_CONFLICT" || !conflictRecoveryStage);
+    banner?.kind === "error" && (banner.code !== "MERGE_CONFLICT" || !conflictRecoveryStage);
 
   return (
     <div className="w-full" data-testid="github-connected-repo">
@@ -192,9 +183,7 @@ function ConnectedGitHubConnector({
       <a
         onClick={(e) => {
           e.preventDefault();
-          ipc.system.openExternalUrl(
-            `https://github.com/${app.githubOrg}/${app.githubRepo}`,
-          );
+          ipc.system.openExternalUrl(`https://github.com/${app.githubOrg}/${app.githubRepo}`);
         }}
         className="cursor-pointer text-primary hover:underline"
         target="_blank"
@@ -243,9 +232,7 @@ function ConnectedGitHubConnector({
           )}
         </Button>
         <Button
-          onClick={() =>
-            send({ type: "OP_REQUESTED", op: { type: "disconnect" } })
-          }
+          onClick={() => send({ type: "OP_REQUESTED", op: { type: "disconnect" } })}
           disabled={!canDisconnect}
           variant="outline"
         >
@@ -302,9 +289,7 @@ function ConnectedGitHubConnector({
                   disabled={!canContinueRebase || isRebaseActionPending}
                 >
                   <GitMerge className="h-4 w-4 mr-2" />
-                  {rebaseAction === "continue"
-                    ? "Continuing..."
-                    : "Continue rebase"}
+                  {rebaseAction === "continue" ? "Continuing..." : "Continue rebase"}
                 </Button>
                 <Button
                   onClick={() =>
@@ -319,9 +304,7 @@ function ConnectedGitHubConnector({
                   className="text-orange-600 border-orange-600 hover:bg-orange-50"
                 >
                   <AlertTriangle className="h-4 w-4 mr-2" />
-                  {rebaseAction === "safe-push"
-                    ? "Safe force pushing..."
-                    : "Safe Force Push"}
+                  {rebaseAction === "safe-push" ? "Safe force pushing..." : "Safe Force Push"}
                 </Button>
               </div>
             </div>
@@ -340,9 +323,7 @@ function ConnectedGitHubConnector({
           )}
           {showRebaseAndSync && (
             <Button
-              onClick={() =>
-                send({ type: "OP_REQUESTED", op: { type: "rebase" } })
-              }
+              onClick={() => send({ type: "OP_REQUESTED", op: { type: "rebase" } })}
               variant="outline"
               size="sm"
               disabled={!canRebaseAndSync || isRebaseActionPending}
@@ -361,8 +342,7 @@ function ConnectedGitHubConnector({
         >
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-muted-foreground ring-1 ring-border">
-              {conflictRecoveryStage === "resolving" ||
-              conflictRecoveryStage === "checking" ? (
+              {conflictRecoveryStage === "resolving" || conflictRecoveryStage === "checking" ? (
                 <LoaderCircle
                   className="size-4 animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
@@ -466,49 +446,46 @@ function ConnectedGitHubConnector({
                 </div>
               )}
 
-              {conflictRecoveryStage === "ready-to-sync" &&
-                syncContinuationOperation && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      disabled={!canContinueSync}
-                      onClick={() =>
-                        send({
-                          type: "OP_REQUESTED",
-                          op: syncContinuationOperation,
-                        })
-                      }
-                    >
-                      Continue to Sync
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!canCancelSync || isCancellingSync}
-                      onClick={() =>
-                        send({
-                          type: "OP_REQUESTED",
-                          op: { type: abortOperation },
-                        })
-                      }
-                    >
-                      {isCancellingSync
-                        ? "Cancelling…"
-                        : isSyncConflict
-                          ? "Cancel sync"
-                          : "Cancel merge"}
-                    </Button>
-                  </div>
-                )}
+              {conflictRecoveryStage === "ready-to-sync" && syncContinuationOperation && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!canContinueSync}
+                    onClick={() =>
+                      send({
+                        type: "OP_REQUESTED",
+                        op: syncContinuationOperation,
+                      })
+                    }
+                  >
+                    Continue to Sync
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!canCancelSync || isCancellingSync}
+                    onClick={() =>
+                      send({
+                        type: "OP_REQUESTED",
+                        op: { type: abortOperation },
+                      })
+                    }
+                  >
+                    {isCancellingSync
+                      ? "Cancelling…"
+                      : isSyncConflict
+                        ? "Cancel sync"
+                        : "Cancel merge"}
+                  </Button>
+                </div>
+              )}
 
               {conflictRecoveryStage === "verification-failed" && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     disabled={!canRetryConflictVerification}
-                    onClick={() =>
-                      send({ type: "RETRY_CONFLICT_VERIFICATION" })
-                    }
+                    onClick={() => send({ type: "RETRY_CONFLICT_VERIFICATION" })}
                   >
                     Try again
                   </Button>
@@ -536,13 +513,9 @@ function ConnectedGitHubConnector({
         </div>
       )}
       {banner?.kind === "info" && (
-        <p className="text-sm text-muted-foreground mt-2">
-          {banner.message}
-        </p>
+        <p className="text-sm text-muted-foreground mt-2">{banner.message}</p>
       )}
-      {banner?.kind === "success" && (
-        <p className="text-success mt-2">{banner.message}</p>
-      )}
+      {banner?.kind === "success" && <p className="text-success mt-2">{banner.message}</p>}
 
       {/* Force Push Warning Dialog */}
       <Dialog open={showForceDialog} onOpenChange={setShowForceDialog}>
@@ -555,21 +528,15 @@ function ConnectedGitHubConnector({
             <DialogDescription>
               <div className="space-y-3">
                 <p>
-                  You are about to perform a <strong>force push</strong> to your
-                  GitHub repository.
+                  You are about to perform a <strong>force push</strong> to your GitHub repository.
                 </p>
                 <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-md border border-orange-200 dark:border-orange-800">
                   <p className="text-sm text-orange-800 dark:text-orange-200">
-                    <strong>
-                      This is dangerous and non-reversible and will:
-                    </strong>
+                    <strong>This is dangerous and non-reversible and will:</strong>
                   </p>
                   <ul className="text-sm text-orange-700 dark:text-orange-300 list-disc list-inside mt-2 space-y-1">
                     <li>Overwrite the remote repository history</li>
-                    <li>
-                      Permanently delete commits that exist on the remote but
-                      not locally
-                    </li>
+                    <li>Permanently delete commits that exist on the remote but not locally</li>
                   </ul>
                 </div>
                 <p className="text-sm">
@@ -627,13 +594,9 @@ export function UnconnectedGitHubConnector({
   const [codeCopied, setCodeCopied] = useState(false);
 
   const githubUserCode =
-    githubFlowState.status === "awaiting-return"
-      ? (githubFlowState.userCode ?? null)
-      : null;
+    githubFlowState.status === "awaiting-return" ? (githubFlowState.userCode ?? null) : null;
   const githubVerificationUri =
-    githubFlowState.status === "awaiting-return"
-      ? (githubFlowState.verificationUri ?? null)
-      : null;
+    githubFlowState.status === "awaiting-return" ? (githubFlowState.verificationUri ?? null) : null;
   const githubError =
     githubFlowState.status === "failed"
       ? (githubFlowState.message ?? "An unknown error occurred.")
@@ -654,20 +617,14 @@ export function UnconnectedGitHubConnector({
   })();
 
   // --- Repo Setup State ---
-  const [repoSetupMode, setRepoSetupMode] = useState<"create" | "existing">(
-    "create",
-  );
+  const [repoSetupMode, setRepoSetupMode] = useState<"create" | "existing">("create");
   const [availableRepos, setAvailableRepos] = useState<GitHubRepo[]>([]);
   const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<string>("");
-  const [availableBranches, setAvailableBranches] = useState<GitHubBranch[]>(
-    [],
-  );
+  const [availableBranches, setAvailableBranches] = useState<GitHubBranch[]>([]);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<string>("main");
-  const [branchInputMode, setBranchInputMode] = useState<"select" | "custom">(
-    "select",
-  );
+  const [branchInputMode, setBranchInputMode] = useState<"select" | "custom">("select");
   const [customBranchName, setCustomBranchName] = useState<string>("");
 
   // Create new repo state. Seed with a kebab-case slug of the app name (the
@@ -678,8 +635,7 @@ export function UnconnectedGitHubConnector({
   const [repoCheckError, setRepoCheckError] = useState<string | null>(null);
   const [isCheckingRepo, setIsCheckingRepo] = useState(false);
   const isCreatingRepo = projection.runningOperation?.type === "connect-repo";
-  const createRepoError =
-    projection.banner?.kind === "error" ? projection.banner.message : null;
+  const createRepoError = projection.banner?.kind === "error" ? projection.banner.message : null;
   const createRepoSuccess =
     projection.banner?.kind === "success" ? projection.banner.message : null;
 
@@ -758,8 +714,7 @@ export function UnconnectedGitHubConnector({
       setAvailableBranches(branches);
       // Default to main if available, otherwise first branch
       const defaultBranch =
-        branches.find((b) => b.name === "main" || b.name === "master") ||
-        branches[0];
+        branches.find((b) => b.name === "main" || b.name === "master") || branches[0];
       if (defaultBranch) {
         setSelectedBranch(defaultBranch.name);
       }
@@ -783,9 +738,7 @@ export function UnconnectedGitHubConnector({
         });
         setRepoAvailable(result.available);
         if (!result.available) {
-          setRepoCheckError(
-            result.error || "Repository name is not available.",
-          );
+          setRepoCheckError(result.error || "Repository name is not available.");
         }
       } catch (err: any) {
         setRepoCheckError(err.message || "Failed to check repo availability.");
@@ -826,8 +779,7 @@ export function UnconnectedGitHubConnector({
       });
     } else {
       const [owner, repo] = selectedRepo.split("/");
-      const branchToUse =
-        branchInputMode === "custom" ? customBranchName : selectedBranch;
+      const branchToUse = branchInputMode === "custom" ? customBranchName : selectedBranch;
       send({
         type: "OP_REQUESTED",
         op: {
@@ -849,8 +801,8 @@ export function UnconnectedGitHubConnector({
           <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
             <p className="font-medium">Reconnect your GitHub account</p>
             <p className="mt-1">
-              This app is linked to {linkedRepo.org}/{linkedRepo.repo}, but
-              GitHub credentials are missing from settings.
+              This app is linked to {linkedRepo.org}/{linkedRepo.repo}, but GitHub credentials are
+              missing from settings.
             </p>
           </div>
         )}
@@ -891,11 +843,7 @@ export function UnconnectedGitHubConnector({
         {(githubUserCode || githubStatusMessage || githubError) && (
           <div className="mt-6 p-4 border rounded-md bg-muted/50 border-border">
             <h4 className="font-medium mb-2">GitHub Connection</h4>
-            {githubError && (
-              <p className="text-destructive mb-2">
-                Error: {githubError}
-              </p>
-            )}
+            {githubError && <p className="text-destructive mb-2">Error: {githubError}</p>}
             {githubUserCode && githubVerificationUri && (
               <div className="mb-2">
                 <p>
@@ -928,9 +876,7 @@ export function UnconnectedGitHubConnector({
                             setCodeCopied(true);
                             setTimeout(() => setCodeCopied(false), 2000);
                           })
-                          .catch((err) =>
-                            console.error("Failed to copy code:", err),
-                          );
+                          .catch((err) => console.error("Failed to copy code:", err));
                       }
                     }}
                     title="Copy to clipboard"
@@ -945,9 +891,7 @@ export function UnconnectedGitHubConnector({
               </div>
             )}
             {githubStatusMessage && (
-              <p className="text-sm text-muted-foreground">
-                {githubStatusMessage}
-              </p>
+              <p className="text-sm text-muted-foreground">{githubStatusMessage}</p>
             )}
             {isConnectingToGithub && (
               <Button
@@ -956,10 +900,7 @@ export function UnconnectedGitHubConnector({
                 className="mt-3"
                 onClick={() => {
                   if ("invocationRef" in githubFlowState) {
-                    void cancelConnectionFlow(
-                      "github",
-                      githubFlowState.invocationRef,
-                    );
+                    void cancelConnectionFlow("github", githubFlowState.invocationRef);
                   }
                 }}
               >
@@ -986,15 +927,11 @@ export function UnconnectedGitHubConnector({
         type="button"
         onClick={!isExpanded ? () => setIsExpanded(true) : undefined}
         className={`w-full p-4 text-left transition-colors rounded-md flex items-center justify-between ${
-          !isExpanded
-            ? "cursor-pointer hover:bg-accent/60"
-            : ""
+          !isExpanded ? "cursor-pointer hover:bg-accent/60" : ""
         }`}
       >
         <span className="font-medium">Set up your GitHub repo</span>
-        {isExpanded ? undefined : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
+        {isExpanded ? undefined : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
       </button>
 
       {/* Collapsible Content */}
@@ -1044,9 +981,7 @@ export function UnconnectedGitHubConnector({
             {repoSetupMode === "create" ? (
               <>
                 <div>
-                  <Label className="block text-sm font-medium">
-                    Repository Name
-                  </Label>
+                  <Label className="block text-sm font-medium">Repository Name</Label>
                   <Input
                     data-testid="github-create-repo-name-input"
                     className="w-full mt-1"
@@ -1061,42 +996,29 @@ export function UnconnectedGitHubConnector({
                     disabled={isCreatingRepo}
                   />
                   {isCheckingRepo && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Checking availability...
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Checking availability...</p>
                   )}
                   {repoAvailable === true && (
-                    <p className="text-xs text-success mt-1">
-                      Repository name is available!
-                    </p>
+                    <p className="text-xs text-success mt-1">Repository name is available!</p>
                   )}
                   {repoAvailable === false && (
-                    <p className="text-xs text-destructive mt-1">
-                      {repoCheckError}
-                    </p>
+                    <p className="text-xs text-destructive mt-1">{repoCheckError}</p>
                   )}
                 </div>
               </>
             ) : (
               <>
                 <div>
-                  <Label className="block text-sm font-medium">
-                    Select Repository
-                  </Label>
+                  <Label className="block text-sm font-medium">Select Repository</Label>
                   <Select
                     value={selectedRepo}
                     onValueChange={(v) => setSelectedRepo(v ?? "")}
                     disabled={isLoadingRepos}
                   >
-                    <SelectTrigger
-                      className="w-full mt-1"
-                      data-testid="github-repo-select"
-                    >
+                    <SelectTrigger className="w-full mt-1" data-testid="github-repo-select">
                       <SelectValue
                         placeholder={
-                          isLoadingRepos
-                            ? "Loading repositories..."
-                            : "Select a repository"
+                          isLoadingRepos ? "Loading repositories..." : "Select a repository"
                         }
                       />
                     </SelectTrigger>
@@ -1118,9 +1040,7 @@ export function UnconnectedGitHubConnector({
               {repoSetupMode === "existing" && selectedRepo ? (
                 <div className="space-y-2">
                   <Select
-                    value={
-                      branchInputMode === "select" ? selectedBranch : "custom"
-                    }
+                    value={branchInputMode === "select" ? selectedBranch : "custom"}
                     onValueChange={(value) => {
                       if (value === "custom") {
                         setBranchInputMode("custom");
@@ -1132,16 +1052,9 @@ export function UnconnectedGitHubConnector({
                     }}
                     disabled={isLoadingBranches}
                   >
-                    <SelectTrigger
-                      className="w-full mt-1"
-                      data-testid="github-branch-select"
-                    >
+                    <SelectTrigger className="w-full mt-1" data-testid="github-branch-select">
                       <SelectValue
-                        placeholder={
-                          isLoadingBranches
-                            ? "Loading branches..."
-                            : "Select a branch"
-                        }
+                        placeholder={isLoadingBranches ? "Loading branches..." : "Select a branch"}
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -1151,9 +1064,7 @@ export function UnconnectedGitHubConnector({
                         </SelectItem>
                       ))}
                       <SelectItem value="custom">
-                        <span className="font-medium">
-                          ✏️ Type custom branch name
-                        </span>
+                        <span className="font-medium">✏️ Type custom branch name</span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -1185,8 +1096,7 @@ export function UnconnectedGitHubConnector({
               disabled={
                 !canConnectRepository ||
                 isCreatingRepo ||
-                (repoSetupMode === "create" &&
-                  (repoAvailable === false || !repoName)) ||
+                (repoSetupMode === "create" && (repoAvailable === false || !repoName)) ||
                 (repoSetupMode === "existing" &&
                   (!selectedRepo ||
                     !selectedBranch ||
@@ -1203,29 +1113,19 @@ export function UnconnectedGitHubConnector({
             </Button>
           </form>
 
-          {createRepoError && (
-            <p className="text-destructive mt-2">{createRepoError}</p>
-          )}
-          {createRepoSuccess && (
-            <p className="text-success mt-2">{createRepoSuccess}</p>
-          )}
+          {createRepoError && <p className="text-destructive mt-2">{createRepoError}</p>}
+          {createRepoSuccess && <p className="text-success mt-2">{createRepoSuccess}</p>}
         </div>
       </div>
     </div>
   );
 }
 
-export function GitHubConnector({
-  appId,
-  folderName,
-  expanded,
-}: GitHubConnectorProps) {
+export function GitHubConnector({ appId, folderName, expanded }: GitHubConnectorProps) {
   const { app } = useLoadApp(appId);
   const { settings, refreshSettings } = useSettings();
   const linkedRepo =
-    app?.githubOrg && app?.githubRepo
-      ? { org: app.githubOrg, repo: app.githubRepo }
-      : undefined;
+    app?.githubOrg && app?.githubRepo ? { org: app.githubOrg, repo: app.githubRepo } : undefined;
   const hasGitHubCredentials = !!settings?.githubAccessToken;
 
   if (linkedRepo && hasGitHubCredentials && appId) {

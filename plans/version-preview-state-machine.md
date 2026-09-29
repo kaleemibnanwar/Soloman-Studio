@@ -166,10 +166,7 @@ React lifecycle timing:
 All types are plain TypeScript with no imports beyond other domain types.
 
 ```ts
-type ExitIntent =
-  | { type: "none" }
-  | { type: "close" }
-  | { type: "switch-app"; nextAppId: number };
+type ExitIntent = { type: "none" } | { type: "close" } | { type: "switch-app"; nextAppId: number };
 
 interface PreviewSession {
   appId: number;
@@ -350,11 +347,7 @@ feature.
 interface VersionPreviewCommands {
   getCurrentBranch(appId: number): Promise<{ branch: string }>;
   checkoutVersion(appId: number, versionId: string): Promise<void>;
-  restoreVersion(input: {
-    appId: number;
-    versionId: string;
-    targetBranch: string;
-  }): Promise<void>;
+  restoreVersion(input: { appId: number; versionId: string; targetBranch: string }): Promise<void>;
 }
 ```
 

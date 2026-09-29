@@ -23,9 +23,7 @@ export function createScreenshotCommandAdapter(options: {
   idSource: IdSource;
   queryClient: QueryClient;
 }): ScreenshotCommandAdapter {
-  const settleLeases = new TimerLeaseScope<number, string, ScreenshotEvent>(
-    options.clock,
-  );
+  const settleLeases = new TimerLeaseScope<number, string, ScreenshotEvent>(options.clock);
   const attachments = new TaskScope<number>();
   const postMessages = new Map<number, ScreenshotPostMessage>();
 
@@ -78,10 +76,7 @@ export function createScreenshotCommandAdapter(options: {
               });
             },
             (error) => {
-              console.warn(
-                "Failed to resolve commit hash for screenshot",
-                error,
-              );
+              console.warn("Failed to resolve commit hash for screenshot", error);
               emit({
                 type: "SAVE_FAILED",
                 requestId: command.requestId,
@@ -151,10 +146,7 @@ export function createScreenshotCommandAdapter(options: {
 
 function ownsSettleLease(
   state: ScreenshotState,
-): state is Extract<
-  ScreenshotState,
-  { status: "waitingSelectorReady" | "settling" }
-> {
+): state is Extract<ScreenshotState, { status: "waitingSelectorReady" | "settling" }> {
   return state.status === "waitingSelectorReady" || state.status === "settling";
 }
 

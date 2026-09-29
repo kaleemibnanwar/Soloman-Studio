@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useNavigate } from "@tanstack/react-router";
 import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
 import type { LanguageModelProvider } from "@/ipc/types";
@@ -18,11 +13,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +31,7 @@ export function ProviderSettingsGrid() {
   const navigate = useNavigate();
   const { t } = useTranslation(["settings", "common"]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProvider, setEditingProvider] =
-    useState<LanguageModelProvider | null>(null);
+  const [editingProvider, setEditingProvider] = useState<LanguageModelProvider | null>(null);
   const [providerToDelete, setProviderToDelete] = useState<string | null>(null);
 
   const {
@@ -139,9 +129,7 @@ export function ProviderSettingsGrid() {
                         >
                           <Edit className="h-4 w-4" />
                         </TooltipTrigger>
-                        <TooltipContent>
-                          {t("settings:ai.editProvider")}
-                        </TooltipContent>
+                        <TooltipContent>{t("settings:ai.editProvider")}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger
@@ -157,9 +145,7 @@ export function ProviderSettingsGrid() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </TooltipTrigger>
-                        <TooltipContent>
-                          {t("settings:ai.deleteProvider")}
-                        </TooltipContent>
+                        <TooltipContent>{t("settings:ai.deleteProvider")}</TooltipContent>
                       </Tooltip>
                     </div>
                   )}
@@ -226,24 +212,15 @@ export function ProviderSettingsGrid() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings:ai.deleteCustomProvider")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("settings:ai.deleteCustomProvider")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("settings:ai.deleteProviderConfirmation")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
-              {t("common:cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteProvider}
-              disabled={isDeleting}
-            >
-              {isDeleting
-                ? t("common:deleting")
-                : t("settings:ai.deleteProviderAction")}
+            <AlertDialogCancel disabled={isDeleting}>{t("common:cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProvider} disabled={isDeleting}>
+              {isDeleting ? t("common:deleting") : t("settings:ai.deleteProviderAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -26,11 +26,7 @@ import { useOpenPreviewIfSetupRequired } from "@/hooks/useOpenPreviewIfSetupRequ
 import { queryKeys } from "@/lib/queryKeys";
 import { useFreeAgentQuota } from "@/hooks/useFreeAgentQuota";
 import { showError } from "@/lib/toast";
-import {
-  attachmentsAtom,
-  homeChatInputValueAtom,
-  homeSelectedAppAtom,
-} from "@/atoms/chatAtoms";
+import { attachmentsAtom, homeChatInputValueAtom, homeSelectedAppAtom } from "@/atoms/chatAtoms";
 import { isPreviewOpenAtom } from "@/atoms/viewAtoms";
 import type { Clock, IdSource } from "@/state_machines/clock";
 import { createTraceObserver } from "@/state_machines/trace";
@@ -53,10 +49,7 @@ import {
   type FirstPromptDeps,
 } from "./commands";
 import { FirstPromptController } from "./controller";
-import {
-  projectFirstPromptState,
-  type FirstPromptSagaProjection,
-} from "./projection";
+import { projectFirstPromptState, type FirstPromptSagaProjection } from "./projection";
 import type { FirstPromptEvent, FirstPromptPayload } from "./state";
 import { resolveFirstPromptDefaultChatMode } from "./provider_resume";
 import type { UserSettings } from "@/lib/schemas";
@@ -104,8 +97,7 @@ export function FirstPromptProvider({
   const { refreshApps } = useLoadApps();
   const { selectChat } = useSelectChat();
   const openPreviewIfSetupRequired = useOpenPreviewIfSetupRequired();
-  const { isAnyProviderSetup, isLoading: providersLoading } =
-    useLanguageModelProviders();
+  const { isAnyProviderSetup, isLoading: providersLoading } = useLanguageModelProviders();
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(false);
   const previousPathnameRef = useRef(pathname);
   const awaitingStartedWithProviderRef = useRef<boolean | null>(null);
@@ -132,15 +124,10 @@ export function FirstPromptProvider({
         initialChatMode: chatMode,
         firstPromptCreationOperationId: operationId,
       }),
-    commitCreation: (operationId) =>
-      ipc.firstPrompt.commitCreation({ operationId }),
-    cancelCreation: (operationId) =>
-      ipc.firstPrompt.cancelCreation({ operationId }),
+    commitCreation: (operationId) => ipc.firstPrompt.commitCreation({ operationId }),
+    cancelCreation: (operationId) => ipc.firstPrompt.cancelCreation({ operationId }),
     async runNeonTemplateHook(appId, appName) {
-      if (
-        settings?.selectedTemplateId &&
-        NEON_TEMPLATE_IDS.has(settings.selectedTemplateId)
-      ) {
+      if (settings?.selectedTemplateId && NEON_TEMPLATE_IDS.has(settings.selectedTemplateId)) {
         await neonTemplateHook({ appId, appName });
       }
     },
@@ -295,13 +282,7 @@ export function FirstPromptProvider({
     ) {
       resumeAfterProviderConfigured();
     }
-  }, [
-    controller,
-    isAnyProviderSetup,
-    providersLoading,
-    resumeAfterProviderConfigured,
-    snapshot,
-  ]);
+  }, [controller, isAnyProviderSetup, providersLoading, resumeAfterProviderConfigured, snapshot]);
 
   const hasConfiguredProvider = isAnyProviderSetup();
   useEffect(() => {
@@ -313,19 +294,10 @@ export function FirstPromptProvider({
       awaitingStartedWithProviderRef.current = hasConfiguredProvider;
       return;
     }
-    if (
-      pathname !== "/" &&
-      !awaitingStartedWithProviderRef.current &&
-      hasConfiguredProvider
-    ) {
+    if (pathname !== "/" && !awaitingStartedWithProviderRef.current && hasConfiguredProvider) {
       resumeAfterProviderConfigured();
     }
-  }, [
-    hasConfiguredProvider,
-    pathname,
-    resumeAfterProviderConfigured,
-    snapshot.type,
-  ]);
+  }, [hasConfiguredProvider, pathname, resumeAfterProviderConfigured, snapshot.type]);
 
   useEffect(() => {
     const previousPathname = previousPathnameRef.current;
@@ -341,9 +313,7 @@ export function FirstPromptProvider({
   }, [controller, pathname]);
 
   return (
-    <FirstPromptContext.Provider
-      value={{ controller, resumeAfterProviderConfigured }}
-    >
+    <FirstPromptContext.Provider value={{ controller, resumeAfterProviderConfigured }}>
       {children}
       <Dialog
         open={isSetupDialogOpen}
@@ -355,9 +325,7 @@ export function FirstPromptProvider({
         <DialogContent className="p-0 sm:max-w-2xl">
           <DialogHeader className="sr-only">
             <DialogTitle>
-              {hasConfiguredProvider
-                ? "Manage AI setup"
-                : "You're almost ready to build"}
+              {hasConfiguredProvider ? "Manage AI setup" : "You're almost ready to build"}
             </DialogTitle>
             <DialogDescription>
               {hasConfiguredProvider
@@ -389,14 +357,10 @@ export function useFirstPromptSend(): (event: FirstPromptEvent) => boolean {
   return useFirstPromptController().send;
 }
 
-export function useFirstPromptProviderResume(): (
-  settings?: UserSettings,
-) => void {
+export function useFirstPromptProviderResume(): (settings?: UserSettings) => void {
   const context = useContext(FirstPromptContext);
   if (!context) {
-    throw new Error(
-      "useFirstPromptProviderResume requires FirstPromptProvider",
-    );
+    throw new Error("useFirstPromptProviderResume requires FirstPromptProvider");
   }
   return context.resumeAfterProviderConfigured;
 }

@@ -188,10 +188,7 @@ export function transition(
           return event.anySetup
             ? {
                 ...startCreating(state.payload),
-                commands: [
-                  { type: "CancelProviderCheckTimeout" },
-                  createCommand(state.payload),
-                ],
+                commands: [{ type: "CancelProviderCheckTimeout" }, createCommand(state.payload)],
               }
             : {
                 kind: "applied",
@@ -200,10 +197,7 @@ export function transition(
                   payload: state.payload,
                   reason: "missing-provider",
                 },
-                commands: [
-                  { type: "CancelProviderCheckTimeout" },
-                  { type: "ShowSetupDialog" },
-                ],
+                commands: [{ type: "CancelProviderCheckTimeout" }, { type: "ShowSetupDialog" }],
               };
         case "PROVIDER_CHECK_TIMED_OUT":
           return {
@@ -258,10 +252,7 @@ export function transition(
           );
           return {
             ...startCreating(awaitingPayload),
-            commands: [
-              { type: "NavigateHome" },
-              createCommand(awaitingPayload),
-            ],
+            commands: [{ type: "NavigateHome" }, createCommand(awaitingPayload)],
           };
         }
         case "SETUP_DISMISSED":
@@ -295,8 +286,7 @@ export function transition(
           };
         case "CHAT_CREATED": {
           const appId = state.payload.selectedApp?.id;
-          if (appId === undefined)
-            return ignore(state, "invalid-in-current-state");
+          if (appId === undefined) return ignore(state, "invalid-in-current-state");
           return startDispatching(state.payload, appId, event.chatId, true);
         }
         case "CREATE_FAILED":
@@ -324,20 +314,14 @@ export function transition(
     case "postCreate":
       switch (event.type) {
         case "NEON_HOOK_DONE":
-          if (state.step !== "neon")
-            return ignore(state, "invalid-in-current-state");
+          if (state.step !== "neon") return ignore(state, "invalid-in-current-state");
           return {
             kind: "applied",
             state: { ...state, step: "theme" },
             commands: [{ type: "ApplyTheme", appId: state.appId }],
           };
         case "POST_CREATE_DONE":
-          return startDispatching(
-            state.payload,
-            state.appId,
-            state.chatId,
-            false,
-          );
+          return startDispatching(state.payload, state.appId, state.chatId, false);
         case "POST_CREATE_FAILED":
           return {
             kind: "applied",
@@ -376,8 +360,7 @@ export function transition(
                 commands: [],
               };
         case "PREVIEW_DECISION":
-          if (state.previewDecided)
-            return ignore(state, "invalid-in-current-state");
+          if (state.previewDecided) return ignore(state, "invalid-in-current-state");
           return state.settled
             ? finishDispatching(state)
             : {
@@ -386,8 +369,7 @@ export function transition(
                 commands: [],
               };
         case "PREVIEW_DECISION_FAILED": {
-          if (state.previewDecided)
-            return ignore(state, "invalid-in-current-state");
+          if (state.previewDecided) return ignore(state, "invalid-in-current-state");
           const result = state.settled
             ? finishDispatching(state)
             : {
@@ -419,9 +401,7 @@ export function transition(
           return {
             kind: "applied",
             state: { type: "idle" },
-            commands: [
-              { type: "SelectChat", appId: state.appId, chatId: state.chatId },
-            ],
+            commands: [{ type: "SelectChat", appId: state.appId, chatId: state.chatId }],
           };
         case "REFRESH_FAILED":
           return {

@@ -79,17 +79,13 @@ async function loadTranscriber(): Promise<Transcriber> {
 function blobTo16kHzMonoFloat32(blob: Blob): Promise<Float32Array> {
   return new Promise((resolve, reject) => {
     const fileReader = new FileReader();
-    fileReader.onerror = () =>
-      reject(new Error("Unable to read the recorded audio."));
+    fileReader.onerror = () => reject(new Error("Unable to read the recorded audio."));
     fileReader.onload = () => {
       const AudioCtx =
         window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) {
-        reject(
-          new Error("Audio decoding is not supported in this environment."),
-        );
+        reject(new Error("Audio decoding is not supported in this environment."));
         return;
       }
       const context = new AudioCtx({ sampleRate: 16000 });
@@ -129,10 +125,7 @@ interface RecordingSession {
   stream: MediaStream;
 }
 
-export function useVoiceToText({
-  onTranscription,
-  onError,
-}: UseVoiceToTextOptions) {
+export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptions) {
   // Voice-to-text is disabled by default; the first toggle turns it on.
   const [isEnabled, setIsEnabled] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -199,9 +192,7 @@ export function useVoiceToText({
       mediaRecorder = new MediaRecorder(stream);
     } catch {
       stream.getTracks().forEach((track) => track.stop());
-      callbacksRef.current.onError?.(
-        "Audio recording is not supported in this environment.",
-      );
+      callbacksRef.current.onError?.("Audio recording is not supported in this environment.");
       return;
     }
 

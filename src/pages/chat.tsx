@@ -25,12 +25,8 @@ export default function ChatPage() {
   const { id: chatId, appId: routeAppId } = useSearch({ from: "/chat" });
   const navigate = useNavigate();
   const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
-  const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(
-    isChatPanelHiddenAtom,
-  );
-  const [isChatProject, setIsChatProject] = useState<boolean | undefined>(
-    undefined,
-  );
+  const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(isChatPanelHiddenAtom);
+  const [isChatProject, setIsChatProject] = useState<boolean | undefined>(undefined);
   const setSelectedChatId = useSetAtom(selectedChatIdAtom);
   const [isResizing, setIsResizing] = useState(false);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
@@ -95,15 +91,7 @@ export default function ChatPage() {
       search: { appId: selectedAppId },
       replace: true,
     });
-  }, [
-    chatId,
-    chats,
-    loading,
-    navigate,
-    selectChat,
-    selectedAppId,
-    selectedAppIsChatProject,
-  ]);
+  }, [chatId, chats, loading, navigate, selectChat, selectedAppId, selectedAppIsChatProject]);
 
   useEffect(() => {
     if (!chatId) {
@@ -156,9 +144,7 @@ export default function ChatPage() {
       .then((chat) => {
         if (cancelled) return;
         const chatApp = apps.find((app) => app.id === chat.appId);
-        setIsChatProject(
-          chat.appType === "chat" || !!chatApp?.isDefaultChatProject,
-        );
+        setIsChatProject(chat.appType === "chat" || !!chatApp?.isDefaultChatProject);
       })
       .catch(() => {
         if (!cancelled) setIsChatProject(false);
@@ -169,16 +155,21 @@ export default function ChatPage() {
   }, [chatId, selectedAppIsChatProject, apps]);
 
   useEffect(() => {
-    if (isChatProject) {
-      // Codeless projects show their docs/file preview pane instead of the app
-      // preview, so it stays visible.
-      ref.current?.expand();
-    } else if (isPreviewOpen) {
+    if (isPreviewOpen) {
       ref.current?.expand();
     } else {
       ref.current?.collapse();
     }
-  }, [isPreviewOpen, isChatProject]);
+  }, [isPreviewOpen]);
+
+  // Default preview open for chat projects on initial load
+  const hasInitializedChatProjectPreviewRef = useRef(false);
+  useEffect(() => {
+    if (isChatProject && !hasInitializedChatProjectPreviewRef.current) {
+      hasInitializedChatProjectPreviewRef.current = true;
+      setIsPreviewOpen(true);
+    }
+  }, [isChatProject, setIsPreviewOpen]);
   const ref = useRef<ImperativePanelHandle>(null);
   const chatPanelRef = useRef<ImperativePanelHandle>(null);
 
@@ -240,8 +231,7 @@ export default function ChatPage() {
               const panel = document.getElementById("chat-panel");
               if (panel) {
                 const panelWidth = panel.getBoundingClientRect().width;
-                const containerWidth =
-                  panel.parentElement?.getBoundingClientRect().width || 1;
+                const containerWidth = panel.parentElement?.getBoundingClientRect().width || 1;
                 const percentage = (panelWidth / containerWidth) * 100;
                 // Consider hidden if panel is less than 5% width
                 setIsChatPanelHidden(percentage < 5);
@@ -263,10 +253,7 @@ export default function ChatPage() {
         className={cn(!isResizing && "transition-all duration-100 ease-in-out")}
       >
         {isChatProject ? (
-          <ChatProjectPreview
-            projectId={selectedAppId}
-            projectName={chatProjectName}
-          />
+          <ChatProjectPreview projectId={selectedAppId} projectName={chatProjectName} />
         ) : (
           <PreviewPanel />
         )}

@@ -7,10 +7,7 @@ import type {
   MachineHostContext,
 } from "@/distributed_machines/definition";
 import { REMOTE_MACHINE_PROTOCOL_VERSION } from "@/distributed_machines/remote_protocol";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { queryInvalidationBus } from "@/window_infrastructure/main/query_invalidation_bus";
 import { ignore } from "@/state_machines/types";
 import type { GithubOpsCommand } from "@/github_ops/state";
@@ -63,10 +60,7 @@ function sameInvocation(
   );
 }
 
-function invocation(
-  appId: number,
-  operationId: string,
-): GithubOpsInvocationRef {
+function invocation(appId: number, operationId: string): GithubOpsInvocationRef {
   return {
     kind: GITHUB_OPS_INVOCATION_KIND,
     entityKey: appId,
@@ -92,10 +86,7 @@ function transitionActor(
   ) {
     return ignore(actorState, "stale-operation");
   }
-  if (
-    event.type === "RESOLVE_WITH_AI_STARTED" &&
-    actorState.conflictResolutionClaimId !== null
-  ) {
+  if (event.type === "RESOLVE_WITH_AI_STARTED" && actorState.conflictResolutionClaimId !== null) {
     return ignore(actorState, "invalid-in-current-state");
   }
   if (
@@ -124,10 +115,7 @@ function transitionActor(
   let activeInvocationRef = actorState.activeInvocationRef;
   if (event.type === "OP_REQUESTED" && result.state.type === "running") {
     activeInvocationRef = invocation(key.appId, event.operationId);
-  } else if (
-    event.type === "ABORT_AND_SWITCH_CONFIRMED" &&
-    result.state.type === "running"
-  ) {
+  } else if (event.type === "ABORT_AND_SWITCH_CONFIRMED" && result.state.type === "running") {
     activeInvocationRef = invocation(key.appId, event.operationId);
   } else if (
     activeInvocationRef === null &&
@@ -184,11 +172,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 function createCommandRunner(
-  context: MachineHostContext<
-    GithubOpsKey,
-    GithubOpsActorState,
-    GithubOpsWireEvent
-  >,
+  context: MachineHostContext<GithubOpsKey, GithubOpsActorState, GithubOpsWireEvent>,
 ) {
   let gitStateProbeGeneration = 0;
   let conflictProbeGeneration = 0;
@@ -200,10 +184,7 @@ function createCommandRunner(
   ) => {
     const state = context.getSnapshot().state;
     if (state.type === "conflicted" && state.resolution === "checking") {
-      if (
-        verificationAttempt !== undefined &&
-        state.verificationAttempt === verificationAttempt
-      ) {
+      if (verificationAttempt !== undefined && state.verificationAttempt === verificationAttempt) {
         emit({
           type: "CONFLICT_VERIFICATION_FAILED",
           verificationAttempt,
@@ -212,11 +193,7 @@ function createCommandRunner(
       }
       return;
     }
-    githubOpsPresentationService.showError(
-      context.key.appId,
-      operationId,
-      message,
-    );
+    githubOpsPresentationService.showError(context.key.appId, operationId, message);
   };
 
   return (actorCommand: GithubOpsActorCommand): void => {
@@ -268,10 +245,7 @@ function createCommandRunner(
         const generation = ++gitStateProbeGeneration;
         const recoveryInvocationRef =
           invocationRef ??
-          invocation(
-            appId,
-            context.ids.next(`${GITHUB_OPS_INVOCATION_KIND}:recovery`),
-          );
+          invocation(appId, context.ids.next(`${GITHUB_OPS_INVOCATION_KIND}:recovery`));
         void githubOpsService.getGitState(appId).then(
           (state) => {
             if (generation === gitStateProbeGeneration) {
@@ -298,10 +272,7 @@ function createCommandRunner(
         const generation = ++conflictProbeGeneration;
         const recoveryInvocationRef =
           invocationRef ??
-          invocation(
-            appId,
-            context.ids.next(`${GITHUB_OPS_INVOCATION_KIND}:recovery`),
-          );
+          invocation(appId, context.ids.next(`${GITHUB_OPS_INVOCATION_KIND}:recovery`));
         void githubOpsService.getConflicts(appId).then(
           (files) => {
             if (generation === conflictProbeGeneration) {
@@ -316,10 +287,7 @@ function createCommandRunner(
           (error) => {
             if (generation !== conflictProbeGeneration) return;
             reportProbeFailure(
-              errorMessage(
-                error,
-                "Could not check the repository for merge conflicts",
-              ),
+              errorMessage(error, "Could not check the repository for merge conflicts"),
               invocationRef?.operationId,
               command.verificationAttempt,
             );
@@ -337,10 +305,7 @@ function createCommandRunner(
         ]);
         return;
       case "refresh-app":
-        queryInvalidationBus.publish([
-          { family: "app", appId },
-          { family: "apps" },
-        ]);
+        queryInvalidationBus.publish([{ family: "app", appId }, { family: "apps" }]);
         return;
       case "notify":
         if (command.kind === "error") {
@@ -439,11 +404,7 @@ export const githubOpsDefinition: GithubOpsDefinition = {
     snapshotCodec: GithubOpsRemoteSnapshotSchema,
     keyToString: (key) => String(key.appId),
     projectSnapshot: (state, key, metadata) =>
-      projectGithubOpsRemoteSnapshot(
-        key.appId,
-        metadata.snapshotRevision,
-        state,
-      ),
+      projectGithubOpsRemoteSnapshot(key.appId, metadata.snapshotRevision, state),
     unavailableSnapshot: (key) =>
       projectGithubOpsRemoteSnapshot(key.appId, 0, {
         state: INITIAL_GITHUB_OPS_STATE,
@@ -464,14 +425,8 @@ export const githubOpsDefinition: GithubOpsDefinition = {
       }
       await authorizeApp(key.appId);
       githubOpsService.assertAcceptingOperations(key.appId);
-      if (
-        event.type === "OP_REQUESTED" ||
-        event.type === "ABORT_AND_SWITCH_CONFIRMED"
-      ) {
-        githubOpsPresentationService.recordInitiator(
-          event.operationId,
-          sender.windowSessionId,
-        );
+      if (event.type === "OP_REQUESTED" || event.type === "ABORT_AND_SWITCH_CONFIRMED") {
+        githubOpsPresentationService.recordInitiator(event.operationId, sender.windowSessionId);
       }
       if (
         event.type === "OP_REQUESTED" &&

@@ -28,9 +28,7 @@ test("reference file from editor file tree", async ({ po }) => {
   await po.previewPanel.selectPreviewMode("code");
 
   // Wait for the file tree to finish loading
-  await expect(
-    po.page.getByText("Loading files...", { exact: false }),
-  ).toBeHidden({
+  await expect(po.page.getByText("Loading files...", { exact: false })).toBeHidden({
     timeout: Timeout.LONG,
   });
 
@@ -47,18 +45,13 @@ test("reference file from editor file tree", async ({ po }) => {
   }).toPass({ timeout: Timeout.SHORT });
 
   // Find the file row containing "App.tsx" and its mention button.
-  const appTsxText = po.page
-    .locator(".file-tree")
-    .getByText("App.tsx", { exact: true })
-    .first();
+  const appTsxText = po.page.locator(".file-tree").getByText("App.tsx", { exact: true }).first();
   await expect(appTsxText).toBeVisible({ timeout: Timeout.MEDIUM });
 
   // Walk up to the row itself and hover to reveal the mention button. The name
   // shares a wrapper span with its change marker, so the immediate parent is
   // that wrapper rather than the row the button lives in.
-  const fileRow = appTsxText.locator(
-    'xpath=ancestor::div[@data-testid="file-tree-file"][1]',
-  );
+  const fileRow = appTsxText.locator('xpath=ancestor::div[@data-testid="file-tree-file"][1]');
   await fileRow.hover();
 
   // Click the "Mention file in chat" button within this specific row

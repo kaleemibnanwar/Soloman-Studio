@@ -65,29 +65,16 @@ if (!["octopusStudio-pro", "codex"].includes(authMode)) {
   throw new Error("--auth must be one of: octopusStudio-pro, codex");
 }
 validateArms(selectedArms);
-const primaryCompareArm = resolvePrimaryCompareArm(
-  selectedArms,
-  values["compare-arm"],
-);
+const primaryCompareArm = resolvePrimaryCompareArm(selectedArms, values["compare-arm"]);
 const importedArmRows = loadImportedArmRows(config, selectedArms);
-const executableArms = new Set(
-  [...selectedArms].filter((arm) => !isImportedArm(arm)),
-);
+const executableArms = new Set([...selectedArms].filter((arm) => !isImportedArm(arm)));
 
 if (values["retry-from"] && values["resume-from"]) {
   throw new Error("Use only one of --retry-from or --resume-from");
 }
 
-const fullMatrix = buildMatrix(
-  config,
-  selectedRepos,
-  selectedTasks,
-  repeats,
-  executableArms,
-);
-const resumedRows = values["resume-from"]
-  ? loadResumedRows(fullMatrix, values["resume-from"])
-  : [];
+const fullMatrix = buildMatrix(config, selectedRepos, selectedTasks, repeats, executableArms);
+const resumedRows = values["resume-from"] ? loadResumedRows(fullMatrix, values["resume-from"]) : [];
 const retryPreservedRows = values["retry-from"]
   ? loadRetryPreservedRows(fullMatrix, values["retry-from"])
   : [];
@@ -103,10 +90,7 @@ if (values["dry-run"]) {
       {
         runId,
         totalTrials:
-          matrix.length +
-          importedArmRows.length +
-          resumedRows.length +
-          retryPreservedRows.length,
+          matrix.length + importedArmRows.length + resumedRows.length + retryPreservedRows.length,
         liveTrials: matrix.length,
         importedTrials: importedArmRows.length,
         resumedTrials: resumedRows.length + retryPreservedRows.length,
@@ -135,11 +119,7 @@ if (values["dry-run"]) {
   process.exit(0);
 }
 
-if (
-  matrix.length > 0 &&
-  authMode === "octopusStudio-pro" &&
-  !process.env.OCTOPUS_STUDIO_PRO_KEY
-) {
+if (matrix.length > 0 && authMode === "octopusStudio-pro" && !process.env.OCTOPUS_STUDIO_PRO_KEY) {
   throw new Error(
     "OCTOPUS_STUDIO_PRO_KEY must be set in .env for OctopusStudio Engine benchmark runs",
   );
@@ -164,9 +144,7 @@ const resultsPath = path.join(RESULTS_DIR, runId, "runs.jsonl");
 fs.mkdirSync(path.dirname(resultsPath), { recursive: true });
 
 const benchmarkAuth =
-  matrix.length > 0
-    ? await setupBenchmarkAuth()
-    : { mode: authMode, model: values.model };
+  matrix.length > 0 ? await setupBenchmarkAuth() : { mode: authMode, model: values.model };
 
 console.log(
   `Running ${matrix.length} live trial(s), importing ${importedArmRows.length} trial(s), resuming ${resumedRows.length + retryPreservedRows.length} trial(s), with concurrency ${Math.min(concurrency, Math.max(matrix.length, 1))}`,
@@ -238,9 +216,7 @@ function buildRetryMatrix(expectedRows, retryRunId) {
   if (!fs.existsSync(runsPath)) {
     throw new Error(`Cannot retry missing benchmark run: ${retryRunId}`);
   }
-  const expectedByGroup = new Map(
-    expectedRows.map((trial) => [trialGroupKey(trial), trial]),
-  );
+  const expectedByGroup = new Map(expectedRows.map((trial) => [trialGroupKey(trial), trial]));
   const rows = readRunRows(runsPath);
   const failedPairs = new Set(
     rows
@@ -308,9 +284,7 @@ function loadRetryPreservedRows(expectedRows, retryRunId) {
 
   const sourceRows = readRunRows(runsPath);
   const failedGroups = new Set(
-    sourceRows
-      .filter((row) => row.status !== "ok")
-      .map((row) => runRowGroupKey(row)),
+    sourceRows.filter((row) => row.status !== "ok").map((row) => runRowGroupKey(row)),
   );
   const expectedKeys = new Set(expectedRows.map(trialKey));
   return sourceRows
@@ -377,9 +351,7 @@ function validateArms(arms) {
   }
   for (const arm of arms) {
     if (!allowed.has(arm)) {
-      throw new Error(
-        `Unknown benchmark arm: ${arm}. Allowed arms: ${[...allowed].join(", ")}`,
-      );
+      throw new Error(`Unknown benchmark arm: ${arm}. Allowed arms: ${[...allowed].join(", ")}`);
     }
   }
 }
@@ -402,12 +374,7 @@ function loadImportedArmRows(config, arms) {
   const sourceRows = readImportedSourceRows(sourceRunIds);
   const sourceArmPriority = values["explore-v1-source-arm"]
     ? [values["explore-v1-source-arm"]]
-    : [
-        "explore-v1",
-        "explore-candidate-followup",
-        "explore-candidate",
-        "explore",
-      ];
+    : ["explore-v1", "explore-candidate-followup", "explore-candidate", "explore"];
   const wantedRows = buildMatrix(
     config,
     selectedRepos,
@@ -453,12 +420,7 @@ function readImportedSourceRows(sourceRunIds) {
   return rows;
 }
 
-function findImportedSourceRow({
-  sourceRows,
-  sourceArmPriority,
-  trial,
-  usedSourceRows,
-}) {
+function findImportedSourceRow({ sourceRows, sourceArmPriority, trial, usedSourceRows }) {
   for (const arm of sourceArmPriority) {
     const candidates = sourceRows
       .filter(
@@ -487,9 +449,7 @@ function compareImportedSourceRows(a, b) {
 }
 
 function normalizeImportedExploreV1Row(row, repeat) {
-  const sourceMetrics = fs.existsSync(
-    path.join(RESULTS_DIR, row.runId, "events.jsonl"),
-  )
+  const sourceMetrics = fs.existsSync(path.join(RESULTS_DIR, row.runId, "events.jsonl"))
     ? readBenchmarkMetrics(row.runId)
     : {};
   return {
@@ -529,9 +489,7 @@ function resolvePrimaryCompareArm(arms, explicitArm) {
     const normalizedArm = normalizeArmAlias(explicitArm);
     validateArms(new Set([normalizedArm]));
     if (!arms.has(normalizedArm)) {
-      throw new Error(
-        `--compare-arm must be included in --arms: ${normalizedArm}`,
-      );
+      throw new Error(`--compare-arm must be included in --arms: ${normalizedArm}`);
     }
     if (normalizedArm === "baseline") {
       throw new Error("--compare-arm must be an explore arm");
@@ -542,9 +500,7 @@ function resolvePrimaryCompareArm(arms, explicitArm) {
     ? "explore-v2"
     : [...arms].find((arm) => isExploreArm(arm));
   if (!exploreArm) {
-    throw new Error(
-      "--arms must include at least one explore arm when --compare-arm is omitted",
-    );
+    throw new Error("--arms must include at least one explore arm when --compare-arm is omitted");
   }
   return exploreArm;
 }
@@ -590,9 +546,7 @@ function readCodexAuth(authPath) {
   const accessToken = auth.tokens?.access_token;
   const accountId =
     auth.tokens?.account_id ??
-    readJwtPayload(accessToken)?.[
-      "https://api.openai.com/auth.chatgpt_account_id"
-    ];
+    readJwtPayload(accessToken)?.["https://api.openai.com/auth.chatgpt_account_id"];
 
   if (!accessToken || typeof accessToken !== "string") {
     throw new Error(`Codex auth file ${resolvedPath} is missing access_token`);
@@ -682,13 +636,7 @@ async function startCodexResponsesProxy({ accessToken, accountId, model }) {
   };
 }
 
-async function handleResponsesProxyRequest({
-  request,
-  response,
-  accessToken,
-  accountId,
-  model,
-}) {
+async function handleResponsesProxyRequest({ request, response, accessToken, accountId, model }) {
   const incoming = JSON.parse(await readRequestBody(request));
   const outgoing = normalizeResponsesPayload(incoming, model);
   const upstream = await fetchCodexResponses({
@@ -812,9 +760,7 @@ function extractInstructions(input) {
         .join("\n\n")
         .trim()
     : "";
-  return (
-    extracted || "You are OctopusStudio's local agent running a benchmark task."
-  );
+  return extracted || "You are OctopusStudio's local agent running a benchmark task.";
 }
 
 function extractContentText(content) {
@@ -840,9 +786,7 @@ function extractInstructionsFromMessages(messages) {
         .join("\n\n")
         .trim()
     : "";
-  return (
-    extracted || "You are OctopusStudio's local agent running a benchmark task."
-  );
+  return extracted || "You are OctopusStudio's local agent running a benchmark task.";
 }
 
 function chatMessagesToResponsesInput(messages) {
@@ -1026,11 +970,8 @@ function handleResponsesEventAsChatChunk({
   if (event.event === "response.function_call_arguments.delta") {
     ensureRole();
     const index =
-      findToolCallIndex(toolCallIndexes, [
-        parsed.output_index,
-        parsed.item_id,
-        parsed.call_id,
-      ]) ?? 0;
+      findToolCallIndex(toolCallIndexes, [parsed.output_index, parsed.item_id, parsed.call_id]) ??
+      0;
     writeChunk({
       tool_calls: [
         {
@@ -1067,9 +1008,7 @@ function findToolCallIndex(toolCallIndexes, keys) {
 }
 
 function responsesUsageToChatUsage(usage) {
-  const promptTokens = numberOrZero(
-    usage.input_tokens ?? usage.inputTokens ?? usage.prompt_tokens,
-  );
+  const promptTokens = numberOrZero(usage.input_tokens ?? usage.inputTokens ?? usage.prompt_tokens);
   const completionTokens = numberOrZero(
     usage.output_tokens ?? usage.outputTokens ?? usage.completion_tokens,
   );
@@ -1082,8 +1021,7 @@ function responsesUsageToChatUsage(usage) {
     prompt_tokens: promptTokens,
     completion_tokens: completionTokens,
     total_tokens:
-      numberOrZero(usage.total_tokens ?? usage.totalTokens) ||
-      promptTokens + completionTokens,
+      numberOrZero(usage.total_tokens ?? usage.totalTokens) || promptTokens + completionTokens,
     prompt_tokens_details: {
       cached_tokens: cachedTokens,
     },
@@ -1134,13 +1072,9 @@ function readRequestBody(request) {
 function fetchRepo(repo) {
   const repoPath = path.join(REPOS_DIR, repo.name);
   if (!fs.existsSync(repoPath)) {
-    execFileSync(
-      "git",
-      ["clone", "--filter=blob:none", repo.gitUrl, repoPath],
-      {
-        stdio: "inherit",
-      },
-    );
+    execFileSync("git", ["clone", "--filter=blob:none", repo.gitUrl, repoPath], {
+      stdio: "inherit",
+    });
   } else {
     execFileSync("git", ["fetch", "--depth=1", "origin"], {
       cwd: repoPath,
@@ -1174,8 +1108,7 @@ function resolveInstallCommand(repoPath) {
   const packageJsonPath = path.join(repoPath, "package.json");
   let packageManager = "";
   if (fs.existsSync(packageJsonPath)) {
-    packageManager =
-      JSON.parse(fs.readFileSync(packageJsonPath, "utf8")).packageManager ?? "";
+    packageManager = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")).packageManager ?? "";
   }
 
   if (packageManager.startsWith("yarn@")) {
@@ -1212,15 +1145,11 @@ async function runTrial(trial, benchmarkAuth) {
   const importSubPath = selectedImportSubPath(trial);
   const repoPath = path.join(REPOS_DIR, trial.repo.name, importSubPath);
   if (!fs.existsSync(repoPath)) {
-    throw new Error(
-      `Missing repo path ${repoPath}. Run with --fetch-repos first.`,
-    );
+    throw new Error(`Missing repo path ${repoPath}. Run with --fetch-repos first.`);
   }
 
   const benchmarkRunId = `${runId}-${trial.repo.name}-${trial.task.id}-${trial.arm}-${trial.repeat}`;
-  const userDataDir = fs.mkdtempSync(
-    path.join(os.tmpdir(), "octopusStudio-code-bench-"),
-  );
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "octopusStudio-code-bench-"));
   const xdgConfigHome = path.join(userDataDir, "xdg-config");
   fs.mkdirSync(xdgConfigHome, { recursive: true });
   const latestBuild = eph.findLatestBuild();
@@ -1245,11 +1174,7 @@ async function runTrial(trial, benchmarkAuth) {
     logTrial(trial, "launching packaged OctopusStudio");
     electronApp = await withTimeout(
       electron.launch({
-        args: [
-          appInfo.main,
-          "--enable-logging",
-          `--user-data-dir=${userDataDir}`,
-        ],
+        args: [appInfo.main, "--enable-logging", `--user-data-dir=${userDataDir}`],
         executablePath: appInfo.executable,
         env,
       }),
@@ -1276,13 +1201,7 @@ async function runTrial(trial, benchmarkAuth) {
     contextPaths = selectedContextPaths(trial, repoPath);
     const importResult = await withTimeout(
       page.evaluate(
-        async ({
-          repoPath,
-          repoName,
-          apiKey,
-          selectedModel,
-          enableCodeExplorer,
-        }) => {
+        async ({ repoPath, repoName, apiKey, selectedModel, enableCodeExplorer }) => {
           await window.electron.ipcRenderer.invoke("set-user-settings", {
             enableOctopusStudioPro: true,
             enableCodeExplorer,
@@ -1462,11 +1381,7 @@ function selectedAppSubPath(trial) {
 }
 
 function selectedImportSubPath(trial) {
-  return (
-    trial.task.importSubPath ??
-    trial.repo.importSubPath ??
-    selectedAppSubPath(trial)
-  );
+  return trial.task.importSubPath ?? trial.repo.importSubPath ?? selectedAppSubPath(trial);
 }
 
 function selectedContextPaths(trial, repoPath) {
@@ -1497,8 +1412,7 @@ function discoverRelatedWorkspaceContextPaths(repoPath, appSubPath) {
     appSubPath,
     packageDirs,
   });
-  const selected =
-    referenced.length > 0 ? referenced : sharedWorkspaceDirs(packageDirs);
+  const selected = referenced.length > 0 ? referenced : sharedWorkspaceDirs(packageDirs);
   return selected
     .filter((dir) => dir !== "." && dir !== appSubPath)
     .slice(0, 8)
@@ -1521,10 +1435,7 @@ function referencedWorkspacePackageDirs({ repoPath, appSubPath, packageDirs }) {
   for (const { value, baseSubPath } of pathEntries) {
     const packageFromScopedName = scopedPackageName(value);
     if (packageFromScopedName && packageByName.has(packageFromScopedName)) {
-      addContextPackageDir(
-        referenced,
-        packageByName.get(packageFromScopedName),
-      );
+      addContextPackageDir(referenced, packageByName.get(packageFromScopedName));
     }
 
     const resolved = resolveTsconfigTarget(repoPath, baseSubPath, value);
@@ -1569,21 +1480,14 @@ function readTsconfigPathEntries(repoPath, configPath, seen) {
   }
 
   const entries = [];
-  const extendsPath = resolveTsconfigExtendsPath(
-    path.dirname(resolvedConfigPath),
-    config.extends,
-  );
+  const extendsPath = resolveTsconfigExtendsPath(path.dirname(resolvedConfigPath), config.extends);
   if (extendsPath) {
     entries.push(...readTsconfigPathEntries(repoPath, extendsPath, seen));
   }
 
   const baseSubPath =
-    normalizeRelativePath(
-      path.relative(repoPath, path.dirname(resolvedConfigPath)),
-    ) || ".";
-  for (const [alias, targets] of Object.entries(
-    config.compilerOptions?.paths ?? {},
-  )) {
+    normalizeRelativePath(path.relative(repoPath, path.dirname(resolvedConfigPath))) || ".";
+  for (const [alias, targets] of Object.entries(config.compilerOptions?.paths ?? {})) {
     entries.push({ value: alias, baseSubPath });
     if (Array.isArray(targets)) {
       for (const target of targets) {
@@ -1705,10 +1609,7 @@ function expandWorkspacePattern(repoPath, pattern) {
     .readdirSync(parentPath, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
     .flatMap((entry) =>
-      packageDirIfExists(
-        repoPath,
-        normalizeRelativePath(path.join(parent, entry.name)),
-      ),
+      packageDirIfExists(repoPath, normalizeRelativePath(path.join(parent, entry.name))),
     );
 }
 
@@ -1729,9 +1630,7 @@ function sharedWorkspaceDirs(packageDirs) {
 }
 
 function isImplementationPackageDir(dir) {
-  return !/(?:^|\/)(?:docs?|examples?|storybook|playground|e2e|tests?|testing)(?:$|\/)/i.test(
-    dir,
-  );
+  return !/(?:^|\/)(?:docs?|examples?|storybook|playground|e2e|tests?|testing)(?:$|\/)/i.test(dir);
 }
 
 function readPackageName(packageDir) {
@@ -1892,10 +1791,7 @@ function writeSummary(runId, resultsPath) {
     answerComparisons: summarizeAnswerComparisons(rows, primaryCompareArm),
   };
   const outDir = path.dirname(resultsPath);
-  fs.writeFileSync(
-    path.join(outDir, "summary.json"),
-    JSON.stringify(summary, null, 2),
-  );
+  fs.writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(summary, null, 2));
   fs.writeFileSync(
     path.join(outDir, "summary.md"),
     [
@@ -1973,9 +1869,7 @@ function writeSummary(runId, resultsPath) {
         ? [
             "Reasons:",
             "",
-            ...summary.exploreV2Acceptance.reasons.map(
-              (reason) => `- ${reason}`,
-            ),
+            ...summary.exploreV2Acceptance.reasons.map((reason) => `- ${reason}`),
             "",
           ]
         : []),
@@ -1994,8 +1888,7 @@ function writeSummary(runId, resultsPath) {
       "| Arm | Disabled reasons |",
       "| --- | --- |",
       ...Object.entries(summary.byArm).map(
-        ([arm, item]) =>
-          `| ${arm} | ${formatReasons(item.exploreCodeDisabledReasons)} |`,
+        ([arm, item]) => `| ${arm} | ${formatReasons(item.exploreCodeDisabledReasons)} |`,
       ),
       "",
       `## Explore Task Cohorts (${summary.primaryCompareArm} vs baseline)`,
@@ -2050,9 +1943,7 @@ function getPackageInfo() {
 function assertPackageFresh(packageInfo) {
   const source = getSourceFreshness();
   if (!packageInfo.path || !fs.existsSync(packageInfo.path)) {
-    throw new Error(
-      "Packaged Electron app is missing. Run `npm run build` before benchmarking.",
-    );
+    throw new Error("Packaged Electron app is missing. Run `npm run build` before benchmarking.");
   }
   if (source.newestMtimeMs > packageInfo.newestMtimeMs) {
     throw new Error(
@@ -2072,16 +1963,10 @@ function buildRunMetadata(packageInfo) {
     gitSha: gitOutput(["rev-parse", "HEAD"]) ?? "unknown",
     gitDirty: (gitOutput(["status", "--porcelain"]) ?? "").trim().length > 0,
     packagePath: packageInfo ? path.relative(ROOT, packageInfo.path) : null,
-    packageNewestMtime: packageInfo
-      ? new Date(packageInfo.newestMtimeMs).toISOString()
-      : null,
+    packageNewestMtime: packageInfo ? new Date(packageInfo.newestMtimeMs).toISOString() : null,
     sourceNewestMtime: new Date(source.newestMtimeMs).toISOString(),
     sourceNewestPath: source.path,
-    command: [
-      "node",
-      "benchmarks/code-explorer/run.mjs",
-      ...process.argv.slice(2),
-    ].join(" "),
+    command: ["node", "benchmarks/code-explorer/run.mjs", ...process.argv.slice(2)].join(" "),
     node: process.version,
     platform: `${process.platform}/${process.arch}`,
     model: values.model,
@@ -2171,38 +2056,28 @@ function summarizeBy(rows, key) {
     result[group].rubricPassCount =
       (result[group].rubricPassCount ?? 0) + (row.passedRubric ? 1 : 0);
     result[group].expectedTermCoverageSum =
-      (result[group].expectedTermCoverageSum ?? 0) +
-      (row.expectedTermCoverage ?? 0);
+      (result[group].expectedTermCoverageSum ?? 0) + (row.expectedTermCoverage ?? 0);
     result[group].expectedTermCoverageCount =
-      (result[group].expectedTermCoverageCount ?? 0) +
-      (row.status === "ok" ? 1 : 0);
+      (result[group].expectedTermCoverageCount ?? 0) + (row.status === "ok" ? 1 : 0);
     result[group].fileReferenceCount =
       (result[group].fileReferenceCount ?? 0) + (row.fileReferenceCount ?? 0);
     result[group].lineRangeReferenceCount =
-      (result[group].lineRangeReferenceCount ?? 0) +
-      (row.lineRangeReferenceCount ?? 0);
-    result[group].finalTextChars =
-      (result[group].finalTextChars ?? 0) + (row.finalTextChars ?? 0);
-    result[group].qualityScore =
-      (result[group].qualityScore ?? 0) + (row.qualityScore ?? 0);
-    result[group].inputTokens =
-      (result[group].inputTokens ?? 0) + (row.inputTokens ?? 0);
+      (result[group].lineRangeReferenceCount ?? 0) + (row.lineRangeReferenceCount ?? 0);
+    result[group].finalTextChars = (result[group].finalTextChars ?? 0) + (row.finalTextChars ?? 0);
+    result[group].qualityScore = (result[group].qualityScore ?? 0) + (row.qualityScore ?? 0);
+    result[group].inputTokens = (result[group].inputTokens ?? 0) + (row.inputTokens ?? 0);
     result[group].cachedInputTokens =
       (result[group].cachedInputTokens ?? 0) + (row.cachedInputTokens ?? 0);
     result[group].uncachedInputTokens =
       (result[group].uncachedInputTokens ?? 0) + (row.uncachedInputTokens ?? 0);
-    result[group].outputTokens =
-      (result[group].outputTokens ?? 0) + (row.outputTokens ?? 0);
-    result[group].totalTokens =
-      (result[group].totalTokens ?? 0) + (row.totalTokens ?? 0);
+    result[group].outputTokens = (result[group].outputTokens ?? 0) + (row.outputTokens ?? 0);
+    result[group].totalTokens = (result[group].totalTokens ?? 0) + (row.totalTokens ?? 0);
     result[group].mainInputTokens =
       (result[group].mainInputTokens ?? 0) + (row.mainInputTokens ?? 0);
     result[group].mainCachedInputTokens =
-      (result[group].mainCachedInputTokens ?? 0) +
-      (row.mainCachedInputTokens ?? 0);
+      (result[group].mainCachedInputTokens ?? 0) + (row.mainCachedInputTokens ?? 0);
     result[group].mainUncachedInputTokens =
-      (result[group].mainUncachedInputTokens ?? 0) +
-      (row.mainUncachedInputTokens ?? 0);
+      (result[group].mainUncachedInputTokens ?? 0) + (row.mainUncachedInputTokens ?? 0);
     result[group].mainOutputTokens =
       (result[group].mainOutputTokens ?? 0) + (row.mainOutputTokens ?? 0);
     result[group].mainTotalTokens =
@@ -2210,58 +2085,47 @@ function summarizeBy(rows, key) {
     result[group].subagentInputTokens =
       (result[group].subagentInputTokens ?? 0) + (row.subagentInputTokens ?? 0);
     result[group].subagentCachedInputTokens =
-      (result[group].subagentCachedInputTokens ?? 0) +
-      (row.subagentCachedInputTokens ?? 0);
+      (result[group].subagentCachedInputTokens ?? 0) + (row.subagentCachedInputTokens ?? 0);
     result[group].subagentUncachedInputTokens =
-      (result[group].subagentUncachedInputTokens ?? 0) +
-      (row.subagentUncachedInputTokens ?? 0);
+      (result[group].subagentUncachedInputTokens ?? 0) + (row.subagentUncachedInputTokens ?? 0);
     result[group].subagentOutputTokens =
-      (result[group].subagentOutputTokens ?? 0) +
-      (row.subagentOutputTokens ?? 0);
+      (result[group].subagentOutputTokens ?? 0) + (row.subagentOutputTokens ?? 0);
     result[group].subagentTotalTokens =
       (result[group].subagentTotalTokens ?? 0) + (row.subagentTotalTokens ?? 0);
     result[group].subagentReportChars =
       (result[group].subagentReportChars ?? 0) + (row.subagentReportChars ?? 0);
     result[group].subagentRawObservationChars =
-      (result[group].subagentRawObservationChars ?? 0) +
-      (row.subagentRawObservationChars ?? 0);
-    result[group].mainCostUsd =
-      (result[group].mainCostUsd ?? 0) + (row.mainCostUsd ?? 0);
+      (result[group].subagentRawObservationChars ?? 0) + (row.subagentRawObservationChars ?? 0);
+    result[group].mainCostUsd = (result[group].mainCostUsd ?? 0) + (row.mainCostUsd ?? 0);
     result[group].subagentCostUsd =
       (result[group].subagentCostUsd ?? 0) + (row.subagentCostUsd ?? 0);
     result[group].costUsd = (result[group].costUsd ?? 0) + (row.costUsd ?? 0);
     result[group].exploreCodeAvailable =
-      (result[group].exploreCodeAvailable ?? 0) +
-      (row.exploreCodeAvailable ? 1 : 0);
+      (result[group].exploreCodeAvailable ?? 0) + (row.exploreCodeAvailable ? 1 : 0);
     result[group].exploreCodeUsed =
       (result[group].exploreCodeUsed ?? 0) + (row.exploreCodeUsed ? 1 : 0);
     result[group].exploreCodeDisabledReasons = mergeReasonCounts(
       result[group].exploreCodeDisabledReasons,
       row.exploreCodeDisabledReasons,
     );
-    result[group].toolCalls =
-      (result[group].toolCalls ?? 0) + (row.toolCallCount ?? 0);
-    result[group].mainToolCalls =
-      (result[group].mainToolCalls ?? 0) + (row.mainToolCallCount ?? 0);
+    result[group].toolCalls = (result[group].toolCalls ?? 0) + (row.toolCallCount ?? 0);
+    result[group].mainToolCalls = (result[group].mainToolCalls ?? 0) + (row.mainToolCallCount ?? 0);
     result[group].subagentToolCalls =
       (result[group].subagentToolCalls ?? 0) + (row.subagentToolCallCount ?? 0);
     result[group].postReportMainBroadSearchCalls =
       (result[group].postReportMainBroadSearchCalls ?? 0) +
       (row.postReportMainBroadSearchCalls ?? 0);
     result[group].postReportMainReadFileCalls =
-      (result[group].postReportMainReadFileCalls ?? 0) +
-      (row.postReportMainReadFileCalls ?? 0);
+      (result[group].postReportMainReadFileCalls ?? 0) + (row.postReportMainReadFileCalls ?? 0);
     result[group].postReportMainReadFileOutsideTargets =
       (result[group].postReportMainReadFileOutsideTargets ?? 0) +
       (row.postReportMainReadFileOutsideTargets ?? 0);
     result[group].usableExploreReports =
-      (result[group].usableExploreReports ?? 0) +
-      (row.usableExploreReports ?? 0);
+      (result[group].usableExploreReports ?? 0) + (row.usableExploreReports ?? 0);
     result[group].factUnverifiedCount =
       (result[group].factUnverifiedCount ?? 0) + (row.factUnverifiedCount ?? 0);
     result[group].validationContinuationCount =
-      (result[group].validationContinuationCount ?? 0) +
-      (row.validationContinuationCount ?? 0);
+      (result[group].validationContinuationCount ?? 0) + (row.validationContinuationCount ?? 0);
   }
   return result;
 }
@@ -2318,74 +2182,53 @@ function readBenchmarkMetrics(trialRunId) {
     .split("\n")
     .filter(Boolean)
     .map((line) => JSON.parse(line));
-  const stepEvents = events.filter(
-    (event) => event.type === "stream_step_finish",
-  );
+  const stepEvents = events.filter((event) => event.type === "stream_step_finish");
   const toolEvents = events.filter((event) => event.type === "tool_call_end");
   const toolCallsByName = {};
   const mainToolCallsByName = {};
   const subagentToolCallsByName = {};
   const availabilityEvents = events.filter(
-    (event) =>
-      event.type === "tool_availability" && event.toolName === "explore_code",
+    (event) => event.type === "tool_availability" && event.toolName === "explore_code",
   );
 
   for (const event of toolEvents) {
-    toolCallsByName[event.toolName] =
-      (toolCallsByName[event.toolName] ?? 0) + 1;
+    toolCallsByName[event.toolName] = (toolCallsByName[event.toolName] ?? 0) + 1;
     const phaseToolCallsByName =
       getEventPhase(event) === "explore_code_subagent"
         ? subagentToolCallsByName
         : mainToolCallsByName;
-    phaseToolCallsByName[event.toolName] =
-      (phaseToolCallsByName[event.toolName] ?? 0) + 1;
+    phaseToolCallsByName[event.toolName] = (phaseToolCallsByName[event.toolName] ?? 0) + 1;
   }
 
-  const mainStepEvents = stepEvents.filter(
-    (event) => getEventPhase(event) === "main",
-  );
+  const mainStepEvents = stepEvents.filter((event) => getEventPhase(event) === "main");
   const subagentStepEvents = stepEvents.filter(
     (event) => getEventPhase(event) === "explore_code_subagent",
   );
   const mainUsage = aggregateUsage(
     mainStepEvents.length > 0
       ? mainStepEvents
-      : events.filter(
-          (event) =>
-            event.type === "stream_finish" && getEventPhase(event) === "main",
-        ),
+      : events.filter((event) => event.type === "stream_finish" && getEventPhase(event) === "main"),
   );
   const subagentUsage = aggregateUsage(
     subagentStepEvents.length > 0
       ? subagentStepEvents
       : events.filter(
           (event) =>
-            event.type === "stream_finish" &&
-            getEventPhase(event) === "explore_code_subagent",
+            event.type === "stream_finish" && getEventPhase(event) === "explore_code_subagent",
         ),
   );
   const allUsage = addUsage(mainUsage, subagentUsage);
   const mainCostUsd = usageCost(mainUsage, MODEL_PRICING.primary);
   const subagentCostUsd = usageCost(subagentUsage, MODEL_PRICING.value);
-  const mainToolEvents = toolEvents.filter(
-    (event) => getEventPhase(event) === "main",
-  );
+  const mainToolEvents = toolEvents.filter((event) => getEventPhase(event) === "main");
   const subagentToolEvents = toolEvents.filter(
     (event) => getEventPhase(event) === "explore_code_subagent",
   );
   const subagentFinishEvents = events.filter(
-    (event) =>
-      event.type === "subagent_finish" &&
-      getEventPhase(event) === "explore_code_subagent",
+    (event) => event.type === "subagent_finish" && getEventPhase(event) === "explore_code_subagent",
   );
-  const subagentReportChars = sumEventField(
-    subagentFinishEvents,
-    "reportChars",
-  );
-  const subagentRawObservationChars = sumEventField(
-    subagentFinishEvents,
-    "rawObservationChars",
-  );
+  const subagentReportChars = sumEventField(subagentFinishEvents, "reportChars");
+  const subagentRawObservationChars = sumEventField(subagentFinishEvents, "rawObservationChars");
   const usableExploreReports = subagentFinishEvents.filter((event) =>
     isUsableExploreReport(event),
   ).length;
@@ -2404,28 +2247,20 @@ function readBenchmarkMetrics(trialRunId) {
   );
   const reportedReadTargets =
     firstUsableExploreMainEndIndex >= 0
-      ? extractExploreReportReadTargets(
-          events[firstUsableExploreMainEndIndex].resultPreview,
-        )
+      ? extractExploreReportReadTargets(events[firstUsableExploreMainEndIndex].resultPreview)
       : [];
   const reportedSearchTargets =
     firstUsableExploreMainEndIndex >= 0
-      ? extractExploreReportSearchTargets(
-          events[firstUsableExploreMainEndIndex].resultPreview,
-        )
+      ? extractExploreReportSearchTargets(events[firstUsableExploreMainEndIndex].resultPreview)
       : [];
   const postReportMainToolEvents =
     firstExploreMainEndIndex >= 0
       ? events
           .slice(firstExploreMainEndIndex + 1)
-          .filter(
-            (event) =>
-              event.type === "tool_call_start" &&
-              getEventPhase(event) === "main",
-          )
+          .filter((event) => event.type === "tool_call_start" && getEventPhase(event) === "main")
       : [];
-  const postReportMainBroadSearchCalls = postReportMainToolEvents.filter(
-    (event) => isBroadPostReportSearchEvent(event, reportedSearchTargets),
+  const postReportMainBroadSearchCalls = postReportMainToolEvents.filter((event) =>
+    isBroadPostReportSearchEvent(event, reportedSearchTargets),
   ).length;
   const postReportReadFileEvents = postReportMainToolEvents.filter(
     (event) => event.toolName === "read_file",
@@ -2433,16 +2268,12 @@ function readBenchmarkMetrics(trialRunId) {
   const postReportMainReadFileOutsideTargets = postReportReadFileEvents.filter(
     (event) => !isReadFileEventWithinTargets(event, reportedReadTargets),
   ).length;
-  const factUnverifiedCount = sumEventField(
-    subagentFinishEvents,
-    "factUnverifiedCount",
-  );
+  const factUnverifiedCount = sumEventField(subagentFinishEvents, "factUnverifiedCount");
   const validationContinuationCount = events.filter(
     (event) =>
       getEventPhase(event) === "explore_code_subagent" &&
       (event.type === "validation_continuation_finish" ||
-        (event.type === "submit_report_result" &&
-          event.continuationRequested === true)),
+        (event.type === "submit_report_result" && event.continuationRequested === true)),
   ).length;
   return {
     totalTokens: allUsage.totalTokens,
@@ -2478,9 +2309,7 @@ function readBenchmarkMetrics(trialRunId) {
     subagentReportChars,
     subagentRawObservationChars,
     subagentCompressionRatio:
-      subagentRawObservationChars > 0
-        ? subagentReportChars / subagentRawObservationChars
-        : 0,
+      subagentRawObservationChars > 0 ? subagentReportChars / subagentRawObservationChars : 0,
     postReportMainBroadSearchCalls,
     postReportMainReadFileCalls: postReportReadFileEvents.length,
     postReportMainReadFileOutsideTargets,
@@ -2524,9 +2353,7 @@ function extractRenderedExploreReportReadTargets(report) {
   const flowTargets = extractRenderedExploreReportFlowTargets(report);
   const targets = [];
   const lines = report.split(/\r?\n/);
-  const readTargetsIndex = lines.findIndex(
-    (line) => line.trim() === "Read targets:",
-  );
+  const readTargetsIndex = lines.findIndex((line) => line.trim() === "Read targets:");
   if (readTargetsIndex === -1) {
     return targets;
   }
@@ -2576,9 +2403,7 @@ function extractExploreReportSearchTargets(report) {
   }
   const targets = [];
   const lines = report.split(/\r?\n/);
-  const searchTargetsIndex = lines.findIndex(
-    (line) => line.trim() === "Search targets:",
-  );
+  const searchTargetsIndex = lines.findIndex((line) => line.trim() === "Search targets:");
   if (searchTargetsIndex === -1) {
     return targets;
   }
@@ -2594,12 +2419,7 @@ function extractExploreReportSearchTargets(report) {
       targets.push({
         query,
         include,
-        literal:
-          literalMatch?.[1] === "true"
-            ? true
-            : literalMatch?.[1] === "false"
-              ? false
-              : null,
+        literal: literalMatch?.[1] === "true" ? true : literalMatch?.[1] === "false" ? false : null,
       });
     }
   }
@@ -2628,9 +2448,7 @@ function extractExploreReportMetadata(report) {
           ? parsed.confidence.toLowerCase()
           : parseReportHeaderValue(report, "Confidence"),
       readTargets: Array.isArray(parsed.readTargets)
-        ? parsed.readTargets.filter(
-            (target) => target && typeof target === "object",
-          )
+        ? parsed.readTargets.filter((target) => target && typeof target === "object")
         : [],
     };
   } catch {
@@ -2656,9 +2474,7 @@ function isReadFileEventWithinTargets(event, targets) {
     return false;
   }
   const start =
-    typeof args.start_line_one_indexed === "number"
-      ? args.start_line_one_indexed
-      : null;
+    typeof args.start_line_one_indexed === "number" ? args.start_line_one_indexed : null;
   const end =
     typeof args.end_line_one_indexed_inclusive === "number"
       ? args.end_line_one_indexed_inclusive
@@ -2677,9 +2493,7 @@ function isReadFileEventWithinTargets(event, targets) {
     if (!target.range) {
       return true;
     }
-    return (
-      readRange.start >= target.range.start && readRange.end <= target.range.end
-    );
+    return readRange.start >= target.range.start && readRange.end <= target.range.end;
   });
 }
 
@@ -2689,8 +2503,7 @@ function isSearchEventWithinTargets(event, targets) {
   }
   const args = parsePreviewJson(event.argsPreview);
   const query = typeof args?.query === "string" ? args.query : null;
-  const include =
-    typeof args?.include_pattern === "string" ? args.include_pattern : null;
+  const include = typeof args?.include_pattern === "string" ? args.include_pattern : null;
   const literal = typeof args?.literal === "boolean" ? args.literal : null;
   if (!query || !include) {
     return false;
@@ -2711,19 +2524,14 @@ function isBroadPostReportSearchEvent(event, targets) {
     return false;
   }
   const args = parsePreviewJson(event.argsPreview);
-  const directory =
-    typeof args?.directory === "string"
-      ? normalizeGlobPrefix(args.directory)
-      : "";
+  const directory = typeof args?.directory === "string" ? normalizeGlobPrefix(args.directory) : "";
   if (!args?.recursive) {
     return false;
   }
   if (!directory) {
     return true;
   }
-  return !targets.some((target) =>
-    normalizeGlobPrefix(target.include).startsWith(directory),
-  );
+  return !targets.some((target) => normalizeGlobPrefix(target.include).startsWith(directory));
 }
 
 function normalizeGlobPrefix(value) {
@@ -2765,10 +2573,7 @@ function parsePreviewJson(value) {
 }
 
 function sumEventField(events, field) {
-  return events.reduce(
-    (total, event) => total + (Number(event[field]) || 0),
-    0,
-  );
+  return events.reduce((total, event) => total + (Number(event[field]) || 0), 0);
 }
 
 function countAvailabilityReasons(events) {
@@ -2853,9 +2658,7 @@ function cachedInputTokenCount(usage) {
 }
 
 function summarizeArmDeltas(rows) {
-  const arms = [...new Set(rows.map((row) => row.arm))]
-    .filter((arm) => arm !== "baseline")
-    .sort();
+  const arms = [...new Set(rows.map((row) => row.arm))].filter((arm) => arm !== "baseline").sort();
   return arms.map((arm) => {
     const pairs = [];
     for (const row of rows) {
@@ -2884,14 +2687,8 @@ function summarizeArmDeltas(rows) {
       primaryToolCallDelta: sumPairs(pairs, "mainToolCallCount"),
       valueToolCallDelta: sumPairs(pairs, "subagentToolCallCount"),
       toolCallDelta: sumPairs(pairs, "toolCallCount"),
-      postReportBroadSearchDelta: sumPairs(
-        pairs,
-        "postReportMainBroadSearchCalls",
-      ),
-      postReportOffTargetReadDelta: sumPairs(
-        pairs,
-        "postReportMainReadFileOutsideTargets",
-      ),
+      postReportBroadSearchDelta: sumPairs(pairs, "postReportMainBroadSearchCalls"),
+      postReportOffTargetReadDelta: sumPairs(pairs, "postReportMainReadFileOutsideTargets"),
       providerStepDelta: sumPairs(pairs, "providerStepCount"),
       elapsedDeltaMs: sumPairs(pairs, "elapsedMs"),
     };
@@ -2910,12 +2707,7 @@ function summarizeTaskArmDeltas(rows) {
     const [repo, task, arm] = key.split("\0");
     const pairs = [];
     for (const row of rows) {
-      if (
-        row.repo !== repo ||
-        row.task !== task ||
-        row.arm !== arm ||
-        row.status !== "ok"
-      ) {
+      if (row.repo !== repo || row.task !== task || row.arm !== arm || row.status !== "ok") {
         continue;
       }
       const baseline = rows.find(
@@ -2943,14 +2735,8 @@ function summarizeTaskArmDeltas(rows) {
       primaryToolCallDelta: sumPairs(pairs, "mainToolCallCount"),
       valueToolCallDelta: sumPairs(pairs, "subagentToolCallCount"),
       toolCallDelta: sumPairs(pairs, "toolCallCount"),
-      postReportBroadSearchDelta: sumPairs(
-        pairs,
-        "postReportMainBroadSearchCalls",
-      ),
-      postReportOffTargetReadDelta: sumPairs(
-        pairs,
-        "postReportMainReadFileOutsideTargets",
-      ),
+      postReportBroadSearchDelta: sumPairs(pairs, "postReportMainBroadSearchCalls"),
+      postReportOffTargetReadDelta: sumPairs(pairs, "postReportMainReadFileOutsideTargets"),
       providerStepDelta: sumPairs(pairs, "providerStepCount"),
       elapsedDeltaMs: sumPairs(pairs, "elapsedMs"),
     };
@@ -2986,14 +2772,8 @@ function summarizeArmPairDelta(rows, baselineArm, compareArm) {
     primaryToolCallDelta: sumPairs(pairs, "mainToolCallCount"),
     valueToolCallDelta: sumPairs(pairs, "subagentToolCallCount"),
     toolCallDelta: sumPairs(pairs, "toolCallCount"),
-    postReportBroadSearchDelta: sumPairs(
-      pairs,
-      "postReportMainBroadSearchCalls",
-    ),
-    postReportOffTargetReadDelta: sumPairs(
-      pairs,
-      "postReportMainReadFileOutsideTargets",
-    ),
+    postReportBroadSearchDelta: sumPairs(pairs, "postReportMainBroadSearchCalls"),
+    postReportOffTargetReadDelta: sumPairs(pairs, "postReportMainReadFileOutsideTargets"),
     postReportBroadExplorationDelta:
       sumPairs(pairs, "postReportMainBroadSearchCalls") +
       sumPairs(pairs, "postReportMainReadFileOutsideTargets"),
@@ -3033,27 +2813,18 @@ function evaluateExploreV2Acceptance(rows) {
   const minPairedRepeatsPerTask =
     pairedTaskCount === 0
       ? 0
-      : Math.min(
-          ...[...pairedRepeatsByTask.values()].map((repeats) => repeats.size),
-        );
+      : Math.min(...[...pairedRepeatsByTask.values()].map((repeats) => repeats.size));
   const reasons = [];
   if (pairedTaskCount < 8) {
     reasons.push(`only ${pairedTaskCount} paired tasks; need at least 8`);
   }
   if (minPairedRepeatsPerTask < 3) {
-    reasons.push(
-      `minimum paired repeats per task is ${minPairedRepeatsPerTask}; need at least 3`,
-    );
+    reasons.push(`minimum paired repeats per task is ${minPairedRepeatsPerTask}; need at least 3`);
   }
   const invalidV1SourceArms = [...v1SourceArms]
     .filter(
       (arm) =>
-        ![
-          "explore",
-          "explore-candidate",
-          "explore-candidate-followup",
-          "explore-v1",
-        ].includes(arm),
+        !["explore", "explore-candidate", "explore-candidate-followup", "explore-v1"].includes(arm),
     )
     .sort();
   if (invalidV1SourceArms.length > 0) {
@@ -3062,9 +2833,7 @@ function evaluateExploreV2Acceptance(rows) {
     );
   }
   if (delta.qualityScoreDelta < 0) {
-    reasons.push(
-      `quality delta is ${formatSigned(delta.qualityScoreDelta)}; V2 must be >= V1`,
-    );
+    reasons.push(`quality delta is ${formatSigned(delta.qualityScoreDelta)}; V2 must be >= V1`);
   }
   if (delta.primaryTokenDelta <= 0) {
     reasons.push(
@@ -3093,8 +2862,7 @@ function evaluateExploreV2Acceptance(rows) {
 
 function sumPairs(pairs, field) {
   return pairs.reduce(
-    (total, pair) =>
-      total + ((pair.baseline[field] ?? 0) - (pair.compare[field] ?? 0)),
+    (total, pair) => total + ((pair.baseline[field] ?? 0) - (pair.compare[field] ?? 0)),
     0,
   );
 }
@@ -3103,8 +2871,7 @@ function averagePairDelta(pairs, field) {
   if (pairs.length === 0) return 0;
   return (
     pairs.reduce(
-      (total, pair) =>
-        total + ((pair.compare[field] ?? 0) - (pair.baseline[field] ?? 0)),
+      (total, pair) => total + ((pair.compare[field] ?? 0) - (pair.baseline[field] ?? 0)),
       0,
     ) / pairs.length
   );
@@ -3114,30 +2881,22 @@ function summarizeRepoDeltas(rows, compareArm) {
   const repos = [...new Set(rows.map((row) => row.repo))].sort();
   return repos.map((repo) => {
     const baseline = rows.filter(
-      (row) =>
-        row.repo === repo && row.arm === "baseline" && row.status === "ok",
+      (row) => row.repo === repo && row.arm === "baseline" && row.status === "ok",
     );
     const explore = rows.filter(
-      (row) =>
-        row.repo === repo && row.arm === compareArm && row.status === "ok",
+      (row) => row.repo === repo && row.arm === compareArm && row.status === "ok",
     );
     return {
       repo,
       primaryTokenDelta:
-        sum(baseline, "mainUncachedInputTokens") -
-        sum(explore, "mainUncachedInputTokens"),
-      valueTokenDelta:
-        sum(baseline, "subagentTotalTokens") -
-        sum(explore, "subagentTotalTokens"),
+        sum(baseline, "mainUncachedInputTokens") - sum(explore, "mainUncachedInputTokens"),
+      valueTokenDelta: sum(baseline, "subagentTotalTokens") - sum(explore, "subagentTotalTokens"),
       tokenDelta: sum(baseline, "totalTokens") - sum(explore, "totalTokens"),
       costDeltaUsd: sum(baseline, "costUsd") - sum(explore, "costUsd"),
-      primaryToolCallDelta:
-        sum(baseline, "mainToolCallCount") - sum(explore, "mainToolCallCount"),
+      primaryToolCallDelta: sum(baseline, "mainToolCallCount") - sum(explore, "mainToolCallCount"),
       valueToolCallDelta:
-        sum(baseline, "subagentToolCallCount") -
-        sum(explore, "subagentToolCallCount"),
-      toolCallDelta:
-        sum(baseline, "toolCallCount") - sum(explore, "toolCallCount"),
+        sum(baseline, "subagentToolCallCount") - sum(explore, "subagentToolCallCount"),
+      toolCallDelta: sum(baseline, "toolCallCount") - sum(explore, "toolCallCount"),
       elapsedDeltaMs: sum(baseline, "elapsedMs") - sum(explore, "elapsedMs"),
     };
   });
@@ -3145,12 +2904,7 @@ function summarizeRepoDeltas(rows, compareArm) {
 
 function summarizeExploreTaskCohorts(rows, compareArm) {
   const taskDeltas = summarizeTaskDeltas(rows, compareArm);
-  const statuses = [
-    "available-used",
-    "partially-used",
-    "available-unused",
-    "unavailable",
-  ];
+  const statuses = ["available-used", "partially-used", "available-unused", "unavailable"];
   return statuses.map((status) => {
     const cohort = taskDeltas.filter((row) => row.exploreStatus === status);
     return {
@@ -3169,61 +2923,42 @@ function summarizeExploreTaskCohorts(rows, compareArm) {
 }
 
 function summarizeTaskDeltas(rows, compareArm) {
-  const keys = [
-    ...new Set(rows.map((row) => `${row.repo}\0${row.task}`)),
-  ].sort();
+  const keys = [...new Set(rows.map((row) => `${row.repo}\0${row.task}`))].sort();
   return keys.map((key) => {
     const [repo, task] = key.split("\0");
     const baseline = rows.filter(
       (row) =>
-        row.repo === repo &&
-        row.task === task &&
-        row.arm === "baseline" &&
-        row.status === "ok",
+        row.repo === repo && row.task === task && row.arm === "baseline" && row.status === "ok",
     );
     const explore = rows.filter(
       (row) =>
-        row.repo === repo &&
-        row.task === task &&
-        row.arm === compareArm &&
-        row.status === "ok",
+        row.repo === repo && row.task === task && row.arm === compareArm && row.status === "ok",
     );
     const exploreCodeDisabledReasons = explore.reduce(
-      (counts, row) =>
-        mergeReasonCounts(counts, row.exploreCodeDisabledReasons),
+      (counts, row) => mergeReasonCounts(counts, row.exploreCodeDisabledReasons),
       {},
     );
-    const tokenDelta =
-      sum(baseline, "totalTokens") - sum(explore, "totalTokens");
+    const tokenDelta = sum(baseline, "totalTokens") - sum(explore, "totalTokens");
     const primaryTokenDelta =
-      sum(baseline, "mainUncachedInputTokens") -
-      sum(explore, "mainUncachedInputTokens");
+      sum(baseline, "mainUncachedInputTokens") - sum(explore, "mainUncachedInputTokens");
     const valueTokenDelta =
-      sum(baseline, "subagentTotalTokens") -
-      sum(explore, "subagentTotalTokens");
-    const toolCallDelta =
-      sum(baseline, "toolCallCount") - sum(explore, "toolCallCount");
+      sum(baseline, "subagentTotalTokens") - sum(explore, "subagentTotalTokens");
+    const toolCallDelta = sum(baseline, "toolCallCount") - sum(explore, "toolCallCount");
     const primaryToolCallDelta =
       sum(baseline, "mainToolCallCount") - sum(explore, "mainToolCallCount");
     const valueToolCallDelta =
-      sum(baseline, "subagentToolCallCount") -
-      sum(explore, "subagentToolCallCount");
+      sum(baseline, "subagentToolCallCount") - sum(explore, "subagentToolCallCount");
     const providerStepDelta =
       sum(baseline, "providerStepCount") - sum(explore, "providerStepCount");
-    const elapsedDeltaMs =
-      sum(baseline, "elapsedMs") - sum(explore, "elapsedMs");
+    const elapsedDeltaMs = sum(baseline, "elapsedMs") - sum(explore, "elapsedMs");
     const costDeltaUsd = sum(baseline, "costUsd") - sum(explore, "costUsd");
-    const qualityScoreDelta =
-      average(explore, "qualityScore") - average(baseline, "qualityScore");
-    const exploreCodeAvailable = explore.filter(
-      (row) => row.exploreCodeAvailable,
-    ).length;
+    const qualityScoreDelta = average(explore, "qualityScore") - average(baseline, "qualityScore");
+    const exploreCodeAvailable = explore.filter((row) => row.exploreCodeAvailable).length;
     const exploreCodeUsed = explore.filter((row) => row.exploreCodeUsed).length;
     return {
       repo,
       task,
-      appSubPath:
-        explore[0]?.appSubPath ?? baseline[0]?.appSubPath ?? "unknown",
+      appSubPath: explore[0]?.appSubPath ?? baseline[0]?.appSubPath ?? "unknown",
       appImportSubPath: formatSubPath(
         explore[0]?.appImportSubPath ?? baseline[0]?.appImportSubPath,
       ),
@@ -3257,30 +2992,20 @@ function summarizeTaskDeltas(rows, compareArm) {
 }
 
 function summarizeAnswerComparisons(rows, compareArm) {
-  const keys = [
-    ...new Set(rows.map((row) => `${row.repo}\0${row.task}`)),
-  ].sort();
+  const keys = [...new Set(rows.map((row) => `${row.repo}\0${row.task}`))].sort();
   return keys.map((key) => {
     const [repo, task] = key.split("\0");
     const baseline = rows.filter(
       (row) =>
-        row.repo === repo &&
-        row.task === task &&
-        row.arm === "baseline" &&
-        row.status === "ok",
+        row.repo === repo && row.task === task && row.arm === "baseline" && row.status === "ok",
     );
     const explore = rows.filter(
       (row) =>
-        row.repo === repo &&
-        row.task === task &&
-        row.arm === compareArm &&
-        row.status === "ok",
+        row.repo === repo && row.task === task && row.arm === compareArm && row.status === "ok",
     );
     const expectedTermCoverageDelta =
-      average(explore, "expectedTermCoverage") -
-      average(baseline, "expectedTermCoverage");
-    const qualityScoreDelta =
-      average(explore, "qualityScore") - average(baseline, "qualityScore");
+      average(explore, "expectedTermCoverage") - average(baseline, "expectedTermCoverage");
+    const qualityScoreDelta = average(explore, "qualityScore") - average(baseline, "qualityScore");
     const fileReferenceDelta =
       Math.round(average(explore, "fileReferenceCount")) -
       Math.round(average(baseline, "fileReferenceCount"));
@@ -3371,11 +3096,7 @@ function answerComparisonNotes({
   return notes.length > 0 ? notes.join("; ") : "no material rubric difference";
 }
 
-function chooseTaskWinner({
-  primaryTokenDelta,
-  primaryToolCallDelta,
-  costDeltaUsd,
-}) {
+function chooseTaskWinner({ primaryTokenDelta, primaryToolCallDelta, costDeltaUsd }) {
   if (primaryTokenDelta > 0 && primaryToolCallDelta >= 0 && costDeltaUsd >= 0) {
     return "explore";
   }
@@ -3392,9 +3113,7 @@ function scoreFinalText(finalText, expectedTerms) {
     lower.includes(term.toLowerCase()),
   ).length;
   const expectedTermCoverage =
-    expectedTerms.length === 0
-      ? 1
-      : matchedExpectedTerms / expectedTerms.length;
+    expectedTerms.length === 0 ? 1 : matchedExpectedTerms / expectedTerms.length;
   const fileReferenceCount = countMatches(
     answerText,
     /\b(?:[\w@()[\].-]+\/)+[\w@()[\].-]+\.(?:ts|tsx|js|jsx|css|scss|json|md)\b/g,
@@ -3431,11 +3150,7 @@ function countMatches(text, pattern) {
   return text.match(pattern)?.length ?? 0;
 }
 
-function exploreTaskStatus({
-  exploreCount,
-  exploreCodeAvailable,
-  exploreCodeUsed,
-}) {
+function exploreTaskStatus({ exploreCount, exploreCodeAvailable, exploreCodeUsed }) {
   if (exploreCount === 0 || exploreCodeAvailable === 0) return "unavailable";
   if (exploreCodeUsed === 0) return "available-unused";
   if (exploreCodeAvailable < exploreCount || exploreCodeUsed < exploreCount) {

@@ -1,20 +1,7 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  ChevronRight,
-  GripVertical,
-  Loader2,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Check, ChevronRight, GripVertical, Loader2, Plus, Trash2 } from "lucide-react";
 
 import { selectedAppIdAtom, previewModeAtom } from "@/atoms/appAtoms";
 import { chatMessagesByIdAtom, selectedChatIdAtom } from "@/atoms/chatAtoms";
@@ -32,10 +19,7 @@ import {
   type AssertionPlanItem,
 } from "@/lib/test_recorder/assertion_proposal";
 import { parseAssertionsPayload } from "@/lib/test_recorder/assertion_tag";
-import {
-  useUserInputReadModel,
-  useUserInputRequests,
-} from "@/user_input/hooks";
+import { useUserInputReadModel, useUserInputRequests } from "@/user_input/hooks";
 import type { CustomTagState } from "./stateTypes";
 
 /**
@@ -82,9 +66,7 @@ interface OctopusStudioTestAssertionsCardProps {
 function toText(children: React.ReactNode): string {
   if (typeof children === "string") return children;
   if (Array.isArray(children)) return children.map(toText).join("");
-  return children == null || typeof children === "boolean"
-    ? ""
-    : String(children);
+  return children == null || typeof children === "boolean" ? "" : String(children);
 }
 
 /**
@@ -115,19 +97,17 @@ function RailSegment({
   );
 }
 
-export const OctopusStudioTestAssertionsCard: React.FC<
-  OctopusStudioTestAssertionsCardProps
-> = ({ node, children }) => {
+export const OctopusStudioTestAssertionsCard: React.FC<OctopusStudioTestAssertionsCardProps> = ({
+  node,
+  children,
+}) => {
   const proposalId = node.properties["proposal-id"] ?? "";
   const requestId = node.properties["request-id"] ?? "";
   const approvedOnServer = node.properties.status === "approved";
   const discardedOnServer = node.properties.status === "discarded";
 
   const rawPayload = useMemo(() => toText(children), [children]);
-  const payload = useMemo(
-    () => parseAssertionsPayload(rawPayload),
-    [rawPayload],
-  );
+  const payload = useMemo(() => parseAssertionsPayload(rawPayload), [rawPayload]);
 
   const chatId = useAtomValue(selectedChatIdAtom);
   const appId = useAtomValue(selectedAppIdAtom);
@@ -143,15 +123,10 @@ export const OctopusStudioTestAssertionsCard: React.FC<
   // spec over as a fresh chat turn.
   const userInputReadModel = useUserInputReadModel();
   const userInputRequests = useUserInputRequests();
-  const parkedRequest = requestId
-    ? userInputRequests.get(requestId)
-    : undefined;
-  const isAgentWaiting =
-    parkedRequest !== undefined && parkedRequest.status !== "settled";
+  const parkedRequest = requestId ? userInputRequests.get(requestId) : undefined;
+  const isAgentWaiting = parkedRequest !== undefined && parkedRequest.status !== "settled";
 
-  const [items, setItems] = useState<AssertionPlanItem[]>(
-    () => payload?.items ?? [],
-  );
+  const [items, setItems] = useState<AssertionPlanItem[]>(() => payload?.items ?? []);
   // Held locally until the rewritten message makes it back through
   // `syncChatFromDb`. Without it the card flips to "Generated" with "Open test
   // file" dead until the verification stream finishes.
@@ -191,8 +166,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
   const isLocked = isApproved || discarded;
   const assertions = items.filter(isAssertionItem);
   const hasBlankAssertion = assertions.some((item) => !item.text.trim());
-  const checkCountLabel =
-    assertions.length === 1 ? "1 check" : `${assertions.length} checks`;
+  const checkCountLabel = assertions.length === 1 ? "1 check" : `${assertions.length} checks`;
 
   const updateAssertion = useCallback(
     (id: string, text: string) => {
@@ -225,9 +199,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
   const removeAssertion = (id: string) => {
     if (isLocked) return;
     if (editingId === id) setEditingId(null);
-    setItems((prev) =>
-      prev.filter((item) => !isAssertionItem(item) || item.id !== id),
-    );
+    setItems((prev) => prev.filter((item) => !isAssertionItem(item) || item.id !== id));
     setLiveMessage("Assertion removed");
   };
 
@@ -256,16 +228,12 @@ export const OctopusStudioTestAssertionsCard: React.FC<
     const next = moveAssertion(items, index, index + offset);
     if (next === items) return;
     setItems(next);
-    setLiveMessage(
-      `Assertion moved to position ${index + offset + 1} of ${next.length}`,
-    );
+    setLiveMessage(`Assertion moved to position ${index + offset + 1} of ${next.length}`);
   };
 
   const handleDrop = (targetIndex: number) => {
     if (dragId === null) return;
-    const fromIndex = items.findIndex(
-      (item) => isAssertionItem(item) && item.id === dragId,
-    );
+    const fromIndex = items.findIndex((item) => isAssertionItem(item) && item.id === dragId);
     setDragId(null);
     if (fromIndex === -1) return;
     setItems((prev) => moveAssertion(prev, fromIndex, targetIndex));
@@ -348,11 +316,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
     } catch (error) {
       setOptimisticApproved(false);
       setApprovedSpecPath(null);
-      showError(
-        error instanceof Error
-          ? error.message
-          : "Couldn't generate the test file.",
-      );
+      showError(error instanceof Error ? error.message : "Couldn't generate the test file.");
     } finally {
       busyRef.current = false;
       setIsApproving(false);
@@ -382,8 +346,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
           // Leave the plan exactly as it was rather than answering the turn
           // against a card that still reads as approvable.
           console.warn("Couldn't record the discarded assertion plan", error);
-          const message =
-            error instanceof Error ? error.message : String(error);
+          const message = error instanceof Error ? error.message : String(error);
           showError(`Couldn't close the assertion plan: ${message}`);
           return;
         }
@@ -401,9 +364,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
         // next approve. `respond` has surfaced its own error, and a turn left
         // parked converges on the same outcome at its deadline — a park that
         // resolves to nothing is read as a close.
-        console.warn(
-          `Discarded assertion plan ${proposalId}, but couldn't notify the parked turn`,
-        );
+        console.warn(`Discarded assertion plan ${proposalId}, but couldn't notify the parked turn`);
       }
     } finally {
       busyRef.current = false;
@@ -439,8 +400,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
           ) : (
             <>
               This proposal couldn&apos;t be read
-              {specPath ? ` for ${specPath}` : ""}. Ask for assertions again to
-              get a fresh one.
+              {specPath ? ` for ${specPath}` : ""}. Ask for assertions again to get a fresh one.
             </>
           )}
         </p>
@@ -468,9 +428,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
           <span
             className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
             data-testid={
-              isApproved && !isBusy
-                ? "octopus-studio-test-assertions-approved-badge"
-                : undefined
+              isApproved && !isBusy ? "octopus-studio-test-assertions-approved-badge" : undefined
             }
           >
             {/* "Generated" only once it actually is. The approval latches
@@ -482,10 +440,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
                 Closing gets its own label: it writes nothing, so announcing it
                 as generation promises a file that is never coming. */}
             {isBusy ? (
-              <Loader2
-                size={12}
-                className="animate-spin motion-reduce:hidden"
-              />
+              <Loader2 size={12} className="animate-spin motion-reduce:hidden" />
             ) : (
               isApproved && <Check size={12} strokeWidth={2.5} />
             )}
@@ -667,9 +622,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
                         <button
                           type="button"
                           onClick={() =>
-                            setExpandedCodeId((prev) =>
-                              prev === item.id ? null : item.id,
-                            )
+                            setExpandedCodeId((prev) => (prev === item.id ? null : item.id))
                           }
                           aria-expanded={isCodeOpen}
                           className="inline-flex items-center gap-0.5 rounded-sm text-[11px] text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -704,10 +657,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
                     <span
                       aria-hidden
                       title="Drag to move this check"
-                      className={cn(
-                        "shrink-0 cursor-grab p-0.5 text-muted-foreground",
-                        ROW_ACTION,
-                      )}
+                      className={cn("shrink-0 cursor-grab p-0.5 text-muted-foreground", ROW_ACTION)}
                     >
                       <GripVertical size={13} />
                     </span>
@@ -717,11 +667,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
                       aria-label="Remove this check"
                       title="Remove"
                       data-testid={`octopus-studio-test-assertions-remove-${item.id}`}
-                      className={cn(
-                        ICON_BUTTON,
-                        ROW_ACTION,
-                        "hover:text-destructive",
-                      )}
+                      className={cn(ICON_BUTTON, ROW_ACTION, "hover:text-destructive")}
                     >
                       <Trash2 size={13} />
                     </button>
@@ -819,12 +765,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<
                 !isAgentWaiting && "ml-auto",
               )}
             >
-              {isApproving && (
-                <Loader2
-                  size={12}
-                  className="animate-spin motion-reduce:hidden"
-                />
-              )}
+              {isApproving && <Loader2 size={12} className="animate-spin motion-reduce:hidden" />}
               {isApproving ? "Generating…" : "Approve & generate"}
             </button>
           </>

@@ -53,10 +53,7 @@ export function transitionPlanHandoffHost(
         ],
       };
     case "DISPLAY_ELAPSED":
-      if (
-        state.intent?.handoffId !== event.handoffId ||
-        state.phase !== "accepted"
-      ) {
+      if (state.intent?.handoffId !== event.handoffId || state.phase !== "accepted") {
         return ignore(state, "stale-handoff");
       }
       return {

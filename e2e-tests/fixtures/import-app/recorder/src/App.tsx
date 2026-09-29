@@ -20,9 +20,7 @@ const App = () => {
   return (
     <div style={{ padding: 24, fontFamily: "sans-serif" }}>
       <h1>Recorder Test App</h1>
-      <p data-testid="auth-state">
-        {isAuthenticated ? "Signed in" : "Signed out"}
-      </p>
+      <p data-testid="auth-state">{isAuthenticated ? "Signed in" : "Signed out"}</p>
 
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <p data-testid="count">Count: {count}</p>
@@ -46,11 +44,7 @@ const App = () => {
       </label>
 
       <label htmlFor="color-select">Color</label>
-      <select
-        id="color-select"
-        value={color}
-        onChange={(e) => setColor(e.target.value)}
-      >
+      <select id="color-select" value={color} onChange={(e) => setColor(e.target.value)}>
         <option value="red">Red</option>
         <option value="green">Green</option>
         <option value="blue">Blue</option>

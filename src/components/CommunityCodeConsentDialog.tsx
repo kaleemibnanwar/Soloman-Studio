@@ -17,9 +17,11 @@ interface CommunityCodeConsentDialogProps {
   onCancel: () => void;
 }
 
-export const CommunityCodeConsentDialog: React.FC<
-  CommunityCodeConsentDialogProps
-> = ({ isOpen, onAccept, onCancel }) => {
+export const CommunityCodeConsentDialog: React.FC<CommunityCodeConsentDialogProps> = ({
+  isOpen,
+  onAccept,
+  onCancel,
+}) => {
   const { t } = useTranslation(["home", "common"]);
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
@@ -33,12 +35,8 @@ export const CommunityCodeConsentDialog: React.FC<
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>
-            {t("common:cancel")}
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={onAccept}>
-            {t("common:accept")}
-          </AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>{t("common:cancel")}</AlertDialogCancel>
+          <AlertDialogAction onClick={onAccept}>{t("common:accept")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

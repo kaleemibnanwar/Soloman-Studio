@@ -1,8 +1,5 @@
 import type { IgnoreReason } from "@/state_machines/types";
-import type {
-  DistributedMachineDefinition,
-  FrameworkCoveredRemoteMachine,
-} from "./definition";
+import type { DistributedMachineDefinition, FrameworkCoveredRemoteMachine } from "./definition";
 import { MachineIdentitySchema } from "./remote_protocol";
 
 /**
@@ -49,16 +46,7 @@ export function assertRemoteProtocolV1CompatibilityInventory(
 }
 
 type ErasedRemoteMachineDefinition = Omit<
-  DistributedMachineDefinition<
-    string,
-    any,
-    any,
-    any,
-    any,
-    IgnoreReason,
-    any,
-    any
-  >,
+  DistributedMachineDefinition<string, any, any, any, any, IgnoreReason, any, any>,
   "createOutcomePublisher"
 > & {
   readonly createOutcomePublisher?: any;
@@ -71,11 +59,10 @@ export type AnyRemoteMachineDefinition = ErasedRemoteMachineDefinition & {
 
 declare const legacyRemoteMachineCompatibility: unique symbol;
 
-export type LegacyRemoteMachineCompatibility<
-  Definition extends AnyRemoteMachineDefinition,
-> = Definition & {
-  readonly [legacyRemoteMachineCompatibility]: true;
-};
+export type LegacyRemoteMachineCompatibility<Definition extends AnyRemoteMachineDefinition> =
+  Definition & {
+    readonly [legacyRemoteMachineCompatibility]: true;
+  };
 
 export type RegisteredRemoteMachineDefinition =
   | FrameworkCoveredRemoteMachine<AnyRemoteMachineDefinition>
@@ -94,9 +81,7 @@ export function defineLegacyRemoteMachineCompatibility<
       definition.id as (typeof LEGACY_REMOTE_MACHINE_DEFINITION_INVENTORY)[number],
     )
   ) {
-    throw new Error(
-      `Remote machine ${definition.id} is not in the legacy definition inventory`,
-    );
+    throw new Error(`Remote machine ${definition.id} is not in the legacy definition inventory`);
   }
   return definition as LegacyRemoteMachineCompatibility<Definition>;
 }
@@ -131,9 +116,7 @@ export function createRemoteMachineManifest(
       ["maxSnapshotEnvelopeBytes", definition.remote.maxSnapshotEnvelopeBytes],
     ] as const) {
       if (limit !== undefined && (!Number.isSafeInteger(limit) || limit <= 0)) {
-        throw new Error(
-          `Remote machine ${definition.id} has an invalid ${name}`,
-        );
+        throw new Error(`Remote machine ${definition.id} has an invalid ${name}`);
       }
     }
     byId.set(definition.id, definition);

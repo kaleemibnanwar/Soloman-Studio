@@ -11,11 +11,6 @@ test("template - community", async ({ po }) => {
   const beforeSettings2 = po.settings.recordSettings();
   await po.navigation.selectTemplate("Angular");
   await po.page.getByRole("button", { name: "Accept" }).click();
-  await po.page
-    .locator("section")
-    .filter({ hasText: "Community" })
-    .locator("div")
-    .first()
-    .click();
+  await po.page.locator("section").filter({ hasText: "Community" }).locator("div").first().click();
   po.settings.snapshotSettingsDelta(beforeSettings2);
 });

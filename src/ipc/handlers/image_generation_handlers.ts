@@ -4,12 +4,10 @@ import { imageGenerationOperationService } from "../services/image_generation_op
 import { createTypedHandler } from "./base";
 
 export function registerImageGenerationHandlers(): void {
-  createTypedHandler(
-    imageGenerationContracts.waitForOperation,
-    async (event, { requestId }) =>
-      imageGenerationOperationService.waitFor(
-        requestId,
-        windowRegistry.ensureRegistered(event.sender),
-      ),
+  createTypedHandler(imageGenerationContracts.waitForOperation, async (event, { requestId }) =>
+    imageGenerationOperationService.waitFor(
+      requestId,
+      windowRegistry.ensureRegistered(event.sender),
+    ),
   );
 }

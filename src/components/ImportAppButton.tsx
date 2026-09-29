@@ -18,11 +18,7 @@ export function ImportAppButton({
   return (
     <>
       <div className={cn("px-4 pb-1 flex justify-center", className)}>
-        <Button
-          variant={variant}
-          size={size}
-          onClick={() => setIsDialogOpen(true)}
-        >
+        <Button variant={variant} size={size} onClick={() => setIsDialogOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
           Import Project
         </Button>

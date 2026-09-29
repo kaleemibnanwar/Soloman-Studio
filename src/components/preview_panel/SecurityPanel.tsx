@@ -15,22 +15,12 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Shield,
-  ChevronDown,
-  ExternalLink,
-  Pencil,
-  Wrench,
-} from "lucide-react";
+import { Shield, ChevronDown, ExternalLink, Pencil, Wrench } from "lucide-react";
 import { getSeverityIcon, SeverityBadge } from "@/components/security/severity";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { showError } from "@/lib/toast";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
   SecurityFinding,
   SecurityReviewFinding,
@@ -188,12 +178,7 @@ function ReviewSummary({ data }: { data: SecurityReviewResult }) {
     {} as Record<string, number>,
   );
 
-  const severityLevels: Array<SecurityFinding["level"]> = [
-    "critical",
-    "high",
-    "medium",
-    "low",
-  ];
+  const severityLevels: Array<SecurityFinding["level"]> = ["critical", "high", "medium", "low"];
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -247,9 +232,7 @@ function SecurityHeader({
   const hasFindings = Boolean(data?.findings.length);
   const totalFindingCount = data?.findings.length ?? 0;
   const selectedIssueLabel =
-    selectedCount > 0
-      ? `${selectedCount} issue${selectedCount === 1 ? "" : "s"}`
-      : "all issues";
+    selectedCount > 0 ? `${selectedCount} issue${selectedCount === 1 ? "" : "s"}` : "all issues";
   const existingFixIssueLabel =
     selectedFixCount === undefined
       ? ""
@@ -258,18 +241,14 @@ function SecurityHeader({
         : `${selectedFixCount} issue${selectedFixCount === 1 ? "" : "s"}`;
   const hasSelectedFix = selectedFixCount !== undefined;
   const showSelectedFixActions = hasSelectedFix && !isFixingSelected;
-  const activeIssueLabel = hasSelectedFix
-    ? existingFixIssueLabel
-    : selectedIssueLabel;
+  const activeIssueLabel = hasSelectedFix ? existingFixIssueLabel : selectedIssueLabel;
 
   return (
     <div className="sticky top-0 z-10 space-y-2.5 bg-background py-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex min-w-48 flex-1 items-center gap-1">
           <Shield className="size-5 shrink-0" />
-          <h1 className="truncate text-lg font-semibold text-foreground">
-            Security Review
-          </h1>
+          <h1 className="truncate text-lg font-semibold text-foreground">Security Review</h1>
           <Tooltip>
             <TooltipTrigger
               render={
@@ -333,10 +312,7 @@ function SecurityHeader({
                   <ChevronDown className="size-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={onRerunSelectedFix}
-                    disabled={isRunning}
-                  >
+                  <DropdownMenuItem onClick={onRerunSelectedFix} disabled={isRunning}>
                     <Wrench className="size-4" />
                     Re-run fix
                   </DropdownMenuItem>
@@ -357,11 +333,7 @@ function SecurityHeader({
             >
               {isFixingSelected ? (
                 <>
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -397,11 +369,7 @@ function LoadingView() {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center">
       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-        <svg
-          className="w-6 h-6 text-primary animate-spin"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-6 h-6 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"
@@ -417,9 +385,7 @@ function LoadingView() {
           />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold text-foreground mt-4">
-        Loading...
-      </h2>
+      <h2 className="text-xl font-semibold text-foreground mt-4">Loading...</h2>
     </div>
   );
 }
@@ -430,12 +396,8 @@ function NoAppSelectedView() {
       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
         <Shield className="w-8 h-8 text-muted-foreground" />
       </div>
-      <h2 className="text-xl font-semibold text-foreground mb-2">
-        No App Selected
-      </h2>
-      <p className="text-muted-foreground max-w-md">
-        Select an app to run a security review
-      </p>
+      <h2 className="text-xl font-semibold text-foreground mb-2">No App Selected</h2>
+      <p className="text-muted-foreground max-w-md">Select an app to run a security review</p>
     </div>
   );
 }
@@ -446,11 +408,7 @@ function RunningReviewCard() {
       <CardContent className="pt-6">
         <div className="text-center py-8">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-primary animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-8 h-8 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -466,25 +424,15 @@ function RunningReviewCard() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Security review is running
-          </h3>
-          <p className="text-muted-foreground">
-            Results will be available soon.
-          </p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Security review is running</h3>
+          <p className="text-muted-foreground">Results will be available soon.</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function NoReviewCard({
-  isRunning,
-  onRun,
-}: {
-  isRunning: boolean;
-  onRun: () => void;
-}) {
+function NoReviewCard({ isRunning, onRun }: { isRunning: boolean; onRun: () => void }) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -492,12 +440,9 @@ function NoReviewCard({
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            No Security Review Found
-          </h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No Security Review Found</h3>
           <p className="text-muted-foreground mb-4">
-            Run a security review to identify potential vulnerabilities in your
-            application.
+            Run a security review to identify potential vulnerabilities in your application.
           </p>
           <RunReviewButton isRunning={isRunning} onRun={onRun} />
         </div>
@@ -514,9 +459,7 @@ function NoIssuesCard({ data }: { data?: SecurityReviewResult }) {
           <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-success" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            No Security Issues Found
-          </h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No Security Issues Found</h3>
           <p className="text-muted-foreground">
             Your application passed the security review with no issues detected.
           </p>
@@ -640,15 +583,10 @@ function FindingsTable({
 
   const allSelected =
     sortedFindings.length > 0 &&
-    sortedFindings.every((finding) =>
-      selectedFindings.has(createFindingKey(finding)),
-    );
+    sortedFindings.every((finding) => selectedFindings.has(createFindingKey(finding)));
 
   return (
-    <div
-      className="border rounded-lg overflow-hidden"
-      data-testid="security-findings-table"
-    >
+    <div className="border rounded-lg overflow-hidden" data-testid="security-findings-table">
       <table className="w-full">
         <thead className="bg-muted/50 border-b border-border">
           <tr>
@@ -672,21 +610,16 @@ function FindingsTable({
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
           {sortedFindings.map((finding, index) => {
-            const isLongDescription =
-              finding.description.length > DESCRIPTION_PREVIEW_LENGTH;
+            const isLongDescription = finding.description.length > DESCRIPTION_PREVIEW_LENGTH;
             const displayDescription = isLongDescription
-              ? finding.description.substring(0, DESCRIPTION_PREVIEW_LENGTH) +
-                "..."
+              ? finding.description.substring(0, DESCRIPTION_PREVIEW_LENGTH) + "..."
               : finding.description;
             const findingKey = createFindingKey(finding);
             const isFixing = fixingFindingKey === findingKey;
             const isSelected = selectedFindings.has(findingKey);
 
             return (
-              <tr
-                key={index}
-                className="hover:bg-muted/50 transition-colors"
-              >
+              <tr key={index} className="hover:bg-muted/50 transition-colors">
                 <td className="px-4 py-4 align-top">
                   <Checkbox
                     checked={isSelected}
@@ -711,9 +644,7 @@ function FindingsTable({
                       }
                     }}
                   >
-                    <div className="font-medium text-foreground">
-                      {finding.title}
-                    </div>
+                    <div className="font-medium text-foreground">{finding.title}</div>
                     <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
                       <VanillaMarkdownParser content={displayDescription} />
                     </div>
@@ -800,9 +731,7 @@ function FindingDetailsDialog({
               }}
             />
           )}
-          <DialogClose className={cn(buttonVariants({ variant: "outline" }))}>
-            Close
-          </DialogClose>
+          <DialogClose className={cn(buttonVariants({ variant: "outline" }))}>Close</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -818,15 +747,12 @@ export const SecurityPanel = () => {
   const { data, isLoading, error, refetch } = useSecurityReview(selectedAppId);
   const [isRunningReview, setIsRunningReview] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsFinding, setDetailsFinding] =
-    useState<SecurityReviewFinding | null>(null);
+  const [detailsFinding, setDetailsFinding] = useState<SecurityReviewFinding | null>(null);
   const [isEditRulesOpen, setIsEditRulesOpen] = useState(false);
   const [rulesContent, setRulesContent] = useState("");
   const [fixingFindingKey, setFixingFindingKey] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedFindings, setSelectedFindings] = useState<Set<string>>(
-    new Set(),
-  );
+  const [selectedFindings, setSelectedFindings] = useState<Set<string>>(new Set());
   const [isFixingSelected, setIsFixingSelected] = useState(false);
   const [selectedFixChat, setSelectedFixChat] = useState<{
     chatId: number;
@@ -1000,13 +926,11 @@ export const SecurityPanel = () => {
 
     setFixing(true);
     try {
-      const { chatId, created } = await ipc.security.getOrCreateSecurityFixChat(
-        {
-          appId: selectedAppId,
-          reviewChatId: data.chatId,
-          findings: findingsToFix,
-        },
-      );
+      const { chatId, created } = await ipc.security.getOrCreateSecurityFixChat({
+        appId: selectedAppId,
+        reviewChatId: data.chatId,
+        findings: findingsToFix,
+      });
 
       showFixChat(chatId);
       await queryClient.invalidateQueries({
@@ -1107,9 +1031,7 @@ export const SecurityPanel = () => {
 
     const findingsToFix =
       selectedFindings.size > 0
-        ? data.findings.filter((finding) =>
-            selectedFindings.has(createFindingKey(finding)),
-          )
+        ? data.findings.filter((finding) => selectedFindings.has(createFindingKey(finding)))
         : data.findings;
     if (findingsToFix.length === 0) {
       showError("No valid issues selected");
@@ -1179,10 +1101,7 @@ export const SecurityPanel = () => {
         {isRunningReview ? (
           <RunningReviewCard />
         ) : error ? (
-          <NoReviewCard
-            isRunning={isRunningReview}
-            onRun={handleRunSecurityReview}
-          />
+          <NoReviewCard isRunning={isRunningReview} onRun={handleRunSecurityReview} />
         ) : data && data.findings.length > 0 ? (
           <FindingsTable
             findings={data.findings}
@@ -1213,11 +1132,10 @@ export const SecurityPanel = () => {
               <DialogTitle>Edit Security Rules</DialogTitle>
             </DialogHeader>
             <div className="text-sm text-muted-foreground">
-              This allows you to add additional context about your project
-              specifically for security reviews. This content is saved to the{" "}
-              <code className="text-xs">SECURITY_RULES.md</code> file. This can
-              help catch additional issues or avoid flagging issues that are not
-              relevant for your app.
+              This allows you to add additional context about your project specifically for security
+              reviews. This content is saved to the{" "}
+              <code className="text-xs">SECURITY_RULES.md</code> file. This can help catch
+              additional issues or avoid flagging issues that are not relevant for your app.
             </div>
             <div className="mt-3">
               <textarea
@@ -1228,15 +1146,10 @@ export const SecurityPanel = () => {
               />
             </div>
             <DialogFooter>
-              <DialogClose
-                className={cn(buttonVariants({ variant: "outline" }))}
-              >
+              <DialogClose className={cn(buttonVariants({ variant: "outline" }))}>
                 Cancel
               </DialogClose>
-              <Button
-                onClick={handleSaveRules}
-                disabled={isSaving || isFetchingRules}
-              >
+              <Button onClick={handleSaveRules} disabled={isSaving || isFetchingRules}>
                 {isSaving ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>

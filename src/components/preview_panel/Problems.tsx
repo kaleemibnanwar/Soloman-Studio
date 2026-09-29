@@ -2,15 +2,7 @@ import { useEffect, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
-import {
-  AlertTriangle,
-  XCircle,
-  FileText,
-  Wrench,
-  RefreshCw,
-  Check,
-  Info,
-} from "lucide-react";
+import { AlertTriangle, XCircle, FileText, Wrench, RefreshCw, Check, Info } from "lucide-react";
 import { Problem, ProblemReport } from "@/ipc/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,12 +21,7 @@ interface ProblemItemProps {
   onToggle: () => void;
 }
 
-const ProblemItem = ({
-  problem,
-  checked,
-  isIncomplete,
-  onToggle,
-}: ProblemItemProps) => {
+const ProblemItem = ({ problem, checked, isIncomplete, onToggle }: ProblemItemProps) => {
   const { t } = useTranslation(["home", "common"]);
   return (
     <div
@@ -67,9 +54,7 @@ const ProblemItem = ({
             {problem.line}:{problem.column}
           </span>
         </div>
-        <p className="text-sm text-foreground leading-relaxed">
-          {problem.message}
-        </p>
+        <p className="text-sm text-foreground leading-relaxed">{problem.message}</p>
       </div>
     </div>
   );
@@ -78,13 +63,7 @@ const ProblemItem = ({
 interface RecheckButtonProps {
   appId: number;
   size?: "sm" | "default" | "lg";
-  variant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   className?: string;
   onBeforeRecheck?: () => void;
 }
@@ -126,10 +105,7 @@ const RecheckButton = ({
       className={className}
       data-testid="recheck-button"
     >
-      <RefreshCw
-        size={14}
-        className={`mr-1 ${isShowingChecking ? "animate-spin" : ""}`}
-      />
+      <RefreshCw size={14} className={`mr-1 ${isShowingChecking ? "animate-spin" : ""}`} />
       {isShowingChecking
         ? t("home:preview.problems_panel.checkingProblems")
         : t("home:preview.problems_panel.runChecks")}
@@ -198,21 +174,11 @@ const ProblemsSummary = ({
       <div className="flex items-center gap-2">
         <RecheckButton appId={appId} onBeforeRecheck={onClearAll} />
         {selectedCount === 0 ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onSelectAll}
-            className="h-7 px-3 text-xs"
-          >
+          <Button size="sm" variant="outline" onClick={onSelectAll} className="h-7 px-3 text-xs">
             {t("common:selectAll")}
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onClearAll}
-            className="h-7 px-3 text-xs"
-          >
+          <Button size="sm" variant="outline" onClick={onClearAll} className="h-7 px-3 text-xs">
             {t("common:clearAll")}
           </Button>
         )}
@@ -247,8 +213,7 @@ export function _Problems() {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const { problemReport, error } = useCheckProblems(selectedAppId);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const problemKey = (p: Problem) =>
-    `${p.file}:${p.line}:${p.column}:${p.code}`;
+  const problemKey = (p: Problem) => `${p.file}:${p.line}:${p.column}:${p.code}`;
   const { streamMessage } = useStreamChat();
   const [selectedChatId] = useAtom(selectedChatIdAtom);
   const { effectiveMode } = useChatMode(selectedChatId);
@@ -288,13 +253,8 @@ export function _Problems() {
         <h3 className="text-lg font-medium mb-2">
           {t("home:preview.problems_panel.noProblemsReportTitle")}
         </h3>
-        <p className="text-sm text-muted-foreground max-w-md mb-4">
-          {error.message}
-        </p>
-        <RecheckButton
-          appId={selectedAppId}
-          onBeforeRecheck={() => setSelectedKeys(new Set())}
-        />
+        <p className="text-sm text-muted-foreground max-w-md mb-4">{error.message}</p>
+        <RecheckButton appId={selectedAppId} onBeforeRecheck={() => setSelectedKeys(new Set())} />
       </div>
     );
   }
@@ -311,10 +271,7 @@ export function _Problems() {
         <p className="text-sm text-muted-foreground max-w-md mb-4">
           {t("home:preview.problems_panel.noProblemsReportDescription")}
         </p>
-        <RecheckButton
-          appId={selectedAppId}
-          onBeforeRecheck={() => setSelectedKeys(new Set())}
-        />
+        <RecheckButton appId={selectedAppId} onBeforeRecheck={() => setSelectedKeys(new Set())} />
       </div>
     );
   }
@@ -340,9 +297,7 @@ export function _Problems() {
         }
         onClearAll={() => setSelectedKeys(new Set())}
         onSelectAll={() =>
-          setSelectedKeys(
-            new Set(problemReport.problems.map((p) => problemKey(p))),
-          )
+          setSelectedKeys(new Set(problemReport.problems.map((p) => problemKey(p))))
         }
         onFixSelected={() => {
           if (!selectedChatId) return;

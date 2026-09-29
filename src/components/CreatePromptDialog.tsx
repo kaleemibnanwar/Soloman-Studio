@@ -149,8 +149,7 @@ export function CreateOrEditPromptDialog({
     if (!draft.title.trim() || !draft.content.trim() || slugInvalid) return;
 
     // In edit mode, empty slug means "clear it" (null), not "don't change" (undefined).
-    const slugValue =
-      slugTrimmed === "" ? (mode === "edit" ? null : undefined) : slugTrimmed;
+    const slugValue = slugTrimmed === "" ? (mode === "edit" ? null : undefined) : slugTrimmed;
 
     if (mode === "create" && onCreatePrompt) {
       await onCreatePrompt({
@@ -196,9 +195,7 @@ export function CreateOrEditPromptDialog({
       )}
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "Create New Prompt" : "Edit Prompt"}
-          </DialogTitle>
+          <DialogTitle>{mode === "create" ? "Create New Prompt" : "Edit Prompt"}</DialogTitle>
           <DialogDescription>
             {mode === "create"
               ? "Create a new prompt template for your library."
@@ -214,9 +211,7 @@ export function CreateOrEditPromptDialog({
           <Input
             placeholder="Description (optional)"
             value={draft.description}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, description: e.target.value }))
-            }
+            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
           />
           <div>
             <Input
@@ -224,8 +219,7 @@ export function CreateOrEditPromptDialog({
               value={draft.slug}
               onChange={(e) => {
                 const v = e.target.value;
-                if (v === "" || SLUG_REGEX.test(v))
-                  setDraft((d) => ({ ...d, slug: v }));
+                if (v === "" || SLUG_REGEX.test(v)) setDraft((d) => ({ ...d, slug: v }));
               }}
               className="font-mono"
             />
@@ -254,9 +248,7 @@ export function CreateOrEditPromptDialog({
           </Button>
           <Button
             onClick={onSave}
-            disabled={
-              !draft.title.trim() || !draft.content.trim() || slugInvalid
-            }
+            disabled={!draft.title.trim() || !draft.content.trim() || slugInvalid}
           >
             <Save className="mr-2 h-4 w-4" /> Save
           </Button>

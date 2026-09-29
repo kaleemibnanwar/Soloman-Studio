@@ -1,9 +1,6 @@
 import { useState } from "react";
 
-import {
-  createMachineProvider,
-  useRegisterEntityDisposer,
-} from "@/state_machines/react";
+import { createMachineProvider, useRegisterEntityDisposer } from "@/state_machines/react";
 import { PlanHandoffRemoteManager } from "./remote_manager";
 
 function useOwnedPlanHandoffManager(): PlanHandoffRemoteManager {

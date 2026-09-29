@@ -1,23 +1,11 @@
-import {
-  PanelRightOpen,
-  History,
-  PlusCircle,
-  GitBranch,
-  Info,
-  SquareTerminal,
-} from "lucide-react";
+import { PanelRightOpen, History, PlusCircle, GitBranch, Info, SquareTerminal } from "lucide-react";
 import { PanelRightClose } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAtom, useAtomValue } from "jotai";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useVersions } from "@/hooks/useVersions";
 import { Button } from "../ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { ipc } from "@/ipc/types";
 import { useRouter } from "@tanstack/react-router";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
@@ -53,17 +41,11 @@ export function ChatHeader({
   const { versions, loading: versionsLoading } = useVersions(appId);
   const { navigate } = useRouter();
   const [selectedChatId] = useAtom(selectedChatIdAtom);
-  const [terminalOpenByChatId, setTerminalOpenByChatId] = useAtom(
-    terminalOpenByChatIdAtom,
-  );
+  const [terminalOpenByChatId, setTerminalOpenByChatId] = useAtom(terminalOpenByChatIdAtom);
   const { invalidateChats } = useChats(appId);
   const { selectChat } = useSelectChat();
   const { isStreaming } = useStreamChat();
-  const {
-    branchInfo,
-    isLoading: branchInfoLoading,
-    refetchBranchInfo,
-  } = useCurrentBranch(appId);
+  const { branchInfo, isLoading: branchInfoLoading, refetchBranchInfo } = useCurrentBranch(appId);
 
   const {
     state: versionPreviewState,
@@ -153,9 +135,7 @@ export function ChatHeader({
                             </>
                           ) : (
                             <>
-                              <strong>
-                                {t("header.warningNotOnBranch").split(":")[0]}:
-                              </strong>
+                              <strong>{t("header.warningNotOnBranch").split(":")[0]}:</strong>
                               <span>{t("header.notOnBranch")}</span>
                               <Info size={14} />
                             </>
@@ -186,23 +166,16 @@ export function ChatHeader({
               onClick={handleRenameMasterToMain}
               disabled={isRenamingBranch || branchInfoLoading}
             >
-              {isRenamingBranch
-                ? t("header.renaming")
-                : t("header.renameMasterToMain")}
+              {isRenamingBranch ? t("header.renaming") : t("header.renameMasterToMain")}
             </Button>
           ) : (
             <Button
               variant="outline"
               size="sm"
               onClick={handleCheckoutMainBranch}
-              disabled={
-                !versionPreviewProjection.capabilities.canSwitchBranch ||
-                branchInfoLoading
-              }
+              disabled={!versionPreviewProjection.capabilities.canSwitchBranch || branchInfoLoading}
             >
-              {isCheckingOutVersion
-                ? t("header.checkingOut")
-                : t("header.switchToMainBranch")}
+              {isCheckingOutVersion ? t("header.checkingOut") : t("header.switchToMainBranch")}
             </Button>
           )}
         </div>
@@ -271,11 +244,7 @@ export function ChatHeader({
             onClick={onTogglePreview}
             className="cursor-pointer p-2 hover:bg-(--background-lightest) rounded-md"
           >
-            {isPreviewOpen ? (
-              <PanelRightClose size={20} />
-            ) : (
-              <PanelRightOpen size={20} />
-            )}
+            {isPreviewOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
           </button>
         </div>
       </div>

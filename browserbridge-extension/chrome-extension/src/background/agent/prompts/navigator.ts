@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { BasePrompt } from './base';
-import { type HumanMessage, SystemMessage } from '@langchain/core/messages';
-import type { AgentContext } from '@src/background/agent/types';
-import { createLogger } from '@src/background/log';
-import { navigatorSystemPromptTemplate } from './templates/navigator';
+import { BasePrompt } from "./base";
+import { type HumanMessage, SystemMessage } from "@langchain/core/messages";
+import type { AgentContext } from "@src/background/agent/types";
+import { createLogger } from "@src/background/log";
+import { navigatorSystemPromptTemplate } from "./templates/navigator";
 
-const logger = createLogger('agent/prompts/navigator');
+const logger = createLogger("agent/prompts/navigator");
 
 export class NavigatorPrompt extends BasePrompt {
   private systemMessage: SystemMessage;
@@ -15,7 +15,9 @@ export class NavigatorPrompt extends BasePrompt {
 
     const promptTemplate = navigatorSystemPromptTemplate;
     // Format the template with the maxActionsPerStep
-    const formattedPrompt = promptTemplate.replace('{{max_actions}}', this.maxActionsPerStep.toString()).trim();
+    const formattedPrompt = promptTemplate
+      .replace("{{max_actions}}", this.maxActionsPerStep.toString())
+      .trim();
     this.systemMessage = new SystemMessage(formattedPrompt);
   }
 

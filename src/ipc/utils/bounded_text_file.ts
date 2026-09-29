@@ -1,10 +1,7 @@
 import { promises as fs } from "node:fs";
 import type { FileHandle } from "node:fs/promises";
 import path from "node:path";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 export const APP_FILE_EDITOR_LIMIT_BYTES = 5 * 1024 * 1024;
 export const AGENT_READ_FILE_RESULT_LIMIT_BYTES = 256 * 1024;
@@ -15,8 +12,7 @@ export const AGENT_READ_FILE_TRUNCATION_NOTICE =
 const STREAM_CHUNK_BYTES = 64 * 1024;
 const BINARY_SAMPLE_BYTES = 8 * 1024;
 const AGENT_READ_FILE_CONTENT_LIMIT_BYTES =
-  AGENT_READ_FILE_RESULT_LIMIT_BYTES -
-  Buffer.byteLength(AGENT_READ_FILE_TRUNCATION_NOTICE, "utf8");
+  AGENT_READ_FILE_RESULT_LIMIT_BYTES - Buffer.byteLength(AGENT_READ_FILE_TRUNCATION_NOTICE, "utf8");
 
 interface OpenContainedFileParams {
   rootPath: string;
@@ -47,24 +43,15 @@ export interface ReadTextFileLinesResult {
   truncated: boolean;
 }
 
-function isNodeErrorWithCode(
-  error: unknown,
-  code: string,
-): error is NodeJS.ErrnoException {
+function isNodeErrorWithCode(error: unknown, code: string): error is NodeJS.ErrnoException {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    (error as NodeJS.ErrnoException).code === code
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === code
   );
 }
 
 function isOutsideRoot(rootPath: string, candidatePath: string): boolean {
   const relative = path.relative(rootPath, candidatePath);
-  return (
-    relative === ".." ||
-    relative.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relative)
-  );
+  return relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
 }
 
 async function openContainedFile({
@@ -212,9 +199,7 @@ async function assertTextSample(
   }
 }
 
-export async function readAppFileForEditor(
-  params: OpenContainedFileParams,
-): Promise<string> {
+export async function readAppFileForEditor(params: OpenContainedFileParams): Promise<string> {
   const opened = await openContainedFile(params);
   try {
     if (opened.size > APP_FILE_EDITOR_LIMIT_BYTES) {
@@ -332,15 +317,10 @@ export async function readTextFileLines({
         const hasNewline = newlineIndex !== -1;
         const segmentEnd = hasNewline ? newlineIndex + 1 : chunk.length;
         const inRange =
-          currentLine >= startLine &&
-          (endLineInclusive == null || currentLine <= endLineInclusive);
+          currentLine >= startLine && (endLineInclusive == null || currentLine <= endLineInclusive);
 
         if (inRange) {
-          if (
-            hasNewline &&
-            endLineInclusive != null &&
-            currentLine === endLineInclusive
-          ) {
+          if (hasNewline && endLineInclusive != null && currentLine === endLineInclusive) {
             if (!appendBytes(chunk.subarray(offset, newlineIndex))) break;
             pendingFinalNewline = true;
             if (segmentEnd < chunk.length) {

@@ -7,8 +7,7 @@ import {
 
 export const CHAT_TAB_SESSION_STORAGE_PREFIX = "chat-tab-session-v2:";
 export const LEGACY_CHAT_TAB_SESSION_STORAGE_KEY = "chat-tab-session";
-export const LEGACY_CHAT_TAB_SESSION_MIGRATION_KEY =
-  "chat-tab-session-legacy-migrated-v2";
+export const LEGACY_CHAT_TAB_SESSION_MIGRATION_KEY = "chat-tab-session-legacy-migrated-v2";
 const CHAT_TAB_TRANSFER_REMOVAL_PREFIX = "chat-tab-transfer-removal-v1:";
 const CHAT_TAB_TRANSFER_REMOVAL_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -37,9 +36,7 @@ export function configureChatTabWindowSession(
   mayMigrateLegacySession = options.mayMigrateLegacySession;
 }
 
-export function chatTabSessionStorageKey(
-  windowSessionId: WindowSessionId,
-): string {
+export function chatTabSessionStorageKey(windowSessionId: WindowSessionId): string {
   return `${CHAT_TAB_SESSION_STORAGE_PREFIX}${windowSessionId}`;
 }
 
@@ -47,16 +44,12 @@ export function getActiveWindowSessionId(): WindowSessionId {
   return activeWindowSessionId;
 }
 
-export function getActiveStoredChatTab(
-  chatId: number,
-): StoredChatTab | undefined {
+export function getActiveStoredChatTab(chatId: number): StoredChatTab | undefined {
   return getActiveStoredChatTabs().find((tab) => tab.chatId === chatId);
 }
 
 export function getActiveStoredChatTabs(): StoredChatTab[] {
-  const raw = window.localStorage.getItem(
-    chatTabSessionStorageKey(activeWindowSessionId),
-  );
+  const raw = window.localStorage.getItem(chatTabSessionStorageKey(activeWindowSessionId));
   if (raw === null) return [];
   const session = parseStoredSession(raw, activeWindowSessionId);
   if (!session) {
@@ -68,17 +61,13 @@ export function getActiveStoredChatTabs(): StoredChatTab[] {
 export function activeStoredChatTabInstanceState(
   tabInstanceId: TabInstanceId,
 ): "present" | "absent" {
-  const raw = window.localStorage.getItem(
-    chatTabSessionStorageKey(activeWindowSessionId),
-  );
+  const raw = window.localStorage.getItem(chatTabSessionStorageKey(activeWindowSessionId));
   if (raw === null) return "absent";
   const session = parseStoredSession(raw, activeWindowSessionId);
   if (!session) {
     throw new Error("The chat tab session could not be read");
   }
-  return session.tabs.some((tab) => tab.tabInstanceId === tabInstanceId)
-    ? "present"
-    : "absent";
+  return session.tabs.some((tab) => tab.tabInstanceId === tabInstanceId) ? "present" : "absent";
 }
 
 export function assertActiveStoredChatTabInstance(
@@ -94,33 +83,22 @@ export function assertActiveStoredChatTabInstance(
   }
 }
 
-export function markSourceChatTabRemoval(
-  transferId: string,
-  tabInstanceId: TabInstanceId,
-): void {
+export function markSourceChatTabRemoval(transferId: string, tabInstanceId: TabInstanceId): void {
   window.localStorage.setItem(
     `${CHAT_TAB_TRANSFER_REMOVAL_PREFIX}${transferId}`,
     JSON.stringify({ tabInstanceId, removedAt: Date.now() }),
   );
 }
 
-export function hasSourceChatTabRemoval(
-  transferId: string,
-  tabInstanceId: TabInstanceId,
-): boolean {
-  const raw = window.localStorage.getItem(
-    `${CHAT_TAB_TRANSFER_REMOVAL_PREFIX}${transferId}`,
-  );
+export function hasSourceChatTabRemoval(transferId: string, tabInstanceId: TabInstanceId): boolean {
+  const raw = window.localStorage.getItem(`${CHAT_TAB_TRANSFER_REMOVAL_PREFIX}${transferId}`);
   if (!raw) return false;
   try {
     const parsed = JSON.parse(raw) as {
       tabInstanceId?: unknown;
       removedAt?: unknown;
     };
-    return (
-      parsed.tabInstanceId === tabInstanceId &&
-      typeof parsed.removedAt === "number"
-    );
+    return parsed.tabInstanceId === tabInstanceId && typeof parsed.removedAt === "number";
   } catch {
     return false;
   }
@@ -128,9 +106,7 @@ export function hasSourceChatTabRemoval(
 
 export function clearSourceChatTabRemoval(transferId: string): void {
   try {
-    window.localStorage.removeItem(
-      `${CHAT_TAB_TRANSFER_REMOVAL_PREFIX}${transferId}`,
-    );
+    window.localStorage.removeItem(`${CHAT_TAB_TRANSFER_REMOVAL_PREFIX}${transferId}`);
   } catch (error) {
     console.error("Failed to clear chat tab transfer receipt", error);
   }
@@ -147,17 +123,14 @@ export function adoptStoredChatTab(tab: StoredChatTab): void {
   if (
     current?.tabs.some(
       (candidate) =>
-        candidate.chatId === tab.chatId &&
-        candidate.tabInstanceId !== tab.tabInstanceId,
+        candidate.chatId === tab.chatId && candidate.tabInstanceId !== tab.tabInstanceId,
     )
   ) {
     throw new Error("The destination already has a tab for this chat");
   }
   const tabs = [
     tab,
-    ...(current?.tabs ?? []).filter(
-      (candidate) => candidate.tabInstanceId !== tab.tabInstanceId,
-    ),
+    ...(current?.tabs ?? []).filter((candidate) => candidate.tabInstanceId !== tab.tabInstanceId),
   ];
   storage.setItem(
     key,
@@ -166,9 +139,7 @@ export function adoptStoredChatTab(tab: StoredChatTab): void {
       windowSessionId: activeWindowSessionId,
       tabs,
       selectedTabInstanceId: tab.tabInstanceId,
-      closedChatIds: (current?.closedChatIds ?? []).filter(
-        (chatId) => chatId !== tab.chatId,
-      ),
+      closedChatIds: (current?.closedChatIds ?? []).filter((chatId) => chatId !== tab.chatId),
       updatedAt: Date.now(),
     } satisfies StoredWindowChatTabSession),
   );
@@ -184,27 +155,21 @@ export function removeActiveStoredChatTab(tabInstanceId: TabInstanceId): void {
     throw new Error("The chat tab session could not be read");
   }
   if (!current.tabs.some((tab) => tab.tabInstanceId === tabInstanceId)) return;
-  const tabs = current.tabs.filter(
-    (tab) => tab.tabInstanceId !== tabInstanceId,
-  );
+  const tabs = current.tabs.filter((tab) => tab.tabInstanceId !== tabInstanceId);
   storage.setItem(
     key,
     JSON.stringify({
       ...current,
       tabs,
       selectedTabInstanceId:
-        current.selectedTabInstanceId === tabInstanceId
-          ? null
-          : current.selectedTabInstanceId,
+        current.selectedTabInstanceId === tabInstanceId ? null : current.selectedTabInstanceId,
       updatedAt: Date.now(),
     } satisfies StoredWindowChatTabSession),
   );
 }
 
 function isNumberArray(value: unknown): value is number[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "number")
-  );
+  return Array.isArray(value) && value.every((item) => typeof item === "number");
 }
 
 function isLegacySession(value: unknown): value is ChatTabSession {
@@ -212,8 +177,7 @@ function isLegacySession(value: unknown): value is ChatTabSession {
   const session = value as Partial<ChatTabSession>;
   return (
     isNumberArray(session.openChatIds) &&
-    (session.selectedChatId === null ||
-      typeof session.selectedChatId === "number") &&
+    (session.selectedChatId === null || typeof session.selectedChatId === "number") &&
     isNumberArray(session.closedChatIds) &&
     typeof session.updatedAt === "number"
   );
@@ -236,8 +200,7 @@ function isStoredWindowSession(
         typeof (tab as Partial<StoredChatTab>).tabInstanceId === "string" &&
         typeof (tab as Partial<StoredChatTab>).chatId === "number",
     ) &&
-    (session.selectedTabInstanceId === null ||
-      typeof session.selectedTabInstanceId === "string") &&
+    (session.selectedTabInstanceId === null || typeof session.selectedTabInstanceId === "string") &&
     isNumberArray(session.closedChatIds) &&
     typeof session.updatedAt === "number"
   );
@@ -275,9 +238,7 @@ function toStoredSession(
   windowSessionId: WindowSessionId,
   previous?: StoredWindowChatTabSession,
 ): StoredWindowChatTabSession {
-  const previousIds = new Map(
-    previous?.tabs.map((tab) => [tab.chatId, tab.tabInstanceId]) ?? [],
-  );
+  const previousIds = new Map(previous?.tabs.map((tab) => [tab.chatId, tab.tabInstanceId]) ?? []);
   const tabs = session.openChatIds.map((chatId) => ({
     chatId,
     tabInstanceId: previousIds.get(chatId) ?? createTabInstanceId(),
@@ -287,22 +248,18 @@ function toStoredSession(
     windowSessionId,
     tabs,
     selectedTabInstanceId:
-      tabs.find((tab) => tab.chatId === session.selectedChatId)
-        ?.tabInstanceId ?? null,
+      tabs.find((tab) => tab.chatId === session.selectedChatId)?.tabInstanceId ?? null,
     closedChatIds: session.closedChatIds,
     updatedAt: session.updatedAt,
   };
 }
 
-function fromStoredSession(
-  session: StoredWindowChatTabSession,
-): ChatTabSession {
+function fromStoredSession(session: StoredWindowChatTabSession): ChatTabSession {
   return {
     openChatIds: session.tabs.map((tab) => tab.chatId),
     selectedChatId:
-      session.tabs.find(
-        (tab) => tab.tabInstanceId === session.selectedTabInstanceId,
-      )?.chatId ?? null,
+      session.tabs.find((tab) => tab.tabInstanceId === session.selectedTabInstanceId)?.chatId ??
+      null,
     closedChatIds: session.closedChatIds,
     updatedAt: session.updatedAt,
   };
@@ -313,16 +270,11 @@ export function pruneChatTabWindowSessions(
   restorableWindowSessionIds: readonly WindowSessionId[],
 ): void {
   try {
-    const restorable = new Set(
-      restorableWindowSessionIds.map(chatTabSessionStorageKey),
-    );
+    const restorable = new Set(restorableWindowSessionIds.map(chatTabSessionStorageKey));
     const staleKeys: string[] = [];
     for (let index = 0; index < storage.length; index += 1) {
       const key = storage.key(index);
-      if (
-        key?.startsWith(CHAT_TAB_SESSION_STORAGE_PREFIX) &&
-        !restorable.has(key)
-      ) {
+      if (key?.startsWith(CHAT_TAB_SESSION_STORAGE_PREFIX) && !restorable.has(key)) {
         staleKeys.push(key);
       }
     }
@@ -333,10 +285,7 @@ export function pruneChatTabWindowSessions(
       const session = parseStoredSession(storage.getItem(key), windowSessionId);
       return session ? [{ key, session }] : [];
     });
-    const ownerByTabInstanceId = new Map<
-      TabInstanceId,
-      { key: string; updatedAt: number }
-    >();
+    const ownerByTabInstanceId = new Map<TabInstanceId, { key: string; updatedAt: number }>();
     for (const { key, session } of sessions) {
       for (const tab of session.tabs) {
         const owner = ownerByTabInstanceId.get(tab.tabInstanceId);
@@ -379,10 +328,7 @@ export function pruneChatTabWindowSessions(
         const parsed = JSON.parse(storage.getItem(key) ?? "") as {
           removedAt?: unknown;
         };
-        if (
-          typeof parsed.removedAt !== "number" ||
-          parsed.removedAt < staleBefore
-        ) {
+        if (typeof parsed.removedAt !== "number" || parsed.removedAt < staleBefore) {
           staleTransferKeys.push(key);
         }
       } catch {
@@ -401,37 +347,25 @@ export function promoteMostRecentChatTabSession(
 ): void {
   try {
     const targetKey = chatTabSessionStorageKey(targetWindowSessionId);
-    if (
-      parseStoredSession(storage.getItem(targetKey), targetWindowSessionId) !==
-      null
-    ) {
+    if (parseStoredSession(storage.getItem(targetKey), targetWindowSessionId) !== null) {
       return;
     }
 
-    let mostRecent:
-      | { key: string; session: StoredWindowChatTabSession }
-      | undefined;
+    let mostRecent: { key: string; session: StoredWindowChatTabSession } | undefined;
     for (let index = 0; index < storage.length; index += 1) {
       const key = storage.key(index);
-      if (
-        !key?.startsWith(CHAT_TAB_SESSION_STORAGE_PREFIX) ||
-        key === targetKey
-      ) {
+      if (!key?.startsWith(CHAT_TAB_SESSION_STORAGE_PREFIX) || key === targetKey) {
         continue;
       }
       const candidateWindowSessionId = key.slice(
         CHAT_TAB_SESSION_STORAGE_PREFIX.length,
       ) as WindowSessionId;
-      const session = parseStoredSession(
-        storage.getItem(key),
-        candidateWindowSessionId,
-      );
+      const session = parseStoredSession(storage.getItem(key), candidateWindowSessionId);
       if (
         session &&
         (!mostRecent ||
           session.updatedAt > mostRecent.session.updatedAt ||
-          (session.updatedAt === mostRecent.session.updatedAt &&
-            key > mostRecent.key))
+          (session.updatedAt === mostRecent.session.updatedAt && key > mostRecent.key))
       ) {
         mostRecent = { key, session };
       }
@@ -454,41 +388,28 @@ export function createChatTabSessionStorage(
   storageOrFactory: Storage | (() => Storage | undefined),
 ) {
   const getStorage = () =>
-    typeof storageOrFactory === "function"
-      ? storageOrFactory()
-      : storageOrFactory;
+    typeof storageOrFactory === "function" ? storageOrFactory() : storageOrFactory;
   return {
     getItem(_key: string, initialValue: ChatTabSession): ChatTabSession {
       try {
         const storage = getStorage();
         if (!storage) return initialValue;
         const sessionKey = chatTabSessionStorageKey(activeWindowSessionId);
-        const current = parseStoredSession(
-          storage.getItem(sessionKey),
-          activeWindowSessionId,
-        );
+        const current = parseStoredSession(storage.getItem(sessionKey), activeWindowSessionId);
         if (current) return fromStoredSession(current);
 
         if (!mayMigrateLegacySession) return initialValue;
         if (storage.getItem(LEGACY_CHAT_TAB_SESSION_MIGRATION_KEY) !== null) {
           return initialValue;
         }
-        const legacy = parseLegacySession(
-          storage.getItem(LEGACY_CHAT_TAB_SESSION_STORAGE_KEY),
-        );
+        const legacy = parseLegacySession(storage.getItem(LEGACY_CHAT_TAB_SESSION_STORAGE_KEY));
         if (!legacy) return initialValue;
 
         // The main process designates exactly one stable session as the legacy
         // migration owner. Persist immediately so later reads never replay the
         // retained compatibility blob into another product window.
-        storage.setItem(
-          sessionKey,
-          JSON.stringify(toStoredSession(legacy, activeWindowSessionId)),
-        );
-        storage.setItem(
-          LEGACY_CHAT_TAB_SESSION_MIGRATION_KEY,
-          activeWindowSessionId,
-        );
+        storage.setItem(sessionKey, JSON.stringify(toStoredSession(legacy, activeWindowSessionId)));
+        storage.setItem(LEGACY_CHAT_TAB_SESSION_MIGRATION_KEY, activeWindowSessionId);
         return legacy;
       } catch (error) {
         console.error("Failed to read chat tab window session", error);
@@ -501,15 +422,10 @@ export function createChatTabSessionStorage(
         if (!storage || !isLegacySession(value)) return;
         const sessionKey = chatTabSessionStorageKey(activeWindowSessionId);
         const previous =
-          parseStoredSession(
-            storage.getItem(sessionKey),
-            activeWindowSessionId,
-          ) ?? undefined;
+          parseStoredSession(storage.getItem(sessionKey), activeWindowSessionId) ?? undefined;
         storage.setItem(
           sessionKey,
-          JSON.stringify(
-            toStoredSession(value, activeWindowSessionId, previous),
-          ),
+          JSON.stringify(toStoredSession(value, activeWindowSessionId, previous)),
         );
       } catch (error) {
         console.error("Failed to persist chat tab window session", error);
@@ -517,9 +433,7 @@ export function createChatTabSessionStorage(
     },
     removeItem(): void {
       try {
-        getStorage()?.removeItem(
-          chatTabSessionStorageKey(activeWindowSessionId),
-        );
+        getStorage()?.removeItem(chatTabSessionStorageKey(activeWindowSessionId));
       } catch (error) {
         console.error("Failed to remove chat tab window session", error);
       }

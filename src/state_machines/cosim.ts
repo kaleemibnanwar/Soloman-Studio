@@ -23,10 +23,7 @@ import type { TransitionResult } from "./types";
  * shortest failure observed before the bound.
  */
 
-export type CosimTransitionResult<State, Command> = TransitionResult<
-  State,
-  Command
->;
+export type CosimTransitionResult<State, Command> = TransitionResult<State, Command>;
 
 export interface CosimParticipant<State, Event, Command> {
   initialState: State;
@@ -45,11 +42,7 @@ export interface CosimChannel<ParticipantName extends string, Event> {
   describeEvent?(event: Event): string;
 }
 
-export type CosimEffect<
-  ParticipantName extends string,
-  ChannelName extends string,
-  Event,
-> =
+export type CosimEffect<ParticipantName extends string, ChannelName extends string, Event> =
   | {
       target: "participant";
       participant: ParticipantName;
@@ -83,23 +76,10 @@ export type CosimScenarioAction<
 > = CosimEffect<ParticipantName, ChannelName, Event> & {
   id: string;
   label?: string;
-  enabled?(
-    snapshot: CosimSnapshot<
-      ParticipantName,
-      ChannelName,
-      State,
-      Event,
-      Command
-    >,
-  ): boolean;
+  enabled?(snapshot: CosimSnapshot<ParticipantName, ChannelName, State, Event, Command>): boolean;
 };
 
-export interface CosimTransitionStep<
-  ParticipantName extends string,
-  State,
-  Event,
-  Command,
-> {
+export interface CosimTransitionStep<ParticipantName extends string, State, Event, Command> {
   participant: ParticipantName;
   previousState: State;
   event: Event;
@@ -116,12 +96,7 @@ export interface CosimStep<
 > {
   kind: "deliver" | "inject" | "command";
   description: string;
-  transitions: readonly CosimTransitionStep<
-    ParticipantName,
-    State,
-    Event,
-    Command
-  >[];
+  transitions: readonly CosimTransitionStep<ParticipantName, State, Event, Command>[];
   snapshot: CosimSnapshot<ParticipantName, ChannelName, State, Event, Command>;
 }
 
@@ -140,9 +115,7 @@ export interface CosimResult {
   failure?: CosimFailure;
 }
 
-type Assertion<Value> =
-  | ((value: Value) => void)
-  | readonly ((value: Value) => void)[];
+type Assertion<Value> = ((value: Value) => void) | readonly ((value: Value) => void)[];
 
 interface Configuration<
   ParticipantName extends string,
@@ -172,10 +145,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function freezeForCallback<Value>(
-  value: Value,
-  deeplyFrozenValues: WeakSet<object>,
-): Value {
+function freezeForCallback<Value>(value: Value, deeplyFrozenValues: WeakSet<object>): Value {
   const seen = new WeakSet<object>();
   const freeze = (current: unknown): void => {
     if (
@@ -221,17 +191,12 @@ function formatFailure(
   };
 }
 
-function preferFailure(
-  current: CosimFailure | undefined,
-  candidate: CosimFailure,
-): CosimFailure {
+function preferFailure(current: CosimFailure | undefined, candidate: CosimFailure): CosimFailure {
   if (current === undefined || candidate.trace.length < current.trace.length) {
     return candidate;
   }
   if (candidate.trace.length > current.trace.length) return current;
-  return candidate.formattedTrace < current.formattedTrace
-    ? candidate
-    : current;
+  return candidate.formattedTrace < current.formattedTrace ? candidate : current;
 }
 
 export function runCosim<
@@ -241,43 +206,22 @@ export function runCosim<
   Event,
   Command,
 >(options: {
-  participants: Record<
-    ParticipantName,
-    CosimParticipant<State, Event, Command>
-  >;
+  participants: Record<ParticipantName, CosimParticipant<State, Event, Command>>;
   channels: Record<ChannelName, CosimChannel<ParticipantName, Event>>;
   scenario: {
-    actions: readonly CosimScenarioAction<
-      ParticipantName,
-      ChannelName,
-      State,
-      Event,
-      Command
-    >[];
+    actions: readonly CosimScenarioAction<ParticipantName, ChannelName, State, Event, Command>[];
     routeCommand(
       source: { participant: ParticipantName; command: Command },
-      snapshot: CosimSnapshot<
-        ParticipantName,
-        ChannelName,
-        State,
-        Event,
-        Command
-      >,
+      snapshot: CosimSnapshot<ParticipantName, ChannelName, State, Event, Command>,
     ): readonly CosimEffect<ParticipantName, ChannelName, Event>[];
   };
   assertions?: {
-    perStep?: Assertion<
-      CosimStep<ParticipantName, ChannelName, State, Event, Command>
-    >;
-    atQuiescence?: Assertion<
-      CosimSnapshot<ParticipantName, ChannelName, State, Event, Command>
-    >;
+    perStep?: Assertion<CosimStep<ParticipantName, ChannelName, State, Event, Command>>;
+    atQuiescence?: Assertion<CosimSnapshot<ParticipantName, ChannelName, State, Event, Command>>;
   };
   maxSchedules?: number;
 }): CosimResult {
-  const participantNames = Object.keys(
-    options.participants,
-  ) as ParticipantName[];
+  const participantNames = Object.keys(options.participants) as ParticipantName[];
   const channelNames = Object.keys(options.channels) as ChannelName[];
   const maxSchedules = options.maxSchedules ?? 10_000;
   if (!Number.isInteger(maxSchedules) || maxSchedules < 1) {
@@ -289,13 +233,7 @@ export function runCosim<
   }
   const deeplyFrozenCallbackValues = new WeakSet<object>();
 
-  type Config = Configuration<
-    ParticipantName,
-    ChannelName,
-    State,
-    Event,
-    Command
-  >;
+  type Config = Configuration<ParticipantName, ChannelName, State, Event, Command>;
   type Step = CosimStep<ParticipantName, ChannelName, State, Event, Command>;
 
   const snapshot = (
@@ -321,9 +259,7 @@ export function runCosim<
       ]),
       channels: channelNames.map((name) => [
         name,
-        configuration.channels[name].map((event) =>
-          options.channels[name].eventKey(event),
-        ),
+        configuration.channels[name].map((event) => options.channels[name].eventKey(event)),
       ]),
       commands: participantNames.map((name) => [
         name,
@@ -356,9 +292,7 @@ export function runCosim<
       (result.kind === "applied" && !Array.isArray(result.commands)) ||
       (result.kind === "ignored" && result.state !== previousState)
     ) {
-      throw new Error(
-        `Participant "${participantName}" returned an invalid transition result`,
-      );
+      throw new Error(`Participant "${participantName}" returned an invalid transition result`);
     }
     return {
       configuration: {
@@ -372,10 +306,7 @@ export function runCosim<
             ? configuration.commands
             : {
                 ...configuration.commands,
-                [participantName]: [
-                  ...configuration.commands[participantName],
-                  ...result.commands,
-                ],
+                [participantName]: [...configuration.commands[participantName], ...result.commands],
               },
       },
       transition: {
@@ -388,9 +319,7 @@ export function runCosim<
     };
   };
 
-  const describeEffect = (
-    effect: CosimEffect<ParticipantName, ChannelName, Event>,
-  ): string => {
+  const describeEffect = (effect: CosimEffect<ParticipantName, ChannelName, Event>): string => {
     if (effect.target === "channel") {
       const channel = options.channels[effect.channel];
       return `enqueue ${channel.describeEvent?.(effect.event) ?? channel.eventKey(effect.event)} on "${effect.channel}"`;
@@ -426,9 +355,7 @@ export function runCosim<
     return { configuration: next, transitions };
   };
 
-  const enabledActions = (
-    configuration: Config,
-  ): PendingAction<Config, Step>[] => {
+  const enabledActions = (configuration: Config): PendingAction<Config, Step>[] => {
     const enabled: PendingAction<Config, Step>[] = [];
 
     for (const channelName of channelNames) {
@@ -473,13 +400,10 @@ export function runCosim<
             (index) => index !== actionIndex,
           );
           const base = { ...configuration, remainingActions };
-          const effect: CosimEffect<ParticipantName, ChannelName, Event> =
-            action;
+          const effect: CosimEffect<ParticipantName, ChannelName, Event> = action;
           const applied = applyEffects(base, [effect]);
           const transitionSuffix =
-            applied.transitions.length === 1 && applied.transitions[0].ignored
-              ? " (ignored)"
-              : "";
+            applied.transitions.length === 1 && applied.transitions[0].ignored ? " (ignored)" : "";
           const description = `inject "${action.label ?? action.id}": ${describeEffect(effect)}${transitionSuffix}`;
           return {
             configuration: applied.configuration,
@@ -569,10 +493,7 @@ export function runCosim<
     try {
       actions = enabledActions(current.configuration);
     } catch (error) {
-      failure = preferFailure(
-        failure,
-        formatFailure("driver", errorMessage(error), current.trace),
-      );
+      failure = preferFailure(failure, formatFailure("driver", errorMessage(error), current.trace));
       continue;
     }
 
@@ -591,8 +512,7 @@ export function runCosim<
       continue;
     }
 
-    const successors: { configuration: Config; trace: readonly string[] }[] =
-      [];
+    const successors: { configuration: Config; trace: readonly string[] }[] = [];
     for (const action of actions) {
       let applied: { configuration: Config; step: Step };
       try {
@@ -608,15 +528,10 @@ export function runCosim<
       let invariantFailed = false;
       for (const assertion of assertions(options.assertions?.perStep)) {
         try {
-          assertion(
-            freezeForCallback(applied.step, deeplyFrozenCallbackValues),
-          );
+          assertion(freezeForCallback(applied.step, deeplyFrozenCallbackValues));
         } catch (error) {
           invariantFailed = true;
-          failure = preferFailure(
-            failure,
-            formatFailure("step", errorMessage(error), nextTrace),
-          );
+          failure = preferFailure(failure, formatFailure("step", errorMessage(error), nextTrace));
         }
       }
       if (invariantFailed) continue;

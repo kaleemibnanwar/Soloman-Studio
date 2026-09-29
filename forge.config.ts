@@ -124,6 +124,13 @@ const ignore = (file: string) => {
   if (file.startsWith("/node_modules/@office-open")) {
     return false;
   }
+  // @office-open dependencies
+  if (file.startsWith("/node_modules/fflate")) {
+    return false;
+  }
+  if (file.startsWith("/node_modules/@noble")) {
+    return false;
+  }
   if (file === "/node_modules/@typescript") {
     return false;
   }
@@ -230,39 +237,49 @@ const config: ForgeConfig = {
         extraModules: nativeRebuildModules,
         force: true,
       },
-  makers: [
-    new MakerSquirrel(
-      // @ts-expect-error - incorrect types exported by MakerSquirrel
-      isWindowsSigningEnabled
-        ? {
-            windowsSign,
-            iconUrl:
-              "https://raw.githubusercontent.com/octopusStudio-sh/octopusStudio/main/assets/icon/logo.ico",
-            setupIcon: "./assets/icon/logo.ico",
-          }
-        : {
-            iconUrl:
-              "https://raw.githubusercontent.com/octopusStudio-sh/octopusStudio/main/assets/icon/logo.ico",
-            setupIcon: "./assets/icon/logo.ico",
-          },
-    ),
-    new MakerZIP({}, ["darwin"]),
-    new MakerRpm({
-      options: {
-        mimeType: ["x-scheme-handler/octopusStudio"],
-        icon: "./assets/icon/logo.png",
-      },
-    }),
-    new MakerDeb({
-      options: {
-        mimeType: ["x-scheme-handler/octopusStudio"],
-        icon: "./assets/icon/logo.png",
-      },
-    }),
-    new MakerAppImage({
-      icon: "./assets/icon/logo.png",
-    }),
-  ],
+  makers:
+    process.env.MAKE_TARGET === "deb"
+      ? [
+          new MakerDeb({
+            options: {
+              mimeType: ["x-scheme-handler/octopusStudio"],
+              icon: "./assets/icon/logo.png",
+            },
+          }),
+        ]
+      : [
+          new MakerSquirrel(
+            // @ts-expect-error - incorrect types exported by MakerSquirrel
+            isWindowsSigningEnabled
+              ? {
+                  windowsSign,
+                  iconUrl:
+                    "https://raw.githubusercontent.com/octopusStudio-sh/octopusStudio/main/assets/icon/logo.ico",
+                  setupIcon: "./assets/icon/logo.ico",
+                }
+              : {
+                  iconUrl:
+                    "https://raw.githubusercontent.com/octopusStudio-sh/octopusStudio/main/assets/icon/logo.ico",
+                  setupIcon: "./assets/icon/logo.ico",
+                },
+          ),
+          new MakerZIP({}, ["darwin"]),
+          new MakerRpm({
+            options: {
+              mimeType: ["x-scheme-handler/octopusStudio"],
+              icon: "./assets/icon/logo.png",
+            },
+          }),
+          new MakerDeb({
+            options: {
+              mimeType: ["x-scheme-handler/octopusStudio"],
+              icon: "./assets/icon/logo.png",
+            },
+          }),
+          new MakerAppImage({
+            icon: "./assets/icon/logo.png",
+          }),
+        ],
   publishers: [
     {
       name: "@electron-forge/publisher-github",

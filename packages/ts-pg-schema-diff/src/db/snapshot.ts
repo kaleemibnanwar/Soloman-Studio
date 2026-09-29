@@ -98,10 +98,7 @@ function schemaPredicate(
   return `snapshot_scope.${column} IN (${includeSchemas.map(sqlLiteral).join(", ")})`;
 }
 
-function scopedQuery(
-  query: string,
-  predicates: readonly (string | null)[],
-): string {
+function scopedQuery(query: string, predicates: readonly (string | null)[]): string {
   const activePredicates = predicates.filter(
     (predicate): predicate is string => predicate !== null,
   );
@@ -113,19 +110,10 @@ FROM (${withoutTrailingSemicolon(query)}) AS snapshot_scope
 WHERE ${activePredicates.join(" AND ")}`;
 }
 
-function replaceRequiredOnce(
-  query: string,
-  search: string,
-  replacement: string,
-): string {
+function replaceRequiredOnce(query: string, search: string, replacement: string): string {
   const firstIndex = query.indexOf(search);
-  if (
-    firstIndex === -1 ||
-    query.indexOf(search, firstIndex + search.length) !== -1
-  ) {
-    throw new Error(
-      `Expected database introspection query fragment exactly once: ${search}`,
-    );
+  if (firstIndex === -1 || query.indexOf(search, firstIndex + search.length) !== -1) {
+    throw new Error(`Expected database introspection query fragment exactly once: ${search}`);
   }
   return query.replace(search, replacement);
 }
@@ -135,14 +123,10 @@ function replaceRequiredOnce(
  * This is intended for HTTP database APIs, where each DatabaseClient query
  * would otherwise become a separate network request.
  */
-export function buildSchemaSnapshotSql(
-  options: BuildSchemaSnapshotOptions = {},
-): string {
+export function buildSchemaSnapshotSql(options: BuildSchemaSnapshotOptions = {}): string {
   const tableName = options.tableName || undefined;
   const tableNamePredicate = (column: string): string | null =>
-    tableName === undefined
-      ? null
-      : `snapshot_scope.${column} = ${sqlLiteral(tableName)}`;
+    tableName === undefined ? null : `snapshot_scope.${column} = ${sqlLiteral(tableName)}`;
   const tablesSql = scopedQuery(getTablesSql, [
     schemaPredicate("table_schema_name", options.includeSchemas),
     tableNamePredicate("table_name"),
@@ -199,10 +183,7 @@ export function buildSchemaSnapshotSql(
 )
 SELECT required_functions.oid FROM required_functions`;
   const requiredFunctionPredicate = `snapshot_scope.oid::OID IN (${requiredFunctionOidsSql})`;
-  const functionSchemaPredicate = schemaPredicate(
-    "func_schema_name",
-    options.includeSchemas,
-  );
+  const functionSchemaPredicate = schemaPredicate("func_schema_name", options.includeSchemas);
   const functionsSql =
     tableName === undefined
       ? scopedQuery(allFunctionsSql, [
@@ -257,25 +238,19 @@ FROM (${withoutTrailingSemicolon(functionsSql)}) AS snapshot_function`;
   const fields: readonly [keyof SchemaSnapshot, string][] = [
     [
       "serverVersion",
-      queryRows(
-        "SELECT current_setting('server_version_num') AS server_version_num",
-      ),
+      queryRows("SELECT current_setting('server_version_num') AS server_version_num"),
     ],
     ["schemas", queryRows(schemasSql)],
     [
       "extensions",
       queryRows(
-        scopedQuery(getExtensionsSql, [
-          schemaPredicate("schema_name", options.includeSchemas),
-        ]),
+        scopedQuery(getExtensionsSql, [schemaPredicate("schema_name", options.includeSchemas)]),
       ),
     ],
     [
       "enums",
       queryRows(
-        scopedQuery(getEnumsSql, [
-          schemaPredicate("enum_schema_name", options.includeSchemas),
-        ]),
+        scopedQuery(getEnumsSql, [schemaPredicate("enum_schema_name", options.includeSchemas)]),
       ),
     ],
     ["tables", queryRows(tablesSql)],
@@ -398,10 +373,7 @@ function buildSnapshotClient(snapshot: SchemaSnapshot): DatabaseClient {
     [normalizedQuery(getPoliciesSql), snapshot.policies],
     [normalizedQuery(getTablePrivilegesSql), snapshot.tablePrivileges],
     [normalizedQuery(getIndexesSql), snapshot.indexes],
-    [
-      normalizedQuery(getForeignKeyConstraintsSql),
-      snapshot.foreignKeyConstraints,
-    ],
+    [normalizedQuery(getForeignKeyConstraintsSql), snapshot.foreignKeyConstraints],
     [normalizedQuery(getSequencesSql), snapshot.sequences],
     [normalizedQuery(getTriggersSql), snapshot.triggers],
     [normalizedQuery(getViewsSql), snapshot.views],
@@ -414,14 +386,9 @@ function buildSnapshotClient(snapshot: SchemaSnapshot): DatabaseClient {
       values?: readonly unknown[],
     ) => {
       const queryText =
-        typeof queryTextOrConfig === "string"
-          ? queryTextOrConfig
-          : queryTextOrConfig.text;
+        typeof queryTextOrConfig === "string" ? queryTextOrConfig : queryTextOrConfig.text;
       const queryValues =
-        values ??
-        (typeof queryTextOrConfig === "string"
-          ? undefined
-          : queryTextOrConfig.values);
+        values ?? (typeof queryTextOrConfig === "string" ? undefined : queryTextOrConfig.values);
       const normalized = normalizedQuery(queryText);
       const fixedRows = fixedQueries.get(normalized);
       if (fixedRows !== undefined) {
@@ -429,14 +396,10 @@ function buildSnapshotClient(snapshot: SchemaSnapshot): DatabaseClient {
       }
       if (normalized === normalizedQuery(getColumnsForTableSql)) {
         const tableOid = String(queryValues?.[0]);
-        return rowsResult(
-          snapshot.columns.filter((row) => row["table_oid"] === tableOid),
-        );
+        return rowsResult(snapshot.columns.filter((row) => row["table_oid"] === tableOid));
       }
       if (normalized === normalizedQuery(getProcsSql)) {
-        return rowsResult(
-          queryValues?.[0] === "f" ? snapshot.functions : snapshot.procedures,
-        );
+        return rowsResult(queryValues?.[0] === "f" ? snapshot.functions : snapshot.procedures);
       }
       if (normalized === normalizedQuery(getDependsOnFunctionsSql)) {
         const dependentClass = String(queryValues?.[0]);
@@ -444,14 +407,11 @@ function buildSnapshotClient(snapshot: SchemaSnapshot): DatabaseClient {
         return rowsResult(
           snapshot.functionDependencies.filter(
             (row) =>
-              row["dependent_class"] === dependentClass &&
-              row["dependent_oid"] === dependentOid,
+              row["dependent_class"] === dependentClass && row["dependent_oid"] === dependentOid,
           ),
         );
       }
-      throw new Error(
-        "Unsupported query requested from database schema snapshot",
-      );
+      throw new Error("Unsupported query requested from database schema snapshot");
     }) as DatabaseClient["query"],
   };
 }

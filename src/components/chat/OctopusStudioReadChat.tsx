@@ -26,10 +26,7 @@ interface OctopusStudioReadChatProps {
   };
 }
 
-export const OctopusStudioReadChat: React.FC<OctopusStudioReadChatProps> = ({
-  children,
-  node,
-}) => {
+export const OctopusStudioReadChat: React.FC<OctopusStudioReadChatProps> = ({ children, node }) => {
   const { t } = useTranslation("chat");
   const [isContentVisible, setIsContentVisible] = useState(false);
 
@@ -49,13 +46,8 @@ export const OctopusStudioReadChat: React.FC<OctopusStudioReadChatProps> = ({
       isExpanded={isContentVisible}
       data-testid="octopus-studio-read-chat"
     >
-      <OctopusStudioCardHeader
-        icon={<BookOpen size={15} />}
-        accentColor="violet"
-      >
-        <OctopusStudioBadge color="violet">
-          {t("readChatTool.badge")}
-        </OctopusStudioBadge>
+      <OctopusStudioCardHeader icon={<BookOpen size={15} />} accentColor="violet">
+        <OctopusStudioBadge color="violet">{t("readChatTool.badge")}</OctopusStudioBadge>
         <span className="font-medium text-sm text-foreground truncate">
           {title || t("readChatTool.chatNumber", { chatId })}
         </span>
@@ -65,10 +57,7 @@ export const OctopusStudioReadChat: React.FC<OctopusStudioReadChatProps> = ({
           </span>
         )}
         {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel={t("readChatTool.reading")}
-          />
+          <OctopusStudioStateIndicator state="pending" pendingLabel={t("readChatTool.reading")} />
         )}
         {aborted && (
           <OctopusStudioStateIndicator

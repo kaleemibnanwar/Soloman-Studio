@@ -50,6 +50,9 @@ import {
   cloneSheets,
   colIndexToLetters,
   emptySheet,
+  ensureMinGrid,
+  DEFAULT_MIN_ROWS,
+  DEFAULT_MIN_COLS,
   formatCellDisplay,
   isInRange,
   makeGrid,
@@ -67,6 +70,52 @@ import {
   isFormulaError,
   shiftFormulaRefs,
 } from "./formulaEngine";
+
+function getHexLuminance(hex: string): number {
+  const clean = hex.replace(/^#/, "").trim();
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16) / 255;
+    const g = parseInt(clean[1] + clean[1], 16) / 255;
+    const b = parseInt(clean[2] + clean[2], 16) / 255;
+    const a = [r, g, b].map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  }
+  if (clean.length >= 6) {
+    const r = parseInt(clean.substring(0, 2), 16) / 255;
+    const g = parseInt(clean.substring(2, 4), 16) / 255;
+    const b = parseInt(clean.substring(4, 6), 16) / 255;
+    const a = [r, g, b].map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  }
+  return 1;
+}
+
+function resolveSafeCellColor(
+  textColor: string | undefined,
+  fillColor: string | undefined,
+): string | undefined {
+  if (!fillColor) {
+    return textColor;
+  }
+  const bgLuminance = getHexLuminance(fillColor);
+  const isDarkBg = bgLuminance < 0.45;
+
+  if (!textColor) {
+    return isDarkBg ? "#FFFFFF" : undefined;
+  }
+
+  const textLuminance = getHexLuminance(textColor);
+  const isDarkText = textLuminance < 0.45;
+
+  if (isDarkBg && isDarkText) {
+    return "#FFFFFF";
+  }
+  if (!isDarkBg && !isDarkText) {
+    return "#0F172A";
+  }
+
+  return textColor;
+}
 
 const ROW_HEADER_WIDTH = 44;
 const DEFAULT_COL_WIDTH = 100;
@@ -114,7 +163,9 @@ export function SpreadsheetGrid({
   allowFormatting,
   onSave,
 }: SpreadsheetGridProps) {
-  const [history, setHistory] = useState<SheetState[][]>([initialSheets]);
+  const [history, setHistory] = useState<SheetState[][]>(() => [
+    initialSheets.map((s) => ({ ...s, grid: ensureMinGrid(s.grid) })),
+  ]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [savedIndex, setSavedIndex] = useState(0);
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
@@ -129,14 +180,14 @@ export function SpreadsheetGrid({
   const [replaceQuery, setReplaceQuery] = useState("");
   const [findMatchIndex, setFindMatchIndex] = useState(0);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const [renamingSheet, setRenamingSheet] = useState<{ index: number; value: string } | null>(
-    null,
-  );
+  const [renamingSheet, setRenamingSheet] = useState<{ index: number; value: string } | null>(null);
   const [fillPreview, setFillPreview] = useState<Bounds | null>(null);
   const [selecting, setSelecting] = useState<CellPos | null>(null);
-  const [optionsPrompt, setOptionsPrompt] = useState<{ x: number; y: number; value: string } | null>(
-    null,
-  );
+  const [optionsPrompt, setOptionsPrompt] = useState<{
+    x: number;
+    y: number;
+    value: string;
+  } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isSelectingRef = useRef(false);
@@ -157,7 +208,8 @@ export function SpreadsheetGrid({
   const grid = activeSheet.grid;
   const rowCount = grid.length;
   const colCount = grid[0]?.length ?? 0;
-  const widths = colWidths[activeSheet.id] ?? Array.from({ length: colCount }, () => DEFAULT_COL_WIDTH);
+  const widths =
+    colWidths[activeSheet.id] ?? Array.from({ length: colCount }, () => DEFAULT_COL_WIDTH);
   const dirty = historyIndex !== savedIndex;
 
   const computedGrid = useMemo(() => {
@@ -168,6 +220,44 @@ export function SpreadsheetGrid({
 
   const selBounds = selection ? selectionBounds(selection, grid) : null;
 
+  const selectionStats = useMemo(() => {
+    if (!selection || !activeSheet) return null;
+    const bounds = selectionBounds(selection, grid);
+    let count = 0;
+    let numCount = 0;
+    let sum = 0;
+    let min = Infinity;
+    let max = -Infinity;
+
+    for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+      for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+        const cell = grid[r]?.[c];
+        const val = computedGrid[r]?.[c] ?? cell?.text;
+        if (val !== undefined && val !== null && String(val).trim() !== "") {
+          count++;
+          const num = parseNumeric(String(val));
+          if (num !== null && !isNaN(num)) {
+            numCount++;
+            sum += num;
+            if (num < min) min = num;
+            if (num > max) max = num;
+          }
+        }
+      }
+    }
+
+    if (count <= 1 && numCount === 0) return null;
+    const avg = numCount > 0 ? sum / numCount : 0;
+    return {
+      count,
+      numCount,
+      sum,
+      avg,
+      min: min === Infinity ? 0 : min,
+      max: max === -Infinity ? 0 : max,
+    };
+  }, [selection, activeSheet, grid, computedGrid]);
+
   const activeCell = editing?.pos ?? selection?.focus ?? null;
   const activeCellData = activeCell ? grid[activeCell.row]?.[activeCell.col] : undefined;
 
@@ -176,19 +266,25 @@ export function SpreadsheetGrid({
     [widths],
   );
 
-  const commit = useCallback((nextSheets: SheetState[]) => {
-    setHistory((prev) => {
-      const truncated = prev.slice(0, historyIndex + 1);
-      const next = [...truncated, nextSheets].slice(-MAX_HISTORY);
-      setHistoryIndex(next.length - 1);
-      return next;
-    });
-  }, [historyIndex]);
+  const commit = useCallback(
+    (nextSheets: SheetState[]) => {
+      setHistory((prev) => {
+        const truncated = prev.slice(0, historyIndex + 1);
+        const next = [...truncated, nextSheets].slice(-MAX_HISTORY);
+        setHistoryIndex(next.length - 1);
+        return next;
+      });
+    },
+    [historyIndex],
+  );
 
   const updateActiveGrid = useCallback(
     (updater: (grid: GridData) => GridData) => {
       const next = cloneSheets(sheets);
-      next[activeSheetIndex] = { ...next[activeSheetIndex], grid: updater(next[activeSheetIndex].grid) };
+      next[activeSheetIndex] = {
+        ...next[activeSheetIndex],
+        grid: updater(next[activeSheetIndex].grid),
+      };
       commit(next);
     },
     [sheets, activeSheetIndex, commit],
@@ -387,7 +483,12 @@ export function SpreadsheetGrid({
     if (sheets.length <= 1) return;
     const next = sheets.filter((_, i) => i !== index);
     commit(next);
-    setActiveSheetIndex((cur) => Math.max(0, cur >= next.length ? next.length - 1 : cur === index ? Math.max(0, index - 1) : cur));
+    setActiveSheetIndex((cur) =>
+      Math.max(
+        0,
+        cur >= next.length ? next.length - 1 : cur === index ? Math.max(0, index - 1) : cur,
+      ),
+    );
   };
 
   const renameSheet = (index: number, name: string) => {
@@ -422,13 +523,17 @@ export function SpreadsheetGrid({
   };
 
   const insertCol = (at: number) => {
-    updateActiveGrid((g) => g.map((row) => {
-      const next = [...row];
-      next.splice(at, 0, { text: "" });
-      return next;
-    }));
+    updateActiveGrid((g) =>
+      g.map((row) => {
+        const next = [...row];
+        next.splice(at, 0, { text: "" });
+        return next;
+      }),
+    );
     setColWidths((prev) => {
-      const w = [...(prev[activeSheet.id] ?? Array.from({ length: colCount }, () => DEFAULT_COL_WIDTH))];
+      const w = [
+        ...(prev[activeSheet.id] ?? Array.from({ length: colCount }, () => DEFAULT_COL_WIDTH)),
+      ];
       w.splice(at, 0, DEFAULT_COL_WIDTH);
       return { ...prev, [activeSheet.id]: w };
     });
@@ -455,10 +560,14 @@ export function SpreadsheetGrid({
       if (g.length <= 1) return g;
       const values = computedValues.get(activeSheet.id);
       const header = g[0];
-      const bodyRows = g.slice(1).map((row, i) => ({ row, originalIndex: i, computed: values?.[i + 1]?.[col] }));
+      const bodyRows = g
+        .slice(1)
+        .map((row, i) => ({ row, originalIndex: i, computed: values?.[i + 1]?.[col] }));
       bodyRows.sort((a, b) => {
-        const na = typeof a.computed === "number" ? a.computed : parseNumeric(a.row[col]?.text ?? "");
-        const nb = typeof b.computed === "number" ? b.computed : parseNumeric(b.row[col]?.text ?? "");
+        const na =
+          typeof a.computed === "number" ? a.computed : parseNumeric(a.row[col]?.text ?? "");
+        const nb =
+          typeof b.computed === "number" ? b.computed : parseNumeric(b.row[col]?.text ?? "");
         const cmp =
           na != null && nb != null
             ? na - nb
@@ -645,7 +754,9 @@ export function SpreadsheetGrid({
       if (!resize) return;
       const delta = e.clientX - resize.startX;
       setColWidths((prev) => {
-        const w = [...(prev[activeSheet.id] ?? Array.from({ length: colCount }, () => DEFAULT_COL_WIDTH))];
+        const w = [
+          ...(prev[activeSheet.id] ?? Array.from({ length: colCount }, () => DEFAULT_COL_WIDTH)),
+        ];
         w[resize.col] = Math.max(MIN_COL_WIDTH, resize.startWidth + delta);
         return { ...prev, [activeSheet.id]: w };
       });
@@ -663,7 +774,10 @@ export function SpreadsheetGrid({
             for (const p of patches) next[p.row][p.col] = p.cell;
             return next;
           });
-          setSelection({ anchor: { row: target.minRow, col: target.minCol }, focus: { row: target.maxRow, col: target.maxCol } });
+          setSelection({
+            anchor: { row: target.minRow, col: target.minCol },
+            focus: { row: target.maxRow, col: target.maxCol },
+          });
         }
         fillOriginRef.current = null;
         fillPreviewRef.current = null;
@@ -701,23 +815,52 @@ export function SpreadsheetGrid({
     <div className="flex h-full flex-col" onClick={() => setContextMenu(null)}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Undo (Ctrl+Z)" disabled={historyIndex === 0} onClick={undo}>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          title="Undo (Ctrl+Z)"
+          disabled={historyIndex === 0}
+          onClick={undo}
+        >
           <Undo2 className="h-3.5 w-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Redo (Ctrl+Y)" disabled={historyIndex === history.length - 1} onClick={redo}>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          title="Redo (Ctrl+Y)"
+          disabled={historyIndex === history.length - 1}
+          onClick={redo}
+        >
           <Redo2 className="h-3.5 w-3.5" />
         </Button>
 
         {allowFormatting && (
           <>
             <div className="mx-1 h-5 w-px bg-border" />
-            <Toggle size="sm" pressed={!!activeCellData?.style?.bold} onPressedChange={() => toggleStyle("bold")} title="Bold (Ctrl+B)">
+            <Toggle
+              size="sm"
+              pressed={!!activeCellData?.style?.bold}
+              onPressedChange={() => toggleStyle("bold")}
+              title="Bold (Ctrl+B)"
+            >
               <Bold className="h-3.5 w-3.5" />
             </Toggle>
-            <Toggle size="sm" pressed={!!activeCellData?.style?.italic} onPressedChange={() => toggleStyle("italic")} title="Italic (Ctrl+I)">
+            <Toggle
+              size="sm"
+              pressed={!!activeCellData?.style?.italic}
+              onPressedChange={() => toggleStyle("italic")}
+              title="Italic (Ctrl+I)"
+            >
               <Italic className="h-3.5 w-3.5" />
             </Toggle>
-            <Toggle size="sm" pressed={!!activeCellData?.style?.underline} onPressedChange={() => toggleStyle("underline")} title="Underline (Ctrl+U)">
+            <Toggle
+              size="sm"
+              pressed={!!activeCellData?.style?.underline}
+              onPressedChange={() => toggleStyle("underline")}
+              title="Underline (Ctrl+U)"
+            >
               <Underline className="h-3.5 w-3.5" />
             </Toggle>
 
@@ -756,13 +899,28 @@ export function SpreadsheetGrid({
             </Popover>
 
             <div className="mx-1 h-5 w-px bg-border" />
-            <Toggle size="sm" pressed={activeCellData?.style?.align === "left"} onPressedChange={() => applyStyle({ align: "left" })} title="Align left">
+            <Toggle
+              size="sm"
+              pressed={activeCellData?.style?.align === "left"}
+              onPressedChange={() => applyStyle({ align: "left" })}
+              title="Align left"
+            >
               <AlignLeft className="h-3.5 w-3.5" />
             </Toggle>
-            <Toggle size="sm" pressed={activeCellData?.style?.align === "center"} onPressedChange={() => applyStyle({ align: "center" })} title="Align center">
+            <Toggle
+              size="sm"
+              pressed={activeCellData?.style?.align === "center"}
+              onPressedChange={() => applyStyle({ align: "center" })}
+              title="Align center"
+            >
               <AlignCenter className="h-3.5 w-3.5" />
             </Toggle>
-            <Toggle size="sm" pressed={activeCellData?.style?.align === "right"} onPressedChange={() => applyStyle({ align: "right" })} title="Align right">
+            <Toggle
+              size="sm"
+              pressed={activeCellData?.style?.align === "right"}
+              onPressedChange={() => applyStyle({ align: "right" })}
+              title="Align right"
+            >
               <AlignRight className="h-3.5 w-3.5" />
             </Toggle>
 
@@ -802,13 +960,29 @@ export function SpreadsheetGrid({
         )}
 
         <div className="mx-1 h-5 w-px bg-border" />
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => insertRow(rowCount)}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs"
+          onClick={() => insertRow(rowCount)}
+        >
           <Plus className="h-3 w-3" /> Row
         </Button>
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => insertCol(colCount)}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs"
+          onClick={() => insertCol(colCount)}
+        >
           <Plus className="h-3 w-3" /> Column
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Find & replace (Ctrl+F)" onClick={() => setFindOpen((v) => !v)}>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          title="Find & replace (Ctrl+F)"
+          onClick={() => setFindOpen((v) => !v)}
+        >
           <Search className="h-3.5 w-3.5" />
         </Button>
 
@@ -818,7 +992,11 @@ export function SpreadsheetGrid({
             {dirty && " •"}
           </span>
           <Button size="sm" onClick={handleSave} disabled={saving || !dirty}>
-            {saving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1 h-3.5 w-3.5" />}
+            {saving ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="mr-1 h-3.5 w-3.5" />
+            )}
             Save
           </Button>
         </div>
@@ -868,18 +1046,43 @@ export function SpreadsheetGrid({
             onChange={(e) => setReplaceQuery(e.target.value)}
           />
           <span className="text-xs text-muted-foreground">
-            {matches.length > 0 ? `${(findMatchIndex % matches.length) + 1}/${matches.length}` : "0/0"}
+            {matches.length > 0
+              ? `${(findMatchIndex % matches.length) + 1}/${matches.length}`
+              : "0/0"}
           </span>
-          <Button size="icon" variant="ghost" className="h-7 w-7" disabled={matches.length === 0} onClick={() => setFindMatchIndex((i) => i - 1)}>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            disabled={matches.length === 0}
+            onClick={() => setFindMatchIndex((i) => i - 1)}
+          >
             <ChevronUp className="h-3.5 w-3.5" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7" disabled={matches.length === 0} onClick={() => setFindMatchIndex((i) => i + 1)}>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            disabled={matches.length === 0}
+            onClick={() => setFindMatchIndex((i) => i + 1)}
+          >
             <ChevronDown className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!findQuery} onClick={replaceAll}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            disabled={!findQuery}
+            onClick={replaceAll}
+          >
             Replace all
           </Button>
-          <Button size="icon" variant="ghost" className="ml-auto h-7 w-7" onClick={() => setFindOpen(false)}>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="ml-auto h-7 w-7"
+            onClick={() => setFindOpen(false)}
+          >
             <X className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -938,7 +1141,10 @@ export function SpreadsheetGrid({
                     setEditing((prev) => (prev ? { ...prev, value: prev.value + ref } : prev));
                     return;
                   }
-                  setSelection({ anchor: { row: r, col: 0 }, focus: { row: r, col: colCount - 1 } });
+                  setSelection({
+                    anchor: { row: r, col: 0 },
+                    focus: { row: r, col: colCount - 1 },
+                  });
                   containerRef.current?.focus();
                 }}
                 onContextMenu={(e) => {
@@ -954,7 +1160,8 @@ export function SpreadsheetGrid({
                 const isSelectingOptions = selecting?.row === r && selecting?.col === c;
                 const isFocus = selection?.focus.row === r && selection.focus.col === c;
                 const isSelected = selection ? isInRange(pos, selection) : false;
-                const isFillHandleCell = !!selBounds && r === selBounds.maxRow && c === selBounds.maxCol;
+                const isFillHandleCell =
+                  !!selBounds && r === selBounds.maxRow && c === selBounds.maxCol;
                 const inFillPreview =
                   !!fillPreview &&
                   !!selBounds &&
@@ -962,7 +1169,12 @@ export function SpreadsheetGrid({
                   r <= fillPreview.maxRow &&
                   c >= fillPreview.minCol &&
                   c <= fillPreview.maxCol &&
-                  !(r >= selBounds.minRow && r <= selBounds.maxRow && c >= selBounds.minCol && c <= selBounds.maxCol);
+                  !(
+                    r >= selBounds.minRow &&
+                    r <= selBounds.maxRow &&
+                    c >= selBounds.minCol &&
+                    c <= selBounds.maxCol
+                  );
                 const options = cell.style?.options;
                 const computedText = computedGrid[r]?.[c] ?? cell.text;
                 return (
@@ -978,7 +1190,10 @@ export function SpreadsheetGrid({
                       gridColumn: c + 2,
                       gridRow: r + 2,
                       backgroundColor: !isSelected ? cell.style?.fill : undefined,
-                      color: cell.style?.color,
+                      color: resolveSafeCellColor(
+                        cell.style?.color,
+                        !isSelected ? cell.style?.fill : undefined,
+                      ),
                       fontWeight: cell.style?.bold ? 600 : undefined,
                       fontStyle: cell.style?.italic ? "italic" : undefined,
                       textDecoration: cell.style?.underline ? "underline" : undefined,
@@ -1000,14 +1215,23 @@ export function SpreadsheetGrid({
                         return;
                       }
                       isSelectingRef.current = true;
-                      setSelection({ anchor: e.shiftKey ? (selection?.anchor ?? pos) : pos, focus: pos });
+                      setSelection({
+                        anchor: e.shiftKey ? (selection?.anchor ?? pos) : pos,
+                        focus: pos,
+                      });
                       containerRef.current?.focus();
                     }}
                     onMouseEnter={() => {
-                      if (isInsertingRefRef.current && refInsertOriginRef.current && refInsertStartRef.current != null) {
+                      if (
+                        isInsertingRefRef.current &&
+                        refInsertOriginRef.current &&
+                        refInsertStartRef.current != null
+                      ) {
                         const ref = cellRefString(refInsertOriginRef.current, pos);
                         const start = refInsertStartRef.current;
-                        setEditing((prev) => (prev ? { ...prev, value: prev.value.slice(0, start) + ref } : prev));
+                        setEditing((prev) =>
+                          prev ? { ...prev, value: prev.value.slice(0, start) + ref } : prev,
+                        );
                       } else if (isFillDraggingRef.current && fillOriginRef.current) {
                         const next = computeFillPreview(fillOriginRef.current, pos);
                         fillPreviewRef.current = next;
@@ -1063,9 +1287,15 @@ export function SpreadsheetGrid({
                       <span
                         className={cn(
                           "block truncate",
-                          isFormula(cell.text) && isFormulaError(computedText) && "font-medium text-destructive",
+                          isFormula(cell.text) &&
+                            isFormulaError(computedText) &&
+                            "font-medium text-destructive",
                         )}
-                        title={isFormula(cell.text) && isFormulaError(computedText) ? computedText : undefined}
+                        title={
+                          isFormula(cell.text) && isFormulaError(computedText)
+                            ? computedText
+                            : undefined
+                        }
                       >
                         {formatCellDisplay({ ...cell, text: computedText })}
                       </span>
@@ -1125,71 +1355,154 @@ export function SpreadsheetGrid({
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Sheet tabs */}
-      {allowMultipleSheets && (
-        <div className="flex items-center gap-1 overflow-x-auto border-t bg-muted/30 px-2 py-1">
-          {sheets.map((sheet, i) => (
-            <div
-              key={sheet.id}
-              draggable
-              onDragStart={() => {
-                draggedTabRef.current = i;
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => {
-                if (draggedTabRef.current != null) reorderSheets(draggedTabRef.current, i);
-                draggedTabRef.current = null;
-              }}
-              className={cn(
-                "group flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs",
-                i === activeSheetIndex
-                  ? "bg-background font-medium shadow-sm"
-                  : "text-muted-foreground hover:bg-background/60",
-              )}
-            >
-              {renamingSheet?.index === i ? (
-                <input
-                  autoFocus
-                  className="w-20 bg-transparent outline-none"
-                  value={renamingSheet.value}
-                  onChange={(e) => setRenamingSheet({ index: i, value: e.target.value })}
-                  onBlur={() => {
-                    renameSheet(i, renamingSheet.value);
-                    setRenamingSheet(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      renameSheet(i, renamingSheet.value);
-                      setRenamingSheet(null);
-                    } else if (e.key === "Escape") {
-                      setRenamingSheet(null);
-                    }
-                  }}
-                />
-              ) : (
-                <button type="button" onClick={() => setActiveSheetIndex(i)} onDoubleClick={() => setRenamingSheet({ index: i, value: sheet.name })}>
-                  {sheet.name}
-                </button>
-              )}
-              {sheets.length > 1 && renamingSheet?.index !== i && (
-                <button
-                  type="button"
-                  className="hidden text-muted-foreground hover:text-destructive group-hover:inline"
-                  onClick={() => deleteSheet(i)}
-                  aria-label={`Delete ${sheet.name}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          ))}
-          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" title="Add sheet" onClick={addSheet}>
-            <Plus className="h-3.5 w-3.5" />
+        {/* Google Sheets-style Bottom Row Extender */}
+        <div className="flex items-center gap-2 px-4 py-3 border-t border-border/30 bg-muted/10 text-xs text-muted-foreground select-none">
+          <span>Add</span>
+          <Input
+            type="number"
+            min="1"
+            max="1000"
+            defaultValue="100"
+            className="w-16 h-6 px-1.5 text-xs font-mono text-center"
+            id="spreadsheet-add-rows-count"
+          />
+          <span>more rows at bottom</span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs px-2.5"
+            onClick={() => {
+              const input = document.getElementById(
+                "spreadsheet-add-rows-count",
+              ) as HTMLInputElement | null;
+              const count = Math.max(1, Math.min(1000, parseInt(input?.value || "100", 10) || 100));
+              updateActiveGrid((g) => {
+                const width = g[0]?.length ?? DEFAULT_MIN_COLS;
+                const newRows = Array.from({ length: count }, () =>
+                  Array.from({ length: width }, () => ({ text: "" })),
+                );
+                return [...g, ...newRows];
+              });
+            }}
+          >
+            <Plus className="mr-1 h-3 w-3" /> Add Rows
           </Button>
         </div>
-      )}
+      </div>
+
+      {/* Bottom bar: Sheet tabs & Google Sheets Live Metrics */}
+      <div className="flex items-center justify-between border-t bg-muted/40 px-2 py-1 text-xs shrink-0">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {allowMultipleSheets &&
+            sheets.map((sheet, i) => (
+              <div
+                key={sheet.id}
+                draggable
+                onDragStart={() => {
+                  draggedTabRef.current = i;
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (draggedTabRef.current != null) reorderSheets(draggedTabRef.current, i);
+                  draggedTabRef.current = null;
+                }}
+                className={cn(
+                  "group flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs",
+                  i === activeSheetIndex
+                    ? "bg-background font-medium shadow-sm"
+                    : "text-muted-foreground hover:bg-background/60",
+                )}
+              >
+                {renamingSheet?.index === i ? (
+                  <input
+                    autoFocus
+                    className="w-20 bg-transparent outline-none"
+                    value={renamingSheet.value}
+                    onChange={(e) => setRenamingSheet({ index: i, value: e.target.value })}
+                    onBlur={() => {
+                      renameSheet(i, renamingSheet.value);
+                      setRenamingSheet(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        renameSheet(i, renamingSheet.value);
+                        setRenamingSheet(null);
+                      } else if (e.key === "Escape") {
+                        setRenamingSheet(null);
+                      }
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSheetIndex(i)}
+                    onDoubleClick={() => setRenamingSheet({ index: i, value: sheet.name })}
+                  >
+                    {sheet.name}
+                  </button>
+                )}
+                {sheets.length > 1 && renamingSheet?.index !== i && (
+                  <button
+                    type="button"
+                    className="hidden text-muted-foreground hover:text-destructive group-hover:inline"
+                    onClick={() => deleteSheet(i)}
+                    aria-label={`Delete ${sheet.name}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+          {allowMultipleSheets && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0"
+              title="Add sheet"
+              onClick={addSheet}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+
+        {selectionStats && (
+          <div className="ml-auto flex items-center gap-3 text-[11px] text-muted-foreground pr-2 font-mono shrink-0">
+            {selectionStats.numCount > 0 && (
+              <>
+                <span>
+                  SUM:{" "}
+                  <strong className="text-foreground">
+                    {selectionStats.sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </strong>
+                </span>
+                <span>
+                  AVG:{" "}
+                  <strong className="text-foreground">
+                    {selectionStats.avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </strong>
+                </span>
+                <span>
+                  MIN:{" "}
+                  <strong className="text-foreground">
+                    {selectionStats.min.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </strong>
+                </span>
+                <span>
+                  MAX:{" "}
+                  <strong className="text-foreground">
+                    {selectionStats.max.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </strong>
+                </span>
+              </>
+            )}
+            <span>
+              COUNT: <strong className="text-foreground">{selectionStats.count}</strong>
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Context menu */}
       {contextMenu && (
@@ -1202,7 +1515,11 @@ export function SpreadsheetGrid({
             <>
               <ContextMenuButton icon={Copy} label="Copy" onClick={() => void copySelection()} />
               <ContextMenuButton icon={Scissors} label="Cut" onClick={() => void handleCut()} />
-              <ContextMenuButton icon={ClipboardPaste} label="Paste" onClick={() => void handlePaste()} />
+              <ContextMenuButton
+                icon={ClipboardPaste}
+                label="Paste"
+                onClick={() => void handlePaste()}
+              />
               <div className="my-1 h-px bg-border" />
               <ContextMenuButton icon={Eraser} label="Clear contents" onClick={clearSelection} />
               {allowFormatting && (
@@ -1220,21 +1537,53 @@ export function SpreadsheetGrid({
           )}
           {contextMenu.kind === "row" && contextMenu.row != null && (
             <>
-              <ContextMenuButton icon={Plus} label="Insert row above" onClick={() => insertRow(contextMenu.row!)} />
-              <ContextMenuButton icon={Plus} label="Insert row below" onClick={() => insertRow(contextMenu.row! + 1)} />
+              <ContextMenuButton
+                icon={Plus}
+                label="Insert row above"
+                onClick={() => insertRow(contextMenu.row!)}
+              />
+              <ContextMenuButton
+                icon={Plus}
+                label="Insert row below"
+                onClick={() => insertRow(contextMenu.row! + 1)}
+              />
               <div className="my-1 h-px bg-border" />
-              <ContextMenuButton icon={Minus} label="Delete row" onClick={() => deleteRow(contextMenu.row!)} />
+              <ContextMenuButton
+                icon={Minus}
+                label="Delete row"
+                onClick={() => deleteRow(contextMenu.row!)}
+              />
             </>
           )}
           {contextMenu.kind === "col" && contextMenu.col != null && (
             <>
-              <ContextMenuButton icon={ArrowDownAZ} label="Sort A → Z" onClick={() => sortColumn(contextMenu.col!, "asc")} />
-              <ContextMenuButton icon={ArrowUpAZ} label="Sort Z → A" onClick={() => sortColumn(contextMenu.col!, "desc")} />
+              <ContextMenuButton
+                icon={ArrowDownAZ}
+                label="Sort A → Z"
+                onClick={() => sortColumn(contextMenu.col!, "asc")}
+              />
+              <ContextMenuButton
+                icon={ArrowUpAZ}
+                label="Sort Z → A"
+                onClick={() => sortColumn(contextMenu.col!, "desc")}
+              />
               <div className="my-1 h-px bg-border" />
-              <ContextMenuButton icon={Plus} label="Insert column left" onClick={() => insertCol(contextMenu.col!)} />
-              <ContextMenuButton icon={Plus} label="Insert column right" onClick={() => insertCol(contextMenu.col! + 1)} />
+              <ContextMenuButton
+                icon={Plus}
+                label="Insert column left"
+                onClick={() => insertCol(contextMenu.col!)}
+              />
+              <ContextMenuButton
+                icon={Plus}
+                label="Insert column right"
+                onClick={() => insertCol(contextMenu.col! + 1)}
+              />
               <div className="my-1 h-px bg-border" />
-              <ContextMenuButton icon={Minus} label="Delete column" onClick={() => deleteCol(contextMenu.col!)} />
+              <ContextMenuButton
+                icon={Minus}
+                label="Delete column"
+                onClick={() => deleteCol(contextMenu.col!)}
+              />
             </>
           )}
         </div>
@@ -1263,7 +1612,9 @@ export function SpreadsheetGrid({
               }
             }}
           />
-          <p className="mt-1 text-[11px] text-muted-foreground">Comma-separated. Cells become a colored picker.</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Comma-separated. Cells become a colored picker.
+          </p>
           <div className="mt-2 flex justify-end gap-1.5">
             <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={removeOptions}>
               Remove

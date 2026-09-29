@@ -14,521 +14,523 @@ export const jsonNavigatorOutputSchema = {
         done: {
           anyOf: [
             {
-              $ref: '#/$defs/DoneAction',
+              $ref: "#/$defs/DoneAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Complete task',
+          description: "Complete task",
         },
         search_google: {
           anyOf: [
             {
-              $ref: '#/$defs/SearchGoogleAction',
+              $ref: "#/$defs/SearchGoogleAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
           description:
-            'Search the query in Google in the current tab, the query should be a search query like humans search in Google, concrete and not vague or super long. More the single most important items. ',
+            "Search the query in Google in the current tab, the query should be a search query like humans search in Google, concrete and not vague or super long. More the single most important items. ",
         },
         go_to_url: {
           anyOf: [
             {
-              $ref: '#/$defs/GoToUrlAction',
+              $ref: "#/$defs/GoToUrlAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Navigate to URL in the current tab',
+          description: "Navigate to URL in the current tab",
         },
         go_back: {
           anyOf: [
             {
-              $ref: '#/$defs/GoBackAction',
+              $ref: "#/$defs/GoBackAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Go back to previous page',
+          description: "Go back to previous page",
         },
         wait: {
           anyOf: [
             {
-              $ref: '#/$defs/WaitAction',
+              $ref: "#/$defs/WaitAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Wait for x seconds default 3',
+          description: "Wait for x seconds default 3",
         },
         click_element: {
           anyOf: [
             {
-              $ref: '#/$defs/ClickElementAction',
+              $ref: "#/$defs/ClickElementAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Click element by index',
+          description: "Click element by index",
         },
         input_text: {
           anyOf: [
             {
-              $ref: '#/$defs/InputTextAction',
+              $ref: "#/$defs/InputTextAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Input text into an interactive input element',
+          description: "Input text into an interactive input element",
         },
         switch_tab: {
           anyOf: [
             {
-              $ref: '#/$defs/SwitchTabAction',
+              $ref: "#/$defs/SwitchTabAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Switch tab',
+          description: "Switch tab",
         },
         open_tab: {
           anyOf: [
             {
-              $ref: '#/$defs/OpenTabAction',
+              $ref: "#/$defs/OpenTabAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Open url in new tab',
+          description: "Open url in new tab",
         },
         close_tab: {
           anyOf: [
             {
-              $ref: '#/$defs/CloseTabAction',
+              $ref: "#/$defs/CloseTabAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Close tab by tab_id',
+          description: "Close tab by tab_id",
         },
 
         cache_content: {
           anyOf: [
             {
-              $ref: '#/$defs/cache_content_parameters',
+              $ref: "#/$defs/cache_content_parameters",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Cache what you have found so far from the current page for future use',
+          description: "Cache what you have found so far from the current page for future use",
         },
         scroll_down: {
           anyOf: [
             {
-              $ref: '#/$defs/ScrollAction',
+              $ref: "#/$defs/ScrollAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
+          description:
+            "Scroll down the page by pixel amount - if no amount is specified, scroll down one page",
         },
         scroll_up: {
           anyOf: [
             {
-              $ref: '#/$defs/ScrollAction',
+              $ref: "#/$defs/ScrollAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
+          description:
+            "Scroll up the page by pixel amount - if no amount is specified, scroll up one page",
         },
         send_keys: {
           anyOf: [
             {
-              $ref: '#/$defs/SendKeysAction',
+              $ref: "#/$defs/SendKeysAction",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
           description:
-            'Send strings of special keys like Escape, Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press.',
+            "Send strings of special keys like Escape, Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press.",
         },
         scroll_to_text: {
           anyOf: [
             {
-              $ref: '#/$defs/scroll_to_text_parameters',
+              $ref: "#/$defs/scroll_to_text_parameters",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'If you dont find something which you want to interact with, scroll to it',
+          description: "If you dont find something which you want to interact with, scroll to it",
         },
         get_dropdown_options: {
           anyOf: [
             {
-              $ref: '#/$defs/get_dropdown_options_parameters',
+              $ref: "#/$defs/get_dropdown_options_parameters",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          description: 'Get all options from a native dropdown',
+          description: "Get all options from a native dropdown",
         },
         select_dropdown_option: {
           anyOf: [
             {
-              $ref: '#/$defs/select_dropdown_option_parameters',
+              $ref: "#/$defs/select_dropdown_option_parameters",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
           description:
-            'Select dropdown option for interactive element index by the text of the option you want to select',
+            "Select dropdown option for interactive element index by the text of the option you want to select",
         },
       },
-      title: 'ActionModel',
-      type: 'object',
+      title: "ActionModel",
+      type: "object",
     },
     AgentBrain: {
-      description: 'Current state of the agent',
+      description: "Current state of the agent",
       properties: {
         evaluation_previous_goal: {
-          title: 'Evaluation of previous goal',
-          type: 'string',
+          title: "Evaluation of previous goal",
+          type: "string",
         },
         memory: {
-          title: 'Memory',
-          type: 'string',
+          title: "Memory",
+          type: "string",
         },
         next_goal: {
-          title: 'Next Goal',
-          type: 'string',
+          title: "Next Goal",
+          type: "string",
         },
       },
-      required: ['evaluation_previous_goal', 'memory', 'next_goal'],
-      title: 'AgentBrain',
-      type: 'object',
+      required: ["evaluation_previous_goal", "memory", "next_goal"],
+      title: "AgentBrain",
+      type: "object",
     },
     ClickElementAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         index: {
-          title: 'Index',
-          type: 'integer',
+          title: "Index",
+          type: "integer",
         },
         xpath: {
           anyOf: [
             {
-              type: 'string',
+              type: "string",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          title: 'Xpath',
+          title: "Xpath",
         },
       },
-      required: ['intent', 'index'],
-      title: 'ClickElementAction',
-      type: 'object',
+      required: ["intent", "index"],
+      title: "ClickElementAction",
+      type: "object",
     },
     CloseTabAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         tab_id: {
-          title: 'Tab Id',
-          type: 'integer',
+          title: "Tab Id",
+          type: "integer",
         },
       },
-      required: ['intent', 'tab_id'],
-      title: 'CloseTabAction',
-      type: 'object',
+      required: ["intent", "tab_id"],
+      title: "CloseTabAction",
+      type: "object",
     },
     DoneAction: {
       properties: {
         text: {
-          title: 'Text',
-          type: 'string',
+          title: "Text",
+          type: "string",
         },
         success: {
-          title: 'Success',
-          type: 'boolean',
+          title: "Success",
+          type: "boolean",
         },
       },
-      required: ['text', 'success'],
-      title: 'DoneAction',
-      type: 'object',
+      required: ["text", "success"],
+      title: "DoneAction",
+      type: "object",
     },
     GoToUrlAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         url: {
-          title: 'Url',
-          type: 'string',
+          title: "Url",
+          type: "string",
         },
       },
-      required: ['intent', 'url'],
-      title: 'GoToUrlAction',
-      type: 'object',
+      required: ["intent", "url"],
+      title: "GoToUrlAction",
+      type: "object",
     },
     GoBackAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
       },
-      required: ['intent'],
-      title: 'GoBackAction',
-      type: 'object',
+      required: ["intent"],
+      title: "GoBackAction",
+      type: "object",
     },
     InputTextAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         index: {
-          title: 'Index',
-          type: 'integer',
+          title: "Index",
+          type: "integer",
         },
         text: {
-          title: 'Text',
-          type: 'string',
+          title: "Text",
+          type: "string",
         },
         xpath: {
           anyOf: [
             {
-              type: 'string',
+              type: "string",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          title: 'Xpath',
+          title: "Xpath",
         },
       },
-      required: ['intent', 'index', 'text'],
-      title: 'InputTextAction',
-      type: 'object',
+      required: ["intent", "index", "text"],
+      title: "InputTextAction",
+      type: "object",
     },
     OpenTabAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         url: {
-          title: 'Url',
-          type: 'string',
+          title: "Url",
+          type: "string",
         },
       },
-      required: ['intent', 'url'],
-      title: 'OpenTabAction',
-      type: 'object',
+      required: ["intent", "url"],
+      title: "OpenTabAction",
+      type: "object",
     },
     ScrollAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         amount: {
           anyOf: [
             {
-              type: 'integer',
+              type: "integer",
             },
             {
-              type: 'null',
+              type: "null",
             },
           ],
-          title: 'Amount',
+          title: "Amount",
         },
       },
-      required: ['intent', 'amount'],
-      title: 'ScrollAction',
-      type: 'object',
+      required: ["intent", "amount"],
+      title: "ScrollAction",
+      type: "object",
     },
     SearchGoogleAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         query: {
-          title: 'Query',
-          type: 'string',
+          title: "Query",
+          type: "string",
         },
       },
-      required: ['intent', 'query'],
-      title: 'SearchGoogleAction',
-      type: 'object',
+      required: ["intent", "query"],
+      title: "SearchGoogleAction",
+      type: "object",
     },
     SendKeysAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         keys: {
-          title: 'Keys',
-          type: 'string',
+          title: "Keys",
+          type: "string",
         },
       },
-      required: ['intent', 'keys'],
-      title: 'SendKeysAction',
-      type: 'object',
+      required: ["intent", "keys"],
+      title: "SendKeysAction",
+      type: "object",
     },
     SwitchTabAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         tab_id: {
-          title: 'Tab Id',
-          type: 'integer',
+          title: "Tab Id",
+          type: "integer",
         },
       },
-      required: ['intent', 'tab_id'],
-      title: 'SwitchTabAction',
-      type: 'object',
+      required: ["intent", "tab_id"],
+      title: "SwitchTabAction",
+      type: "object",
     },
     cache_content_parameters: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         content: {
-          title: 'Content',
-          type: 'string',
+          title: "Content",
+          type: "string",
         },
       },
-      required: ['intent', 'content'],
-      title: 'cache_content_parameters',
-      type: 'object',
+      required: ["intent", "content"],
+      title: "cache_content_parameters",
+      type: "object",
     },
     get_dropdown_options_parameters: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         index: {
-          title: 'Index',
-          type: 'integer',
+          title: "Index",
+          type: "integer",
         },
       },
-      required: ['intent', 'index'],
-      title: 'get_dropdown_options_parameters',
-      type: 'object',
+      required: ["intent", "index"],
+      title: "get_dropdown_options_parameters",
+      type: "object",
     },
     scroll_to_text_parameters: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         text: {
-          title: 'Text',
-          type: 'string',
+          title: "Text",
+          type: "string",
         },
       },
-      required: ['intent', 'text'],
-      title: 'scroll_to_text_parameters',
-      type: 'object',
+      required: ["intent", "text"],
+      title: "scroll_to_text_parameters",
+      type: "object",
     },
     select_dropdown_option_parameters: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         index: {
-          title: 'Index',
-          type: 'integer',
+          title: "Index",
+          type: "integer",
         },
         text: {
-          title: 'Text',
-          type: 'string',
+          title: "Text",
+          type: "string",
         },
       },
-      required: ['intent', 'index', 'text'],
-      title: 'select_dropdown_option_parameters',
-      type: 'object',
+      required: ["intent", "index", "text"],
+      title: "select_dropdown_option_parameters",
+      type: "object",
     },
     WaitAction: {
       properties: {
         intent: {
-          title: 'Intent',
-          type: 'string',
-          description: 'purpose of this action',
+          title: "Intent",
+          type: "string",
+          description: "purpose of this action",
         },
         seconds: {
-          title: 'Seconds',
-          type: 'integer',
+          title: "Seconds",
+          type: "integer",
           default: 3,
         },
       },
-      required: ['intent', 'seconds'],
-      title: 'WaitAction',
-      type: 'object',
+      required: ["intent", "seconds"],
+      title: "WaitAction",
+      type: "object",
     },
   },
   properties: {
     current_state: {
-      $ref: '#/$defs/AgentBrain',
+      $ref: "#/$defs/AgentBrain",
     },
     action: {
       items: {
-        $ref: '#/$defs/ActionModel',
+        $ref: "#/$defs/ActionModel",
       },
-      title: 'Action',
-      type: 'array',
+      title: "Action",
+      type: "array",
     },
   },
-  required: ['current_state', 'action'],
-  title: 'AgentOutput',
-  type: 'object',
+  required: ["current_state", "action"],
+  title: "AgentOutput",
+  type: "object",
 };

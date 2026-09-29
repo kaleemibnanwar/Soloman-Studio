@@ -19,10 +19,7 @@ import { useZoomShortcuts } from "@/hooks/useZoomShortcuts";
 import { useChatStreamRuntime } from "@/hooks/useChatStream";
 import { useReopenClosedTab } from "@/hooks/useReopenClosedTab";
 import { VersionPreviewProvider } from "@/version_preview/VersionPreviewProvider";
-import {
-  AppRunRemoteProvider,
-  useAppRunRemoteManager,
-} from "@/app_run/AppRunRemoteProvider";
+import { AppRunRemoteProvider, useAppRunRemoteManager } from "@/app_run/AppRunRemoteProvider";
 import { PlanHandoffProvider } from "@/plan_handoff/PlanHandoffProvider";
 import i18n from "@/i18n";
 import { LanguageSchema } from "@/lib/schemas";
@@ -40,10 +37,7 @@ import { systemClock, uuidIdSource } from "@/state_machines/clock";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { PreviewIframeProvider } from "@/preview_iframe/PreviewIframeProvider";
 import { GithubOpsProvider } from "@/github_ops/GithubOpsProvider";
-import {
-  ScreenshotProvider,
-  useScreenshotManager,
-} from "@/screenshot/ScreenshotProvider";
+import { ScreenshotProvider, useScreenshotManager } from "@/screenshot/ScreenshotProvider";
 import { useSyncDefaultChatMode } from "@/hooks/useSyncDefaultChatMode";
 import { PreviewErrorFacadeProvider } from "@/app_wiring/preview_error_facade";
 import { usePreviewErrorFacade } from "@/app_wiring/preview_error_facade";
@@ -108,9 +102,7 @@ function RootLayoutContent({ children }: { children: ReactNode }) {
   );
   const previewMode = useAtomValue(previewModeAtom);
   const { settings } = useSettings();
-  const setSelectedComponentsPreview = useSetAtom(
-    selectedComponentsPreviewAtom,
-  );
+  const setSelectedComponentsPreview = useSetAtom(selectedComponentsPreviewAtom);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   useSyncDefaultChatMode();
 
@@ -131,12 +123,7 @@ function RootLayoutContent({ children }: { children: ReactNode }) {
   // Reopen closed tab shortcut (Ctrl/Cmd + Shift + T)
   const { reopenClosedTab } = useReopenClosedTab();
   const isMac = useIsMac();
-  useShortcut(
-    "t",
-    { ctrl: !isMac, meta: isMac, shift: true },
-    reopenClosedTab,
-    true,
-  );
+  useShortcut("t", { ctrl: !isMac, meta: isMac, shift: true }, reopenClosedTab, true);
 
   // Wire the chat stream machine's runtime (side-effect adapter). Streams
   // and queued-message dispatch keep running globally, even when the chat
@@ -231,11 +218,7 @@ function RootLayoutContent({ children }: { children: ReactNode }) {
                     {children}
                   </div>
                 </div>
-                <Toaster
-                  richColors
-                  expand
-                  duration={settings?.isTestMode ? 500 : undefined}
-                />
+                <Toaster richColors expand duration={settings?.isTestMode ? 500 : undefined} />
                 <ReleaseNotesDialog />
                 <ForceCloseDialog />
               </SidebarProvider>

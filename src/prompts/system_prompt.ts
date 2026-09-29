@@ -593,6 +593,7 @@ export const constructSystemPrompt = ({
   rebuildAppToolAvailable,
   chatProject,
   economyMode,
+  appPath,
 }: {
   /**
    * When true, this turn runs inside a chat project (a non-code project with no
@@ -602,6 +603,7 @@ export const constructSystemPrompt = ({
   chatProject?: boolean;
   /** When true, append economy-mode instructions that minimize token usage. */
   economyMode?: boolean;
+  appPath?: string;
   aiRules: string | undefined;
   chatMode?: "build" | "ask" | "local-agent" | "plan";
   enableTurboEditsV2: boolean;
@@ -645,10 +647,15 @@ export const constructSystemPrompt = ({
   restartAppToolAvailable?: boolean;
   rebuildAppToolAvailable?: boolean;
 }) => {
+  const officeGuidance =
+    '\n\n### Office Document Generation\nYou do NOT have the Office document tools directly — they are delegated to sub-agents to keep your tool schema small. When the user asks you to create or edit an MS Office document (Word, Excel, PowerPoint), delegate the work to an executor sub-agent: call spawn_subagent(role: "executor") and describe exactly which file to produce. The sub-agent has create_document, create_spreadsheet, create_presentation, create_office_documents_batch, edit_document, edit_spreadsheet, and edit_presentation, and will write a real OOXML binary file (.docx, .xlsx, .pptx). DO NOT use write_file to write raw HTML and save it under a legacy .doc, .xls, or .ppt extension — those are disguised HTML, not real Office files.';
   const economySuffix = economyMode ? ECONOMY_MODE_SYSTEM_PROMPT : "";
 
   if (chatProject) {
-    return CHAT_PROJECT_SYSTEM_PROMPT + economySuffix;
+    const fsAwareness = appPath
+      ? `\n\n<file_system_awareness>\nThe absolute path to the root workspace directory of this project on the user's operating system is: \`${appPath}\`\nWhen generating media, documents, or inspecting files, you are operating within this absolute directory path. Use this context if the user asks where their files are located on their system.\n</file_system_awareness>`
+      : "";
+    return CHAT_PROJECT_SYSTEM_PROMPT + fsAwareness + officeGuidance + economySuffix;
   }
 
   if (chatMode === "plan") {
@@ -658,6 +665,7 @@ export const constructSystemPrompt = ({
   if (chatMode === "local-agent") {
     return (
       constructLocalAgentPrompt(aiRules, themePrompt, {
+        appPath,
         readOnly,
         basicAgentMode,
         freeModelMode,
@@ -669,7 +677,9 @@ export const constructSystemPrompt = ({
         testingEnabled,
         restartAppToolAvailable,
         rebuildAppToolAvailable,
-      }) + economySuffix
+      }) +
+      officeGuidance +
+      economySuffix
     );
   }
 
@@ -679,10 +689,8 @@ export const constructSystemPrompt = ({
     frameworkType,
     hasSupabaseProject,
   });
-  systemPrompt = systemPrompt.replace(
-    "[[AI_RULES]]",
-    aiRules ?? DEFAULT_AI_RULES,
-  );
+  systemPrompt = systemPrompt.replace("[[AI_RULES]]", aiRules ?? DEFAULT_AI_RULES);
+  systemPrompt += officeGuidance;
 
   // Append theme prompt if provided
   if (themePrompt) {
@@ -712,11 +720,9 @@ export const getSystemPromptForChatMode = ({
   // Vite-only paragraph in every build-mode prompt. Supabase-connected apps
   // also skip the nudge — Edge Functions cover the same use case and offering
   // both layers confuses the model.
-  const shouldAppendNitroNudge =
-    frameworkType === "vite" && !hasSupabaseProject;
+  const shouldAppendNitroNudge = frameworkType === "vite" && !hasSupabaseProject;
   const buildPrompt =
-    BUILD_SYSTEM_PROMPT_BASE +
-    (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "");
+    BUILD_SYSTEM_PROMPT_BASE + (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "");
   return buildPrompt + (enableTurboEditsV2 ? TURBO_EDITS_V2_SYSTEM_PROMPT : "");
 };
 
@@ -726,9 +732,7 @@ export const readAiRules = async (octopusStudioAppPath: string) => {
     const aiRules = await fs.promises.readFile(aiRulesPath, "utf8");
     return aiRules;
   } catch (error) {
-    logger.info(
-      `Error reading AI_RULES.md, fallback to default AI rules: ${error}`,
-    );
+    logger.info(`Error reading AI_RULES.md, fallback to default AI rules: ${error}`);
     return DEFAULT_AI_RULES;
   }
 };

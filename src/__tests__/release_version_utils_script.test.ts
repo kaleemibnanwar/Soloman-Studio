@@ -4,9 +4,7 @@ import { createRequire } from "module";
 import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
-const {
-  isPrereleaseVersion,
-} = require("../../scripts/release-version-utils.js");
+const { isPrereleaseVersion } = require("../../scripts/release-version-utils.js");
 
 describe("release version utils script", () => {
   it("detects prerelease package versions", () => {

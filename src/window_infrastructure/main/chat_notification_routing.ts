@@ -18,9 +18,7 @@ export function chatNotificationTarget(
   if (enableMultiWindow && endpoints.length !== 1) return null;
   return (
     windows.routePresentation({ effect: "ordinary", entity }) ??
-    (endpoints[0]
-      ? (windows.sessionForWebContents(endpoints[0].id) ?? null)
-      : null)
+    (endpoints[0] ? (windows.sessionForWebContents(endpoints[0].id) ?? null) : null)
   );
 }
 
@@ -34,9 +32,8 @@ export function deliverChatNavigationToExistingWindow(
   windows: WindowRegistry,
   windowSessionId: WindowSessionId,
   payload: { chatId: number; appId: number },
-  resolveWindow: (endpoint: WindowEndpoint) => BrowserWindow | null = (
-    endpoint,
-  ) => BrowserWindow.fromWebContents(endpoint as WebContents),
+  resolveWindow: (endpoint: WindowEndpoint) => BrowserWindow | null = (endpoint) =>
+    BrowserWindow.fromWebContents(endpoint as WebContents),
 ): boolean {
   const endpoint = windows.endpointForSession(windowSessionId);
   if (!endpoint) return false;
@@ -56,10 +53,7 @@ export function deliverChatNavigationToExistingWindow(
     return true;
   } catch (error) {
     windows.unregister(endpoint.id);
-    console.warn(
-      "Failed to route chat navigation to an existing window",
-      error,
-    );
+    console.warn("Failed to route chat navigation to an existing window", error);
     return false;
   }
 }

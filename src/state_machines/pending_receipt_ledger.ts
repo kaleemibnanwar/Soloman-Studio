@@ -11,10 +11,7 @@ export type PendingReceiptDisposalPolicy<Value> =
     }
   | {
       readonly kind: "reject";
-      readonly error: (identity: {
-        scope: string;
-        messageId: string;
-      }) => unknown;
+      readonly error: (identity: { scope: string; messageId: string }) => unknown;
     };
 
 export interface PendingReceiptLedgerOptions<Value> {
@@ -80,9 +77,7 @@ export class PendingReceiptLedger<Value> {
     readonly messageId: string;
     readonly fingerprint: string;
     readonly start: () => Value | PromiseLike<Value>;
-    readonly retention?: (
-      settlement: PendingReceiptSettlement<Value>,
-    ) => "retain" | "remove";
+    readonly retention?: (settlement: PendingReceiptSettlement<Value>) => "retain" | "remove";
   }): PendingReceiptClaim<Value> {
     if (this.disposed) return { kind: "disposed" };
     this.pruneExpired();
@@ -156,9 +151,7 @@ export class PendingReceiptLedger<Value> {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    const entries = [...this.scopes.values()].flatMap((scope) => [
-      ...scope.values(),
-    ]);
+    const entries = [...this.scopes.values()].flatMap((scope) => [...scope.values()]);
     this.scopes.clear();
     this.pendingCount = 0;
     this.settledCount = 0;
@@ -181,9 +174,7 @@ export class PendingReceiptLedger<Value> {
     scope: string,
     messageId: string,
     entry: Entry<Value>,
-    retention:
-      | ((settlement: PendingReceiptSettlement<Value>) => "retain" | "remove")
-      | undefined,
+    retention: ((settlement: PendingReceiptSettlement<Value>) => "retain" | "remove") | undefined,
     settlement: PendingReceiptSettlement<Value>,
   ): void {
     if (entry.state !== "pending") return;
@@ -200,11 +191,7 @@ export class PendingReceiptLedger<Value> {
     } catch {
       remove = true;
     }
-    if (
-      this.disposed ||
-      remove ||
-      this.scopes.get(scope)?.get(messageId) !== entry
-    ) {
+    if (this.disposed || remove || this.scopes.get(scope)?.get(messageId) !== entry) {
       this.deleteIfCurrent(scope, messageId, entry);
       return;
     }
@@ -248,21 +235,15 @@ export class PendingReceiptLedger<Value> {
 
   private compactSettled(): void {
     while (this.settledCount > this.options.maxSettledEntries) {
-      let oldest:
-        | { scope: string; messageId: string; entry: Entry<Value> }
-        | undefined;
+      let oldest: { scope: string; messageId: string; entry: Entry<Value> } | undefined;
       for (const [scope, entries] of this.scopes) {
         for (const [messageId, entry] of entries) {
-          if (
-            entry.state !== "settled" ||
-            entry.settlementSequence === undefined
-          ) {
+          if (entry.state !== "settled" || entry.settlementSequence === undefined) {
             continue;
           }
           if (
             !oldest ||
-            entry.settlementSequence <
-              (oldest.entry.settlementSequence ?? Number.MAX_SAFE_INTEGER)
+            entry.settlementSequence < (oldest.entry.settlementSequence ?? Number.MAX_SAFE_INTEGER)
           ) {
             oldest = { scope, messageId, entry };
           }
@@ -273,11 +254,7 @@ export class PendingReceiptLedger<Value> {
     }
   }
 
-  private deleteIfCurrent(
-    scope: string,
-    messageId: string,
-    entry: Entry<Value>,
-  ): void {
+  private deleteIfCurrent(scope: string, messageId: string, entry: Entry<Value>): void {
     const entries = this.scopes.get(scope);
     if (entries?.get(messageId) !== entry) return;
     entries.delete(messageId);

@@ -21,10 +21,7 @@ export class EntityDisposalRegistry {
     this.disposeEntity(this.chatDisposers, chatId);
   }
 
-  private register(
-    disposers: Map<EntityDisposer, number>,
-    dispose: EntityDisposer,
-  ): () => void {
+  private register(disposers: Map<EntityDisposer, number>, dispose: EntityDisposer): () => void {
     disposers.set(dispose, (disposers.get(dispose) ?? 0) + 1);
     let registered = true;
     return () => {
@@ -37,10 +34,7 @@ export class EntityDisposalRegistry {
     };
   }
 
-  private disposeEntity(
-    disposers: Map<EntityDisposer, number>,
-    entityId: number,
-  ) {
+  private disposeEntity(disposers: Map<EntityDisposer, number>, entityId: number) {
     const errors: unknown[] = [];
     for (const dispose of Array.from(disposers.keys())) {
       try {

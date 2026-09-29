@@ -46,9 +46,7 @@ export function renderResult({
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, maxFiles);
   if (fileScores.size > rankedFiles.length) {
-    notes.push(
-      `Truncated to ${rankedFiles.length} of ${fileScores.size} matching files.`,
-    );
+    notes.push(`Truncated to ${rankedFiles.length} of ${fileScores.size} matching files.`);
   }
 
   let totalLines = 0;
@@ -57,9 +55,7 @@ export function renderResult({
   const files: CodeExplorerFileResult[] = [];
 
   for (const [relativePath] of rankedFiles) {
-    const nodes = (fileNodes.get(relativePath) ?? []).sort(
-      (a, b) => a.startLine - b.startLine,
-    );
+    const nodes = (fileNodes.get(relativePath) ?? []).sort((a, b) => a.startLine - b.startLine);
     const sourcePath = path.join(index.appPath, relativePath);
     const source = fs.readFileSync(sourcePath, "utf8");
     const sourceLines = source.split(/\r?\n/);

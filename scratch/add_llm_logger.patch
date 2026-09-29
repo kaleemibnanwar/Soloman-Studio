@@ -1,0 +1,44 @@
+--- src/ipc/types/chat.ts
++++ src/ipc/types/chat.ts
+@@ -10,6 +10,7 @@
+   defineContract,
+   defineStream,
+   createClient,
++  defineEvent,
+ } from "../contracts/core";
+ import { z } from "zod";
+ 
+@@ -350,6 +351,21 @@
+ 
+ // =============================================================================
+ // Chat Contracts
++// =============================================================================
++
++export const LlmLogPayloadSchema = z.object({
++  chatId: z.number(),
++  sentAt: z.number(),
++  messagesSent: z.any(),
++  response: z.any(),
++  usage: z.object({
++    promptTokens: z.number().optional(),
++    completionTokens: z.number().optional(),
++    totalTokens: z.number().optional(),
++  }).optional(),
++});
++
++// =============================================================================
+ 
+ export const chatContracts = {
+   getChat: defineContract({
+@@ -406,6 +422,11 @@
+     input: z.object({ chatId: z.number(), appBlueprintId: z.number() }),
+     output: z.void(),
+   }),
++
++  llmLogEvent: defineEvent({
++    channel: "chat:llm-log",
++    payload: LlmLogPayloadSchema,
++  }),
+ };
+ 
+ // =============================================================================

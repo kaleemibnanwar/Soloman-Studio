@@ -19,10 +19,7 @@ import path from "node:path";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { messages as messagesTable } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
@@ -72,23 +69,18 @@ describe("local-agent ask mode (integration)", () => {
 
     // The execute_sandbox_script tool call renders its octopus-studio-script card in the
     // DOM — the same surface the e2e asserted.
-    await waitFor(
-      () =>
-        expect(screen.getByTestId("octopus-studio-script-card")).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("octopus-studio-script-card")).toBeTruthy(), {
+      timeout: 20_000,
+    });
     // The card header shows the script description, and the agent's final
     // narration renders as message text.
-    await waitFor(
-      () => expect(screen.getByText("Check App.tsx length")).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText("Check App.tsx length")).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await waitFor(
       () =>
         expect(
-          screen.getByText(
-            /This is a simple React component that renders a div with the text/,
-          ),
+          screen.getByText(/This is a simple React component that renders a div with the text/),
         ).toBeTruthy(),
       { timeout: 20_000 },
     );
@@ -96,9 +88,7 @@ describe("local-agent ask mode (integration)", () => {
     // Gate main-side (db) assertions on the real end-of-stream event.
     await harness.waitForStreamEnd(harness.chatId);
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const messages = await harness.db.query.messages.findMany({
@@ -109,9 +99,7 @@ describe("local-agent ask mode (integration)", () => {
     expect(assistant.role).toBe("assistant");
     const content = assistant.content;
 
-    expect(content).toContain(
-      "Let me inspect the file in a read-only sandbox.",
-    );
+    expect(content).toContain("Let me inspect the file in a read-only sandbox.");
     expect(content).toContain(
       "This is a simple React component that renders a div with the text 'Minimal imported app'. The component is exported as the default export.",
     );
@@ -121,10 +109,7 @@ describe("local-agent ask mode (integration)", () => {
       /<octopus-studio-script description="Check App\.tsx length" state="finished" truncated="false" execution-ms="\d+">/,
     );
     // The script output is App.tsx's length — verify against the real file.
-    const appTsxLength = fs.readFileSync(
-      path.join(harness.appDir, "src/App.tsx"),
-      "utf8",
-    ).length;
+    const appTsxLength = fs.readFileSync(path.join(harness.appDir, "src/App.tsx"), "utf8").length;
     const payloadMatch = content.match(
       /<octopus-studio-script [^>]*>([\s\S]*?)<\/octopus-studio-script>/,
     );
@@ -160,22 +145,17 @@ describe("local-agent ask mode (integration)", () => {
     send();
 
     // The dump-path marker streams back and renders as the assistant message.
-    await waitFor(
-      () => expect(screen.getByText(/octopus-studio-dump-path/)).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/octopus-studio-dump-path/)).toBeTruthy(), {
+      timeout: 20_000,
+    });
 
     await streamEnd;
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const req = harness.getServerDump({ type: "request" });
-    expect(req.parsed.headers.authorization).toBe(
-      "Bearer testOctopusStudiokey",
-    );
+    expect(req.parsed.headers.authorization).toBe("Bearer testOctopusStudiokey");
     expect(req.parsed.body.model).toBe("[[MODEL]]");
 
     const tools = (req.parsed.body.tools ?? []) as Array<{
@@ -209,8 +189,7 @@ describe("local-agent ask mode (integration)", () => {
     // snapshot-stable.
     for (const t of tools) {
       const name = t.function?.name ?? t.name;
-      const description =
-        t.function?.description ?? (t as { description?: string }).description;
+      const description = t.function?.description ?? (t as { description?: string }).description;
       expect(description).toBe(`[[TOOL_DESC:${name}]]`);
     }
 

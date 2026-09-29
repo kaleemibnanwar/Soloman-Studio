@@ -52,7 +52,9 @@ export function LinkToProjectDialog({
       setTargetAppId((current) =>
         current && candidateApps.some((app) => String(app.id) === current)
           ? current
-          : (candidateApps[0] ? String(candidateApps[0].id) : ""),
+          : candidateApps[0]
+            ? String(candidateApps[0].id)
+            : "",
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,8 +71,7 @@ export function LinkToProjectDialog({
         targetPath: targetPath.trim(),
       });
       const targetName =
-        candidateApps.find((app) => String(app.id) === targetAppId)?.name ??
-        "the target project";
+        candidateApps.find((app) => String(app.id) === targetAppId)?.name ?? "the target project";
       showSuccess(`Linked "${sourcePath}" into ${targetName}`);
       onOpenChange(false);
     } catch (error) {
@@ -89,8 +90,8 @@ export function LinkToProjectDialog({
           <DialogTitle>Link to another project</DialogTitle>
           <DialogDescription>
             Creates a symlink in the target project pointing at{" "}
-            <span className="font-mono text-xs">{sourcePath}</span>. Edits in
-            either project affect the same file.
+            <span className="font-mono text-xs">{sourcePath}</span>. Edits in either project affect
+            the same file.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
@@ -98,10 +99,7 @@ export function LinkToProjectDialog({
             <label htmlFor="link-target-project" className="text-sm font-medium">
               Target project
             </label>
-            <Select
-              value={targetAppId}
-              onValueChange={(v) => v && setTargetAppId(v)}
-            >
+            <Select value={targetAppId} onValueChange={(v) => v && setTargetAppId(v)}>
               <SelectTrigger id="link-target-project" className="w-full">
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
@@ -127,17 +125,10 @@ export function LinkToProjectDialog({
           </div>
         </div>
         <DialogFooter className="mt-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isLinking}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLinking}>
             Cancel
           </Button>
-          <Button
-            onClick={handleLink}
-            disabled={isLinking || !targetAppId || !targetPath.trim()}
-          >
+          <Button onClick={handleLink} disabled={isLinking || !targetAppId || !targetPath.trim()}>
             {isLinking ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Linking...

@@ -30,10 +30,7 @@ import {
 const IGNORED_SNAPSHOT_FILE_PATHS = new Set([".gitattributes"]);
 
 function isIgnoredSnapshotFile(filePath: string | undefined): boolean {
-  return (
-    typeof filePath === "string" &&
-    IGNORED_SNAPSHOT_FILE_PATHS.has(normalizePath(filePath))
-  );
+  return typeof filePath === "string" && IGNORED_SNAPSHOT_FILE_PATHS.has(normalizePath(filePath));
 }
 
 function removeIgnoredOctopusStudioFileBlocks(text: string): string {
@@ -42,10 +39,7 @@ function removeIgnoredOctopusStudioFileBlocks(text: string): string {
       /\n?<octopus-studio-file path="\.gitattributes">[\s\S]*?<\/octopus-studio-file>\n*/g,
       "",
     )
-    .replace(
-      /This is my codebase\.\s+(<octopus-studio-file)/g,
-      "This is my codebase. $1",
-    );
+    .replace(/This is my codebase\.\s+(<octopus-studio-file)/g, "This is my codebase. $1");
 }
 
 function sanitizeContentForSnapshot(content: unknown): unknown {
@@ -62,9 +56,7 @@ function sanitizeContentForSnapshot(content: unknown): unknown {
       ) {
         return {
           ...part,
-          text: removeIgnoredOctopusStudioFileBlocks(
-            (part as { text: string }).text,
-          ),
+          text: removeIgnoredOctopusStudioFileBlocks((part as { text: string }).text),
         };
       }
       return part;
@@ -90,10 +82,9 @@ function removeIgnoredSnapshotFilesFromDump(dump: any): void {
   }
 
   if (Array.isArray(body.octopus_studio_options?.files)) {
-    body.octopus_studio_options.files =
-      body.octopus_studio_options.files.filter(
-        (file: any) => !isIgnoredSnapshotFile(file.path),
-      );
+    body.octopus_studio_options.files = body.octopus_studio_options.files.filter(
+      (file: any) => !isIgnoredSnapshotFile(file.path),
+    );
   }
 
   if (Array.isArray(body.octopus_studio_options?.mentioned_apps)) {
@@ -132,10 +123,7 @@ function removeIgnoredSnapshotFilesFromDump(dump: any): void {
 
   if (vf.messageIndexToFilePathToFileId) {
     for (const pathToId of Object.values(
-      vf.messageIndexToFilePathToFileId as Record<
-        string,
-        Record<string, string>
-      >,
+      vf.messageIndexToFilePathToFileId as Record<string, Record<string, string>>,
     )) {
       for (const [filePath, id] of Object.entries(pathToId)) {
         if (isIgnoredSnapshotFile(filePath)) {
@@ -238,8 +226,7 @@ export interface ServerDumpResult {
 
 /** Extract every `[[octopus-studio-dump-path=...]]` path from message text, in order. */
 export function extractDumpPaths(text: string): string[] {
-  const matches =
-    text.match(/\[\[octopus-studio-dump-path=([^\]]+)\]\]/g) ?? [];
+  const matches = text.match(/\[\[octopus-studio-dump-path=([^\]]+)\]\]/g) ?? [];
   return matches
     .map((m) => m.match(/\[\[octopus-studio-dump-path=([^\]]+)\]\]/)?.[1])
     .filter((p): p is string => Boolean(p));
@@ -247,10 +234,7 @@ export function extractDumpPaths(text: string): string[] {
 
 function scrubDumpFileContent(raw: string): string {
   return raw
-    .replaceAll(
-      /\[\[octopus-studio-dump-path=([^\]]+)\]\]/g,
-      "[[octopus-studio-dump-path=*]]",
-    )
+    .replaceAll(/\[\[octopus-studio-dump-path=([^\]]+)\]\]/g, "[[octopus-studio-dump-path=*]]")
     .replaceAll(
       /\.octopusStudio[\\/]+chats[\\/]+\d+[\\/]+compaction-[^\s"\\]+\.md/g,
       "[[compaction-backup-path]]",
@@ -277,8 +261,7 @@ export function readServerDump(
     throw new Error("No dump path found. Did the prompt trigger a [dump]?");
   }
 
-  const selectedIndex =
-    dumpIndex < 0 ? dumpPaths.length + dumpIndex : dumpIndex;
+  const selectedIndex = dumpIndex < 0 ? dumpPaths.length + dumpIndex : dumpIndex;
   if (selectedIndex < 0 || selectedIndex >= dumpPaths.length) {
     throw new Error(
       `Dump index ${dumpIndex} is out of range. Found ${dumpPaths.length} dump paths.`,
@@ -286,9 +269,7 @@ export function readServerDump(
   }
 
   const dumpPath = dumpPaths[selectedIndex];
-  const parsed = JSON.parse(
-    scrubDumpFileContent(fs.readFileSync(dumpPath, "utf-8")),
-  );
+  const parsed = JSON.parse(scrubDumpFileContent(fs.readFileSync(dumpPath, "utf-8")));
 
   removeIgnoredSnapshotFilesFromDump(parsed);
   maskSystemMessages(parsed);

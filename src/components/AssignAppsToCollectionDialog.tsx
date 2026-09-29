@@ -32,9 +32,7 @@ export function AssignAppsToCollectionDialog({
   onAssigned,
 }: AssignAppsToCollectionDialogProps) {
   const { assignApps, createCollection } = useAppCollections();
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    number | null
-  >(null);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
@@ -86,9 +84,7 @@ export function AssignAppsToCollectionDialog({
     setIsSubmitting(true);
     try {
       await createCollection({ name: trimmed, appIds });
-      showSuccess(
-        `Added ${apps.length} app${apps.length === 1 ? "" : "s"} to "${trimmed}"`,
-      );
+      showSuccess(`Added ${apps.length} app${apps.length === 1 ? "" : "s"} to "${trimmed}"`);
       onAssigned?.();
       onOpenChange(false);
     } catch (error) {

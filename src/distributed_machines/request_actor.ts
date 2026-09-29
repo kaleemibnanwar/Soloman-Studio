@@ -8,36 +8,20 @@ import {
   type PreparedRequestScope,
 } from "./prepared_request";
 import type { RequestIdentity } from "./request_identity";
-import type {
-  ObservedRevisionToken,
-  RemoteActorRef,
-  RemoteActorView,
-} from "./remote_client";
+import type { ObservedRevisionToken, RemoteActorRef, RemoteActorView } from "./remote_client";
 import type { IgnoreReason } from "@/state_machines/types";
 import type { IdSource } from "@/state_machines/clock";
 import { createRequestIdentity, type RequestId } from "./request_identity";
 import type { ActorRuntimeMetadata } from "./definition";
 
-export interface CompletionAwareActor<
-  Intent,
-  Admission,
-  Outcome,
-  Refusal,
-  EnqueueResult,
-> {
+export interface CompletionAwareActor<Intent, Admission, Outcome, Refusal, EnqueueResult> {
   /** Admission/enqueue only. It never represents domain completion. */
   enqueue(intent: Intent): EnqueueResult;
   /** Creates the client handle synchronously before crossing the boundary. */
   request(intent: Intent): PreparedRequest<Admission, Outcome, Refusal>;
 }
 
-export interface CompletionAwareActorOptions<
-  Intent,
-  Admission,
-  Outcome,
-  Refusal,
-  EnqueueResult,
-> {
+export interface CompletionAwareActorOptions<Intent, Admission, Outcome, Refusal, EnqueueResult> {
   readonly scope: PreparedRequestScope;
   /**
    * Captures immutable request data synchronously. The same snapshot is used
@@ -47,9 +31,7 @@ export interface CompletionAwareActorOptions<
   readonly prepareIdentity: (intent: Intent) => RequestIdentity;
   readonly fingerprint: (identity: RequestIdentity, intent: Intent) => string;
   readonly retry: PrepareRequestOptions<Admission, Outcome, Refusal>["retry"];
-  readonly classifyFailure: (
-    error: unknown,
-  ) => PreparedRequestFailureClassification;
+  readonly classifyFailure: (error: unknown) => PreparedRequestFailureClassification;
   readonly reportError?: (error: unknown) => void;
   readonly enqueue: (intent: Intent) => EnqueueResult;
   readonly dispatchRequest: (
@@ -63,20 +45,8 @@ export interface CompletionAwareActorOptions<
  * Explicit compatibility boundary: existing raw dispatch can back enqueue,
  * while completion-aware consumers opt into request().
  */
-export function createCompletionAwareActor<
-  Intent,
-  Admission,
-  Outcome,
-  Refusal,
-  EnqueueResult,
->(
-  options: CompletionAwareActorOptions<
-    Intent,
-    Admission,
-    Outcome,
-    Refusal,
-    EnqueueResult
-  >,
+export function createCompletionAwareActor<Intent, Admission, Outcome, Refusal, EnqueueResult>(
+  options: CompletionAwareActorOptions<Intent, Admission, Outcome, Refusal, EnqueueResult>,
 ): CompletionAwareActor<Intent, Admission, Outcome, Refusal, EnqueueResult> {
   return {
     enqueue: options.enqueue,
@@ -141,9 +111,7 @@ export interface CreateRemoteRequestActorOptions<
    */
   readonly outcomeOnUnavailable?: () => Outcome;
   readonly admissionFromReceipt: (
-    receipt: Awaited<
-      ReturnType<RemoteActorRef<State, Intent, Reason>["dispatch"]>
-    >,
+    receipt: Awaited<ReturnType<RemoteActorRef<State, Intent, Reason>["dispatch"]>>,
   ) => Admission | AdmissionRefusal<Refusal>;
   readonly isRefusal: (
     value: Admission | AdmissionRefusal<Refusal>,
@@ -155,13 +123,7 @@ export interface CreateRemoteRequestActorOptions<
     Refusal,
     never
   >["classifyFailure"];
-  readonly retry: CompletionAwareActorOptions<
-    Input,
-    Admission,
-    Outcome,
-    Refusal,
-    never
-  >["retry"];
+  readonly retry: CompletionAwareActorOptions<Input, Admission, Outcome, Refusal, never>["retry"];
 }
 
 /**
@@ -194,19 +156,11 @@ export function createRemoteRequestActor<
         RequestIdentity,
         RemoteRequestIntent<Intent> | AdmissionRefusal<Refusal>
       >();
-      return createCompletionAwareActor<
-        Input,
-        Admission,
-        Outcome,
-        Refusal,
-        never
-      >({
+      return createCompletionAwareActor<Input, Admission, Outcome, Refusal, never>({
         scope: options.scope,
         snapshotIntent: options.snapshotInput,
-        prepareIdentity: () =>
-          createRequestIdentity(options.ids, options.windowSessionId),
-        fingerprint: (identity, requestInput) =>
-          options.fingerprint(identity, requestInput),
+        prepareIdentity: () => createRequestIdentity(options.ids, options.windowSessionId),
+        fingerprint: (identity, requestInput) => options.fingerprint(identity, requestInput),
         retry: options.retry,
         classifyFailure: options.classifyFailure,
         enqueue: () => {
@@ -247,8 +201,7 @@ export function createRemoteRequestActor<
           ) =>
             view.snapshot.kind === "available" &&
             view.snapshot.observedRevision.kind === "actor" &&
-            view.snapshot.observedRevision.actorInstanceId ===
-              actor.actorInstanceId &&
+            view.snapshot.observedRevision.actorInstanceId === actor.actorInstanceId &&
             view.snapshot.observedRevision.revision >= actor.snapshotRevision;
           const observe = (view: RemoteActorView<State>) => {
             if (lastObservedView === view) return;
@@ -288,10 +241,7 @@ export function createRemoteRequestActor<
             identity.requestId,
             (outcome, actor) => {
               const view = options.actor.getView();
-              if (
-                view.snapshot.kind === "unavailable" ||
-                observesCommittedActor(view, actor)
-              ) {
+              if (view.snapshot.kind === "unavailable" || observesCommittedActor(view, actor)) {
                 observe(view);
                 complete(outcome as Outcome);
                 return;
@@ -305,8 +255,7 @@ export function createRemoteRequestActor<
             await lease.ready;
             if (signal.aborted) throw signal.reason;
             const request =
-              preparedIntent.get(identity) ??
-              options.prepareIntent(requestInput, identity);
+              preparedIntent.get(identity) ?? options.prepareIntent(requestInput, identity);
             preparedIntent.set(identity, request);
             if (!("intent" in request)) {
               cleanup();
@@ -339,11 +288,7 @@ export function createRemoteRequestActor<
   };
 }
 
-export async function dispatchRemoteAdmissionOnly<
-  State,
-  Intent,
-  Reason extends IgnoreReason,
->(
+export async function dispatchRemoteAdmissionOnly<State, Intent, Reason extends IgnoreReason>(
   actor: RemoteActorRef<State, Intent, Reason>,
   intent: Intent,
   expected?: ObservedRevisionToken,

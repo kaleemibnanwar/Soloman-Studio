@@ -470,10 +470,7 @@ export function getOpenBlock(state: ParserState): Block | null {
     synthesizedMarkdown = state.pending;
   } else if (state.mode === "tag-attrs") {
     synthesizedMarkdown = "<" + state.pendingTagName + state.pendingAttrs;
-  } else if (
-    state.mode === "tag-close-start" ||
-    state.mode === "tag-close-name"
-  ) {
+  } else if (state.mode === "tag-close-start" || state.mode === "tag-close-name") {
     // Bytes buffered mid-closing-tag ("<", "</", "</NAME") — surface them in
     // the open custom-tag's visible content so they stream and aren't lost
     // if the stream stops before the closing tag completes.
@@ -492,8 +489,7 @@ export function getOpenBlock(state: ParserState): Block | null {
     if (synthesizedTagContent && state.openBlock.kind === "custom-tag") {
       return {
         ...state.openBlock,
-        content:
-          state.openBlock.content + unescapeXmlContent(synthesizedTagContent),
+        content: state.openBlock.content + unescapeXmlContent(synthesizedTagContent),
       };
     }
     return state.openBlock;

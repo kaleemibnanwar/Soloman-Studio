@@ -31,8 +31,7 @@ async function main() {
   });
   await sleep(6000);
   let page =
-    app.windows().find((w) => !w.url().startsWith("devtools://")) ??
-    (await app.firstWindow());
+    app.windows().find((w) => !w.url().startsWith("devtools://")) ?? (await app.firstWindow());
   await page.waitForLoadState("domcontentloaded").catch(() => {});
   await sleep(3000);
   await page.setViewportSize({ width: 1360, height: 860 });

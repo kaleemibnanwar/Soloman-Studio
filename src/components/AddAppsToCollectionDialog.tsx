@@ -96,8 +96,7 @@ export function AddAppsToCollectionDialog({
         <DialogHeader className="pb-2">
           <DialogTitle>Add apps to "{collection.name}"</DialogTitle>
           <DialogDescription className="text-xs">
-            Select apps to add. Apps already in another collection will be
-            moved.
+            Select apps to add. Apps already in another collection will be moved.
           </DialogDescription>
         </DialogHeader>
 
@@ -130,10 +129,7 @@ export function AddAppsToCollectionDialog({
                   className="flex items-center gap-2 rounded-sm px-2 py-1.5 cursor-pointer hover:bg-muted"
                   data-testid={`add-apps-dialog-item-${app.id}`}
                 >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => toggleApp(app.id)}
-                  />
+                  <Checkbox checked={checked} onCheckedChange={() => toggleApp(app.id)} />
                   <span className="flex-1 truncate text-sm">{app.name}</span>
                   {inOther && (
                     <span className="text-[10px] text-muted-foreground italic shrink-0">

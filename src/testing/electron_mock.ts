@@ -28,10 +28,7 @@
  */
 import { vi } from "vitest";
 
-export type IpcHandler = (
-  event: unknown,
-  input: unknown,
-) => unknown | Promise<unknown>;
+export type IpcHandler = (event: unknown, input: unknown) => unknown | Promise<unknown>;
 
 export interface ElectronMockShared {
   /** Channel -> handler, populated by `ipcMain.handle`. */
@@ -91,10 +88,7 @@ function resolveUserDataPath(): string {
 export function createElectronMock(shared: ElectronMockShared) {
   const ipcListeners =
     shared.ipcListeners ??
-    (shared.ipcListeners = new Map<
-      string,
-      Array<(...args: unknown[]) => void>
-    >());
+    (shared.ipcListeners = new Map<string, Array<(...args: unknown[]) => void>>());
 
   return {
     app: {
@@ -122,17 +116,13 @@ export function createElectronMock(shared: ElectronMockShared) {
       // harnesses in one process still work.
       handle: vi.fn((channel: string, fn: IpcHandler) => {
         if (shared.ipcHandlers.has(channel)) {
-          throw new Error(
-            `Attempted to register a second handler for '${channel}'`,
-          );
+          throw new Error(`Attempted to register a second handler for '${channel}'`);
         }
         shared.ipcHandlers.set(channel, fn);
       }),
       handleOnce: vi.fn((channel: string, fn: IpcHandler) => {
         if (shared.ipcHandlers.has(channel)) {
-          throw new Error(
-            `Attempted to register a second handler for '${channel}'`,
-          );
+          throw new Error(`Attempted to register a second handler for '${channel}'`);
         }
         // Real handleOnce deregisters after the first invocation.
         shared.ipcHandlers.set(channel, (event, input) => {
@@ -178,9 +168,7 @@ export function createElectronMock(shared: ElectronMockShared) {
       showItemInFolder: vi.fn(),
     },
     dialog: {
-      showOpenDialog: vi.fn(() =>
-        Promise.resolve({ canceled: true, filePaths: [] }),
-      ),
+      showOpenDialog: vi.fn(() => Promise.resolve({ canceled: true, filePaths: [] })),
       showSaveDialog: vi.fn(() => Promise.resolve({ canceled: true })),
       showMessageBox: vi.fn(() => Promise.resolve({ response: 0 })),
     },

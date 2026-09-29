@@ -41,11 +41,7 @@ export function transition(
     case "CONFLICT_RESOLUTION_FINISHED":
       return conflictResolutionFinished(state, event.chatId);
     case "CONFLICT_VERIFICATION_FAILED":
-      return conflictVerificationFailed(
-        state,
-        event.verificationAttempt,
-        event.message,
-      );
+      return conflictVerificationFailed(state, event.verificationAttempt, event.message);
     case "RETRY_CONFLICT_VERIFICATION":
       return retryConflictVerification(state);
     case "BANNER_DISMISSED":
@@ -57,10 +53,7 @@ export function transition(
   }
 }
 
-function requestOperation(
-  state: GithubOpsState,
-  op: GithubOperation,
-): GithubOpsTransitionResult {
+function requestOperation(state: GithubOpsState, op: GithubOperation): GithubOpsTransitionResult {
   switch (state.type) {
     case "idle":
       return beginOperation(state, op);
@@ -71,11 +64,7 @@ function requestOperation(
         return ignore(state, "op-in-flight");
       }
       if (state.resolution === "ready-to-sync") {
-        if (
-          op.type === "merge-abort" ||
-          op.type === "rebase-abort" ||
-          op.type === "switch"
-        ) {
+        if (op.type === "merge-abort" || op.type === "rebase-abort" || op.type === "switch") {
           return beginOperation(state, op);
         }
         const continuation = continuationOperation(state.origin);
@@ -87,9 +76,7 @@ function requestOperation(
             )
           : ignore(state, "blocked-by-conflicts");
       }
-      return op.type === "merge-abort" ||
-        op.type === "rebase-abort" ||
-        op.type === "switch"
+      return op.type === "merge-abort" || op.type === "rebase-abort" || op.type === "switch"
         ? beginOperation(state, op)
         : ignore(state, "blocked-by-conflicts");
     case "rebase-paused":
@@ -112,8 +99,7 @@ function beginOperation(
   nextOverride?: GithubOperation,
 ): GithubOpsTransitionResult {
   const next = nextOverride ?? compositeNext(op);
-  const blockedSwitchResume =
-    op.type === "switch" ? getBlockedSwitchResume(state) : undefined;
+  const blockedSwitchResume = op.type === "switch" ? getBlockedSwitchResume(state) : undefined;
   return {
     kind: "applied",
     state: {
@@ -127,10 +113,7 @@ function beginOperation(
   };
 }
 
-function operationSucceeded(
-  state: GithubOpsState,
-  op: GithubOperation,
-): GithubOpsTransitionResult {
+function operationSucceeded(state: GithubOpsState, op: GithubOperation): GithubOpsTransitionResult {
   switch (state.type) {
     case "running":
       break;
@@ -199,24 +182,14 @@ function operationFailed(
 
   if (failure.code === "REBASE_IN_PROGRESS") {
     if (op.type === "switch") {
-      return blockedSwitch(
-        op.branch,
-        "rebase",
-        banner,
-        state.blockedSwitchResume,
-      );
+      return blockedSwitch(op.branch, "rebase", banner, state.blockedSwitchResume);
     }
     return changed({ type: "rebase-paused", banner });
   }
 
   if (failure.code === "MERGE_IN_PROGRESS") {
     if (op.type === "switch") {
-      return blockedSwitch(
-        op.branch,
-        "merge",
-        banner,
-        state.blockedSwitchResume,
-      );
+      return blockedSwitch(op.branch, "merge", banner, state.blockedSwitchResume);
     }
     return awaitConflicts(state, op, banner);
   }
@@ -403,15 +376,12 @@ function gitStateReceived(
         ? state.resolution !== undefined || isRebaseConflictOrigin(state.origin)
           ? state.origin
           : { type: "rebase" }
-        : state.resolution !== undefined &&
-            isResumableRebaseOrigin(state.origin)
+        : state.resolution !== undefined && isResumableRebaseOrigin(state.origin)
           ? PUSH_NORMAL
-          : state.resolution === undefined &&
-              isRebaseConflictOrigin(state.origin)
+          : state.resolution === undefined && isRebaseConflictOrigin(state.origin)
             ? { type: "reconcile" }
             : state.origin;
-      const nextState =
-        nextOrigin === state.origin ? state : { ...state, origin: nextOrigin };
+      const nextState = nextOrigin === state.origin ? state : { ...state, origin: nextOrigin };
       return {
         kind: "applied",
         state: nextState,
@@ -435,8 +405,7 @@ function gitStateReceived(
                 ({
                   kind: "error",
                   code: "REBASE_IN_PROGRESS",
-                  message:
-                    "A rebase is already in progress. Choose how to proceed.",
+                  message: "A rebase is already in progress. Choose how to proceed.",
                 } satisfies GithubOpsBanner),
             }
         : state.type === "rebase-paused"
@@ -478,9 +447,7 @@ function dismissBlocked(state: GithubOpsState): GithubOpsTransitionResult {
   }
 }
 
-function startResolvingConflicts(
-  state: GithubOpsState,
-): GithubOpsTransitionResult {
+function startResolvingConflicts(state: GithubOpsState): GithubOpsTransitionResult {
   switch (state.type) {
     case "conflicted":
       if (state.resolution !== undefined) {
@@ -592,9 +559,7 @@ function conflictVerificationFailed(
   }
 }
 
-function retryConflictVerification(
-  state: GithubOpsState,
-): GithubOpsTransitionResult {
+function retryConflictVerification(state: GithubOpsState): GithubOpsTransitionResult {
   switch (state.type) {
     case "conflicted": {
       if (state.resolution !== "verification-failed") {
@@ -656,9 +621,7 @@ function reconcile(state: GithubOpsState): GithubOpsTransitionResult {
           {
             type: "probe-git-state",
             verificationAttempt:
-              state.resolution === "checking"
-                ? state.verificationAttempt
-                : undefined,
+              state.resolution === "checking" ? state.verificationAttempt : undefined,
           },
         ],
       };
@@ -689,9 +652,7 @@ function abortAndSwitch(state: GithubOpsState): GithubOpsTransitionResult {
       return assertNever(state);
   }
   const op: GithubOperation =
-    state.blockingOp === "rebase"
-      ? { type: "rebase-abort" }
-      : { type: "merge-abort" };
+    state.blockingOp === "rebase" ? { type: "rebase-abort" } : { type: "merge-abort" };
   const next: GithubOperation = { type: "switch", branch: state.target };
   return {
     kind: "applied",
@@ -725,9 +686,7 @@ function enterConflicted(
   };
 }
 
-export function continuationOperation(
-  origin: ConflictOrigin,
-): GithubOperation | undefined {
+export function continuationOperation(origin: ConflictOrigin): GithubOperation | undefined {
   switch (origin.type) {
     case "push":
       return origin;
@@ -753,11 +712,7 @@ export function continuationOperation(
 }
 
 function isRebaseOperation(op: GithubOperation): boolean {
-  return (
-    op.type === "rebase" ||
-    op.type === "rebase-continue" ||
-    op.type === "rebase-abort"
-  );
+  return op.type === "rebase" || op.type === "rebase-continue" || op.type === "rebase-abort";
 }
 
 function isRebaseConflictOrigin(origin: ConflictOrigin): boolean {
@@ -790,9 +745,7 @@ function blockedSwitch(
   };
 }
 
-function getBlockedSwitchResume(
-  state: GithubOpsState,
-): BlockedSwitchResume | undefined {
+function getBlockedSwitchResume(state: GithubOpsState): BlockedSwitchResume | undefined {
   switch (state.type) {
     case "conflicted":
       return {
@@ -933,28 +886,19 @@ function clearsHistoryBanner(op: GithubOperation): boolean {
   return op.type !== "fetch";
 }
 
-export function operationsEqual(
-  left: GithubOperation,
-  right: GithubOperation,
-): boolean {
+export function operationsEqual(left: GithubOperation, right: GithubOperation): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function sameFiles(left: readonly string[], right: readonly string[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((file, index) => file === right[index])
-  );
+  return left.length === right.length && left.every((file, index) => file === right[index]);
 }
 
 function changed(state: GithubOpsState): GithubOpsTransitionResult {
   return { kind: "applied", state, commands: [] };
 }
 
-function ignore(
-  state: GithubOpsState,
-  reason: GithubOpsIgnoreReason,
-): GithubOpsTransitionResult {
+function ignore(state: GithubOpsState, reason: GithubOpsIgnoreReason): GithubOpsTransitionResult {
   return ignoreTransition(state, reason);
 }
 

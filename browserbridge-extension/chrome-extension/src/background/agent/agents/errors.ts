@@ -1,5 +1,5 @@
 export const LLM_FORBIDDEN_ERROR_MESSAGE =
-  'Access denied (403 Forbidden). Please check:\n\n1. Your API key has the required permissions\n\n2. For Ollama: Set OLLAMA_ORIGINS=chrome-extension://* \nsee https://github.com/ollama/ollama/blob/main/docs/faq.md';
+  "Access denied (403 Forbidden). Please check:\n\n1. Your API key has the required permissions\n\n2. For Ollama: Set OLLAMA_ORIGINS=chrome-extension://* \nsee https://github.com/ollama/ollama/blob/main/docs/faq.md";
 
 export const EXTENSION_CONFLICT_ERROR_MESSAGE = `
   Cannot access a chrome-extension:// URL of different extension.
@@ -21,7 +21,7 @@ export class ChatModelAuthError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'ChatModelAuthError';
+    this.name = "ChatModelAuthError";
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
@@ -33,7 +33,7 @@ export class ChatModelAuthError extends Error {
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }
 
@@ -43,7 +43,7 @@ export class ChatModelForbiddenError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'ChatModelForbiddenError';
+    this.name = "ChatModelForbiddenError";
 
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ChatModelForbiddenError);
@@ -54,7 +54,7 @@ export class ChatModelForbiddenError extends Error {
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }
 
@@ -73,7 +73,7 @@ export class ChatModelBadRequestError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'ChatModelBadRequestError';
+    this.name = "ChatModelBadRequestError";
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
@@ -85,7 +85,7 @@ export class ChatModelBadRequestError extends Error {
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }
 
@@ -99,28 +99,28 @@ export function isAuthenticationError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
 
   // Get the error message
-  const errorMessage = error.message || '';
+  const errorMessage = error.message || "";
 
   // Get error name - sometimes error.name just returns "Error" for custom errors
-  let errorName = error.name || '';
+  let errorName = error.name || "";
 
   // Try to extract the constructor name, which often contains the actual error type
   // This works better than error.name for many custom errors
   const constructorName = error.constructor?.name;
-  if (constructorName && constructorName !== 'Error') {
+  if (constructorName && constructorName !== "Error") {
     errorName = constructorName;
   }
 
   // Check if the error name indicates an authentication error
-  if (errorName === 'AuthenticationError') {
+  if (errorName === "AuthenticationError") {
     return true;
   }
 
   // Fallback: check the message for authentication-related indicators
   return (
-    errorMessage.toLowerCase().includes('authentication') ||
-    errorMessage.includes(' 401') ||
-    errorMessage.toLowerCase().includes('api key')
+    errorMessage.toLowerCase().includes("authentication") ||
+    errorMessage.includes(" 401") ||
+    errorMessage.toLowerCase().includes("api key")
   );
 }
 
@@ -132,7 +132,7 @@ export function isAuthenticationError(error: unknown): boolean {
  */
 export function isForbiddenError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  return error.message.includes(' 403') && error.message.includes('Forbidden');
+  return error.message.includes(" 403") && error.message.includes("Forbidden");
 }
 
 /**
@@ -145,37 +145,37 @@ export function isBadRequestError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
 
   // Get the error message
-  const errorMessage = error.message || '';
+  const errorMessage = error.message || "";
 
   // Get error name - sometimes error.name just returns "Error" for custom errors
-  let errorName = error.name || '';
+  let errorName = error.name || "";
 
   // Try to extract the constructor name, which often contains the actual error type
   // This works better than error.name for many custom errors
   const constructorName = error.constructor?.name;
-  if (constructorName && constructorName !== 'Error') {
+  if (constructorName && constructorName !== "Error") {
     errorName = constructorName;
   }
 
   // Check if the error name indicates a bad request error
-  if (errorName === 'BadRequestError') {
+  if (errorName === "BadRequestError") {
     return true;
   }
 
   // Check for specific patterns in the error message that indicate bad request
   return (
-    errorMessage.includes(' 400') ||
-    errorMessage.toLowerCase().includes('badrequest') ||
-    errorMessage.includes('Invalid parameter') ||
-    (errorMessage.includes('response_format') &&
-      errorMessage.includes('json_schema') &&
-      errorMessage.includes('not supported'))
+    errorMessage.includes(" 400") ||
+    errorMessage.toLowerCase().includes("badrequest") ||
+    errorMessage.includes("Invalid parameter") ||
+    (errorMessage.includes("response_format") &&
+      errorMessage.includes("json_schema") &&
+      errorMessage.includes("not supported"))
   );
 }
 
 export function isAbortedError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  return error.name === 'AbortError' || error.message.includes('Aborted');
+  return error.name === "AbortError" || error.message.includes("Aborted");
 }
 
 /**
@@ -187,13 +187,16 @@ export function isAbortedError(error: unknown): boolean {
 export function isExtensionConflictError(error: unknown): boolean {
   const errorMessage = (error instanceof Error ? error.message : String(error)).toLowerCase();
 
-  return errorMessage.includes('cannot access a chrome-extension') && errorMessage.includes('of different extension');
+  return (
+    errorMessage.includes("cannot access a chrome-extension") &&
+    errorMessage.includes("of different extension")
+  );
 }
 
 export class RequestCancelledError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'RequestCancelledError';
+    this.name = "RequestCancelledError";
   }
 }
 
@@ -209,7 +212,7 @@ export class ExtensionConflictError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'ExtensionConflictError';
+    this.name = "ExtensionConflictError";
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
@@ -221,7 +224,7 @@ export class ExtensionConflictError extends Error {
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }
 
@@ -240,7 +243,7 @@ export class MaxStepsReachedError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'MaxStepsReachedError';
+    this.name = "MaxStepsReachedError";
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
@@ -252,7 +255,7 @@ export class MaxStepsReachedError extends Error {
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }
 
@@ -271,7 +274,7 @@ export class MaxFailuresReachedError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'MaxFailuresReachedError';
+    this.name = "MaxFailuresReachedError";
 
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
@@ -283,7 +286,7 @@ export class MaxFailuresReachedError extends Error {
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }
 
@@ -302,13 +305,13 @@ export class ResponseParseError extends Error {
     public readonly cause?: unknown,
   ) {
     super(message);
-    this.name = 'ResponseParseError';
+    this.name = "ResponseParseError";
   }
 
   /**
    * Returns a string representation of the error
    */
   toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ""}`;
   }
 }

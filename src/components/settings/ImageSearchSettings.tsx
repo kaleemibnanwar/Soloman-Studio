@@ -86,21 +86,12 @@ function ProviderSecretField({
           {value ? "Update" : "Save"}
         </Button>
         {value && (
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={remove}
-            disabled={busy}
-          >
+          <Button size="sm" variant="destructive" onClick={remove} disabled={busy}>
             Remove
           </Button>
         )}
       </div>
-      {value && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Configured: {masked}
-        </p>
-      )}
+      {value && <p className="mt-2 text-xs text-muted-foreground">Configured: {masked}</p>}
     </div>
   );
 }
@@ -112,13 +103,11 @@ export function ImageSearchSettings() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-foreground">
-          Stock Image Search
-        </h3>
+        <h3 className="text-sm font-semibold text-foreground">Stock Image Search</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           Configure one or more providers so the agent&apos;s{" "}
-          <span className="font-mono">search_images</span> tool can find stock
-          photos for your apps. Keys are stored encrypted.
+          <span className="font-mono">search_images</span> tool can find stock photos for your apps.
+          Keys are stored encrypted.
         </p>
       </div>
 

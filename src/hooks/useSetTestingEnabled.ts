@@ -11,11 +11,7 @@ import { queryKeys } from "@/lib/queryKeys";
 export function useSetTestingEnabled() {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation<
-    boolean,
-    Error,
-    { appId: number; enabled: boolean }
-  >({
+  const mutation = useMutation<boolean, Error, { appId: number; enabled: boolean }>({
     mutationFn: async ({ appId, enabled }) => {
       const result = await ipc.app.setTestingEnabled({ appId, enabled });
       return result.testingEnabled;

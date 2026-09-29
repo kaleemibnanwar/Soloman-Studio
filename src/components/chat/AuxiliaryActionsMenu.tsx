@@ -21,12 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ContextFilesPicker } from "@/components/ContextFilesPicker";
 import { FileAttachmentDropdown } from "./FileAttachmentDropdown";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -39,10 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 
 interface AuxiliaryActionsMenuProps {
-  onFileSelect: (
-    files: FileList,
-    type: "chat-context" | "upload-to-codebase",
-  ) => void;
+  onFileSelect: (files: FileList, type: "chat-context" | "upload-to-codebase") => void;
   showTokenBar?: boolean;
   toggleShowTokenBar?: () => void;
   hideContextFilesPicker?: boolean;
@@ -69,20 +61,15 @@ export function AuxiliaryActionsMenu({
 
   // Determine current theme: use app theme if appId exists, otherwise use settings
   // Note: settings stores empty string for "no theme", convert to null
-  const currentThemeId =
-    appId != null ? appThemeId : settings?.selectedThemeId || null;
+  const currentThemeId = appId != null ? appThemeId : settings?.selectedThemeId || null;
 
   // Compute visible custom themes: selected custom theme + up to 3 others
   const visibleCustomThemes = useMemo(() => {
     const MAX_VISIBLE = 4; // selected + 3 others
 
     // Check if current theme is a custom theme
-    const selectedCustomTheme = customThemes.find(
-      (t) => `custom:${t.id}` === currentThemeId,
-    );
-    const otherCustomThemes = customThemes.filter(
-      (t) => `custom:${t.id}` !== currentThemeId,
-    );
+    const selectedCustomTheme = customThemes.find((t) => `custom:${t.id}` === currentThemeId);
+    const otherCustomThemes = customThemes.filter((t) => `custom:${t.id}` !== currentThemeId);
 
     const result = [];
     if (selectedCustomTheme) {
@@ -176,9 +163,7 @@ export function AuxiliaryActionsMenu({
                 <div className="flex items-center w-full">
                   <Ban size={16} className="mr-2 text-muted-foreground" />
                   <span className="flex-1">No Theme</span>
-                  {currentThemeId === null && (
-                    <Check size={16} className="text-primary ml-2" />
-                  )}
+                  {currentThemeId === null && <Check size={16} className="text-primary ml-2" />}
                 </div>
               </DropdownMenuItem>
 
@@ -195,15 +180,10 @@ export function AuxiliaryActionsMenu({
                   >
                     <div className="flex items-center w-full">
                       {theme.icon === "palette" && (
-                        <Palette
-                          size={16}
-                          className="mr-2 text-muted-foreground"
-                        />
+                        <Palette size={16} className="mr-2 text-muted-foreground" />
                       )}
                       <span className="flex-1">{theme.name}</span>
-                      {isSelected && (
-                        <Check size={16} className="text-primary ml-2" />
-                      )}
+                      {isSelected && <Check size={16} className="text-primary ml-2" />}
                     </div>
                   </DropdownMenuItem>
                 );
@@ -225,14 +205,9 @@ export function AuxiliaryActionsMenu({
                         title={theme.description || "Custom theme"}
                       >
                         <div className="flex items-center w-full">
-                          <Brush
-                            size={16}
-                            className="mr-2 text-muted-foreground"
-                          />
+                          <Brush size={16} className="mr-2 text-muted-foreground" />
                           <span className="flex-1">{theme.name}</span>
-                          {isSelected && (
-                            <Check size={16} className="text-primary ml-2" />
-                          )}
+                          {isSelected && <Check size={16} className="text-primary ml-2" />}
                         </div>
                       </DropdownMenuItem>
                     );
@@ -251,10 +226,7 @@ export function AuxiliaryActionsMenu({
                   data-testid="all-custom-themes-option"
                 >
                   <div className="flex items-center w-full">
-                    <MoreHorizontal
-                      size={16}
-                      className="mr-2 text-muted-foreground"
-                    />
+                    <MoreHorizontal size={16} className="mr-2 text-muted-foreground" />
                     <span className="flex-1">More themes</span>
                   </div>
                 </DropdownMenuItem>
@@ -269,10 +241,7 @@ export function AuxiliaryActionsMenu({
                   data-testid="create-custom-theme"
                 >
                   <div className="flex items-center w-full">
-                    <PlusCircle
-                      size={16}
-                      className="mr-2 text-muted-foreground"
-                    />
+                    <PlusCircle size={16} className="mr-2 text-muted-foreground" />
                     <span className="flex-1">New Theme</span>
                   </div>
                 </DropdownMenuItem>
@@ -305,15 +274,9 @@ export function AuxiliaryActionsMenu({
               >
                 <ChartColumnIncreasing
                   size={16}
-                  className={
-                    showTokenBar
-                      ? "text-primary group-hover:text-accent-foreground"
-                      : ""
-                  }
+                  className={showTokenBar ? "text-primary group-hover:text-accent-foreground" : ""}
                 />
-                <span className="flex-1">
-                  {showTokenBar ? "Hide" : "Show"} token usage
-                </span>
+                <span className="flex-1">{showTokenBar ? "Hide" : "Show"} token usage</span>
               </DropdownMenuItem>
             </>
           )}
@@ -356,9 +319,7 @@ export function AuxiliaryActionsMenu({
                   <div className="flex-1">
                     <div className="font-medium">{theme.name}</div>
                     {theme.description && (
-                      <div className="text-sm text-muted-foreground">
-                        {theme.description}
-                      </div>
+                      <div className="text-sm text-muted-foreground">{theme.description}</div>
                     )}
                   </div>
                   {isSelected && <Check size={18} className="text-primary" />}

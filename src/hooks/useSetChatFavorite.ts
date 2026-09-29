@@ -20,8 +20,7 @@ export function useSetChatFavorite() {
     SetChatFavoriteVariables,
     { snapshots: ChatListSnapshot[] }
   >({
-    mutationFn: ({ chatId, isFavorite }) =>
-      ipc.chat.setChatFavorite({ chatId, isFavorite }),
+    mutationFn: ({ chatId, isFavorite }) => ipc.chat.setChatFavorite({ chatId, isFavorite }),
     onMutate: async ({ chatId, appId, isFavorite }) => {
       const queryKeysToUpdate = [
         queryKeys.chats.list({ appId }),
@@ -29,24 +28,17 @@ export function useSetChatFavorite() {
       ] as const;
 
       await Promise.all(
-        queryKeysToUpdate.map((queryKey) =>
-          queryClient.cancelQueries({ queryKey, exact: true }),
-        ),
+        queryKeysToUpdate.map((queryKey) => queryClient.cancelQueries({ queryKey, exact: true })),
       );
 
       const snapshots = queryKeysToUpdate.map(
         (queryKey) =>
-          [
-            queryKey,
-            queryClient.getQueryData<ChatSummary[]>(queryKey),
-          ] satisfies ChatListSnapshot,
+          [queryKey, queryClient.getQueryData<ChatSummary[]>(queryKey)] satisfies ChatListSnapshot,
       );
 
       for (const queryKey of queryKeysToUpdate) {
         queryClient.setQueryData<ChatSummary[]>(queryKey, (current) =>
-          current?.map((chat) =>
-            chat.id === chatId ? { ...chat, isFavorite } : chat,
-          ),
+          current?.map((chat) => (chat.id === chatId ? { ...chat, isFavorite } : chat)),
         );
       }
 

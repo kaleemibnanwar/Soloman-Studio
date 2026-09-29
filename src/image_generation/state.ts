@@ -16,11 +16,7 @@ import type { RequestId } from "@/distributed_machines/request_identity";
 
 export const IMAGE_GENERATION_INVOCATION_KIND = "image-generation";
 
-export type ImageThemeMode =
-  | "plain"
-  | "3d-clay"
-  | "real-photography"
-  | "isometric-illustration";
+export type ImageThemeMode = "plain" | "3d-clay" | "real-photography" | "isometric-illustration";
 
 export interface GenerateImageResponse {
   fileName: string;
@@ -30,10 +26,7 @@ export interface GenerateImageResponse {
   appName: string;
 }
 
-export type ImageGenerationResultView = Omit<
-  GenerateImageResponse,
-  "filePath" | "appPath"
->;
+export type ImageGenerationResultView = Omit<GenerateImageResponse, "filePath" | "appPath">;
 
 export interface StartImageGenerationParams {
   prompt: string;
@@ -48,12 +41,7 @@ export interface ImageGenerationJobDetails extends StartImageGenerationParams {
   startedAt: number;
 }
 
-export type ImageGenerationStatus =
-  | "pending"
-  | "cancelling"
-  | "success"
-  | "error"
-  | "cancelled";
+export type ImageGenerationStatus = "pending" | "cancelling" | "success" | "error" | "cancelled";
 
 export interface ImageGenerationJob extends ImageGenerationJobDetails {
   status: ImageGenerationStatus;
@@ -87,10 +75,7 @@ export interface ImageGenerationActorState {
   readonly jobs: readonly ImageGenerationActorJob[];
 }
 
-export type ImageGenerationFailureKind =
-  | "user_cancelled"
-  | "provider"
-  | "unexpected";
+export type ImageGenerationFailureKind = "user_cancelled" | "provider" | "unexpected";
 
 export type ImageGenerationOperationOutcome =
   | {
@@ -102,10 +87,7 @@ export type ImageGenerationOperationOutcome =
       readonly kind: "failed";
       readonly jobId: string;
       readonly message: string;
-      readonly failureKind: Exclude<
-        ImageGenerationFailureKind,
-        "user_cancelled"
-      >;
+      readonly failureKind: Exclude<ImageGenerationFailureKind, "user_cancelled">;
     }
   | { readonly kind: "cancelled"; readonly jobId: string }
   | {
@@ -142,9 +124,7 @@ export type CancelImageGenerationEvent = {
   readonly activeInvocationRef: ImageGenerationInvocationRef;
 };
 
-export type ImageGenerationIntentEvent =
-  | SubmitImageGenerationEvent
-  | CancelImageGenerationEvent;
+export type ImageGenerationIntentEvent = SubmitImageGenerationEvent | CancelImageGenerationEvent;
 
 export type ImageGenerationProducerEvent =
   | {
@@ -170,9 +150,7 @@ export type ImageGenerationProducerEvent =
   | { readonly type: "APP_DELETION_STARTED"; readonly appId: number }
   | { readonly type: "APP_DELETED"; readonly appId: number };
 
-export type ImageGenerationEvent =
-  | ImageGenerationIntentEvent
-  | ImageGenerationProducerEvent;
+export type ImageGenerationEvent = ImageGenerationIntentEvent | ImageGenerationProducerEvent;
 
 export type ImageGenerationCommand =
   | {
@@ -210,10 +188,9 @@ export type ImageGenerationIgnoreReason =
   | "job-not-found"
   | "stale-operation";
 
-export type ImageGenerationTransitionResult =
-  import("@/state_machines/types").TransitionResult<
-    ImageGenerationActorState,
-    ImageGenerationCommand,
-    ImageGenerationIgnoreReason,
-    ImageGenerationCorrelatedOutcome
-  >;
+export type ImageGenerationTransitionResult = import("@/state_machines/types").TransitionResult<
+  ImageGenerationActorState,
+  ImageGenerationCommand,
+  ImageGenerationIgnoreReason,
+  ImageGenerationCorrelatedOutcome
+>;

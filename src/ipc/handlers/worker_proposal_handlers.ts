@@ -4,15 +4,9 @@ import { apps, workerProposals } from "../../db/schema";
 import { createTypedHandler } from "./base";
 import { workerProposalContracts } from "../types/worker_proposal";
 import { dispatchSquadRun } from "../services/worker_run_service";
-import {
-  getOctopusStudioAppPath,
-  getChatProjectRootPath,
-} from "../../paths/paths";
+import { getOctopusStudioAppPath, getChatProjectRootPath } from "../../paths/paths";
 import { writeConsensus } from "../utils/worker_consensus";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "../../errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "../../errors/octopus_studio_error";
 
 function resolveProjectPath(app: {
   type: string;
@@ -27,44 +21,37 @@ function resolveProjectPath(app: {
 }
 
 export function registerWorkerProposalHandlers() {
-  createTypedHandler(
-    workerProposalContracts.listProposals,
-    async (_event, { projectId }) => {
-      const rows = await db
-        .select({ proposal: workerProposals, projectName: apps.name })
-        .from(workerProposals)
-        .leftJoin(apps, eq(workerProposals.projectId, apps.id))
-        .where(
-          projectId != null
-            ? eq(workerProposals.projectId, projectId)
-            : undefined,
-        )
-        .orderBy(desc(workerProposals.createdAt));
-      return rows.map(({ proposal: p, projectName }) => ({
-        id: p.id,
-        projectId: p.projectId,
-        projectName: projectName ?? null,
-        runId: p.runId,
-        summary: p.summary,
-        name: p.name,
-        steps: p.steps,
-        rationale: p.rationale,
-        type: p.type,
-        target: p.target,
-        tool: p.tool,
-        scopeFiles: p.scopeFiles,
-        personas: p.personas,
-        estimatedToolCalls: p.estimatedToolCalls,
-        status: p.status,
-        feedback: p.feedback,
-        guardrailFlags: p.guardrailFlags,
-        consensusDiff: p.consensusDiff,
-        createdAt: p.createdAt,
-        resolvedAt: p.resolvedAt,
-        executionOutcome: p.executionOutcome,
-      }));
-    },
-  );
+  createTypedHandler(workerProposalContracts.listProposals, async (_event, { projectId }) => {
+    const rows = await db
+      .select({ proposal: workerProposals, projectName: apps.name })
+      .from(workerProposals)
+      .leftJoin(apps, eq(workerProposals.projectId, apps.id))
+      .where(projectId != null ? eq(workerProposals.projectId, projectId) : undefined)
+      .orderBy(desc(workerProposals.createdAt));
+    return rows.map(({ proposal: p, projectName }) => ({
+      id: p.id,
+      projectId: p.projectId,
+      projectName: projectName ?? null,
+      runId: p.runId,
+      summary: p.summary,
+      name: p.name,
+      steps: p.steps,
+      rationale: p.rationale,
+      type: p.type,
+      target: p.target,
+      tool: p.tool,
+      scopeFiles: p.scopeFiles,
+      personas: p.personas,
+      estimatedToolCalls: p.estimatedToolCalls,
+      status: p.status,
+      feedback: p.feedback,
+      guardrailFlags: p.guardrailFlags,
+      consensusDiff: p.consensusDiff,
+      createdAt: p.createdAt,
+      resolvedAt: p.resolvedAt,
+      executionOutcome: p.executionOutcome,
+    }));
+  });
 
   createTypedHandler(
     workerProposalContracts.approveProposal,
@@ -73,10 +60,7 @@ export function registerWorkerProposalHandlers() {
         where: eq(workerProposals.id, proposalId),
       });
       if (!proposal) {
-        throw new OctopusStudioError(
-          "Proposal not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("Proposal not found", OctopusStudioErrorKind.NotFound);
       }
       if (proposal.status !== "pending") {
         throw new OctopusStudioError(
@@ -113,10 +97,7 @@ export function registerWorkerProposalHandlers() {
         where: eq(workerProposals.id, proposalId),
       });
       if (!proposal) {
-        throw new OctopusStudioError(
-          "Proposal not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("Proposal not found", OctopusStudioErrorKind.NotFound);
       }
       if (proposal.status !== "pending") {
         throw new OctopusStudioError(

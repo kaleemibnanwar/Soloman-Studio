@@ -1,5 +1,5 @@
-import { createStorage } from '../base/base';
-import { StorageEnum } from '../base/enums';
+import { createStorage } from "../base/base";
+import { StorageEnum } from "../base/enums";
 import type {
   ChatSession,
   ChatMessage,
@@ -7,10 +7,10 @@ import type {
   Message,
   ChatSessionMetadata,
   ChatAgentStepHistory,
-} from './types';
+} from "./types";
 
 // Key for storing chat session metadata
-const CHAT_SESSIONS_META_KEY = 'chat_sessions_meta';
+const CHAT_SESSIONS_META_KEY = "chat_sessions_meta";
 
 // Create storage for session metadata
 const chatSessionsMetaStorage = createStorage<ChatSessionMetadata[]>(CHAT_SESSIONS_META_KEY, [], {
@@ -37,8 +37,8 @@ const getSessionAgentStepHistoryStorage = (sessionId: string) => {
   return createStorage<ChatAgentStepHistory>(
     getSessionAgentStepHistoryKey(sessionId),
     {
-      task: '',
-      history: '',
+      task: "",
+      history: "",
       timestamp: 0,
     },
     {
@@ -61,7 +61,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
       // For listing purposes, we can return sessions without loading messages
       // This makes the list view very fast
-      return sessionsMeta.map(meta => ({
+      return sessionsMeta.map((meta) => ({
         ...meta,
         messages: [], // Empty array as we don't load messages for listing
       }));
@@ -83,7 +83,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
     getSession: async (sessionId: string): Promise<ChatSession | null> => {
       const sessionsMeta = await chatSessionsMetaStorage.get();
-      const sessionMeta = sessionsMeta.find(session => session.id === sessionId);
+      const sessionMeta = sessionsMeta.find((session) => session.id === sessionId);
 
       if (!sessionMeta) return null;
 
@@ -113,7 +113,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       await messagesStorage.set([]);
 
       // Add session metadata to the index
-      await chatSessionsMetaStorage.set(prevSessions => [...prevSessions, newSessionMeta]);
+      await chatSessionsMetaStorage.set((prevSessions) => [...prevSessions, newSessionMeta]);
 
       return {
         ...newSessionMeta,
@@ -125,8 +125,8 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       let updatedSessionMeta: ChatSessionMetadata | undefined;
 
       // Update the title and capture the updated session in a single pass
-      await chatSessionsMetaStorage.set(prevSessions => {
-        return prevSessions.map(session => {
+      await chatSessionsMetaStorage.set((prevSessions) => {
+        return prevSessions.map((session) => {
           if (session.id === sessionId) {
             // Create the updated session
             const updated = {
@@ -146,7 +146,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
       // Check if we found and updated the session
       if (!updatedSessionMeta) {
-        throw new Error('Session not found');
+        throw new Error("Session not found");
       }
 
       // Return the already captured metadata
@@ -155,7 +155,9 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
     deleteSession: async (sessionId: string): Promise<void> => {
       // Remove session from metadata
-      await chatSessionsMetaStorage.set(prevSessions => prevSessions.filter(session => session.id !== sessionId));
+      await chatSessionsMetaStorage.set((prevSessions) =>
+        prevSessions.filter((session) => session.id !== sessionId),
+      );
 
       // Remove the session's messages
       const messagesStorage = getSessionMessagesStorage(sessionId);
@@ -171,8 +173,8 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       // First check if session exists and update metadata in a single operation
       let sessionFound = false;
 
-      await chatSessionsMetaStorage.set(prevSessions => {
-        return prevSessions.map(session => {
+      await chatSessionsMetaStorage.set((prevSessions) => {
+        return prevSessions.map((session) => {
           if (session.id === sessionId) {
             sessionFound = true;
             return {
@@ -192,7 +194,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
       // Only add the message if the session exists
       const messagesStorage = getSessionMessagesStorage(sessionId);
-      await messagesStorage.set(prevMessages => [...prevMessages, newMessage]);
+      await messagesStorage.set((prevMessages) => [...prevMessages, newMessage]);
 
       return newMessage;
     },
@@ -203,16 +205,18 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
       // Get current messages to calculate the new count
       const currentMessages = await messagesStorage.get();
-      const messageToDelete = currentMessages.find(msg => msg.id === messageId);
+      const messageToDelete = currentMessages.find((msg) => msg.id === messageId);
 
       if (!messageToDelete) return; // Message not found
 
       // Remove the message directly from the messages storage
-      await messagesStorage.set(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+      await messagesStorage.set((prevMessages) =>
+        prevMessages.filter((msg) => msg.id !== messageId),
+      );
 
       // Update the session's metadata (updatedAt timestamp and messageCount)
-      await chatSessionsMetaStorage.set(prevSessions => {
-        return prevSessions.map(session => {
+      await chatSessionsMetaStorage.set((prevSessions) => {
+        return prevSessions.map((session) => {
           if (session.id === sessionId) {
             return {
               ...session,
@@ -225,10 +229,14 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       });
     },
 
-    storeAgentStepHistory: async (sessionId: string, task: string, history: string): Promise<void> => {
+    storeAgentStepHistory: async (
+      sessionId: string,
+      task: string,
+      history: string,
+    ): Promise<void> => {
       // Check if session exists
       const sessionsMeta = await chatSessionsMetaStorage.get();
-      const sessionMeta = sessionsMeta.find(session => session.id === sessionId);
+      const sessionMeta = sessionsMeta.find((session) => session.id === sessionId);
       if (!sessionMeta) {
         throw new Error(`Session with ID ${sessionId} not found`);
       }
@@ -244,7 +252,13 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
     loadAgentStepHistory: async (sessionId: string): Promise<ChatAgentStepHistory | null> => {
       const agentStepHistoryStorage = getSessionAgentStepHistoryStorage(sessionId);
       const history = await agentStepHistoryStorage.get();
-      if (!history || !history.task || !history.timestamp || history.history === '' || history.history === '[]')
+      if (
+        !history ||
+        !history.task ||
+        !history.timestamp ||
+        history.history === "" ||
+        history.history === "[]"
+      )
         return null;
       return history;
     },

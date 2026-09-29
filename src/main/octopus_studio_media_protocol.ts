@@ -6,12 +6,12 @@ import {
   OCTOPUS_STUDIO_INTERNAL_DIR_NAME,
   OCTOPUS_STUDIO_MEDIA_SUBDIR,
   OCTOPUS_STUDIO_SCREENSHOT_SUBDIR,
-} from "../ipc/utils/media_path_utils";
+} from "../ipc/media/media_path_utils";
 import {
   createMediaThumbnailService,
   MediaThumbnailError,
   type CreateThumbnailFromPath,
-} from "../ipc/utils/media_thumbnail";
+} from "../ipc/media/media_thumbnail";
 
 type OctopusStudioMediaProtocolDependencies = {
   cacheRoot: string;
@@ -33,15 +33,10 @@ async function resolveContainedMediaPath(
   subdir: string,
   filename: string,
 ): Promise<{ sourcePath: string; cacheKeyPath: string }> {
-  const targetDir = path.resolve(
-    path.join(appPath, OCTOPUS_STUDIO_INTERNAL_DIR_NAME, subdir),
-  );
+  const targetDir = path.resolve(path.join(appPath, OCTOPUS_STUDIO_INTERNAL_DIR_NAME, subdir));
   const candidatePath = path.resolve(path.join(targetDir, filename));
   const relativeCandidate = path.relative(targetDir, candidatePath);
-  if (
-    relativeCandidate.startsWith("..") ||
-    path.isAbsolute(relativeCandidate)
-  ) {
+  if (relativeCandidate.startsWith("..") || path.isAbsolute(relativeCandidate)) {
     throw new MediaThumbnailError("Forbidden", 403);
   }
 
@@ -63,11 +58,7 @@ async function resolveContainedMediaPath(
 
   // Do not let .octopusStudio or its media subdirectory redirect the protocol to a
   // different directory through a symlink.
-  const expectedTargetDir = path.resolve(
-    realAppPath,
-    OCTOPUS_STUDIO_INTERNAL_DIR_NAME,
-    subdir,
-  );
+  const expectedTargetDir = path.resolve(realAppPath, OCTOPUS_STUDIO_INTERNAL_DIR_NAME, subdir);
   if (path.relative(expectedTargetDir, realTargetDir) !== "") {
     throw new MediaThumbnailError("Forbidden", 403);
   }
@@ -96,10 +87,7 @@ export function createOctopusStudioMediaProtocolHandler({
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
-      if (
-        url.protocol !== "octopus-studio-media:" ||
-        url.hostname !== "media"
-      ) {
+      if (url.protocol !== "octopus-studio-media:" || url.hostname !== "media") {
         return response(403, "Forbidden");
       }
 
@@ -107,10 +95,7 @@ export function createOctopusStudioMediaProtocolHandler({
       // octopus-studio-media://media/{app-path}/.octopusStudio/{subdir}/{filename}
       // octopus-studio-media://media/app-id/{id}/.octopusStudio/{subdir}/{filename}
       const pathSegments = url.pathname.slice(1).split("/");
-      const allowedSubdirs = [
-        OCTOPUS_STUDIO_MEDIA_SUBDIR,
-        OCTOPUS_STUDIO_SCREENSHOT_SUBDIR,
-      ];
+      const allowedSubdirs = [OCTOPUS_STUDIO_MEDIA_SUBDIR, OCTOPUS_STUDIO_SCREENSHOT_SUBDIR];
       const usesAppId =
         pathSegments.length === 5 &&
         pathSegments[0] === "app-id" &&
@@ -164,10 +149,7 @@ export function createOctopusStudioMediaProtocolHandler({
         return response(403, "Forbidden");
       }
 
-      const thumbnail = await thumbnailService.getOrCreate(
-        sourcePath,
-        cacheKeyPath,
-      );
+      const thumbnail = await thumbnailService.getOrCreate(sourcePath, cacheKeyPath);
       const requestedVersion = url.searchParams.get("v");
       const responseBody = new Uint8Array(
         thumbnail.data.buffer as ArrayBuffer,
@@ -183,9 +165,7 @@ export function createOctopusStudioMediaProtocolHandler({
             requestedVersion === thumbnail.sourceVersion
               ? "private, max-age=31536000, immutable"
               : "no-store",
-          "X-OctopusStudio-Thumbnail-Cache": thumbnail.cacheHit
-            ? "hit"
-            : "miss",
+          "X-OctopusStudio-Thumbnail-Cache": thumbnail.cacheHit ? "hit" : "miss",
         },
       });
     } catch (error) {

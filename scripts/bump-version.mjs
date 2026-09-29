@@ -157,9 +157,7 @@ function bumpVersion(newVersion) {
   run(`git push -u origin ${branch}`);
   step("Pushed to remote");
 
-  const prUrl = run(
-    `gh pr create --title "Bump to ${tag}" --body "#skip-bb"`,
-  ).trim();
+  const prUrl = run(`gh pr create --title "Bump to ${tag}" --body "#skip-bb"`).trim();
   step("Created pull request");
 
   console.log();

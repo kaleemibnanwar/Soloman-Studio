@@ -11,11 +11,8 @@ import {
   type RecordingAuth,
   type StartRecordingResult,
 } from "../types/recording";
-import { runningApps } from "../utils/process_manager";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { runningApps } from "../process/process_manager";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import { safeSend } from "../utils/safe_sender";
 import {
   prepareIsolatedTestDatabase,
@@ -32,20 +29,11 @@ import {
   type RecordingEndReason,
   type RecordingEndSummary,
 } from "../services/recording_registry";
-import {
-  clearRecordedTestDraft,
-  setRecordedTestDraft,
-} from "../services/recorded_test_drafts";
+import { clearRecordedTestDraft, setRecordedTestDraft } from "../services/recorded_test_drafts";
 import { isTestRunActive } from "./tests_handlers";
 import { readSettings } from "@/main/settings";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import {
-  isTestBranchCleanupOnly,
-  restoreAppFromTestBranch,
-} from "../utils/neon_test_branch";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { isTestBranchCleanupOnly, restoreAppFromTestBranch } from "../neon/neon_test_branch";
 
 const logger = log.scope("recording_handlers");
 
@@ -70,10 +58,7 @@ function deferred<T>() {
 async function getApp(appId: number) {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app) {
-    throw new OctopusStudioError(
-      `App with id ${appId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`App with id ${appId} not found`, OctopusStudioErrorKind.NotFound);
   }
   return app;
 }
@@ -106,13 +91,7 @@ function toRecordingAuth(setup: IsolationAuthSetup | undefined): RecordingAuth {
 async function clearPreviewStorage(origin: string): Promise<void> {
   await session.defaultSession.clearStorageData({
     origin,
-    storages: [
-      "cookies",
-      "localstorage",
-      "indexdb",
-      "serviceworkers",
-      "cachestorage",
-    ],
+    storages: ["cookies", "localstorage", "indexdb", "serviceworkers", "cachestorage"],
   });
 }
 
@@ -152,10 +131,7 @@ export function registerRecordingHandlers() {
       // late means preparing an isolated database for an app the user has
       // already stopped, and then restarting it to serve one.
       const cancelledDuringSetup = () =>
-        infraResult(
-          appId,
-          "The recording session ended before its environment was ready.",
-        );
+        infraResult(appId, "The recording session ended before its environment was ready.");
 
       try {
         let app = await getApp(appId);
@@ -171,10 +147,7 @@ export function registerRecordingHandlers() {
         // Recording and a test run both restart the dev server and share the
         // per-app Neon test-branch slot, so they must never overlap.
         if (isTestRunActive(appId)) {
-          return infraResult(
-            appId,
-            "Stop the running tests before starting a recording session.",
-          );
+          return infraResult(appId, "Stop the running tests before starting a recording session.");
         }
         if (!runningApps.get(appId)?.proxyUrl) {
           return infraResult(
@@ -245,10 +218,7 @@ export function registerRecordingHandlers() {
         let settled = false;
         // Set by whoever ends the session, read by teardown below.
         let teardownOptions: TeardownOptions = {};
-        const stop = (
-          reason: RecordingEndReason,
-          options?: EndRecordingOptions,
-        ) => {
+        const stop = (reason: RecordingEndReason, options?: EndRecordingOptions) => {
           if (settled) return;
           settled = true;
           if (options?.skipRestart) {
@@ -272,10 +242,7 @@ export function registerRecordingHandlers() {
         if (event.sender.isDestroyed?.()) {
           stop("app-stopped");
         }
-        const sessionTimer = setTimeout(
-          () => stop("timed-out"),
-          MAX_SESSION_MS,
-        );
+        const sessionTimer = setTimeout(() => stop("timed-out"), MAX_SESSION_MS);
         const clearRegistration = () => {
           // Only retire our own entry: teardown can overlap another attempted
           // registration, and its newer owner must survive.
@@ -410,9 +377,7 @@ export function registerRecordingHandlers() {
                   previewOrigin = origin;
                   await clearPreviewStorage(origin);
                 } catch (error) {
-                  logger.warn(
-                    `Couldn't clear preview storage for app ${appId}: ${error}`,
-                  );
+                  logger.warn(`Couldn't clear preview storage for app ${appId}: ${error}`);
                   // Not fatal — the recording is still usable — but a leftover session
                   // means what gets recorded may not be reproducible from a clean
                   // start, and only the user can judge that.
@@ -433,22 +398,16 @@ export function registerRecordingHandlers() {
                 // Hold the lock and isolation until the session is stopped.
                 endReason = await stopped.promise;
                 if (endReason === "timed-out") {
-                  endMessage =
-                    "Recording stopped after reaching the 30-minute session limit.";
+                  endMessage = "Recording stopped after reaching the 30-minute session limit.";
                 }
               } catch (error) {
-                const message =
-                  error instanceof Error ? error.message : String(error);
-                logger.error(
-                  `Recording session for app ${appId} failed: ${message}`,
-                );
+                const message = error instanceof Error ? error.message : String(error);
+                logger.error(`Recording session for app ${appId} failed: ${message}`);
                 endReason = "error";
                 endMessage = message;
                 // Resolve is idempotent: this only matters when setup failed before
                 // `ready` was resolved.
-                ready.resolve(
-                  infraResult(appId, "Couldn't set up the recording session."),
-                );
+                ready.resolve(infraResult(appId, "Couldn't set up the recording session."));
               } finally {
                 // Before isolation teardown, which is what deletes the test user
                 // this credential belongs to: whichever way that goes, the
@@ -470,13 +429,9 @@ export function registerRecordingHandlers() {
                   // returns gets to say the environment is restored.
                   summary.envRestored = false;
                   try {
-                    summary.envRestored = (
-                      await prepared.teardown(teardownOptions)
-                    ).envRestored;
+                    summary.envRestored = (await prepared.teardown(teardownOptions)).envRestored;
                   } catch (error) {
-                    logger.error(
-                      `Recording teardown failed for app ${appId}: ${error}`,
-                    );
+                    logger.error(`Recording teardown failed for app ${appId}: ${error}`);
                   }
                 }
                 if (!summary.envRestored) {
@@ -510,9 +465,7 @@ export function registerRecordingHandlers() {
               // A deletion fence rejects coordinator admission without invoking
               // the callback above. Settle the IPC ask and retire the provisional
               // registry/timer instead of leaving Record permanently spinning.
-              logger.warn(
-                `Recording admission was refused for app ${appId}: ${error}`,
-              );
+              logger.warn(`Recording admission was refused for app ${appId}: ${error}`);
               settled = true;
               controller.abort();
               ready.resolve(
@@ -537,38 +490,29 @@ export function registerRecordingHandlers() {
     },
   );
 
-  createTypedHandler(
-    recordingContracts.stopRecording,
-    async (_event, params) => {
-      // Via the registry rather than `activeRecordings` directly: a start still
-      // inside its setup awaits owns no published session, so reading the map
-      // here would find nothing and report success while that start went on to
-      // clear preview storage, swap `.env.local`, and restart the dev server
-      // for a session the user has already cancelled. `endRecordingForApp` sets
-      // the reservation tombstone the start re-reads after each await.
-      await endRecordingForApp(params.appId, "stopped");
-      return { ok: true as const };
-    },
-  );
+  createTypedHandler(recordingContracts.stopRecording, async (_event, params) => {
+    // Via the registry rather than `activeRecordings` directly: a start still
+    // inside its setup awaits owns no published session, so reading the map
+    // here would find nothing and report success while that start went on to
+    // clear preview storage, swap `.env.local`, and restart the dev server
+    // for a session the user has already cancelled. `endRecordingForApp` sets
+    // the reservation tombstone the start re-reads after each await.
+    await endRecordingForApp(params.appId, "stopped");
+    return { ok: true as const };
+  });
 
-  createTypedHandler(
-    recordingContracts.saveRecordedTestDraft,
-    async (_event, params) => {
-      setRecordedTestDraft(params.appId, params.draft);
-      logger.info(
-        `Parked a recorded test draft for app ${params.appId} with ${params.draft.actions.length} action(s)`,
-      );
-      return { ok: true as const };
-    },
-  );
+  createTypedHandler(recordingContracts.saveRecordedTestDraft, async (_event, params) => {
+    setRecordedTestDraft(params.appId, params.draft);
+    logger.info(
+      `Parked a recorded test draft for app ${params.appId} with ${params.draft.actions.length} action(s)`,
+    );
+    return { ok: true as const };
+  });
 
-  createTypedHandler(
-    recordingContracts.discardRecordedTestDraft,
-    async (_event, params) => {
-      clearRecordedTestDraft(params.appId, params.draftId);
-      return { ok: true as const };
-    },
-  );
+  createTypedHandler(recordingContracts.discardRecordedTestDraft, async (_event, params) => {
+    clearRecordedTestDraft(params.appId, params.draftId);
+    return { ok: true as const };
+  });
 
   logger.debug("Registered recording IPC handlers");
 }

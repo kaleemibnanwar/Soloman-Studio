@@ -10,9 +10,7 @@ const CLASSIFY_CLIENT_TIMEOUT_MS = 1500;
  * slow round-trip resolves to `null`, and callers must fall back to
  * today's default-resolution behavior in that case.
  */
-export async function classifyChatModeIfNeeded(
-  prompt: string,
-): Promise<ChatMode | null> {
+export async function classifyChatModeIfNeeded(prompt: string): Promise<ChatMode | null> {
   if (!prompt.trim()) {
     return null;
   }

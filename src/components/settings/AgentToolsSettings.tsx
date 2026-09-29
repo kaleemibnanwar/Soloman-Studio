@@ -7,11 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {
-  useAgentTools,
-  type AgentToolName,
-  type AgentTool,
-} from "@/hooks/useAgentTools";
+import { useAgentTools, type AgentToolName, type AgentTool } from "@/hooks/useAgentTools";
 import { Loader2, ChevronRight } from "lucide-react";
 import { AgentToolConsent } from "@/lib/schemas";
 import { useTranslation } from "react-i18next";
@@ -21,10 +17,7 @@ export function AgentToolsSettings() {
   const { t } = useTranslation("settings");
   const [showAutoApproved, setShowAutoApproved] = useState(false);
 
-  const handleConsentChange = (
-    toolName: AgentToolName,
-    consent: AgentToolConsent,
-  ) => {
+  const handleConsentChange = (toolName: AgentToolName, consent: AgentToolConsent) => {
     setConsent({ toolName, consent });
   };
 
@@ -36,16 +29,12 @@ export function AgentToolsSettings() {
     );
   }
 
-  const autoApprovedTools =
-    tools?.filter((t: AgentTool) => t.isAllowedByDefault) || [];
-  const requiresApprovalTools =
-    tools?.filter((t: AgentTool) => !t.isAllowedByDefault) || [];
+  const autoApprovedTools = tools?.filter((t: AgentTool) => t.isAllowedByDefault) || [];
+  const requiresApprovalTools = tools?.filter((t: AgentTool) => !t.isAllowedByDefault) || [];
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {t("agentPermissions.description")}
-      </p>
+      <p className="text-sm text-muted-foreground">{t("agentPermissions.description")}</p>
 
       {/* Requires approval tools */}
       <div className="space-y-2">
@@ -55,9 +44,7 @@ export function AgentToolsSettings() {
             name={tool.name}
             description={tool.description}
             consent={tool.consent}
-            onConsentChange={(consent) =>
-              handleConsentChange(tool.name as AgentToolName, consent)
-            }
+            onConsentChange={(consent) => handleConsentChange(tool.name as AgentToolName, consent)}
           />
         ))}
       </div>
@@ -119,21 +106,14 @@ function ToolConsentRow({
             {description?.slice(0, 100)} {description?.length > 100 && "..."}
           </div>
         </div>
-        <Select
-          value={consent}
-          onValueChange={(v) => onConsentChange(v as AgentToolConsent)}
-        >
+        <Select value={consent} onValueChange={(v) => onConsentChange(v as AgentToolConsent)}>
           <SelectTrigger className="w-[140px] h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ask">{t("agentPermissions.ask")}</SelectItem>
-            <SelectItem value="always">
-              {t("agentPermissions.alwaysAllow")}
-            </SelectItem>
-            <SelectItem value="never">
-              {t("agentPermissions.neverAllow")}
-            </SelectItem>
+            <SelectItem value="always">{t("agentPermissions.alwaysAllow")}</SelectItem>
+            <SelectItem value="never">{t("agentPermissions.neverAllow")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

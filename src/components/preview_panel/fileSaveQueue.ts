@@ -4,10 +4,7 @@ export function getFileSaveQueueKey(appId: number, filePath: string) {
   return `${appId}:${filePath}`;
 }
 
-export async function enqueueFileSave<T>(
-  queueKey: string,
-  saveOperation: () => Promise<T>,
-) {
+export async function enqueueFileSave<T>(queueKey: string, saveOperation: () => Promise<T>) {
   const previousSave = fileSaveQueueByPath.get(queueKey) ?? Promise.resolve();
   const queuedSave = previousSave.catch(() => undefined).then(saveOperation);
   const trackedSave = queuedSave.then(

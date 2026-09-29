@@ -20,8 +20,7 @@ export const LOCAL_MCP_CATALOG: McpCatalogEntry[] = [
   {
     slug: "intercom",
     name: "Intercom",
-    description:
-      "Search and read conversations, contacts, companies, and help center articles.",
+    description: "Search and read conversations, contacts, companies, and help center articles.",
     category: "Communication",
     transport: "http",
     url: "https://mcp.intercom.com/mcp",
@@ -32,8 +31,7 @@ export const LOCAL_MCP_CATALOG: McpCatalogEntry[] = [
   {
     slug: "canva",
     name: "Canva",
-    description:
-      "Create designs, autofill brand templates, search your library, and export.",
+    description: "Create designs, autofill brand templates, search your library, and export.",
     category: "Design",
     featured: true,
     transport: "http",
@@ -86,8 +84,7 @@ export const LOCAL_MCP_CATALOG: McpCatalogEntry[] = [
   {
     slug: "atlassian",
     name: "Atlassian (Jira & Confluence)",
-    description:
-      "Search and update Jira issues and Confluence pages, plus Compass and Bitbucket.",
+    description: "Search and update Jira issues and Confluence pages, plus Compass and Bitbucket.",
     category: "Project Management",
     transport: "http",
     url: "https://mcp.atlassian.com/v1/mcp/authv2",
@@ -116,8 +113,7 @@ export const LOCAL_MCP_CATALOG: McpCatalogEntry[] = [
   {
     slug: "stripe",
     name: "Stripe",
-    description:
-      "Manage customers, products, invoices, subscriptions, and refunds.",
+    description: "Manage customers, products, invoices, subscriptions, and refunds.",
     category: "Payments & Commerce",
     featured: true,
     transport: "http",
@@ -138,8 +134,7 @@ export const LOCAL_MCP_CATALOG: McpCatalogEntry[] = [
   {
     slug: "vercel",
     name: "Vercel",
-    description:
-      "Search docs, manage projects and deployments, and query analytics.",
+    description: "Search docs, manage projects and deployments, and query analytics.",
     category: "Infrastructure",
     transport: "http",
     url: "https://mcp.vercel.com",

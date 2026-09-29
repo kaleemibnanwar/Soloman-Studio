@@ -14,9 +14,7 @@ export interface ChatModeResolution {
   fallbackReason?: ChatModeFallbackReason;
 }
 
-export function normalizeStoredChatMode(
-  mode: string | null | undefined,
-): ChatMode | null {
+export function normalizeStoredChatMode(mode: string | null | undefined): ChatMode | null {
   if (!mode) {
     return null;
   }
@@ -65,11 +63,7 @@ export function resolveChatMode({
   freeAgentQuotaAvailable?: boolean;
 }): ChatModeResolution {
   const chatMode = normalizeStoredChatMode(storedChatMode);
-  const effectiveDefault = getEffectiveDefaultChatMode(
-    settings,
-    envVars,
-    freeAgentQuotaAvailable,
-  );
+  const effectiveDefault = getEffectiveDefaultChatMode(settings, envVars, freeAgentQuotaAvailable);
 
   if (!chatMode) {
     return { mode: effectiveDefault };

@@ -9,13 +9,7 @@ export function useCommitChanges() {
   const screenshotManager = useScreenshotManager();
 
   const { mutateAsync: commitChanges, isPending: isCommitting } = useMutation({
-    mutationFn: async ({
-      appId,
-      message,
-    }: {
-      appId: number;
-      message: string;
-    }) => {
+    mutationFn: async ({ appId, message }: { appId: number; message: string }) => {
       return ipc.git.commitChanges({ appId, message });
     },
     onSuccess: (_, { appId }) => {

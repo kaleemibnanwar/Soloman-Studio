@@ -18,10 +18,7 @@ interface OctopusStudioLogsProps {
   node?: any;
 }
 
-export const OctopusStudioLogs: React.FC<OctopusStudioLogsProps> = ({
-  children,
-  node,
-}) => {
+export const OctopusStudioLogs: React.FC<OctopusStudioLogsProps> = ({ children, node }) => {
   const [isContentVisible, setIsContentVisible] = useState(false);
 
   const state = node?.properties?.state as CustomTagState;
@@ -47,26 +44,11 @@ export const OctopusStudioLogs: React.FC<OctopusStudioLogsProps> = ({
       isExpanded={isContentVisible}
       onClick={() => setIsContentVisible(!isContentVisible)}
     >
-      <OctopusStudioCardHeader
-        icon={<FileText size={15} />}
-        accentColor="slate"
-      >
+      <OctopusStudioCardHeader icon={<FileText size={15} />} accentColor="slate">
         <OctopusStudioBadge color="slate">LOGS</OctopusStudioBadge>
-        <span className="font-medium text-sm text-foreground truncate">
-          {displayText}
-        </span>
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Reading..."
-          />
-        )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
+        <span className="font-medium text-sm text-foreground truncate">{displayText}</span>
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Reading..." />}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
         </div>

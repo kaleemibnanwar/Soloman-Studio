@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  isGoogleProviderSetup,
-  isNonGoogleProviderSetup,
-} from "./providerUtils";
+import { isGoogleProviderSetup, isNonGoogleProviderSetup } from "./providerUtils";
 
 export const SecretSchema = z.object({
   value: z.string(),
@@ -146,9 +143,7 @@ export const ProviderSettingSchema = z.union([
  * Type derived from the ProviderSettingSchema
  */
 export type ProviderSetting = z.infer<typeof ProviderSettingSchema>;
-export type RegularProviderSetting = z.infer<
-  typeof RegularProviderSettingSchema
->;
+export type RegularProviderSetting = z.infer<typeof RegularProviderSettingSchema>;
 export type AzureProviderSetting = z.infer<typeof AzureProviderSettingSchema>;
 export type VertexProviderSetting = z.infer<typeof VertexProviderSettingSchema>;
 
@@ -207,15 +202,11 @@ export const SupabaseOrganizationCredentialsSchema = z.object({
   expiresIn: z.number(),
   tokenTimestamp: z.number(),
 });
-export type SupabaseOrganizationCredentials = z.infer<
-  typeof SupabaseOrganizationCredentialsSchema
->;
+export type SupabaseOrganizationCredentials = z.infer<typeof SupabaseOrganizationCredentialsSchema>;
 
 export const SupabaseSchema = z.object({
   // Map keyed by organizationSlug -> organization credentials
-  organizations: z
-    .record(z.string(), SupabaseOrganizationCredentialsSchema)
-    .optional(),
+  organizations: z.record(z.string(), SupabaseOrganizationCredentialsSchema).optional(),
 
   // Legacy fields - kept for backwards compat
   accessToken: SecretSchema.optional(),
@@ -267,9 +258,24 @@ export const OctopusStudioProBudgetSchema = z.object({
   budgetResetAt: z.string(),
   maxBudget: z.number(),
 });
-export type OctopusStudioProBudget = z.infer<
-  typeof OctopusStudioProBudgetSchema
->;
+export type OctopusStudioProBudget = z.infer<typeof OctopusStudioProBudgetSchema>;
+
+/** How much reasoning the model performs before responding. */
+/** Session-level budget caps (mirrors Antigravity's BudgetConfig). */
+export const BudgetConfigSchema = z.object({
+  maxModelCalls: z.number().int().positive().optional(),
+  maxToolCalls: z.number().int().positive().optional(),
+  maxInputTokens: z.number().int().positive().optional(),
+  maxOutputTokens: z.number().int().positive().optional(),
+  maxTotalTokens: z.number().int().positive().optional(),
+});
+export type BudgetConfig = z.infer<typeof BudgetConfigSchema>;
+
+/** Compaction tuning (mirrors Antigravity's CompactionConfig). */
+export const CompactionConfigSchema = z.object({
+  tokenThreshold: z.number().int().positive().optional(),
+});
+export type CompactionConfig = z.infer<typeof CompactionConfigSchema>;
 
 export const GlobPathSchema = z.object({
   globPath: z.string(),
@@ -303,26 +309,13 @@ export type ZoomLevel = z.infer<typeof ZoomLevelSchema>;
 export const ZOOM_LEVELS: readonly ZoomLevel[] = ZoomLevelSchema.options;
 export const DEFAULT_ZOOM_LEVEL: ZoomLevel = "100";
 
-export const LanguageSchema = z.enum([
-  "en",
-  "zh-CN",
-  "ja",
-  "ko",
-  "es",
-  "fr",
-  "de",
-  "pt-BR",
-]);
+export const LanguageSchema = z.enum(["en", "zh-CN", "ja", "ko", "es", "fr", "de", "pt-BR"]);
 export type Language = z.infer<typeof LanguageSchema>;
 
 export const DeviceModeSchema = z.enum(["desktop", "tablet", "mobile"]);
 export type DeviceMode = z.infer<typeof DeviceModeSchema>;
 
-export const SmartContextModeSchema = z.enum([
-  "balanced",
-  "conservative",
-  "deep",
-]);
+export const SmartContextModeSchema = z.enum(["balanced", "conservative", "deep"]);
 export type SmartContextMode = z.infer<typeof SmartContextModeSchema>;
 
 export const AgentToolConsentSchema = z.enum(["ask", "always", "never"]);
@@ -334,9 +327,7 @@ export const TypeScriptUtilityProcessKindSchema = z.enum([
   "supabase-dependency-analysis",
   "tsc",
 ]);
-export type TypeScriptUtilityProcessKind = z.infer<
-  typeof TypeScriptUtilityProcessKindSchema
->;
+export type TypeScriptUtilityProcessKind = z.infer<typeof TypeScriptUtilityProcessKindSchema>;
 
 // What the main process was doing when a performance snapshot was taken.
 export const PerformanceActivitySchema = z.object({
@@ -400,6 +391,16 @@ const BaseUserSettingsFields = {
   // any configured provider (including custom OpenAI-compatible providers)
   // instead of requiring the OctopusStudio Pro engine.
   selectedImageModel: LargeLanguageModelSchema.optional(),
+  // Model used for AI video generation (the generate_video agent tool).
+  selectedVideoModel: LargeLanguageModelSchema.optional(),
+  // Session-level token/call budgets (see BudgetConfigSchema).
+  budgetConfig: BudgetConfigSchema.optional(),
+  // Compaction threshold tuning (see CompactionConfigSchema).
+  compactionConfig: CompactionConfigSchema.optional(),
+  // Lightweight model that decides which candidate to use per task.
+  routerModel: LargeLanguageModelSchema.optional(),
+  // Candidate models the router may choose between, driven by the chat mode.
+  autoModelCandidates: z.array(LargeLanguageModelSchema).optional(),
   providerSettings: z.record(z.string(), ProviderSettingSchema),
   agentToolConsents: z.record(z.string(), AgentToolConsentSchema).optional(),
   guardrails: z.array(z.string()).optional(),
@@ -525,9 +526,7 @@ export type UserSettings = z.infer<typeof UserSettingsSchema>;
  * Migrates a stored chat mode to an active chat mode.
  * Converts deprecated "agent" mode to "build".
  */
-export function migrateStoredChatMode(
-  mode: StoredChatMode | undefined,
-): ChatMode | undefined {
+export function migrateStoredChatMode(mode: StoredChatMode | undefined): ChatMode | undefined {
   if (mode === "agent") {
     return "build";
   }
@@ -538,9 +537,7 @@ export function migrateStoredChatMode(
  * Migrates stored settings to active settings.
  * Applies necessary transformations for deprecated values.
  */
-export function migrateStoredSettings(
-  stored: StoredUserSettings,
-): UserSettings {
+export function migrateStoredSettings(stored: StoredUserSettings): UserSettings {
   const activeSettings = { ...stored };
   delete activeSettings.enableNativeGit;
   delete activeSettings.enableAutoFixProblems;
@@ -551,8 +548,7 @@ export function migrateStoredSettings(
     selectedChatMode: migrateStoredChatMode(stored.selectedChatMode),
     defaultChatMode: migrateStoredChatMode(stored.defaultChatMode),
     enableChatEventNotifications:
-      stored.enableChatEventNotifications ??
-      stored.enableChatCompletionNotifications,
+      stored.enableChatEventNotifications ?? stored.enableChatCompletionNotifications,
     enableAppBlueprint: stored.enableAppBlueprint ?? true,
   };
 }
@@ -574,8 +570,7 @@ export function shouldShowPnpmMinimumReleaseAgeWarning(
   settings?: PnpmMinimumReleaseAgeWarningSettings | null,
 ): boolean {
   return Boolean(
-    settings?.enablePnpmMinimumReleaseAgeWarning &&
-    !settings.hidePnpmMinimumReleaseAgeWarning,
+    settings?.enablePnpmMinimumReleaseAgeWarning && !settings.hidePnpmMinimumReleaseAgeWarning,
   );
 }
 
@@ -615,10 +610,7 @@ export function getEffectiveDefaultChatMode(
  * - User is using local-agent chat mode
  */
 export function isBasicAgentMode(settings: UserSettings): boolean {
-  return (
-    !isOctopusStudioProEnabled(settings) &&
-    settings.selectedChatMode === "local-agent"
-  );
+  return !isOctopusStudioProEnabled(settings) && settings.selectedChatMode === "local-agent";
 }
 
 export function isSupabaseConnected(settings: UserSettings | null): boolean {
@@ -627,8 +619,7 @@ export function isSupabaseConnected(settings: UserSettings | null): boolean {
   }
   return Boolean(
     settings.supabase?.accessToken ||
-    (settings.supabase?.organizations &&
-      Object.keys(settings.supabase.organizations).length > 0),
+    (settings.supabase?.organizations && Object.keys(settings.supabase.organizations).length > 0),
   );
 }
 

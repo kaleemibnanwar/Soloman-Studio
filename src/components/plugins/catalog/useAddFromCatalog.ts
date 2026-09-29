@@ -13,8 +13,7 @@ export function useAddFromCatalog() {
   const [addingSlug, setAddingSlug] = useState<string | null>(null);
   // A stdio entry awaiting the user's run-locally consent. Null when no
   // consent is pending.
-  const [pendingStdioEntry, setPendingStdioEntry] =
-    useState<McpCatalogEntry | null>(null);
+  const [pendingStdioEntry, setPendingStdioEntry] = useState<McpCatalogEntry | null>(null);
   const { onServerCreated, connectingServerId } = usePluginConnect();
 
   const mutation = useMutation({
@@ -49,8 +48,7 @@ export function useAddFromCatalog() {
   const performAdd = async (entry: McpCatalogEntry) => {
     if (addingSlug) return;
     setAddingSlug(entry.slug);
-    let created: Awaited<ReturnType<typeof ipc.mcp.addFromCatalog>> | null =
-      null;
+    let created: Awaited<ReturnType<typeof ipc.mcp.addFromCatalog>> | null = null;
     try {
       // Only the row creation gates the "Adding…" state, so an
       // abandoned OAuth step can't wedge the catalog.

@@ -34,10 +34,7 @@ function makeWindowsReservedNameSafe(name: string): string {
     extensionIndex === -1
       ? `${name}-app`
       : `${name.slice(0, extensionIndex)}-app${name.slice(extensionIndex)}`;
-  return truncateToCodePoints(safeName, MAX_APP_FOLDER_NAME_LENGTH).replace(
-    /[-. ]+$/g,
-    "",
-  );
+  return truncateToCodePoints(safeName, MAX_APP_FOLDER_NAME_LENGTH).replace(/[-. ]+$/g, "");
 }
 
 /**
@@ -79,10 +76,7 @@ export function slugifyAppFolderName(name: string): string {
     // symbols, emoji, separators, control chars — collapses to a single dash.
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
-  slug = truncateToCodePoints(slug, MAX_APP_FOLDER_NAME_LENGTH).replace(
-    /-+$/g,
-    "",
-  );
+  slug = truncateToCodePoints(slug, MAX_APP_FOLDER_NAME_LENGTH).replace(/-+$/g, "");
   if (!slug) {
     return FALLBACK_FOLDER_NAME;
   }
@@ -108,10 +102,7 @@ export function sanitizeAppFolderNameInput(folderName: string): string {
     // spaces are invalid on Windows, and stripping leading periods avoids
     // hidden folders (and turns `.`/`..` into the empty-name fallback).
     .replace(/^[-. ]+|[-. ]+$/g, "");
-  sanitized = truncateToCodePoints(
-    sanitized,
-    MAX_APP_FOLDER_NAME_LENGTH,
-  ).replace(/[-. ]+$/g, "");
+  sanitized = truncateToCodePoints(sanitized, MAX_APP_FOLDER_NAME_LENGTH).replace(/[-. ]+$/g, "");
   if (!sanitized) {
     return FALLBACK_FOLDER_NAME;
   }

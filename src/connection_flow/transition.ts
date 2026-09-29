@@ -15,36 +15,22 @@ import {
 import type { ConnectionFlowEvent, ConnectionFlowState } from "./state";
 
 export type IgnoreReason = SharedIgnoreReason<
-  | "flow-already-active"
-  | "no-active-flow"
-  | "invocation-mismatch"
-  | "invalid-in-current-state"
+  "flow-already-active" | "no-active-flow" | "invocation-mismatch" | "invalid-in-current-state"
 >;
 
-export type TransitionResult = SharedTransitionResult<
-  ConnectionFlowState,
-  never,
-  IgnoreReason
->;
+export type TransitionResult = SharedTransitionResult<ConnectionFlowState, never, IgnoreReason>;
 
-type UnrevisionedState<
-  State extends ConnectionFlowState = ConnectionFlowState,
-> = State extends ConnectionFlowState ? Omit<State, "revision"> : never;
+type UnrevisionedState<State extends ConnectionFlowState = ConnectionFlowState> =
+  State extends ConnectionFlowState ? Omit<State, "revision"> : never;
 
-function advance(
-  previous: ConnectionFlowState,
-  state: UnrevisionedState,
-): TransitionResult {
+function advance(previous: ConnectionFlowState, state: UnrevisionedState): TransitionResult {
   return change({
     ...state,
     revision: previous.revision + 1,
   } as ConnectionFlowState);
 }
 
-function ignore(
-  state: ConnectionFlowState,
-  reason: IgnoreReason,
-): TransitionResult {
+function ignore(state: ConnectionFlowState, reason: IgnoreReason): TransitionResult {
   return ignoreTransition(state, reason);
 }
 
@@ -178,7 +164,5 @@ export function transition(
 }
 
 function unreachableState(state: never): never {
-  throw new Error(
-    `Unreachable connection-flow state: ${JSON.stringify(state)}`,
-  );
+  throw new Error(`Unreachable connection-flow state: ${JSON.stringify(state)}`);
 }

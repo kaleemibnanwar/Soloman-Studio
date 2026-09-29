@@ -154,12 +154,11 @@ export type FirstPromptIgnoreReason =
   | "not-awaiting-setup"
   | "invalid-in-current-state";
 
-export type FirstPromptTransitionResult =
-  import("@/state_machines/types").TransitionResult<
-    FirstPromptState,
-    FirstPromptCommand,
-    FirstPromptIgnoreReason
-  >;
+export type FirstPromptTransitionResult = import("@/state_machines/types").TransitionResult<
+  FirstPromptState,
+  FirstPromptCommand,
+  FirstPromptIgnoreReason
+>;
 
 export function hasPromptContent(payload: FirstPromptPayload): boolean {
   return payload.prompt.trim().length > 0 || payload.attachments.length > 0;

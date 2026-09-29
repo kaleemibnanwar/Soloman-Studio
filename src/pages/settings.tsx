@@ -44,6 +44,9 @@ import { AutoApproveSqlSwitch } from "@/components/AutoApproveSqlSwitch";
 import { AutoApproveMcpSwitch } from "@/components/AutoApproveMcpSwitch";
 import { BrowserLimbBridgeSwitch } from "@/components/BrowserLimbBridgeSwitch";
 import { DefaultModelSetting } from "@/components/DefaultModelSetting";
+import { ImageModelSetting, VideoModelSetting } from "@/components/MediaModelSetting";
+import { RouterModelSetting } from "@/components/RouterModelSetting";
+import { AutoModelCandidatesSetting } from "@/components/AutoModelCandidatesSetting";
 import { useSetAtom } from "jotai";
 import { activeSettingsSectionAtom } from "@/atoms/viewAtoms";
 import { SECTION_IDS, SETTING_IDS } from "@/lib/settingsSearchIndex";
@@ -111,9 +114,7 @@ export default function SettingsPage() {
       showSuccess("Successfully reset everything. Restart the application.");
     } catch (error) {
       console.error("Error resetting:", error);
-      showError(
-        error instanceof Error ? error.message : "An unknown error occurred",
-      );
+      showError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsResetting(false);
       setIsResetDialogOpen(false);
@@ -129,18 +130,23 @@ export default function SettingsPage() {
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
             System
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            Settings
-          </h1>
-          <p className={cn("mt-1", hint)}>
-            Manage your preferences, providers, and integrations.
-          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
+          <p className={cn("mt-1", hint)}>Manage your preferences, providers, and integrations.</p>
         </header>
 
         <div>
           <GeneralSettings appVersion={appVersion} />
           <WorkflowSettings />
           <AISettings />
+
+          <SettingsSection
+            id="media-generation"
+            title="Media Generation"
+            description="Choose the models used to generate images and videos in chat."
+          >
+            <ImageModelSetting />
+            <VideoModelSetting />
+          </SettingsSection>
 
           <SettingsSection
             id={SECTION_IDS.providers}
@@ -165,9 +171,7 @@ export default function SettingsPage() {
           >
             <div id={SETTING_IDS.telemetry} className="space-y-1.5">
               <TelemetrySwitch />
-              <p className={hint}>
-                This records anonymous usage data to improve the product.
-              </p>
+              <p className={hint}>This records anonymous usage data to improve the product.</p>
             </div>
 
             <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
@@ -216,10 +220,7 @@ export default function SettingsPage() {
             title="Advanced"
             description="We recommend keeping the defaults unless something isn't working."
           >
-            <div
-              id={SETTING_IDS.enableSandboxScriptExecution}
-              className="space-y-1.5"
-            >
+            <div id={SETTING_IDS.enableSandboxScriptExecution} className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <Switch
                   id="enable-sandbox-script-execution"
@@ -236,8 +237,7 @@ export default function SettingsPage() {
                 </Label>
               </div>
               <p className={hint}>
-                Allow local-agent attachment scripts to inspect files with
-                execute_sandbox_script.
+                Allow local-agent attachment scripts to inspect files with execute_sandbox_script.
               </p>
             </div>
 
@@ -278,8 +278,7 @@ export default function SettingsPage() {
                   aria-label="Enable MCP tool search"
                   disabled={!settings?.enableSandboxScriptExecution}
                   checked={
-                    !!settings?.enableMcpToolSearch &&
-                    !!settings?.enableSandboxScriptExecution
+                    !!settings?.enableMcpToolSearch && !!settings?.enableSandboxScriptExecution
                   }
                   onCheckedChange={(checked) => {
                     updateSettings({
@@ -287,14 +286,11 @@ export default function SettingsPage() {
                     });
                   }}
                 />
-                <Label htmlFor="enable-mcp-tool-search">
-                  Enable MCP tool search
-                </Label>
+                <Label htmlFor="enable-mcp-tool-search">Enable MCP tool search</Label>
               </div>
               <p className={hint}>
-                When many MCP tools are enabled, let the agent search for the
-                tools on demand instead of listing every tool in its context.
-                Requires sandbox script execution.
+                When many MCP tools are enabled, let the agent search for the tools on demand
+                instead of listing every tool in its context. Requires sandbox script execution.
               </p>
               {!settings?.enableSandboxScriptExecution && (
                 <p className="text-xs text-amber-700 dark:text-amber-500">
@@ -303,10 +299,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div
-              id={SETTING_IDS.enablePnpmMinimumReleaseAgeWarning}
-              className="space-y-1.5"
-            >
+            <div id={SETTING_IDS.enablePnpmMinimumReleaseAgeWarning} className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <Switch
                   id="enable-pnpm-minimum-release-age-warning"
@@ -323,15 +316,11 @@ export default function SettingsPage() {
                 </Label>
               </div>
               <p className={hint}>
-                Show the pnpm release-age warning toast and one-click pnpm
-                upgrade action.
+                Show the pnpm release-age warning toast and one-click pnpm upgrade action.
               </p>
             </div>
 
-            <div
-              id={SETTING_IDS.enableSelectAppFromHomeChatInput}
-              className="space-y-1.5"
-            >
+            <div id={SETTING_IDS.enableSelectAppFromHomeChatInput} className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <Switch
                   id="enable-select-app-from-home-chat-input"
@@ -348,8 +337,8 @@ export default function SettingsPage() {
                 </Label>
               </div>
               <p className={hint}>
-                Show an app selector in the home chat input to start a chat
-                referencing an existing app.
+                Show an app selector in the home chat input to start a chat referencing an existing
+                app.
               </p>
             </div>
 
@@ -365,13 +354,11 @@ export default function SettingsPage() {
                     });
                   }}
                 />
-                <Label htmlFor="enable-code-explorer">
-                  Enable code explorer (Pro)
-                </Label>
+                <Label htmlFor="enable-code-explorer">Enable code explorer (Pro)</Label>
               </div>
               <p className={hint}>
-                Let the local agent explore configured TypeScript projects with
-                a compiler-backed code graph.
+                Let the local agent explore configured TypeScript projects with a compiler-backed
+                code graph.
               </p>
             </div>
           </SettingsSection>
@@ -387,12 +374,9 @@ export default function SettingsPage() {
               className="flex flex-col gap-4 rounded-xl border border-destructive/25 bg-destructive/[0.035] p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-destructive/[0.08]"
             >
               <div>
-                <h3 className="text-sm font-medium text-foreground">
-                  Reset Everything
-                </h3>
+                <h3 className="text-sm font-medium text-foreground">Reset Everything</h3>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  This will delete all your apps, chats, and settings. This
-                  action cannot be undone.
+                  This will delete all your apps, chats, and settings. This action cannot be undone.
                 </p>
               </div>
               <Button
@@ -461,8 +445,7 @@ export function GeneralSettings({ appVersion }: { appVersion: string | null }) {
       <div id={SETTING_IDS.autoUpdate} className="space-y-1.5">
         <AutoUpdateSwitch />
         <p className={hint}>
-          This will automatically update the app when new versions are
-          available.
+          This will automatically update the app when new versions are available.
         </p>
       </div>
 
@@ -503,48 +486,42 @@ export function WorkflowSettings() {
 
       <div id={SETTING_IDS.autoApprove} className="space-y-1.5">
         <AutoApproveSwitch showToast={false} />
-        <p className={hint}>
-          This will automatically approve code changes and run them.
-        </p>
+        <p className={hint}>This will automatically approve code changes and run them.</p>
       </div>
 
       <div id={SETTING_IDS.appBlueprint} className="space-y-1.5">
         <AppBlueprintSwitch />
         <p className={hint}>
-          When creating a new app, generate a lightweight app blueprint (name,
-          design, color, template) before building.
+          When creating a new app, generate a lightweight app blueprint (name, design, color,
+          template) before building.
         </p>
       </div>
 
       <div id={SETTING_IDS.testingForNewApps} className="space-y-1.5">
         <TestingForNewAppsSwitch />
         <p className={hint}>
-          When creating a new app, opt it into AI E2E testing by default. This
-          only affects apps created while this setting is on; existing apps are
-          unchanged.
+          When creating a new app, opt it into AI E2E testing by default. This only affects apps
+          created while this setting is on; existing apps are unchanged.
         </p>
       </div>
 
       <div id={SETTING_IDS.autoExpandPreview} className="space-y-1.5">
         <AutoExpandPreviewSwitch />
-        <p className={hint}>
-          Automatically expand the preview panel when code changes are made.
-        </p>
+        <p className={hint}>Automatically expand the preview panel when code changes are made.</p>
       </div>
 
       <div id={SETTING_IDS.keepPreviewsRunning} className="space-y-1.5">
         <KeepPreviewsRunningSwitch />
         <p className={hint}>
-          Note: this may take more memory but allows faster preview loads when
-          switching apps.
+          Note: this may take more memory but allows faster preview loads when switching apps.
         </p>
       </div>
 
       <div id={SETTING_IDS.chatEventNotification} className="space-y-1.5">
         <ChatEventNotificationSwitch />
         <p className={hint}>
-          Show native notifications when a chat response completes or a
-          questionnaire needs your input while the app is not focused.
+          Show native notifications when a chat response completes or a questionnaire needs your
+          input while the app is not focused.
         </p>
       </div>
     </SettingsSection>
@@ -562,6 +539,12 @@ export function AISettings() {
         <DefaultModelSetting />
       </div>
 
+      <div id={SETTING_IDS.routerModel}>
+        <RouterModelSetting />
+      </div>
+
+      <AutoModelCandidatesSetting />
+
       <div id={SETTING_IDS.maxChatTurns}>
         <MaxChatTurnsSelector />
       </div>
@@ -573,8 +556,8 @@ export function AISettings() {
       <div id={SETTING_IDS.contextCompaction} className="space-y-1.5">
         <ContextCompactionSwitch />
         <p className={hint}>
-          Automatically compact long conversations to stay within context
-          limits. Original messages are preserved in the app data directory.
+          Automatically compact long conversations to stay within context limits. Original messages
+          are preserved in the app data directory.
         </p>
       </div>
     </SettingsSection>

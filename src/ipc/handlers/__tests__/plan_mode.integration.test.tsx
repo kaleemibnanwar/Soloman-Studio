@@ -9,10 +9,7 @@ import { eq } from "drizzle-orm";
 
 import { apps, chats } from "@/db/schema";
 import type { PlanUpdatePayload } from "@/ipc/types/plan";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 // Expected plan values produced by the `local-agent/accept-plan` fixture's
@@ -64,23 +61,14 @@ describe("plan mode (integration)", () => {
     const git = (...args: string[]) =>
       execFileSync(
         "git",
-        [
-          "-c",
-          "user.email=test@example.com",
-          "-c",
-          "user.name=Test User",
-          ...args,
-        ],
+        ["-c", "user.email=test@example.com", "-c", "user.name=Test User", ...args],
         { cwd: appDir, stdio: "pipe" },
       );
     git("init");
     git("add", "-A");
     git("commit", "-m", "init");
 
-    const [appRow] = await harness.db
-      .insert(apps)
-      .values({ name, path: appDir })
-      .returning();
+    const [appRow] = await harness.db.insert(apps).values({ name, path: appDir }).returning();
     const [chatRow] = await harness.db
       .insert(chats)
       .values({ appId: appRow.id, chatMode })
@@ -121,18 +109,13 @@ describe("plan mode (integration)", () => {
     await waitFor(() => {
       const mdFiles = fs.readdirSync(planDir).filter((f) => f.endsWith(".md"));
       expect(mdFiles.length).toBeGreaterThan(0);
-      const planContent = fs.readFileSync(
-        path.join(planDir, mdFiles[0]),
-        "utf-8",
-      );
+      const planContent = fs.readFileSync(path.join(planDir, mdFiles[0]), "utf-8");
       expect(planContent).toContain(EXPECTED_PLAN.title);
     });
   }
 
   function errorEvents() {
-    return harness.bridge.sentEvents.filter(
-      (e) => e.channel === "chat:response:error",
-    );
+    return harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
   }
 
   it("switches to plan mode through the chat mode selector", async () => {
@@ -145,9 +128,9 @@ describe("plan mode (integration)", () => {
       where: eq(chats.id, app.chatId),
     });
     expect(chatRow?.chatMode).toBe("plan");
-    expect(
-      screen.getByTestId("chat-mode-selector").getAttribute("aria-label"),
-    ).toBe("Chat mode: Plan");
+    expect(screen.getByTestId("chat-mode-selector").getAttribute("aria-label")).toBe(
+      "Chat mode: Plan",
+    );
     expect(errorEvents()).toHaveLength(0);
   }, 60_000);
 
@@ -336,9 +319,7 @@ describe("plan mode (integration)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
     await harness.waitForStreamEnd(app.chatId);
 
-    expect(
-      harness.bridge.lastInvoke("user-input:respond")?.args[0],
-    ).toMatchObject({
+    expect(harness.bridge.lastInvoke("user-input:respond")?.args[0]).toMatchObject({
       response: {
         kind: "questionnaire",
         answers: { framework: "Vue" },

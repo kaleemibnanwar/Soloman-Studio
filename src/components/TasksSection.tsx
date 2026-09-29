@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  MoreVertical,
-  ListTodo,
-  Pencil,
-  Trash2,
-  Loader2,
-} from "lucide-react";
+import { Plus, MoreVertical, ListTodo, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ipc } from "@/ipc/types";
 import { queryKeys } from "@/lib/queryKeys";
@@ -56,15 +49,14 @@ import { useSidebarSectionCollapse } from "@/hooks/useSidebarSectionCollapse";
 
 type SchedulePreset = "manual" | "60" | "1440" | "10080" | "43200" | "custom";
 
-const SCHEDULE_OPTIONS: { key: SchedulePreset; label: string; hint: string }[] =
-  [
-    { key: "manual", label: "Manual", hint: "On demand" },
-    { key: "60", label: "60 min", hint: "Every hour" },
-    { key: "1440", label: "24 hr", hint: "Every day" },
-    { key: "10080", label: "7 days", hint: "Every week" },
-    { key: "43200", label: "30 days", hint: "Every month" },
-    { key: "custom", label: "Custom", hint: "Set interval" },
-  ];
+const SCHEDULE_OPTIONS: { key: SchedulePreset; label: string; hint: string }[] = [
+  { key: "manual", label: "Manual", hint: "On demand" },
+  { key: "60", label: "60 min", hint: "Every hour" },
+  { key: "1440", label: "24 hr", hint: "Every day" },
+  { key: "10080", label: "7 days", hint: "Every week" },
+  { key: "43200", label: "30 days", hint: "Every month" },
+  { key: "custom", label: "Custom", hint: "Set interval" },
+];
 
 function minutesToPreset(minutes: number | null): SchedulePreset {
   if (minutes == null) return "manual";
@@ -114,13 +106,10 @@ export function TasksSection() {
   const [customMinutes, setCustomMinutes] = useState("");
   const [mcpServerIds, setMcpServerIds] = useState<Set<number>>(new Set());
   const [modelSelection, setModelSelection] = useState<string>("default");
-  const [mcpServers, setMcpServers] = useState<
-    Awaited<ReturnType<typeof ipc.mcp.listServers>>
-  >([]);
+  const [mcpServers, setMcpServers] = useState<Awaited<ReturnType<typeof ipc.mcp.listServers>>>([]);
   const [saving, setSaving] = useState(false);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
-  const { collapsed, toggle: toggleCollapsed } =
-    useSidebarSectionCollapse("tasks");
+  const { collapsed, toggle: toggleCollapsed } = useSidebarSectionCollapse("tasks");
 
   const { data: modelsByProviders } = useLanguageModelsByProviders();
 
@@ -167,14 +156,10 @@ export function TasksSection() {
     setPrompt(task.prompt);
     setSchedulePreset(minutesToPreset(task.scheduleMinutes));
     setCustomMinutes(
-      minutesToPreset(task.scheduleMinutes) === "custom"
-        ? String(task.scheduleMinutes ?? "")
-        : "",
+      minutesToPreset(task.scheduleMinutes) === "custom" ? String(task.scheduleMinutes ?? "") : "",
     );
     setMcpServerIds(new Set(task.mcpServerIds ?? []));
-    setModelSelection(
-      task.modelSelection ? JSON.stringify(task.modelSelection) : "default",
-    );
+    setModelSelection(task.modelSelection ? JSON.stringify(task.modelSelection) : "default");
     setDialogOpen(true);
   };
 
@@ -193,8 +178,7 @@ export function TasksSection() {
       prompt: prompt.trim(),
       scheduleMinutes: minutes,
       mcpServerIds: mcpServerIds.size ? [...mcpServerIds] : null,
-      modelSelection:
-        modelSelection !== "default" ? JSON.parse(modelSelection) : null,
+      modelSelection: modelSelection !== "default" ? JSON.parse(modelSelection) : null,
     };
     setSaving(true);
     try {
@@ -244,9 +228,7 @@ export function TasksSection() {
           Loading tasks...
         </div>
       ) : tasks.length === 0 ? (
-        <div className="pl-6 pr-3 py-2 text-xs text-muted-foreground/60">
-          No tasks yet
-        </div>
+        <div className="pl-6 pr-3 py-2 text-xs text-muted-foreground/60">No tasks yet</div>
       ) : (
         tasks.map((task) => (
           <div key={task.id} className="group flex items-center">
@@ -268,10 +250,7 @@ export function TasksSection() {
                 <MoreVertical className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="space-y-1 p-2">
-                <DropdownMenuItem
-                  onClick={() => openEdit(task)}
-                  className="px-3 py-2"
-                >
+                <DropdownMenuItem onClick={() => openEdit(task)} className="px-3 py-2">
                   <Pencil className="mr-2 h-4 w-4" />
                   <span>Edit</span>
                 </DropdownMenuItem>
@@ -402,9 +381,7 @@ export function TasksSection() {
                       <span>
                         {server.name}
                         {!server.enabled && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            (disabled)
-                          </span>
+                          <span className="ml-2 text-xs text-muted-foreground">(disabled)</span>
                         )}
                       </span>
                     </label>

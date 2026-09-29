@@ -152,9 +152,5 @@ export type UserInputEvent =
 export function isLiveUserInputState(
   state: UserInputState,
 ): state is Exclude<UserInputState, { status: "idle" | "settled" }> {
-  return (
-    state.status === "awaiting" ||
-    state.status === "armed" ||
-    state.status === "due"
-  );
+  return state.status === "awaiting" || state.status === "armed" || state.status === "due";
 }

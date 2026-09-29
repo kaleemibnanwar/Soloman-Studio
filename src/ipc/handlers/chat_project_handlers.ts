@@ -5,15 +5,9 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { apps } from "@/db/schema";
 import { getChatProjectRootPath } from "@/paths/paths";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { createTypedHandler } from "./base";
-import {
-  chatProjectContracts,
-  type ChatProjectFileNode,
-} from "../types/chat_project";
+import { chatProjectContracts, type ChatProjectFileNode } from "../types/chat_project";
 
 // Directories that are never shown in a chat project's read-only preview.
 const SKIPPED_DIRS = new Set([
@@ -68,10 +62,7 @@ async function assertChatProject(projectId: number): Promise<void> {
     columns: { type: true },
   });
   if (!project || project.type !== "chat") {
-    throw new OctopusStudioError(
-      "Chat project not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("Chat project not found", OctopusStudioErrorKind.NotFound);
   }
 }
 
@@ -82,18 +73,12 @@ async function assertChatProject(projectId: number): Promise<void> {
 function resolveInsideRoot(root: string, relativePath: string): string {
   const normalized = relativePath.replaceAll("\\", "/");
   if (normalized.includes("\0") || normalized.split("/").includes("..")) {
-    throw new OctopusStudioError(
-      "Invalid file path",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid file path", OctopusStudioErrorKind.Validation);
   }
   const target = path.resolve(root, normalized);
   const rootResolved = path.resolve(root);
   if (target !== rootResolved && !target.startsWith(rootResolved + path.sep)) {
-    throw new OctopusStudioError(
-      "Invalid file path",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid file path", OctopusStudioErrorKind.Validation);
   }
   return target;
 }
@@ -159,9 +144,7 @@ function seedIfEmpty(root: string): void {
   fs.mkdirSync(root, { recursive: true });
   let hasVisibleFile = false;
   try {
-    hasVisibleFile = fs
-      .readdirSync(root)
-      .some((name) => !SKIPPED_DIRS.has(name));
+    hasVisibleFile = fs.readdirSync(root).some((name) => !SKIPPED_DIRS.has(name));
   } catch {
     return;
   }
@@ -188,8 +171,7 @@ export function registerChatProjectHandlers() {
     const options: Electron.OpenDialogOptions = {
       title: "Select chat project directory",
       properties: ["openDirectory", "createDirectory"],
-      message:
-        "Choose a folder for this codeless project to read and write Markdown documents.",
+      message: "Choose a folder for this codeless project to read and write Markdown documents.",
     };
     const { filePaths, canceled } = parent
       ? await dialog.showOpenDialog(parent, options)
@@ -200,33 +182,27 @@ export function registerChatProjectHandlers() {
     return { path: filePaths[0], canceled: false };
   });
 
-  createTypedHandler(
-    chatProjectContracts.setDirectory,
-    async (_, { projectId, directory }) => {
-      await assertChatProject(projectId);
-      if (directory) {
-        if (!path.isAbsolute(directory)) {
-          throw new OctopusStudioError(
-            "Directory path must be absolute",
-            OctopusStudioErrorKind.Validation,
-          );
-        }
-        if (
-          !fs.existsSync(directory) ||
-          !fs.statSync(directory).isDirectory()
-        ) {
-          throw new OctopusStudioError(
-            "Selected path is not a directory",
-            OctopusStudioErrorKind.Validation,
-          );
-        }
+  createTypedHandler(chatProjectContracts.setDirectory, async (_, { projectId, directory }) => {
+    await assertChatProject(projectId);
+    if (directory) {
+      if (!path.isAbsolute(directory)) {
+        throw new OctopusStudioError(
+          "Directory path must be absolute",
+          OctopusStudioErrorKind.Validation,
+        );
       }
-      await db
-        .update(apps)
-        .set({ directory: directory ? path.resolve(directory) : null })
-        .where(eq(apps.id, projectId));
-    },
-  );
+      if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
+        throw new OctopusStudioError(
+          "Selected path is not a directory",
+          OctopusStudioErrorKind.Validation,
+        );
+      }
+    }
+    await db
+      .update(apps)
+      .set({ directory: directory ? path.resolve(directory) : null })
+      .where(eq(apps.id, projectId));
+  });
 
   createTypedHandler(
     chatProjectContracts.readFile,
@@ -238,16 +214,10 @@ export function registerChatProjectHandlers() {
       try {
         stat = fs.statSync(target);
       } catch {
-        throw new OctopusStudioError(
-          "File not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("File not found", OctopusStudioErrorKind.NotFound);
       }
       if (!stat.isFile()) {
-        throw new OctopusStudioError(
-          "Not a file",
-          OctopusStudioErrorKind.Validation,
-        );
+        throw new OctopusStudioError("Not a file", OctopusStudioErrorKind.Validation);
       }
       if (stat.size > MAX_FILE_BYTES) {
         throw new OctopusStudioError(
@@ -285,10 +255,7 @@ export function registerChatProjectHandlers() {
         fs.writeFileSync(target, content, "utf8");
       } catch (error) {
         if (error instanceof OctopusStudioError) throw error;
-        throw new OctopusStudioError(
-          "Could not save the file",
-          OctopusStudioErrorKind.Conflict,
-        );
+        throw new OctopusStudioError("Could not save the file", OctopusStudioErrorKind.Conflict);
       }
       const ext = path.extname(target).toLowerCase();
       return {

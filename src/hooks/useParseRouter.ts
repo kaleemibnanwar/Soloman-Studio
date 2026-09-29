@@ -86,9 +86,7 @@ export function buildRouteLabel(path: string): string {
  * Parses routes from a React Router file content (e.g., App.tsx).
  * Extracts route paths from <Route path="..." /> elements.
  */
-export function parseRoutesFromRouterFile(
-  content: string | null,
-): ParsedRoute[] {
+export function parseRoutesFromRouterFile(content: string | null): ParsedRoute[] {
   if (!content) {
     return [];
   }
@@ -122,9 +120,7 @@ export function parseRoutesFromRouterFiles(
 
   for (const content of contents) {
     for (const route of parseRoutesFromRouterFile(content ?? null)) {
-      if (
-        !parsedRoutes.some((existingRoute) => existingRoute.path === route.path)
-      ) {
+      if (!parsedRoutes.some((existingRoute) => existingRoute.path === route.path)) {
         parsedRoutes.push(route);
       }
     }
@@ -220,9 +216,7 @@ export function parseRoutesFromAstroFiles(files: string[]): ParsedRoute[] {
     const extension = file.split(".").pop()?.toLowerCase();
     if (!extension || !ASTRO_PAGE_FILE_EXTENSIONS.has(extension)) continue;
 
-    let routePath = file
-      .slice("src/pages/".length)
-      .replace(/\.(?:astro|html|md|mdx)$/i, "");
+    let routePath = file.slice("src/pages/".length).replace(/\.(?:astro|html|md|mdx)$/i, "");
 
     if (!routePath || routePath.includes("[")) continue;
     if (routePath.split("/").some((segment) => segment.startsWith("_"))) {
@@ -250,9 +244,7 @@ export function parseRoutesFromAstroFiles(files: string[]): ParsedRoute[] {
 /**
  * Parses routes from TanStack Start / TanStack Router file-based routing.
  */
-export function parseRoutesFromTanStackStartFiles(
-  files: string[],
-): ParsedRoute[] {
+export function parseRoutesFromTanStackStartFiles(files: string[]): ParsedRoute[] {
   const tanStackRoutes = new Set<string>();
 
   for (const file of files) {
@@ -295,17 +287,13 @@ export function parseRoutesFromTanStackStartFiles(
           parts[0] === "route" &&
           index === routeSegments.length - 1 &&
           parts.every(
-            (part, partIndex) =>
-              partIndex === 0 || TANSTACK_ROUTE_FILE_SEGMENTS.has(part),
+            (part, partIndex) => partIndex === 0 || TANSTACK_ROUTE_FILE_SEGMENTS.has(part),
           )
         ) {
           return [];
         }
 
-        if (
-          parts.length > 1 &&
-          TANSTACK_ROUTE_FILE_SEGMENTS.has(parts[parts.length - 1])
-        ) {
+        if (parts.length > 1 && TANSTACK_ROUTE_FILE_SEGMENTS.has(parts[parts.length - 1])) {
           return parts.slice(0, -1);
         }
 
@@ -353,12 +341,7 @@ export function isTanStackStartAppFile(filePath: string): boolean {
  */
 export function useParseRouter(appId: number | null) {
   // Load app to access the file list
-  const {
-    app,
-    loading: appLoading,
-    error: appError,
-    refreshApp,
-  } = useLoadApp(appId);
+  const { app, loading: appLoading, error: appError, refreshApp } = useLoadApp(appId);
 
   // Detect Next.js app by presence of next.config.* in file list
   const isNextApp = useMemo(() => {
@@ -403,9 +386,7 @@ export function useParseRouter(appId: number | null) {
         ? parseRoutesFromAstroFiles(app.files)
         : isTanStackStartApp && app?.files
           ? parseRoutesFromTanStackStartFiles(app.files)
-          : parseRoutesFromRouterFiles(
-              routerFileQueries.map((query) => query.data ?? null),
-            );
+          : parseRoutesFromRouterFiles(routerFileQueries.map((query) => query.data ?? null));
 
   const routerFileLoading =
     !isNextApp &&

@@ -81,9 +81,7 @@ export function loadSpecs(): { file: string; spec: CompactionSpec }[] {
   return files
     .map((file) => ({
       file,
-      spec: JSON.parse(
-        readFileSync(resolve(SPECS_DIR, file), "utf-8"),
-      ) as CompactionSpec,
+      spec: JSON.parse(readFileSync(resolve(SPECS_DIR, file), "utf-8")) as CompactionSpec,
     }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
@@ -108,8 +106,7 @@ export function validateSpec(file: string, spec: CompactionSpec): string[] {
   const probes = spec.probes ?? [];
   if (phases.length === 0) err("no phases");
   if (facts.length < 8) err(`expected >=8 facts, got ${facts.length}`);
-  if (probes.length !== 3)
-    err(`expected exactly 3 probes, got ${probes.length}`);
+  if (probes.length !== 3) err(`expected exactly 3 probes, got ${probes.length}`);
   if (traps.length < 1) err("expected at least 1 trap");
 
   const phaseIds = new Set(phases.map((p) => p.id));
@@ -121,8 +118,7 @@ export function validateSpec(file: string, spec: CompactionSpec): string[] {
     }
     if (factIds.has(f.id)) err(`duplicate fact id ${f.id}`);
     factIds.add(f.id);
-    if (![1, 2, 3].includes(f.tier as number))
-      err(`${f.id}: bad tier ${f.tier}`);
+    if (![1, 2, 3].includes(f.tier as number)) err(`${f.id}: bad tier ${f.tier}`);
     if (!f.statement?.trim()) err(`${f.id}: missing statement`);
     // Evidence is matched verbatim by the generator and by fixture
     // validation, so it must be printable ASCII (AUTHORING.md).
@@ -149,8 +145,7 @@ export function validateSpec(file: string, spec: CompactionSpec): string[] {
       ["oldPhase", t.oldPhase],
       ["newPhase", t.newPhase],
     ] as const) {
-      if (!phase || !phaseIds.has(phase))
-        err(`${t.id}: ${key} "${phase}" is not a phase id`);
+      if (!phase || !phaseIds.has(phase)) err(`${t.id}: ${key} "${phase}" is not a phase id`);
     }
     for (const [key, ev] of [
       ["supersededEvidence", t.supersededEvidence],
@@ -181,12 +176,7 @@ export function loadFixtures(): CompactionFixture[] {
     (f) => f.endsWith(".json") && !f.endsWith(".stats.json"),
   );
   return files
-    .map(
-      (f) =>
-        JSON.parse(
-          readFileSync(resolve(FIXTURES_DIR, f), "utf-8"),
-        ) as CompactionFixture,
-    )
+    .map((f) => JSON.parse(readFileSync(resolve(FIXTURES_DIR, f), "utf-8")) as CompactionFixture)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -204,8 +194,7 @@ export function validateFixture(fixture: CompactionFixture): string[] {
     errors.push(`est transcript tokens ${tokens} outside [150k, 220k]`);
   for (const f of fixture.facts) {
     if (![1, 2, 3].includes(f.tier)) errors.push(`${f.id}: bad tier ${f.tier}`);
-    if (!transcript.includes(f.evidence))
-      errors.push(`${f.id}: evidence not found in transcript`);
+    if (!transcript.includes(f.evidence)) errors.push(`${f.id}: evidence not found in transcript`);
   }
   for (const t of fixture.traps) {
     if (!transcript.includes(t.supersededEvidence))
@@ -213,10 +202,8 @@ export function validateFixture(fixture: CompactionFixture): string[] {
     if (!transcript.includes(t.currentEvidence))
       errors.push(`${t.id}: current evidence not in transcript`);
   }
-  if (fixture.probes.length !== 3)
-    errors.push(`expected 3 probes, got ${fixture.probes.length}`);
-  if (fixture.facts.length < 8)
-    errors.push(`expected >=8 facts, got ${fixture.facts.length}`);
+  if (fixture.probes.length !== 3) errors.push(`expected 3 probes, got ${fixture.probes.length}`);
+  if (fixture.facts.length < 8) errors.push(`expected >=8 facts, got ${fixture.facts.length}`);
   return errors;
 }
 
@@ -266,10 +253,7 @@ const REQUIRED_SECTIONS = [
   "## Current Task State",
 ];
 
-export function structuralChecks(
-  summary: string,
-  transcript: string,
-): StructuralResult {
+export function structuralChecks(summary: string, transcript: string): StructuralResult {
   const missingSections = REQUIRED_SECTIONS.filter((s) => !summary.includes(s));
   // Multi-segment paths with a file extension, e.g. src/lib/store.ts.
   const pathRe = /\b[\w.-]+(?:\/[\w.-]+)+\.[a-z]{1,5}\b/g;
@@ -318,9 +302,7 @@ export async function judgeFactGrid(opts: {
   const factsBlock = opts.fixture.facts
     .map((f) => `${f.id} [${f.category}, tier ${f.tier}]: ${f.statement}`)
     .join("\n");
-  const trapsBlock = opts.fixture.traps
-    .map((t) => `${t.id}: ${t.statement}`)
-    .join("\n");
+  const trapsBlock = opts.fixture.traps.map((t) => `${t.id}: ${t.statement}`).join("\n");
   const user = `SUMMARY UNDER TEST:\n${opts.summary}\n\nFACTS:\n${factsBlock}\n\nTRAPS:\n${trapsBlock || "(none)"}`;
 
   let lastErr: unknown;
@@ -340,9 +322,7 @@ export async function judgeFactGrid(opts: {
         ...opts.fixture.traps.filter((t) => !gotTraps.has(t.id)),
       ];
       if (missing.length > 0)
-        throw new Error(
-          `judge omitted ids: ${missing.map((m) => m.id).join(",")}`,
-        );
+        throw new Error(`judge omitted ids: ${missing.map((m) => m.id).join(",")}`);
       return parsed;
     } catch (e) {
       lastErr = e;
@@ -461,10 +441,8 @@ export function computeScores(
   return {
     weightedRetention: den ? num / den : 0,
     tier1Retention: t1den ? t1num / t1den : 0,
-    contradictedFacts: grid.facts.filter((f) => f.verdict === "contradicted")
-      .length,
-    trapContradictions: grid.traps.filter((t) => t.verdict === "contradicted")
-      .length,
+    contradictedFacts: grid.facts.filter((f) => f.verdict === "contradicted").length,
+    trapContradictions: grid.traps.filter((t) => t.verdict === "contradicted").length,
     trapMisses: grid.traps.filter((t) => t.verdict === "missing").length,
     probeScore: probes.length
       ? probes.reduce((a, p) => a + probeCredit[p.verdict], 0) / probes.length

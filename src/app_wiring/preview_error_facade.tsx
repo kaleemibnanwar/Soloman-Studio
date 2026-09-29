@@ -1,13 +1,5 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type PropsWithChildren,
-} from "react";
-import {
-  useManagerLifecycle,
-  useRegisterEntityDisposer,
-} from "@/state_machines/react";
+import { createContext, useContext, useState, type PropsWithChildren } from "react";
+import { useManagerLifecycle, useRegisterEntityDisposer } from "@/state_machines/react";
 
 export interface PreviewAppErrorSource {
   setAppError(appId: number, message: string): void;
@@ -63,10 +55,7 @@ export class DeferredPreviewErrorFacade {
     this.disposedAppIds.clear();
   }
 
-  private defer(
-    appId: number,
-    deliver: (source: PreviewAppErrorSource) => void,
-  ): void {
+  private defer(appId: number, deliver: (source: PreviewAppErrorSource) => void): void {
     if (this.disposedAppIds.has(appId)) return;
     queueMicrotask(() => {
       if (this.disposed || this.disposedAppIds.has(appId)) return;
@@ -91,9 +80,7 @@ export function PreviewErrorFacadeProvider({
 export function usePreviewErrorFacade(): DeferredPreviewErrorFacade {
   const facade = useContext(Context);
   if (!facade) {
-    throw new Error(
-      "usePreviewErrorFacade requires PreviewErrorFacadeProvider",
-    );
+    throw new Error("usePreviewErrorFacade requires PreviewErrorFacadeProvider");
   }
   return facade;
 }

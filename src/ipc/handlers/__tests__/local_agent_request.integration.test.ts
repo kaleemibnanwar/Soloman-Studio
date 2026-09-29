@@ -17,10 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local-agent default request (integration)", () => {
@@ -66,21 +63,16 @@ describe("local-agent default request (integration)", () => {
     const { send } = await harness.typeInChat("[dump]");
     send();
 
-    await waitFor(
-      () => expect(screen.getByText(/octopus-studio-dump-path/)).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/octopus-studio-dump-path/)).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await streamEnd;
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const req = harness.getServerDump({ type: "request" });
-    expect(req.parsed.headers.authorization).toBe(
-      "Bearer testOctopusStudiokey",
-    );
+    expect(req.parsed.headers.authorization).toBe("Bearer testOctopusStudiokey");
     expect(req.parsed.body.model).toBe("[[MODEL]]");
 
     const tools = (req.parsed.body.tools ?? []) as Array<{
@@ -137,9 +129,7 @@ describe("local-agent default request (integration)", () => {
     // getServerDump masks the system message; read the raw dump to assert the
     // unmasked prompt is the Pro agent-mode prompt (not ask, not basic).
     const raw = JSON.parse(fs.readFileSync(req.dumpPath, "utf-8"));
-    const systemMessage = raw.body.messages.find(
-      (m: { role: string }) => m.role === "system",
-    );
+    const systemMessage = raw.body.messages.find((m: { role: string }) => m.role === "system");
     const systemText: string =
       typeof systemMessage.content === "string"
         ? systemMessage.content

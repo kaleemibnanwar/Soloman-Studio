@@ -3,11 +3,8 @@ import log from "electron-log";
 import path from "node:path";
 import { createLoggedHandler } from "./safe_handle";
 import { IS_TEST_BUILD } from "../utils/test_utils";
-import { isFileWithinAnyOctopusStudioMediaDir } from "../utils/media_path_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { isFileWithinAnyOctopusStudioMediaDir } from "../media/media_path_utils";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { registerOctopusStudioProtocolLinux } from "../../main/linux_protocol_registration";
 
 const logger = log.scope("shell_handlers");
@@ -52,10 +49,7 @@ const ALLOWED_MEDIA_EXTENSIONS = new Set([
 export function registerShellHandlers() {
   handle("open-external-url", async (_event, url: string) => {
     if (!url) {
-      throw new OctopusStudioError(
-        "No URL provided.",
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError("No URL provided.", OctopusStudioErrorKind.External);
     }
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       throw new Error("Attempted to open invalid or non-http URL: " + url);
@@ -70,11 +64,7 @@ export function registerShellHandlers() {
     // and OAuth callbacks (octopusStudio://neon-oauth-return, etc.) open packaged instead
     // of this dev instance. Reclaim the handler just before the browser opens so
     // the callback routes back here. Best-effort; the helper self-guards platform.
-    if (
-      !app.isPackaged &&
-      process.platform === "linux" &&
-      isOctopusStudioOAuthUrl(url)
-    ) {
+    if (!app.isPackaged && process.platform === "linux" && isOctopusStudioOAuthUrl(url)) {
       await registerOctopusStudioProtocolLinux(app.getPath("userData"));
     }
     await shell.openExternal(url);
@@ -84,10 +74,7 @@ export function registerShellHandlers() {
   handle("show-item-in-folder", async (_event, fullPath: string) => {
     // Validate that a path was provided
     if (!fullPath) {
-      throw new OctopusStudioError(
-        "No file path provided.",
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError("No file path provided.", OctopusStudioErrorKind.External);
     }
 
     shell.showItemInFolder(fullPath);
@@ -96,10 +83,7 @@ export function registerShellHandlers() {
 
   handle("open-file-path", async (_event, fullPath: string) => {
     if (!fullPath) {
-      throw new OctopusStudioError(
-        "No file path provided.",
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError("No file path provided.", OctopusStudioErrorKind.External);
     }
 
     // Security: only allow opening files within .octopusStudio/media subdirectories.
@@ -118,9 +102,7 @@ export function registerShellHandlers() {
     // Defense-in-depth: only allow known media file extensions
     const ext = path.extname(resolvedPath).toLowerCase();
     if (!ALLOWED_MEDIA_EXTENSIONS.has(ext)) {
-      throw new Error(
-        `File type '${ext}' is not allowed. Only media files can be opened.`,
-      );
+      throw new Error(`File type '${ext}' is not allowed. Only media files can be opened.`);
     }
 
     const result = await shell.openPath(resolvedPath);

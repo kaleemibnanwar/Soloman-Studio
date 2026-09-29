@@ -35,13 +35,11 @@ const tools = {
     execute: async ({ command }: { command: string }) => {
       const cwd = path.join(__dirname, "projects");
       if (!fs.existsSync(cwd)) fs.mkdirSync(cwd, { recursive: true });
-      return new Promise<{ stdout: string; stderr: string; error?: string }>(
-        (resolve) => {
-          exec(command, { cwd }, (error, stdout, stderr) => {
-            resolve({ stdout, stderr, error: error?.message });
-          });
-        },
-      );
+      return new Promise<{ stdout: string; stderr: string; error?: string }>((resolve) => {
+        exec(command, { cwd }, (error, stdout, stderr) => {
+          resolve({ stdout, stderr, error: error?.message });
+        });
+      });
     },
   }),
   readFile: tool({
@@ -59,13 +57,7 @@ const tools = {
   writeFile: tool({
     description: "Write content to a file",
     parameters: z.object({ filepath: z.string(), content: z.string() }),
-    execute: async ({
-      filepath,
-      content,
-    }: {
-      filepath: string;
-      content: string;
-    }) => {
+    execute: async ({ filepath, content }: { filepath: string; content: string }) => {
       try {
         const fullPath = path.join(__dirname, filepath);
         fs.mkdirSync(path.dirname(fullPath), { recursive: true });
@@ -85,15 +77,9 @@ async function runCycle(cycle: number) {
   const promptPath = path.join(__dirname, "PROMPT.md");
   const claudePath = path.join(__dirname, "CLAUDE.md");
 
-  const consensus = fs.existsSync(consensusPath)
-    ? fs.readFileSync(consensusPath, "utf-8")
-    : "";
-  const prompt = fs.existsSync(promptPath)
-    ? fs.readFileSync(promptPath, "utf-8")
-    : "";
-  const charter = fs.existsSync(claudePath)
-    ? fs.readFileSync(claudePath, "utf-8")
-    : "";
+  const consensus = fs.existsSync(consensusPath) ? fs.readFileSync(consensusPath, "utf-8") : "";
+  const prompt = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, "utf-8") : "";
+  const charter = fs.existsSync(claudePath) ? fs.readFileSync(claudePath, "utf-8") : "";
 
   const systemMessage = `
 You are running within the Auto Org Automation Engine using the native Octopus Studio agents infrastructure.

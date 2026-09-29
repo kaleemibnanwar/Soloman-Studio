@@ -1,8 +1,5 @@
 import type { WebContents } from "electron";
-import {
-  windowRegistry,
-  type WindowEndpoint,
-} from "@/window_infrastructure/main/window_registry";
+import { windowRegistry, type WindowEndpoint } from "@/window_infrastructure/main/window_registry";
 import { safeSend } from "./safe_sender";
 
 function isWindowEndpoint(value: unknown): value is WindowEndpoint {

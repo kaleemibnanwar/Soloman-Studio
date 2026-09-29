@@ -49,10 +49,7 @@ export function CatalogSection() {
 
   // Featured entries are highlighted at the top and still listed in
   // their own category below.
-  const featured = useMemo(
-    () => filtered.filter((e) => e.featured),
-    [filtered],
-  );
+  const featured = useMemo(() => filtered.filter((e) => e.featured), [filtered]);
 
   const byCategory = useMemo(() => {
     const groups = new Map<string, typeof filtered>();
@@ -80,9 +77,7 @@ export function CatalogSection() {
       />
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Add from catalog
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add from catalog</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Curated plugins that connect with minimal configuration.
           </p>
@@ -96,9 +91,7 @@ export function CatalogSection() {
         />
       </div>
       {filtered.length === 0 && (
-        <div className="text-sm text-muted-foreground">
-          No catalog entries match your search.
-        </div>
+        <div className="text-sm text-muted-foreground">No catalog entries match your search.</div>
       )}
       {featured.length > 0 && (
         <div className="mb-6" data-testid="catalog-featured">
@@ -126,9 +119,7 @@ export function CatalogSection() {
       )}
       {byCategory.map(([category, group]) => (
         <div key={category} className="mb-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            {category}
-          </h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">{category}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {group.map((entry) => (
               <CatalogCard

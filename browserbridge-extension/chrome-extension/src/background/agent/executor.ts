@@ -1,16 +1,16 @@
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { type ActionResult, AgentContext, type AgentOptions, type AgentOutput } from './types';
-import { t } from '@extension/i18n';
-import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
-import { PlannerAgent, type PlannerOutput } from './agents/planner';
-import { NavigatorPrompt } from './prompts/navigator';
-import { PlannerPrompt } from './prompts/planner';
-import { createLogger } from '@src/background/log';
-import MessageManager from './messages/service';
-import type BrowserContext from '../browser/context';
-import { ActionBuilder } from './actions/builder';
-import { EventManager } from './event/manager';
-import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { type ActionResult, AgentContext, type AgentOptions, type AgentOutput } from "./types";
+import { t } from "@extension/i18n";
+import { NavigatorAgent, NavigatorActionRegistry } from "./agents/navigator";
+import { PlannerAgent, type PlannerOutput } from "./agents/planner";
+import { NavigatorPrompt } from "./prompts/navigator";
+import { PlannerPrompt } from "./prompts/planner";
+import { createLogger } from "@src/background/log";
+import MessageManager from "./messages/service";
+import type BrowserContext from "../browser/context";
+import { ActionBuilder } from "./actions/builder";
+import { EventManager } from "./event/manager";
+import { Actors, type EventCallback, EventType, ExecutionState } from "./event/types";
 import {
   ChatModelAuthError,
   ChatModelBadRequestError,
@@ -19,14 +19,14 @@ import {
   RequestCancelledError,
   MaxStepsReachedError,
   MaxFailuresReachedError,
-} from './agents/errors';
-import { URLNotAllowedError } from '../browser/views';
-import { chatHistoryStore } from '@extension/storage/lib/chat';
-import type { AgentStepHistory } from './history';
-import type { GeneralSettingsConfig } from '@extension/storage';
-import { analytics } from '../services/analytics';
+} from "./agents/errors";
+import { URLNotAllowedError } from "../browser/views";
+import { chatHistoryStore } from "@extension/storage/lib/chat";
+import type { AgentStepHistory } from "./history";
+import type { GeneralSettingsConfig } from "@extension/storage";
+import { analytics } from "../services/analytics";
 
-const logger = createLogger('Executor');
+const logger = createLogger("Executor");
 
 export interface ExecutorExtraArgs {
   plannerLLM?: BaseChatModel;
@@ -69,7 +69,9 @@ export class Executor {
     this.plannerPrompt = new PlannerPrompt();
 
     const actionBuilder = new ActionBuilder(context, extractorLLM);
-    const navigatorActionRegistry = new NavigatorActionRegistry(actionBuilder.buildDefaultActions());
+    const navigatorActionRegistry = new NavigatorActionRegistry(
+      actionBuilder.buildDefaultActions(),
+    );
 
     // Initialize agents with their respective prompts
     this.navigator = new NavigatorAgent(navigatorActionRegistry, {
@@ -103,7 +105,9 @@ export class Executor {
     this.context.messageManager.addNewTask(task);
 
     // need to reset previous action results that are not included in memory
-    this.context.actionResults = this.context.actionResults.filter(result => result.includeInMemory);
+    this.context.actionResults = this.context.actionResults.filter(
+      (result) => result.includeInMemory,
+    );
   }
 
   /**
@@ -111,7 +115,7 @@ export class Executor {
    */
   private checkTaskCompletion(planOutput: AgentOutput<PlannerOutput> | null): boolean {
     if (planOutput?.result?.done) {
-      logger.info('✅ Planner confirms task completion');
+      logger.info("✅ Planner confirms task completion");
       if (planOutput.result.final_answer) {
         this.context.finalAnswer = planOutput.result.final_answer;
       }
@@ -154,7 +158,10 @@ export class Executor {
         }
 
         // Run planner periodically for guidance
-        if (this.planner && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
+        if (
+          this.planner &&
+          (context.nSteps % context.options.planningInterval === 0 || navigatorDone)
+        ) {
           navigatorDone = false;
           latestPlanOutput = await this.runPlanner();
 
@@ -169,7 +176,7 @@ export class Executor {
 
         // If navigator indicates completion, the next periodic planner run will validate it
         if (navigatorDone) {
-          logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
+          logger.info("🔄 Navigator indicates completion - will be validated by next planner run");
         }
       }
 
@@ -184,47 +191,61 @@ export class Executor {
         // Track task completion
         void analytics.trackTaskComplete(this.context.taskId);
       } else if (step >= allowedMaxSteps) {
-        logger.error('❌ Task failed: Max steps reached');
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));
+        logger.error("❌ Task failed: Max steps reached");
+        this.context.emitEvent(
+          Actors.SYSTEM,
+          ExecutionState.TASK_FAIL,
+          t("exec_errors_maxStepsReached"),
+        );
 
         // Track task failure with specific error category
-        const maxStepsError = new MaxStepsReachedError(t('exec_errors_maxStepsReached'));
+        const maxStepsError = new MaxStepsReachedError(t("exec_errors_maxStepsReached"));
         const errorCategory = analytics.categorizeError(maxStepsError);
         void analytics.trackTaskFailed(this.context.taskId, errorCategory);
       } else if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t("exec_task_cancel"));
 
         // Track task cancellation
         void analytics.trackTaskCancelled(this.context.taskId);
       } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_task_pause'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t("exec_task_pause"));
         // Note: We don't track pause as it's not a final state
       }
     } catch (error) {
       if (error instanceof RequestCancelledError) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t("exec_task_cancel"));
 
         // Track task cancellation
         void analytics.trackTaskCancelled(this.context.taskId);
       } else {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_task_fail', [errorMessage]));
+        this.context.emitEvent(
+          Actors.SYSTEM,
+          ExecutionState.TASK_FAIL,
+          t("exec_task_fail", [errorMessage]),
+        );
 
         // Track task failure with detailed error categorization
-        const errorCategory = analytics.categorizeError(error instanceof Error ? error : errorMessage);
+        const errorCategory = analytics.categorizeError(
+          error instanceof Error ? error : errorMessage,
+        );
         void analytics.trackTaskFailed(this.context.taskId, errorCategory);
       }
     } finally {
       if (import.meta.env.DEV) {
-        logger.debug('Executor history', JSON.stringify(this.context.history, null, 2));
+        logger.debug("Executor history", JSON.stringify(this.context.history, null, 2));
       }
       // store the history only if replay is enabled
       if (this.generalSettings?.replayHistoricalTasks) {
         const historyString = JSON.stringify(this.context.history);
         logger.info(`Executor history size: ${historyString.length}`);
-        await chatHistoryStore.storeAgentStepHistory(this.context.taskId, this.tasks[0], historyString);
+        await chatHistoryStore.storeAgentStepHistory(
+          this.context.taskId,
+          this.tasks[0],
+          historyString,
+        );
       } else {
-        logger.info('Replay historical tasks is disabled, skipping history storage');
+        logger.info("Replay historical tasks is disabled, skipping history storage");
       }
     }
   }
@@ -265,7 +286,7 @@ export class Executor {
       context.consecutiveFailures++;
       logger.error(`Failed to execute planner: ${error}`);
       if (context.consecutiveFailures >= context.options.maxFailures) {
-        throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
+        throw new MaxFailuresReachedError(t("exec_errors_maxFailuresReached"));
       }
       return null;
     }
@@ -307,7 +328,7 @@ export class Executor {
       context.consecutiveFailures++;
       logger.error(`Failed to execute step: ${error}`);
       if (context.consecutiveFailures >= context.options.maxFailures) {
-        throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
+        throw new MaxFailuresReachedError(t("exec_errors_maxFailuresReached"));
       }
     }
     return false;
@@ -315,12 +336,12 @@ export class Executor {
 
   private async shouldStop(): Promise<boolean> {
     if (this.context.stopped) {
-      logger.info('Agent stopped');
+      logger.info("Agent stopped");
       return true;
     }
 
     while (this.context.paused) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       if (this.context.stopped) {
         return true;
       }
@@ -374,19 +395,19 @@ export class Executor {
     delayBetweenActions = 2.0,
   ): Promise<ActionResult[]> {
     const results: ActionResult[] = [];
-    const replayLogger = createLogger('Executor:replayHistory');
+    const replayLogger = createLogger("Executor:replayHistory");
 
-    logger.info('replay task', this.tasks[0]);
+    logger.info("replay task", this.tasks[0]);
 
     try {
       const historyFromStorage = await chatHistoryStore.loadAgentStepHistory(sessionId);
       if (!historyFromStorage) {
-        throw new Error(t('exec_replay_historyNotFound'));
+        throw new Error(t("exec_replay_historyNotFound"));
       }
 
       const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
       if (history.history.length === 0) {
-        throw new Error(t('exec_replay_historyEmpty'));
+        throw new Error(t("exec_replay_historyEmpty"));
       }
       logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
@@ -396,7 +417,7 @@ export class Executor {
 
         // Check if execution should stop
         if (this.context.stopped) {
-          replayLogger.info('Replay stopped by user');
+          replayLogger.info("Replay stopped by user");
           break;
         }
 
@@ -419,14 +440,18 @@ export class Executor {
       }
 
       if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_replay_cancel'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t("exec_replay_cancel"));
       } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, t('exec_replay_ok'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, t("exec_replay_ok"));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       replayLogger.error(`Replay failed: ${errorMessage}`);
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_replay_fail', [errorMessage]));
+      this.context.emitEvent(
+        Actors.SYSTEM,
+        ExecutionState.TASK_FAIL,
+        t("exec_replay_fail", [errorMessage]),
+      );
     }
 
     return results;

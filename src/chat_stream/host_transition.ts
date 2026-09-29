@@ -43,21 +43,14 @@ function queueMutation(
         | "CLEAR_QUEUE";
     }
   >,
-): TransitionResult<
-  ChatStreamHostState,
-  ChatStreamHostCommand,
-  ChatStreamHostIgnoreReason
-> {
+): TransitionResult<ChatStreamHostState, ChatStreamHostCommand, ChatStreamHostIgnoreReason> {
   if (event.expectedQueueRevision !== state.queueRevision) {
     return ignore(state, "queue-revision-conflict");
   }
   if (state.pendingQueueMutationId !== null) {
     return ignore(state, "queue-revision-conflict");
   }
-  const mutation: Extract<
-    ChatStreamHostCommand,
-    { type: "mutate-queue" }
-  >["mutation"] =
+  const mutation: Extract<ChatStreamHostCommand, { type: "mutate-queue" }>["mutation"] =
     event.type === "PAUSE_QUEUE"
       ? { type: "pause" }
       : event.type === "RESUME_QUEUE"
@@ -96,11 +89,7 @@ function queueMutation(
 export function transitionChatStreamHost(
   state: ChatStreamHostState,
   event: ChatStreamWireEvent,
-): TransitionResult<
-  ChatStreamHostState,
-  ChatStreamHostCommand,
-  ChatStreamHostIgnoreReason
-> {
+): TransitionResult<ChatStreamHostState, ChatStreamHostCommand, ChatStreamHostIgnoreReason> {
   switch (event.type) {
     case "SUBMIT": {
       if (state.phase === "idle" || state.phase === "errored") {
@@ -142,10 +131,7 @@ export function transitionChatStreamHost(
       };
     }
     case "CANCEL":
-      if (
-        !state.active ||
-        (state.phase !== "admitting" && state.phase !== "streaming")
-      ) {
+      if (!state.active || (state.phase !== "admitting" && state.phase !== "streaming")) {
         return ignore(state, "not-cancellable");
       }
       if (!sameInvocationRef(state.active.invocationRef, event.invocationRef)) {
@@ -154,19 +140,14 @@ export function transitionChatStreamHost(
       return {
         kind: "applied",
         state: { ...state, phase: "cancelling" },
-        commands: [
-          { type: "cancel-active", invocationRef: event.invocationRef },
-        ],
+        commands: [{ type: "cancel-active", invocationRef: event.invocationRef }],
       };
     case "REPORT_ERROR":
       return {
         kind: "applied",
         state: {
           ...state,
-          phase:
-            state.phase === "idle" || state.phase === "errored"
-              ? "errored"
-              : state.phase,
+          phase: state.phase === "idle" || state.phase === "errored" ? "errored" : state.phase,
           error: event.error,
         },
         commands: [],
@@ -237,10 +218,7 @@ export function transitionChatStreamHost(
           commands: [],
         };
       }
-      if (
-        state.active?.intent.intentId === event.intentId &&
-        event.acceptance !== "queued"
-      ) {
+      if (state.active?.intent.intentId === event.intentId && event.acceptance !== "queued") {
         return {
           kind: "applied",
           state: {
@@ -248,9 +226,7 @@ export function transitionChatStreamHost(
             phase: event.acceptance === "rejected" ? "errored" : "idle",
             active: null,
             error:
-              event.acceptance === "rejected"
-                ? "Chat submission was previously rejected"
-                : null,
+              event.acceptance === "rejected" ? "Chat submission was previously rejected" : null,
             lastAcceptance: {
               intentId: event.intentId,
               acceptance: event.acceptance,
@@ -260,9 +236,7 @@ export function transitionChatStreamHost(
             },
           },
           commands:
-            state.queuePaused || state.queue.length === 0
-              ? []
-              : [{ type: "dispatch-next" }],
+            state.queuePaused || state.queue.length === 0 ? [] : [{ type: "dispatch-next" }],
         };
       }
       return {
@@ -313,9 +287,7 @@ export function transitionChatStreamHost(
             targetAppId: state.active.targetAppId,
           },
         },
-        commands: [
-          { type: "finalize", intentId: event.intentId, error: event.error },
-        ],
+        commands: [{ type: "finalize", intentId: event.intentId, error: event.error }],
       };
     case "STREAM_ENDED":
       if (
@@ -374,22 +346,15 @@ export function transitionChatStreamHost(
             targetAppId: event.targetAppId,
           },
         },
-        commands: [
-          { type: "finalize", intentId: event.intentId, error: event.error },
-        ],
+        commands: [{ type: "finalize", intentId: event.intentId, error: event.error }],
       };
     case "QUEUE_MUTATED":
-      if (
-        event.mutationId !== undefined &&
-        event.mutationId !== state.pendingQueueMutationId
-      ) {
+      if (event.mutationId !== undefined && event.mutationId !== state.pendingQueueMutationId) {
         return ignore(state, "invalid-host-event");
       }
       {
         const pendingQueueMutationId =
-          event.mutationId === state.pendingQueueMutationId
-            ? null
-            : state.pendingQueueMutationId;
+          event.mutationId === state.pendingQueueMutationId ? null : state.pendingQueueMutationId;
         return {
           kind: "applied",
           state: {

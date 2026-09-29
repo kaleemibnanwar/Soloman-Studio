@@ -3,4 +3,4 @@
 - img
 - text: a src/components/made-with-octopus-studio.tsx:4
 - button "Deselect component":
-  - img
+    - img

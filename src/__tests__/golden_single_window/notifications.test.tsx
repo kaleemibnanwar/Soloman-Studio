@@ -3,9 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useNotificationHandler } from "@/hooks/useNotificationHandler";
 
 const mocks = vi.hoisted(() => ({
-  classifiedListener: undefined as
-    | ((event: { requestId: string }) => void)
-    | undefined,
+  classifiedListener: undefined as ((event: { requestId: string }) => void) | undefined,
   completionListener: undefined as
     | ((event: {
         chatId: number;
@@ -14,9 +12,7 @@ const mocks = vi.hoisted(() => ({
       }) => void)
     | undefined,
   requestedListener: undefined as ((event: any) => void) | undefined,
-  settledListener: undefined as
-    | ((event: { requestId: string }) => void)
-    | undefined,
+  settledListener: undefined as ((event: { requestId: string }) => void) | undefined,
   focusChat: vi.fn(),
   resolveAppNameForAppId: vi.fn(),
   resolveChatSummary: vi.fn(),
@@ -24,9 +20,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/chat_stream/ChatStreamProvider", () => ({
-  useStreamFinished: (
-    listener: NonNullable<typeof mocks.completionListener>,
-  ) => {
+  useStreamFinished: (listener: NonNullable<typeof mocks.completionListener>) => {
     mocks.completionListener = listener;
   },
 }));
@@ -82,9 +76,7 @@ vi.mock("@/lib/toast", () => ({
 
 class FakeNotification {
   static permission: NotificationPermission = "granted";
-  static requestPermission = vi.fn(() =>
-    Promise.resolve<NotificationPermission>("granted"),
-  );
+  static requestPermission = vi.fn(() => Promise.resolve<NotificationPermission>("granted"));
   static instances: FakeNotification[] = [];
 
   onclose: (() => void) | null = null;
@@ -168,25 +160,22 @@ describe("golden single-window: notification routing", () => {
       },
       tag: "octopus-studio-plan-questionnaire-questionnaire:1",
     },
-  ])(
-    "delivers one sticky notification for $descriptor.kind",
-    async ({ descriptor, tag }) => {
-      const hook = renderHook(() => useNotificationHandler());
+  ])("delivers one sticky notification for $descriptor.kind", async ({ descriptor, tag }) => {
+    const hook = renderHook(() => useNotificationHandler());
 
-      act(() => mocks.requestedListener?.(descriptor));
+    act(() => mocks.requestedListener?.(descriptor));
 
-      await waitFor(() => expect(FakeNotification.instances).toHaveLength(1));
-      expect(FakeNotification.instances[0].options).toMatchObject({
-        tag,
-        requireInteraction: true,
-      });
-      await act(async () => FakeNotification.instances[0].onclick?.());
-      expect(mocks.focusChat).toHaveBeenCalledExactlyOnceWith({ chatId: 42 });
-      expect(FakeNotification.instances[0].close).toHaveBeenCalledOnce();
-      expect(mocks.showWarning).not.toHaveBeenCalled();
-      hook.unmount();
-    },
-  );
+    await waitFor(() => expect(FakeNotification.instances).toHaveLength(1));
+    expect(FakeNotification.instances[0].options).toMatchObject({
+      tag,
+      requireInteraction: true,
+    });
+    await act(async () => FakeNotification.instances[0].onclick?.());
+    expect(mocks.focusChat).toHaveBeenCalledExactlyOnceWith({ chatId: 42 });
+    expect(FakeNotification.instances[0].close).toHaveBeenCalledOnce();
+    expect(mocks.showWarning).not.toHaveBeenCalled();
+    hook.unmount();
+  });
 
   it("waits for racing MCP consent classification before notifying once", async () => {
     const hook = renderHook(() => useNotificationHandler());

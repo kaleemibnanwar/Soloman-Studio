@@ -3,10 +3,7 @@ import * as fs from "fs/promises";
 import { app } from "electron";
 import log from "electron-log";
 import Database from "better-sqlite3";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { calculateFileChecksum } from "@/utils/file_checksum";
 
 const logger = log.scope("backup_manager");
@@ -73,9 +70,7 @@ export class BackupManager {
     }
 
     if (lastVersion === currentVersion) {
-      logger.info(
-        `No version upgrade detected. Current version: ${currentVersion}`,
-      );
+      logger.info(`No version upgrade detected. Current version: ${currentVersion}`);
       return;
     }
 
@@ -111,10 +106,7 @@ export class BackupManager {
       logger.debug(`Backup directory created: ${backupPath}`);
 
       // Backup settings file
-      const settingsBackupPath = path.join(
-        backupPath,
-        path.basename(this.settingsFilePath),
-      );
+      const settingsBackupPath = path.join(backupPath, path.basename(this.settingsFilePath));
       const settingsExists = await this.fileExists(this.settingsFilePath);
 
       if (settingsExists) {
@@ -125,10 +117,7 @@ export class BackupManager {
       }
 
       // Backup SQLite database
-      const dbBackupPath = path.join(
-        backupPath,
-        path.basename(this.dbFilePath),
-      );
+      const dbBackupPath = path.join(backupPath, path.basename(this.dbFilePath));
       const dbExists = await this.fileExists(this.dbFilePath);
 
       if (dbExists) {
@@ -148,17 +137,12 @@ export class BackupManager {
           database: dbExists,
         },
         checksums: {
-          settings: settingsExists
-            ? await this.getFileChecksum(settingsBackupPath)
-            : null,
+          settings: settingsExists ? await this.getFileChecksum(settingsBackupPath) : null,
           database: dbExists ? await this.getFileChecksum(dbBackupPath) : null,
         },
       };
 
-      await fs.writeFile(
-        path.join(backupPath, "backup.json"),
-        JSON.stringify(metadata, null, 2),
-      );
+      await fs.writeFile(path.join(backupPath, "backup.json"), JSON.stringify(metadata, null, 2));
 
       logger.info(`Backup created successfully: ${backupName}`);
       return backupPath;
@@ -192,11 +176,7 @@ export class BackupManager {
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const metadataPath = path.join(
-            this.backupBasePath,
-            entry.name,
-            "backup.json",
-          );
+          const metadataPath = path.join(this.backupBasePath, entry.name, "backup.json");
 
           try {
             const metadataContent = await fs.readFile(metadataPath, "utf8");
@@ -215,8 +195,7 @@ export class BackupManager {
 
       // Sort by timestamp, newest first
       return backups.sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
     } catch (error) {
       logger.error("Failed to list backups:", error);
@@ -232,9 +211,7 @@ export class BackupManager {
       const backups = await this.listBackups();
 
       if (backups.length <= this.maxBackups) {
-        logger.debug(
-          `No cleanup needed - ${backups.length} backups (max: ${this.maxBackups})`,
-        );
+        logger.debug(`No cleanup needed - ${backups.length} backups (max: ${this.maxBackups})`);
         return;
       }
 
@@ -293,10 +270,7 @@ export class BackupManager {
   /**
    * Backup SQLite database safely
    */
-  private async backupSQLiteDatabase(
-    sourcePath: string,
-    destPath: string,
-  ): Promise<void> {
+  private async backupSQLiteDatabase(sourcePath: string, destPath: string): Promise<void> {
     logger.debug(`Backing up SQLite database: ${sourcePath} → ${destPath}`);
     const sourceDb = new Database(sourcePath, {
       timeout: 10000,
@@ -336,9 +310,7 @@ export class BackupManager {
   private async getFileChecksum(filePath: string): Promise<string | null> {
     try {
       const checksum = await calculateFileChecksum(filePath);
-      logger.debug(
-        `Checksum calculated for ${filePath}: ${checksum.substring(0, 8)}...`,
-      );
+      logger.debug(`Checksum calculated for ${filePath}: ${checksum.substring(0, 8)}...`);
       return checksum;
     } catch (error) {
       logger.error(`Failed to calculate checksum for ${filePath}:`, error);

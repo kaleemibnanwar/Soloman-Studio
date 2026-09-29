@@ -14,9 +14,7 @@ export function useChatModeToggle() {
       ? (routerState.location.search.id as number | undefined)
       : null;
   const { selectedMode, setChatMode, settings } = useChatMode(routeChatId);
-  const setHasManuallySelectedChatMode = useSetAtom(
-    hasManuallySelectedChatModeAtom,
-  );
+  const setHasManuallySelectedChatMode = useSetAtom(hasManuallySelectedChatModeAtom);
   const posthog = usePostHog();
 
   // Detect if user is on mac
@@ -50,14 +48,7 @@ export function useChatModeToggle() {
       to: newMode,
       trigger: "keyboard_shortcut",
     });
-  }, [
-    selectedMode,
-    setChatMode,
-    settings,
-    routeChatId,
-    setHasManuallySelectedChatMode,
-    posthog,
-  ]);
+  }, [selectedMode, setChatMode, settings, routeChatId, setHasManuallySelectedChatMode, posthog]);
 
   // Add keyboard shortcut with memoized modifiers
   useShortcut(

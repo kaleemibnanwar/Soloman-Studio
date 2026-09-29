@@ -19,9 +19,7 @@ export function isDotenvFilePath(filePath: string): boolean {
 
 function isEmptyDotenvValue(value: string): boolean {
   const trimmed = value.trim();
-  return (
-    trimmed === "" || trimmed === "''" || trimmed === '""' || trimmed === "``"
-  );
+  return trimmed === "" || trimmed === "''" || trimmed === '""' || trimmed === "``";
 }
 
 function redactUnparsedContent(content: string): string {
@@ -84,15 +82,8 @@ export function selectTextLineRange(
     startLine - 1,
     endLineInclusive == null ? undefined : endLineInclusive,
   );
-  if (
-    endLineInclusive != null &&
-    endLineInclusive < lines.length &&
-    selected.length > 0
-  ) {
-    selected[selected.length - 1] = selected[selected.length - 1].replace(
-      /\r\n|\r|\n$/,
-      "",
-    );
+  if (endLineInclusive != null && endLineInclusive < lines.length && selected.length > 0) {
+    selected[selected.length - 1] = selected[selected.length - 1].replace(/\r\n|\r|\n$/, "");
   }
   return selected.join("");
 }

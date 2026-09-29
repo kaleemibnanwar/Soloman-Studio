@@ -19,10 +19,7 @@ export class ModelPicker {
 
     return this.page
       .getByRole("menuitem", {
-        name: new RegExp(
-          `^${this.escapeRegExp(name)}(?:\\s+${this.escapeRegExp(name)})?$`,
-          "i",
-        ),
+        name: new RegExp(`^${this.escapeRegExp(name)}(?:\\s+${this.escapeRegExp(name)})?$`, "i"),
       })
       .first();
   }
@@ -65,10 +62,7 @@ export class ModelPicker {
   private async selectVisibleModel(modelItem: Locator, model: string) {
     await modelItem.click();
     await expect(this.page.getByTestId("model-picker")).toHaveText(
-      new RegExp(
-        `^(?:Model:\\s*)?${this.escapeRegExp(model)}\\s+\\([^)]+\\)$`,
-        "i",
-      ),
+      new RegExp(`^(?:Model:\\s*)?${this.escapeRegExp(model)}\\s+\\([^)]+\\)$`, "i"),
     );
   }
 

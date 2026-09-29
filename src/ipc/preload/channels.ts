@@ -20,10 +20,7 @@ import { appContracts } from "../types/app";
 import { chatContracts, chatStreamContract } from "../types/chat";
 import { agentContracts, agentEvents } from "../types/agent";
 import { githubContracts, gitContracts } from "../types/github";
-import {
-  connectionFlowContracts,
-  connectionFlowEvents,
-} from "../types/connection_flow";
+import { connectionFlowContracts, connectionFlowEvents } from "../types/connection_flow";
 import { mcpContracts } from "../types/mcp";
 import { vercelContracts } from "../types/vercel";
 import { supabaseContracts } from "../types/supabase";
@@ -48,14 +45,8 @@ import { freeModelQuotaContracts } from "../types/free_model_quota";
 import { planEvents, planContracts } from "../types/plan";
 import { audioContracts } from "../types/audio";
 import { mediaContracts } from "../types/media";
-import {
-  imageGenerationContracts,
-  imageGenerationEvents,
-} from "../types/image_generation";
-import {
-  appBlueprintContracts,
-  appBlueprintEvents,
-} from "../types/app_blueprint";
+import { imageGenerationContracts, imageGenerationEvents } from "../types/image_generation";
+import { appBlueprintContracts, appBlueprintEvents } from "../types/app_blueprint";
 import { appCollectionContracts } from "../types/app_collections";
 import { terminalContracts } from "../types/terminal";
 import { testsContracts, testsEvents } from "../types/tests";
@@ -69,6 +60,7 @@ import { workerPlanningContracts } from "../types/worker_planning";
 import { agentTaskContracts } from "../types/agent_task";
 import { officeContracts } from "../types/office";
 import { chatProjectContracts } from "../types/chat_project";
+import { fileManagerContracts } from "../types/file_manager";
 import { recordingContracts, recordingEvents } from "../types/recording";
 import { userInputContracts, userInputEvents } from "../types/user_input";
 import { firstPromptSendContracts } from "../types/first_prompt";
@@ -155,6 +147,7 @@ export const VALID_INVOKE_CHANNELS = [
   ...getInvokeChannels(agentTaskContracts),
   ...getInvokeChannels(officeContracts),
   ...getInvokeChannels(chatProjectContracts),
+  ...getInvokeChannels(fileManagerContracts),
   ...getInvokeChannels(recordingContracts),
   ...getInvokeChannels(userInputContracts),
   ...getInvokeChannels(windowInfrastructureContracts),
@@ -173,9 +166,7 @@ export const VALID_INVOKE_CHANNELS = [
  * All valid one-way send channels derived from send contracts.
  * Used by preload.ts to whitelist fire-and-forget IPC channels.
  */
-export const VALID_SEND_CHANNELS = [
-  ...getSendChannels(firstPromptSendContracts),
-] as const;
+export const VALID_SEND_CHANNELS = [...getSendChannels(firstPromptSendContracts)] as const;
 
 // =============================================================================
 // Receive Channels (derived from all event contracts + stream events)

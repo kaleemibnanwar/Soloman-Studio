@@ -18,10 +18,7 @@ const OCTOPUS_STUDIO_LOGS_SCRIPT = readFileSync(
 function loadConsoleInterceptor() {
   const messages: PostedConsoleMessage[] = [];
   const originalLog = vi.fn<ConsoleMethod>();
-  const scriptConsole: Record<
-    "log" | "warn" | "error" | "info" | "debug",
-    ConsoleMethod
-  > = {
+  const scriptConsole: Record<"log" | "warn" | "error" | "info" | "debug", ConsoleMethod> = {
     log: originalLog,
     warn: vi.fn<ConsoleMethod>(),
     error: vi.fn<ConsoleMethod>(),
@@ -46,10 +43,7 @@ function loadConsoleInterceptor() {
 describe("octopus-studio console interception", () => {
   it("bounds giant values and argument lists before posting to the parent", () => {
     const { messages, originalLog, scriptConsole } = loadConsoleInterceptor();
-    const args = Array.from(
-      { length: 25 },
-      (_, index) => `${index}:${"x".repeat(20_000)}`,
-    );
+    const args = Array.from({ length: 25 }, (_, index) => `${index}:${"x".repeat(20_000)}`);
 
     scriptConsole.log(...args);
 
@@ -57,16 +51,9 @@ describe("octopus-studio console interception", () => {
     expect(messages[0].type).toBe("console-log");
     expect(messages[0].args[0]).toContain("[console value truncated]");
     expect(messages[0].args.at(-1)).toMatch(/arguments omitted\]$/);
+    expect(messages[0].args.every((arg) => Buffer.byteLength(arg, "utf8") <= 8 * 1024)).toBe(true);
     expect(
-      messages[0].args.every(
-        (arg) => Buffer.byteLength(arg, "utf8") <= 8 * 1024,
-      ),
-    ).toBe(true);
-    expect(
-      messages[0].args.reduce(
-        (total, arg) => total + Buffer.byteLength(arg, "utf8"),
-        0,
-      ),
+      messages[0].args.reduce((total, arg) => total + Buffer.byteLength(arg, "utf8"), 0),
     ).toBeLessThanOrEqual(64 * 1024);
     expect(originalLog).toHaveBeenCalledWith(...args);
   });
@@ -110,9 +97,7 @@ describe("octopus-studio console interception", () => {
     const serialized = JSON.parse(messages[0].args[0]);
     expect(serialized["key-49"]).toBe(49);
     expect(serialized["key-50"]).toBeUndefined();
-    expect(serialized.__octopus_studio_truncated__).toBe(
-      "Additional keys omitted",
-    );
+    expect(serialized.__octopus_studio_truncated__).toBe("Additional keys omitted");
   });
 
   it("honors toJSON while retaining the output byte limit", () => {
@@ -126,16 +111,13 @@ describe("octopus-studio console interception", () => {
 
     expect(JSON.parse(messages[0].args[0])).toBe(date.toISOString());
     expect(messages[0].args[1]).toContain("[console value truncated]");
-    expect(Buffer.byteLength(messages[0].args[1], "utf8")).toBeLessThanOrEqual(
-      8 * 1024,
-    );
+    expect(Buffer.byteLength(messages[0].args[1], "utf8")).toBeLessThanOrEqual(8 * 1024);
   });
 
   it("applies the depth limit to chained toJSON results", () => {
     const { messages, scriptConsole } = loadConsoleInterceptor();
     const createToJsonChain = (remainingDepth: number): unknown => ({
-      toJSON: () =>
-        remainingDepth === 0 ? "leaf" : createToJsonChain(remainingDepth - 1),
+      toJSON: () => (remainingDepth === 0 ? "leaf" : createToJsonChain(remainingDepth - 1)),
     });
 
     scriptConsole.log(createToJsonChain(20));
@@ -190,8 +172,6 @@ describe("octopus-studio console interception", () => {
     scriptConsole.log(nested);
 
     expect(getterReads).toBeLessThan(10);
-    expect(Buffer.byteLength(messages[0].args[0], "utf8")).toBeLessThanOrEqual(
-      8 * 1024,
-    );
+    expect(Buffer.byteLength(messages[0].args[0], "utf8")).toBeLessThanOrEqual(8 * 1024);
   });
 });

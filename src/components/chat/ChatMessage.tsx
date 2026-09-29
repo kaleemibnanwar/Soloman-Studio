@@ -1,12 +1,6 @@
 import { type Message } from "@/ipc/types";
-import {
-  OctopusStudioMarkdownParser,
-  VanillaMarkdownParser,
-} from "./OctopusStudioMarkdownParser";
-import {
-  OctopusStudioAttachment,
-  type AttachmentSize,
-} from "./OctopusStudioAttachment";
+import { OctopusStudioMarkdownParser, VanillaMarkdownParser } from "./OctopusStudioMarkdownParser";
+import { OctopusStudioAttachment, type AttachmentSize } from "./OctopusStudioAttachment";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { StreamingLoadingAnimation } from "./StreamingLoadingAnimation";
 import {
@@ -30,11 +24,7 @@ import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useChatStreamHasPreview } from "@/hooks/useChatStream";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,8 +51,7 @@ function extractAttachments(content: string): {
   path: string;
   attachmentType: string;
 }[] {
-  const tagRegex =
-    /<octopus-studio-attachment\s+([^>]*)><\/octopus-studio-attachment>/g;
+  const tagRegex = /<octopus-studio-attachment\s+([^>]*)><\/octopus-studio-attachment>/g;
   const attrRegex = /([\w-]+)="([^"]*)"/g;
   const results: {
     name: string;
@@ -94,10 +83,7 @@ function extractAttachments(content: string): {
 /** Strip <octopus-studio-attachment> tags from user message content. */
 function stripAttachmentInfo(content: string): string {
   return content
-    .replace(
-      /<octopus-studio-attachment\s+[^>]*><\/octopus-studio-attachment>/g,
-      "",
-    )
+    .replace(/<octopus-studio-attachment\s+[^>]*><\/octopus-studio-attachment>/g, "")
     .trim();
 }
 
@@ -115,11 +101,7 @@ interface ChatMessageProps {
   isCancelledPrompt?: boolean;
 }
 
-const ChatMessage = ({
-  message,
-  isLastMessage,
-  isCancelledPrompt,
-}: ChatMessageProps) => {
+const ChatMessage = ({ message, isLastMessage, isCancelledPrompt }: ChatMessageProps) => {
   const { isStreaming } = useStreamChat();
   const appId = useAtomValue(selectedAppIdAtom);
   const { versions: liveVersions } = useVersions(appId);
@@ -131,15 +113,10 @@ const ChatMessage = ({
   const canRestoreToMessage = previewProjection.capabilities.canRestore;
   const isRestoringToMessage = previewState.type === "restoring";
   const assistantTextContent =
-    message.role === "assistant"
-      ? stripCancelledResponseNotice(message.content)
-      : "";
-  const isStreamingThisMessage =
-    message.role === "assistant" && isLastMessage && isStreaming;
+    message.role === "assistant" ? stripCancelledResponseNotice(message.content) : "";
+  const isStreamingThisMessage = message.role === "assistant" && isLastMessage && isStreaming;
   const liveTokenEstimate =
-    message.role === "assistant"
-      ? estimateOutputTokens(assistantTextContent)
-      : 0;
+    message.role === "assistant" ? estimateOutputTokens(assistantTextContent) : 0;
   // While the last assistant message streams, show a live estimate. Once it
   // finishes, prefer the provider-reported output (completion) tokens; fall
   // back to a content-based estimate when the provider didn't report usage.
@@ -157,32 +134,21 @@ const ChatMessage = ({
   const hasPreviewForChat = useChatStreamHasPreview(selectedChatId);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const hasStreamingPreview =
-    message.role === "assistant" &&
-    isLastMessage &&
-    isStreaming &&
-    hasPreviewForChat;
+    message.role === "assistant" && isLastMessage && isStreaming && hasPreviewForChat;
   const hasAssistantText =
-    message.role === "assistant" &&
-    (assistantTextContent.length > 0 || hasStreamingPreview);
+    message.role === "assistant" && (assistantTextContent.length > 0 || hasStreamingPreview);
   //handle copy chat
   const { copyMessageContent, copied } = useCopyToClipboard();
   const handleCopyFormatted = async () => {
-    await copyMessageContent(
-      message.role === "assistant" ? assistantTextContent : message.content,
-    );
+    await copyMessageContent(message.role === "assistant" ? assistantTextContent : message.content);
   };
   // Find the version that was active when this message was sent
   const messageVersion = useMemo(() => {
-    if (
-      message.role === "assistant" &&
-      message.commitHash &&
-      liveVersions.length
-    ) {
+    if (message.role === "assistant" && message.commitHash && liveVersions.length) {
       return (
         liveVersions.find(
           (version) =>
-            message.commitHash &&
-            version.oid.slice(0, 7) === message.commitHash.slice(0, 7),
+            message.commitHash && version.oid.slice(0, 7) === message.commitHash.slice(0, 7),
         ) || null
       );
     }
@@ -212,8 +178,7 @@ const ChatMessage = ({
   const formatTimestamp = (timestamp: string | Date) => {
     const now = new Date();
     const messageTime = new Date(timestamp);
-    const diffInHours =
-      (now.getTime() - messageTime.getTime()) / (1000 * 60 * 60);
+    const diffInHours = (now.getTime() - messageTime.getTime()) / (1000 * 60 * 60);
     if (diffInHours < 24) {
       return formatDistanceToNow(messageTime, { addSuffix: true });
     } else {
@@ -221,12 +186,9 @@ const ChatMessage = ({
     }
   };
 
-  const isCancelled =
-    isCancelledResponseContent(message.content) || !!isCancelledPrompt;
-  const userTextContent =
-    message.role === "user" ? stripAttachmentInfo(message.content) : "";
-  const attachments =
-    message.role === "user" ? extractAttachments(message.content) : [];
+  const isCancelled = isCancelledResponseContent(message.content) || !!isCancelledPrompt;
+  const userTextContent = message.role === "user" ? stripAttachmentInfo(message.content) : "";
+  const attachments = message.role === "user" ? extractAttachments(message.content) : [];
   const hasUserText = userTextContent.length > 0;
   const attachmentSize: AttachmentSize =
     attachments.length === 1 ? "lg" : attachments.length <= 3 ? "md" : "sm";
@@ -238,9 +200,7 @@ const ChatMessage = ({
   // changes, so they get a restore arrow too — anchored to the attachment block
   // below rather than the (absent) message box.
   const showRestoreButton =
-    message.role === "user" &&
-    (hasUserText || attachments.length > 0) &&
-    !isCancelled;
+    message.role === "user" && (hasUserText || attachments.length > 0) && !isCancelled;
 
   const handleRestoreToMessage = (restoreCodebase: boolean) => {
     if (appId == null || selectedChatId == null) {
@@ -280,28 +240,22 @@ const ChatMessage = ({
             <Undo2 className="h-3.5 w-3.5" />
           )}
         </TooltipTrigger>
-        <TooltipContent>
-          Fork or restore to before this message in a new chat
-        </TooltipContent>
+        <TooltipContent>Fork or restore to before this message in a new chat</TooltipContent>
       </Tooltip>
-      <AlertDialog
-        open={showRestoreConfirm}
-        onOpenChange={setShowRestoreConfirm}
-      >
+      <AlertDialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Restore to this point?</AlertDialogTitle>
             <AlertDialogDescription>
-              A new chat will be created with the messages up to this point.
-              Your current chat is preserved and won't be changed. Choose
-              "Restore code & fork chat" to also roll the codebase back to how
-              it was before this message, or "Fork chat only" to leave your
+              A new chat will be created with the messages up to this point. Your current chat is
+              preserved and won't be changed. Choose "Restore code & fork chat" to also roll the
+              codebase back to how it was before this message, or "Fork chat only" to leave your
               files untouched.
             </AlertDialogDescription>
             {isStreaming && (
               <p className="mt-2 text-sm font-medium text-amber-600 dark:text-amber-500">
-                A generation is in progress. "Restore code & fork chat" will
-                stop it first; "Fork chat only" leaves it running.
+                A generation is in progress. "Restore code & fork chat" will stop it first; "Fork
+                chat only" leaves it running.
               </p>
             )}
           </AlertDialogHeader>
@@ -330,32 +284,21 @@ const ChatMessage = ({
   ) : null;
 
   return (
-    <div
-      className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
-    >
-      <div
-        className={`mt-2 w-full max-w-3xl mx-auto group ${isCancelled ? "opacity-50" : ""}`}
-      >
+    <div className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}>
+      <div className={`mt-2 w-full max-w-3xl mx-auto group ${isCancelled ? "opacity-50" : ""}`}>
         {/* Show message box for assistant messages or user messages with text */}
         {(message.role === "assistant" || hasUserText) && (
           <div
             className={`rounded-lg p-2 ${
-              message.role === "assistant"
-                ? ""
-                : "relative ml-24 bg-(--sidebar-accent)"
+              message.role === "assistant" ? "" : "relative ml-24 bg-(--sidebar-accent)"
             }`}
           >
             {/* Text prompts anchor the button to the message box; attachment-only
                 prompts render it next to the attachment block below instead. */}
             {hasUserText && restoreButtonNode}
-            {message.role === "assistant" &&
-            !hasAssistantText &&
-            isStreaming &&
-            isLastMessage ? (
+            {message.role === "assistant" && !hasAssistantText && isStreaming && isLastMessage ? (
               <StreamingLoadingAnimation variant="initial" />
-            ) : message.role === "assistant" &&
-              !hasAssistantText &&
-              isCancelled ? (
+            ) : message.role === "assistant" && !hasAssistantText && isCancelled ? (
               <div className="prose dark:prose-invert max-w-none text-[15px] italic text-muted-foreground">
                 Response cancelled before any content was generated.
               </div>
@@ -405,9 +348,7 @@ const ChatMessage = ({
                       )}
                       <span className="hidden sm:inline"></span>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {copied ? "Copied!" : "Copy"}
-                    </TooltipContent>
+                    <TooltipContent>{copied ? "Copied!" : "Copy"}</TooltipContent>
                   </Tooltip>
                 )}
                 <div className="flex flex-wrap gap-2">
@@ -489,15 +430,8 @@ const ChatMessage = ({
               <div className="flex items-center space-x-1">
                 <GitCommit className="h-3 w-3" />
                 <span className="font-medium">{`Version ${versionNumber}:`}</span>
-                <span
-                  className="max-w-50 truncate"
-                  title={messageVersion.message}
-                >
-                  {
-                    messageVersion.message
-                      .replace(/^\[octopusStudio\]\s*/i, "")
-                      .split("\n")[0]
-                  }
+                <span className="max-w-50 truncate" title={messageVersion.message}>
+                  {messageVersion.message.replace(/^\[octopusStudio\]\s*/i, "").split("\n")[0]}
                 </span>
               </div>
             )}
@@ -534,9 +468,7 @@ const ChatMessage = ({
                   ) : (
                     <Copy className="h-3 w-3" />
                   )}
-                  <span className="text-xs">
-                    {copiedRequestId ? "Copied" : "Request ID"}
-                  </span>
+                  <span className="text-xs">{copiedRequestId ? "Copied" : "Request ID"}</span>
                 </TooltipTrigger>
                 <TooltipContent>
                   {copiedRequestId

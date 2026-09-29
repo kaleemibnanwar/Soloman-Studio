@@ -1,8 +1,4 @@
-import {
-  collectDisposalError,
-  TaskScope,
-  type TaskCleanup,
-} from "./task_scope";
+import { collectDisposalError, TaskScope, type TaskCleanup } from "./task_scope";
 
 export interface LifecycleHooks {
   stopAdmission: () => void;
@@ -33,8 +29,7 @@ export function createLifecycleScope<Key = PropertyKey>(
   return {
     replace: (key, cleanup) => resources.replace(key, cleanup),
     remove: (key) => resources.remove(key),
-    trackPromise: (promise) =>
-      resources.trackPromise(promise, hooks.onLateSettlement),
+    trackPromise: (promise) => resources.trackPromise(promise, hooks.onLateSettlement),
     dispose() {
       if (disposed) return;
       disposed = true;

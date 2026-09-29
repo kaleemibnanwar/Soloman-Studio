@@ -42,15 +42,8 @@ import {
   type View,
   type ViewColumn,
 } from "../schema/model.js";
-import {
-  escapeIdentifier,
-  procName,
-  schemaQualifiedName,
-} from "../schema/identifiers.js";
-import {
-  PgSchemaDiffError,
-  UnsupportedPostgresVersionError,
-} from "../errors.js";
+import { escapeIdentifier, procName, schemaQualifiedName } from "../schema/identifiers.js";
+import { PgSchemaDiffError, UnsupportedPostgresVersionError } from "../errors.js";
 
 type SchemaRow = {
   readonly schema_name: string;
@@ -270,15 +263,10 @@ export async function getSchema(
   );
 }
 
-export async function validateSupportedPostgresVersion(
-  client: DatabaseClient,
-): Promise<void> {
-  const result: QueryResult<ServerVersionRow> = await client.query(
-    "SHOW server_version_num",
-  );
+export async function validateSupportedPostgresVersion(client: DatabaseClient): Promise<void> {
+  const result: QueryResult<ServerVersionRow> = await client.query("SHOW server_version_num");
   const rawVersion = result.rows[0]?.server_version_num;
-  const versionNumber =
-    rawVersion === undefined ? Number.NaN : Number.parseInt(rawVersion, 10);
+  const versionNumber = rawVersion === undefined ? Number.NaN : Number.parseInt(rawVersion, 10);
   assertSupportedPostgresVersion(versionNumber);
 }
 
@@ -288,9 +276,7 @@ export function assertSupportedPostgresVersion(versionNumber: number): void {
   }
 }
 
-async function fetchNamedSchemas(
-  client: DatabaseClient,
-): Promise<Schema["namedSchemas"]> {
+async function fetchNamedSchemas(client: DatabaseClient): Promise<Schema["namedSchemas"]> {
   const result: QueryResult<SchemaRow> = await client.query(getSchemasSql);
   return result.rows.map((row) => ({
     kind: "namedSchema",
@@ -307,11 +293,8 @@ async function fetchEnums(client: DatabaseClient): Promise<Schema["enums"]> {
   }));
 }
 
-async function fetchExtensions(
-  client: DatabaseClient,
-): Promise<Schema["extensions"]> {
-  const result: QueryResult<ExtensionRow> =
-    await client.query(getExtensionsSql);
+async function fetchExtensions(client: DatabaseClient): Promise<Schema["extensions"]> {
+  const result: QueryResult<ExtensionRow> = await client.query(getExtensionsSql);
   return result.rows.map((row) => ({
     kind: "extension",
     name: schemaQualifiedName(row.schema_name, row.extension_name),
@@ -323,10 +306,7 @@ async function fetchTables(client: DatabaseClient): Promise<Schema["tables"]> {
   const checkConstraints = await fetchCheckConstraints(client);
   const policies = await fetchPolicies(client);
   const privileges = await fetchPrivileges(client);
-  const checkConstraintsByTable = groupByTable(
-    checkConstraints,
-    (value) => value.table,
-  );
+  const checkConstraintsByTable = groupByTable(checkConstraints, (value) => value.table);
   const policiesByTable = groupByTable(policies, (value) => value.table);
   const privilegesByTable = groupByTable(privileges, (value) => value.table);
 
@@ -334,13 +314,7 @@ async function fetchTables(client: DatabaseClient): Promise<Schema["tables"]> {
   const tables: Table[] = [];
   for (const row of result.rows) {
     tables.push(
-      await buildTable(
-        client,
-        row,
-        checkConstraintsByTable,
-        policiesByTable,
-        privilegesByTable,
-      ),
+      await buildTable(client, row, checkConstraintsByTable, policiesByTable, privilegesByTable),
     );
   }
   return tables;
@@ -353,17 +327,13 @@ async function buildTable(
   policiesByTable: ReadonlyMap<string, readonly Policy[]>,
   privilegesByTable: ReadonlyMap<string, readonly TablePrivilege[]>,
 ): Promise<Table> {
-  const columnsResult: QueryResult<ColumnRow> = await client.query(
-    getColumnsForTableSql,
-    [row.oid],
-  );
+  const columnsResult: QueryResult<ColumnRow> = await client.query(getColumnsForTableSql, [
+    row.oid,
+  ]);
   const parentTable =
     row.parent_table_name.length === 0
       ? null
-      : schemaQualifiedName(
-          row.parent_table_schema_name,
-          row.parent_table_name,
-        );
+      : schemaQualifiedName(row.parent_table_schema_name, row.parent_table_name);
   const tableName = schemaQualifiedName(row.table_schema_name, row.table_name);
   const tableKey = tableObjectKey(row.table_schema_name, row.table_name);
 
@@ -401,9 +371,7 @@ type PrivilegeWithTable = {
 async function fetchCheckConstraints(
   client: DatabaseClient,
 ): Promise<readonly CheckConstraintWithTable[]> {
-  const result: QueryResult<CheckConstraintRow> = await client.query(
-    getCheckConstraintsSql,
-  );
+  const result: QueryResult<CheckConstraintRow> = await client.query(getCheckConstraintsSql);
   const out: CheckConstraintWithTable[] = [];
   for (const row of result.rows) {
     out.push({
@@ -415,20 +383,14 @@ async function fetchCheckConstraints(
         expression: row.constraint_expression,
         isValid: row.is_valid,
         isInheritable: !row.is_not_inheritable,
-        dependsOnFunctions: await fetchDependsOnFunctions(
-          client,
-          "pg_constraint",
-          row.oid,
-        ),
+        dependsOnFunctions: await fetchDependsOnFunctions(client, "pg_constraint", row.oid),
       },
     });
   }
   return out;
 }
 
-async function fetchPolicies(
-  client: DatabaseClient,
-): Promise<readonly PolicyWithTable[]> {
+async function fetchPolicies(client: DatabaseClient): Promise<readonly PolicyWithTable[]> {
   const result: QueryResult<PolicyRow> = await client.query(getPoliciesSql);
   return result.rows.map((row) => ({
     table: tableObjectKey(row.owning_table_schema_name, row.owning_table_name),
@@ -446,12 +408,8 @@ async function fetchPolicies(
   }));
 }
 
-async function fetchPrivileges(
-  client: DatabaseClient,
-): Promise<readonly PrivilegeWithTable[]> {
-  const result: QueryResult<TablePrivilegeRow> = await client.query(
-    getTablePrivilegesSql,
-  );
+async function fetchPrivileges(client: DatabaseClient): Promise<readonly PrivilegeWithTable[]> {
+  const result: QueryResult<TablePrivilegeRow> = await client.query(getTablePrivilegesSql);
   return result.rows.map((row) => ({
     table: tableObjectKey(row.table_schema_name, row.table_name),
     value: {
@@ -488,10 +446,7 @@ async function fetchIndexes(client: DatabaseClient): Promise<readonly Index[]> {
       parentIdx:
         row.parent_index_name.length === 0
           ? null
-          : schemaQualifiedName(
-              row.parent_index_schema_name,
-              row.parent_index_name,
-            ),
+          : schemaQualifiedName(row.parent_index_schema_name, row.parent_index_name),
     };
   });
 }
@@ -505,22 +460,14 @@ async function fetchForeignKeyConstraints(
   return result.rows.map((row) => ({
     kind: "foreignKeyConstraint",
     escapedName: escapeIdentifier(row.constraint_name),
-    owningTable: schemaQualifiedName(
-      row.owning_table_schema_name,
-      row.owning_table_name,
-    ),
-    foreignTable: schemaQualifiedName(
-      row.foreign_table_schema_name,
-      row.foreign_table_name,
-    ),
+    owningTable: schemaQualifiedName(row.owning_table_schema_name, row.owning_table_name),
+    foreignTable: schemaQualifiedName(row.foreign_table_schema_name, row.foreign_table_name),
     constraintDef: row.constraint_def,
     isValid: row.is_valid,
   }));
 }
 
-async function fetchSequences(
-  client: DatabaseClient,
-): Promise<readonly Sequence[]> {
+async function fetchSequences(client: DatabaseClient): Promise<readonly Sequence[]> {
   const result: QueryResult<SequenceRow> = await client.query(getSequencesSql);
   return result.rows.map((row) => ({
     kind: "sequence",
@@ -529,10 +476,7 @@ async function fetchSequences(
       row.owner_column_name.length === 0
         ? null
         : {
-            tableName: schemaQualifiedName(
-              row.owner_schema_name,
-              row.owner_table_name,
-            ),
+            tableName: schemaQualifiedName(row.owner_schema_name, row.owner_table_name),
             columnName: row.owner_column_name,
           },
     type: row.data_type,
@@ -545,43 +489,27 @@ async function fetchSequences(
   }));
 }
 
-async function fetchFunctions(
-  client: DatabaseClient,
-): Promise<readonly FunctionSchema[]> {
+async function fetchFunctions(client: DatabaseClient): Promise<readonly FunctionSchema[]> {
   const result: QueryResult<ProcRow> = await client.query(getProcsSql, ["f"]);
   const functions: FunctionSchema[] = [];
   for (const row of result.rows) {
     functions.push({
       kind: "function",
-      name: procName(
-        row.func_schema_name,
-        row.func_name,
-        row.func_identity_arguments,
-      ),
+      name: procName(row.func_schema_name, row.func_name, row.func_identity_arguments),
       functionDef: row.func_def,
       returnType: row.func_result,
       language: row.func_lang,
-      dependsOnFunctions: await fetchDependsOnFunctions(
-        client,
-        "pg_proc",
-        row.oid,
-      ),
+      dependsOnFunctions: await fetchDependsOnFunctions(client, "pg_proc", row.oid),
     });
   }
   return functions;
 }
 
-async function fetchProcedures(
-  client: DatabaseClient,
-): Promise<readonly Procedure[]> {
+async function fetchProcedures(client: DatabaseClient): Promise<readonly Procedure[]> {
   const result: QueryResult<ProcRow> = await client.query(getProcsSql, ["p"]);
   return result.rows.map((row) => ({
     kind: "procedure",
-    name: procName(
-      row.func_schema_name,
-      row.func_name,
-      row.func_identity_arguments,
-    ),
+    name: procName(row.func_schema_name, row.func_name, row.func_identity_arguments),
     def: row.func_def,
   }));
 }
@@ -591,31 +519,22 @@ async function fetchDependsOnFunctions(
   systemCatalog: "pg_constraint" | "pg_proc",
   objectId: string,
 ): Promise<readonly FunctionSchema["name"][]> {
-  const result: QueryResult<DependsOnFunctionRow> = await client.query(
-    getDependsOnFunctionsSql,
-    [systemCatalog, objectId],
-  );
+  const result: QueryResult<DependsOnFunctionRow> = await client.query(getDependsOnFunctionsSql, [
+    systemCatalog,
+    objectId,
+  ]);
   return result.rows.map((row) =>
     procName(row.func_schema_name, row.func_name, row.func_identity_arguments),
   );
 }
 
-async function fetchTriggers(
-  client: DatabaseClient,
-): Promise<readonly Trigger[]> {
+async function fetchTriggers(client: DatabaseClient): Promise<readonly Trigger[]> {
   const result: QueryResult<TriggerRow> = await client.query(getTriggersSql);
   return result.rows.map((row) => ({
     kind: "trigger",
     escapedName: escapeIdentifier(row.trigger_name),
-    owningTable: schemaQualifiedName(
-      row.owning_table_schema_name,
-      row.owning_table_name,
-    ),
-    functionName: procName(
-      row.func_schema_name,
-      row.func_name,
-      row.func_identity_arguments,
-    ),
+    owningTable: schemaQualifiedName(row.owning_table_schema_name, row.owning_table_name),
+    functionName: procName(row.func_schema_name, row.func_name, row.func_identity_arguments),
     getTriggerDefStmt: row.trigger_def,
     isConstraint: row.is_constraint,
   }));
@@ -636,9 +555,7 @@ async function fetchViews(client: DatabaseClient): Promise<readonly View[]> {
 async function fetchMaterializedViews(
   client: DatabaseClient,
 ): Promise<readonly MaterializedView[]> {
-  const result: QueryResult<MaterializedViewRow> = await client.query(
-    getMaterializedViewsSql,
-  );
+  const result: QueryResult<MaterializedViewRow> = await client.query(getMaterializedViewsSql);
   return result.rows.map((row) => ({
     kind: "materializedView",
     name: schemaQualifiedName(row.schema_name, row.view_name),
@@ -650,9 +567,7 @@ async function fetchMaterializedViews(
   }));
 }
 
-function relOptionsToMap(
-  values: readonly string[],
-): Readonly<Record<string, string>> {
+function relOptionsToMap(values: readonly string[]): Readonly<Record<string, string>> {
   const out: Record<string, string> = {};
   for (const value of values) {
     const separatorIndex = value.indexOf("=");
@@ -664,9 +579,7 @@ function relOptionsToMap(
   return out;
 }
 
-function parseTableDependencies(
-  values: readonly string[],
-): readonly TableDependency[] {
+function parseTableDependencies(values: readonly string[]): readonly TableDependency[] {
   return values.map((value) => {
     const parsed = parseTableDependency(value);
     return {
@@ -719,17 +632,13 @@ function isTableDependencyJson(value: unknown): value is {
     typeof (value as { readonly schema?: unknown }).schema === "string" &&
     typeof (value as { readonly name?: unknown }).name === "string" &&
     (columns === null ||
-      (Array.isArray(columns) &&
-        columns.every((column) => typeof column === "string")))
+      (Array.isArray(columns) && columns.every((column) => typeof column === "string")))
   );
 }
 
 function groupByTable<TValue>(
   values: readonly { readonly table: string; readonly value: TValue }[],
-  getTable: (value: {
-    readonly table: string;
-    readonly value: TValue;
-  }) => string,
+  getTable: (value: { readonly table: string; readonly value: TValue }) => string,
 ): ReadonlyMap<string, readonly TValue[]> {
   const out = new Map<string, TValue[]>();
   for (const value of values) {
@@ -749,42 +658,28 @@ function filterSchema(schema: Schema, options: GetSchemaOptions): Schema {
   const filter = buildSchemaFilter(options);
   return {
     namedSchemas: schema.namedSchemas.filter((item) => filter(item.name)),
-    extensions: schema.extensions.filter((item) =>
-      filter(item.name.schemaName),
-    ),
+    extensions: schema.extensions.filter((item) => filter(item.name.schemaName)),
     enums: schema.enums.filter((item) => filter(item.name.schemaName)),
     tables: schema.tables.filter((item) => filter(item.name.schemaName)),
-    indexes: schema.indexes.filter((item) =>
-      filter(item.owningRelName.schemaName),
-    ),
+    indexes: schema.indexes.filter((item) => filter(item.owningRelName.schemaName)),
     foreignKeyConstraints: schema.foreignKeyConstraints.filter((item) =>
       filter(item.owningTable.schemaName),
     ),
     sequences: schema.sequences.filter((item) => filter(item.name.schemaName)),
     functions: schema.functions.filter((item) => filter(item.name.schemaName)),
-    procedures: schema.procedures.filter((item) =>
-      filter(item.name.schemaName),
-    ),
-    triggers: schema.triggers.filter((item) =>
-      filter(item.owningTable.schemaName),
-    ),
+    procedures: schema.procedures.filter((item) => filter(item.name.schemaName)),
+    triggers: schema.triggers.filter((item) => filter(item.owningTable.schemaName)),
     views: schema.views.filter((item) => filter(item.name.schemaName)),
-    materializedViews: schema.materializedViews.filter((item) =>
-      filter(item.name.schemaName),
-    ),
+    materializedViews: schema.materializedViews.filter((item) => filter(item.name.schemaName)),
   };
 }
 
-function buildSchemaFilter(
-  options: GetSchemaOptions,
-): (schemaName: string) => boolean {
+function buildSchemaFilter(options: GetSchemaOptions): (schemaName: string) => boolean {
   const include = new Set(options.includeSchemas ?? []);
   const exclude = new Set(options.excludeSchemas ?? []);
   for (const schemaName of include) {
     if (exclude.has(schemaName)) {
-      throw new PgSchemaDiffError(
-        `schemas [${schemaName}] are both included and excluded`,
-      );
+      throw new PgSchemaDiffError(`schemas [${schemaName}] are both included and excluded`);
     }
   }
   return (schemaName) =>
@@ -824,16 +719,10 @@ function buildFunctionDependencyNames(row: {
     dependent_func_schema_names.length !== dependent_func_names.length ||
     dependent_func_names.length !== identityArguments.length
   ) {
-    throw new PgSchemaDiffError(
-      "Database returned mismatched function dependency metadata",
-    );
+    throw new PgSchemaDiffError("Database returned mismatched function dependency metadata");
   }
   return dependent_func_names.map((name, index) =>
-    procName(
-      dependent_func_schema_names[index]!,
-      name,
-      identityArguments[index]!,
-    ),
+    procName(dependent_func_schema_names[index]!, name, identityArguments[index]!),
   );
 }
 

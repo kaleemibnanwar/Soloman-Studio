@@ -26,8 +26,7 @@ const colors: Record<SkippableBannerVariant, Record<string, string>> = {
     ring: "ring-black/5 dark:ring-white/10",
     icon: "text-indigo-600 dark:text-indigo-200 bg-indigo-100 dark:bg-white/15",
     text: "text-indigo-900 dark:text-indigo-100",
-    enableBtn:
-      "bg-white/90 hover:bg-white text-indigo-800 shadow font-semibold",
+    enableBtn: "bg-white/90 hover:bg-white text-indigo-800 shadow font-semibold",
     skipBtn:
       "text-indigo-600 dark:text-indigo-200 hover:text-indigo-800 dark:hover:text-indigo-100",
     dismissBg: "bg-white dark:bg-indigo-800",
@@ -38,8 +37,7 @@ const colors: Record<SkippableBannerVariant, Record<string, string>> = {
     icon: "text-amber-700 dark:text-amber-200 bg-amber-100 dark:bg-white/15",
     text: "text-amber-900 dark:text-amber-100",
     enableBtn: "bg-white/90 hover:bg-white text-amber-900 shadow font-semibold",
-    skipBtn:
-      "text-amber-700 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100",
+    skipBtn: "text-amber-700 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100",
     dismissBg: "bg-white dark:bg-amber-800",
   },
 };
@@ -78,9 +76,7 @@ export function SkippableBanner({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium leading-snug ${c.text}`}>
-              {message}
-            </p>
+            <p className={`text-sm font-medium leading-snug ${c.text}`}>{message}</p>
           </div>
 
           {/* Action */}

@@ -38,9 +38,7 @@ export class IpcAppRuntimeOutput implements AppRuntimeOutput {
   }
 }
 
-export function getIpcAppRuntimeOutput(
-  sender: WebContents,
-): IpcAppRuntimeOutput {
+export function getIpcAppRuntimeOutput(sender: WebContents): IpcAppRuntimeOutput {
   let output = outputsBySender.get(sender);
   if (!output) {
     output = new IpcAppRuntimeOutput(sender);

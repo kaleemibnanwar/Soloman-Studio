@@ -15,9 +15,7 @@ const {
 const temporaryDirectories: string[] = [];
 
 function createTemporaryDirectory() {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "octopus-studio-release-provenance-"),
-  );
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "octopus-studio-release-provenance-"));
   temporaryDirectories.push(directory);
   return directory;
 }
@@ -31,46 +29,30 @@ afterEach(() => {
 describe("release provenance generator", () => {
   it("uses the exact asset names produced by Electron Forge's GitHub publisher", () => {
     const directory = createTemporaryDirectory();
-    fs.writeFileSync(
-      path.join(directory, "octopus-studio-1.10.0-beta.1 Setup.exe"),
-      "windows",
-    );
-    fs.writeFileSync(
-      path.join(directory, "octopus_studio_1.10.0~beta.1_amd64.deb"),
-      "linux",
-    );
+    fs.writeFileSync(path.join(directory, "octopus-studio-1.10.0-beta.1 Setup.exe"), "windows");
+    fs.writeFileSync(path.join(directory, "octopus_studio_1.10.0~beta.1_amd64.deb"), "linux");
 
     expect(
-      collectReleaseArtifacts(directory).map(
-        (artifact: { name: string }) => artifact.name,
-      ),
-    ).toEqual([
-      "octopus-studio-1.10.0-beta.1.Setup.exe",
-      "octopus_studio_1.10.0.beta.1_amd64.deb",
-    ]);
+      collectReleaseArtifacts(directory).map((artifact: { name: string }) => artifact.name),
+    ).toEqual(["octopus-studio-1.10.0-beta.1.Setup.exe", "octopus_studio_1.10.0.beta.1_amd64.deb"]);
   });
 
   it("hashes and sorts only published release artifact types", () => {
     const directory = createTemporaryDirectory();
     fs.mkdirSync(path.join(directory, "nested"));
-    fs.writeFileSync(
-      path.join(directory, "nested", "octopusStudio.zip"),
-      "zip",
-    );
+    fs.writeFileSync(path.join(directory, "nested", "octopusStudio.zip"), "zip");
     fs.writeFileSync(path.join(directory, "RELEASES"), "manifest");
     fs.writeFileSync(path.join(directory, "ignored.json"), "{}");
 
     expect(collectReleaseArtifacts(directory)).toEqual([
       {
         name: "RELEASES",
-        sha256:
-          "05b3abf2579a5eb66403cd78be557fd860633a1fe2103c7642030defe32c657f",
+        sha256: "05b3abf2579a5eb66403cd78be557fd860633a1fe2103c7642030defe32c657f",
         size: 8,
       },
       {
         name: "octopusStudio.zip",
-        sha256:
-          "4a70fe9aa6436e02c2dea340fbd1e352e4ef2d8ce6ca52ad25d4b95471fc8bf2",
+        sha256: "4a70fe9aa6436e02c2dea340fbd1e352e4ef2d8ce6ca52ad25d4b95471fc8bf2",
         size: 3,
       },
     ]);

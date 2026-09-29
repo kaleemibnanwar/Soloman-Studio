@@ -121,9 +121,9 @@ export function runFrameworkMechanismConformanceSuite(): void {
       const firstIdentity = identity("request-1", "operation-1");
       const first = registry.admit(firstIdentity);
       expect(registry.admit(firstIdentity).kind).toBe("coalesced");
-      expect(() =>
-        registry.admit(identity("request-1", "operation-1", "conflict")),
-      ).toThrow(OperationIdentityConflictError);
+      expect(() => registry.admit(identity("request-1", "operation-1", "conflict"))).toThrow(
+        OperationIdentityConflictError,
+      );
 
       expect(
         registry.settle(
@@ -159,15 +159,8 @@ export function runFrameworkMechanismConformanceSuite(): void {
       { kind: "superseded" } as const,
     ])("settles $kind without retaining ownership", async (outcome) => {
       const registry = createRegistry();
-      const admitted = registry.admit(
-        identity(`request-${outcome.kind}`, `op-${outcome.kind}`),
-      );
-      registry.settle(
-        admitted.ticket.requestId,
-        admitted.ticket.invocationRef,
-        outcome,
-        receipt(),
-      );
+      const admitted = registry.admit(identity(`request-${outcome.kind}`, `op-${outcome.kind}`));
+      registry.settle(admitted.ticket.requestId, admitted.ticket.invocationRef, outcome, receipt());
       await expect(admitted.ticket.settled).resolves.toMatchObject({ outcome });
       registry.dispose();
       assertNoOwnedResources(
@@ -186,10 +179,7 @@ export function runFrameworkMechanismConformanceSuite(): void {
       const pending = identity("pending", "pending-operation");
       registry.admit(pending);
       for (const suffix of ["one", "two"]) {
-        const settled = identity(
-          `settled-${suffix}`,
-          `settled-operation-${suffix}`,
-        );
+        const settled = identity(`settled-${suffix}`, `settled-operation-${suffix}`);
         const admitted = registry.admit(settled);
         registry.settle(
           admitted.ticket.requestId,
@@ -223,9 +213,9 @@ export function runFrameworkMechanismConformanceSuite(): void {
         key: KEY,
         allowDuringDrain: (event) => event === "terminal",
       });
-      expect(() =>
-        gate.assertCapturedDispatchAllowed(KEY, "ordinary", producerGeneration),
-      ).toThrow("not allowed while draining");
+      expect(() => gate.assertCapturedDispatchAllowed(KEY, "ordinary", producerGeneration)).toThrow(
+        "not allowed while draining",
+      );
       expect(() =>
         gate.assertCapturedDispatchAllowed(KEY, "terminal", producerGeneration),
       ).not.toThrow();
@@ -241,9 +231,9 @@ export function runFrameworkMechanismConformanceSuite(): void {
       expect(fence.commit()).toBe(true);
       expect(fence.release()).toBe(true);
       expect(fence.release()).toBe(false);
-      expect(() =>
-        gate.assertDispatchAllowed(KEY, "ordinary", producerGeneration),
-      ).toThrow("generation");
+      expect(() => gate.assertDispatchAllowed(KEY, "ordinary", producerGeneration)).toThrow(
+        "generation",
+      );
       gate.dispose();
       assertNoOwnedResources(
         {
@@ -272,9 +262,7 @@ export function runFrameworkMechanismConformanceSuite(): void {
       });
       await replacement.seal();
       expect(replacement.commit()).toBe(true);
-      expect(() => replacement.abort()).toThrow(
-        "A committed fence cannot abort",
-      );
+      expect(() => replacement.abort()).toThrow("A committed fence cannot abort");
       expect(replacement.release()).toBe(true);
       gate.dispose();
     });

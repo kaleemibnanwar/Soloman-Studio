@@ -1,8 +1,5 @@
 import { SnapshotStore } from "@/state_machines/snapshot_store";
-import {
-  observeTransition,
-  type TransitionObserver,
-} from "@/state_machines/types";
+import { observeTransition, type TransitionObserver } from "@/state_machines/types";
 import {
   INITIAL_PREVIEW_IFRAME_STATE,
   type PreviewIframeCommand,
@@ -21,9 +18,7 @@ export interface PreviewIframeCommandRunner {
 }
 
 export class PreviewIframeController {
-  private readonly store = new SnapshotStore<PreviewIframeState>(
-    INITIAL_PREVIEW_IFRAME_STATE,
-  );
+  private readonly store = new SnapshotStore<PreviewIframeState>(INITIAL_PREVIEW_IFRAME_STATE);
   private disposed = false;
 
   constructor(
@@ -51,10 +46,7 @@ export class PreviewIframeController {
         try {
           this.runner.execute(this.appId, command, this.send);
         } catch (error) {
-          console.error(
-            `Preview iframe command execution failed for app ${this.appId}:`,
-            error,
-          );
+          console.error(`Preview iframe command execution failed for app ${this.appId}:`, error);
         }
       }
     };

@@ -72,9 +72,7 @@ test("should open, navigate, and select from history menu", async ({ po }) => {
   });
 });
 
-test("should handle edge cases: guards, escape, and sending after cancel", async ({
-  po,
-}) => {
+test("should handle edge cases: guards, escape, and sending after cancel", async ({ po }) => {
   await po.setUp({ autoApprove: true });
 
   const chatInput = po.chatActions.getChatInput();
@@ -118,7 +116,5 @@ test("should handle edge cases: guards, escape, and sending after cancel", async
   await po.chatActions.waitForChatCompletion();
 
   // Verify the message was sent
-  await expect(
-    po.page.getByText("New test message after escape", { exact: false }),
-  ).toBeVisible();
+  await expect(po.page.getByText("New test message after escape", { exact: false })).toBeVisible();
 });

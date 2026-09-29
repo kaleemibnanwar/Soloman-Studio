@@ -3,10 +3,7 @@ import { eq, inArray, isNotNull } from "drizzle-orm";
 import { createTypedHandler } from "./base";
 import { getHandlerContext } from "./handler_context";
 import { appCollectionContracts } from "../types/app_collections";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 function buildAppCollectionDto(
   row: {
@@ -27,23 +24,14 @@ function buildAppCollectionDto(
 }
 
 function isUniqueNameError(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : "";
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   return message.includes("UNIQUE constraint failed: app_collections.name");
 }
 
 export function registerAppCollectionHandlers() {
   createTypedHandler(appCollectionContracts.list, async () => {
     const { db } = getHandlerContext();
-    const rows = db
-      .select()
-      .from(appCollections)
-      .orderBy(appCollections.name)
-      .all();
+    const rows = db.select().from(appCollections).orderBy(appCollections.name).all();
     const appRows = db
       .select({ id: apps.id, collectionId: apps.collectionId })
       .from(apps)
@@ -56,9 +44,7 @@ export function registerAppCollectionHandlers() {
       list.push(row.id);
       appsByCollection.set(row.collectionId, list);
     }
-    return rows.map((r) =>
-      buildAppCollectionDto(r, appsByCollection.get(r.id) ?? []),
-    );
+    return rows.map((r) => buildAppCollectionDto(r, appsByCollection.get(r.id) ?? []));
   });
 
   createTypedHandler(appCollectionContracts.create, async (_, params) => {
@@ -75,16 +61,10 @@ export function registerAppCollectionHandlers() {
     let id: number;
     try {
       id = db.transaction((tx) => {
-        const insertResult = tx
-          .insert(appCollections)
-          .values({ name: trimmed })
-          .run();
+        const insertResult = tx.insert(appCollections).values({ name: trimmed }).run();
         const newId = Number(insertResult.lastInsertRowid);
         if (appIds && appIds.length > 0) {
-          tx.update(apps)
-            .set({ collectionId: newId })
-            .where(inArray(apps.id, appIds))
-            .run();
+          tx.update(apps).set({ collectionId: newId }).where(inArray(apps.id, appIds)).run();
         }
         return newId;
       });
@@ -98,11 +78,7 @@ export function registerAppCollectionHandlers() {
       throw error;
     }
 
-    const row = db
-      .select()
-      .from(appCollections)
-      .where(eq(appCollections.id, id))
-      .get();
+    const row = db.select().from(appCollections).where(eq(appCollections.id, id)).get();
     if (!row) {
       throw new OctopusStudioError(
         "Failed to fetch created collection",
@@ -138,10 +114,7 @@ export function registerAppCollectionHandlers() {
           .where(eq(appCollections.id, id))
           .get();
         if (!existingCollection) {
-          throw new OctopusStudioError(
-            "Collection not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Collection not found", OctopusStudioErrorKind.NotFound);
         }
         tx.update(appCollections)
           .set({ name: trimmed, updatedAt: new Date() })
@@ -156,20 +129,12 @@ export function registerAppCollectionHandlers() {
           const before = new Set(existing.map((a) => a.id));
           const after = new Set(appIds);
           const toAdd = appIds.filter((appId) => !before.has(appId));
-          const toRemove = existing
-            .map((a) => a.id)
-            .filter((appId) => !after.has(appId));
+          const toRemove = existing.map((a) => a.id).filter((appId) => !after.has(appId));
           if (toAdd.length > 0) {
-            tx.update(apps)
-              .set({ collectionId: id })
-              .where(inArray(apps.id, toAdd))
-              .run();
+            tx.update(apps).set({ collectionId: id }).where(inArray(apps.id, toAdd)).run();
           }
           if (toRemove.length > 0) {
-            tx.update(apps)
-              .set({ collectionId: null })
-              .where(inArray(apps.id, toRemove))
-              .run();
+            tx.update(apps).set({ collectionId: null }).where(inArray(apps.id, toRemove)).run();
           }
         }
       });
@@ -196,15 +161,9 @@ export function registerAppCollectionHandlers() {
         .where(eq(appCollections.id, id))
         .get();
       if (!existingCollection) {
-        throw new OctopusStudioError(
-          "Collection not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("Collection not found", OctopusStudioErrorKind.NotFound);
       }
-      tx.update(apps)
-        .set({ collectionId: null })
-        .where(eq(apps.collectionId, id))
-        .run();
+      tx.update(apps).set({ collectionId: null }).where(eq(apps.collectionId, id)).run();
       tx.delete(appCollections).where(eq(appCollections.id, id)).run();
     });
   });
@@ -221,16 +180,10 @@ export function registerAppCollectionHandlers() {
           .where(eq(appCollections.id, collectionId))
           .get();
         if (!existingCollection) {
-          throw new OctopusStudioError(
-            "Collection not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Collection not found", OctopusStudioErrorKind.NotFound);
         }
       }
-      tx.update(apps)
-        .set({ collectionId })
-        .where(inArray(apps.id, appIds))
-        .run();
+      tx.update(apps).set({ collectionId }).where(inArray(apps.id, appIds)).run();
     });
   });
 }

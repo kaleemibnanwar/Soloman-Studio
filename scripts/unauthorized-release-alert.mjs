@@ -14,14 +14,10 @@ const requireEnv = (name) => {
 const optionalEnv = (name) => process.env[name]?.trim() || "";
 
 export const parseRecipients = (value) => {
-  const recipients = [
-    ...new Set(value.split(",").map((entry) => entry.trim())),
-  ].filter(Boolean);
+  const recipients = [...new Set(value.split(",").map((entry) => entry.trim()))].filter(Boolean);
 
   if (recipients.length === 0) {
-    throw new Error(
-      "UNAUTHORIZED_RELEASE_ALERT_EMAILS must contain at least one email address",
-    );
+    throw new Error("UNAUTHORIZED_RELEASE_ALERT_EMAILS must contain at least one email address");
   }
 
   return recipients;
@@ -48,15 +44,7 @@ const appendStepSummary = async (summary) => {
   await fs.appendFile(path, `${summary}\n`, "utf8");
 };
 
-const sendMailgunEmail = async ({
-  apiKey,
-  domain,
-  from,
-  recipients,
-  subject,
-  text,
-  html,
-}) => {
+const sendMailgunEmail = async ({ apiKey, domain, from, recipients, subject, text, html }) => {
   const response = await fetch(`${MAILGUN_API_BASE_URL}/${domain}/messages`, {
     method: "POST",
     headers: {
@@ -74,9 +62,7 @@ const sendMailgunEmail = async ({
 
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(
-      `Failed to send unauthorized release email: ${response.status} ${body}`,
-    );
+    throw new Error(`Failed to send unauthorized release email: ${response.status} ${body}`);
   }
 };
 
@@ -149,14 +135,11 @@ const main = async () => {
   const mailgunApiKey = requireEnv("MAILGUN_API_KEY");
   const mailgunDomain = requireEnv("MAILGUN_DOMAIN");
   const fromEmail = requireEnv("MAILGUN_FROM_EMAIL");
-  const recipients = parseRecipients(
-    requireEnv("UNAUTHORIZED_RELEASE_ALERT_EMAILS"),
-  );
+  const recipients = parseRecipients(requireEnv("UNAUTHORIZED_RELEASE_ALERT_EMAILS"));
   const releaseName = optionalEnv("RELEASE_NAME") || releaseTag;
   const createdAt = optionalEnv("RELEASE_CREATED_AT") || "unknown";
   const publishedAt = optionalEnv("RELEASE_PUBLISHED_AT") || "unknown";
-  const githubServerUrl =
-    optionalEnv("GITHUB_SERVER_URL") || "https://github.com";
+  const githubServerUrl = optionalEnv("GITHUB_SERVER_URL") || "https://github.com";
   const runId = optionalEnv("GITHUB_RUN_ID");
   const runUrl = runId
     ? `${githubServerUrl}/${repository}/actions/runs/${runId}`
@@ -191,9 +174,6 @@ const main = async () => {
   );
 };
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();
 }

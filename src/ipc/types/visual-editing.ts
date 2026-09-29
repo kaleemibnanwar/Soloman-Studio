@@ -79,18 +79,14 @@ export const ApplyVisualEditingChangesParamsSchema = z.object({
   changes: z.array(VisualEditingChangeSchema),
 });
 
-export type ApplyVisualEditingChangesParams = z.infer<
-  typeof ApplyVisualEditingChangesParamsSchema
->;
+export type ApplyVisualEditingChangesParams = z.infer<typeof ApplyVisualEditingChangesParamsSchema>;
 
 export const AnalyseComponentParamsSchema = z.object({
   appId: z.number(),
   componentId: z.string(),
 });
 
-export type AnalyseComponentParams = z.infer<
-  typeof AnalyseComponentParamsSchema
->;
+export type AnalyseComponentParams = z.infer<typeof AnalyseComponentParamsSchema>;
 
 export const AnalyseComponentResultSchema = z.object({
   isDynamic: z.boolean(),
@@ -107,10 +103,7 @@ export const AnalyseComponentResultSchema = z.object({
 export function mergePendingChange(
   existing: VisualEditingChange | undefined,
   partial: Partial<VisualEditingChange> &
-    Pick<
-      VisualEditingChange,
-      "componentId" | "componentName" | "relativePath" | "lineNumber"
-    >,
+    Pick<VisualEditingChange, "componentId" | "componentName" | "relativePath" | "lineNumber">,
 ): VisualEditingChange {
   return {
     componentId: partial.componentId,
@@ -118,11 +111,9 @@ export function mergePendingChange(
     relativePath: partial.relativePath,
     lineNumber: partial.lineNumber,
     styles: partial.styles ?? existing?.styles ?? {},
-    textContent:
-      "textContent" in partial ? partial.textContent : existing?.textContent,
+    textContent: "textContent" in partial ? partial.textContent : existing?.textContent,
     imageSrc: "imageSrc" in partial ? partial.imageSrc : existing?.imageSrc,
-    imageUpload:
-      "imageUpload" in partial ? partial.imageUpload : existing?.imageUpload,
+    imageUpload: "imageUpload" in partial ? partial.imageUpload : existing?.imageUpload,
   };
 }
 

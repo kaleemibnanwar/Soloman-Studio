@@ -32,11 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -55,13 +51,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface BranchManagerProps {
   appId: number;
@@ -185,9 +175,7 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
         >
           <SelectTrigger
             className="w-full"
-            aria-label={
-              isSwitchingBranch ? "Switching branches" : "Select branch"
-            }
+            aria-label={isSwitchingBranch ? "Switching branches" : "Select branch"}
             data-testid="branch-select-trigger"
           >
             <SelectValue placeholder="Select branch" />
@@ -213,9 +201,7 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
             <TooltipTrigger
               render={
                 <DropdownMenuTrigger
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "icon" }),
-                  )}
+                  className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
                   disabled={!canMutateBranches}
                   aria-label="Branch actions"
                   data-testid="branch-actions-menu-trigger"
@@ -240,21 +226,15 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
               disabled={!canMutateBranches || isFetching}
               data-testid="refresh-branches-button"
             >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               Refresh branches
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() =>
-                send({ type: "OP_REQUESTED", op: { type: "pull" } })
-              }
+              onClick={() => send({ type: "OP_REQUESTED", op: { type: "pull" } })}
               disabled={!canMutateBranches}
               data-testid="git-pull-button"
             >
-              <GitPullRequestArrow
-                className={`mr-2 h-4 w-4 ${isPulling ? "animate-spin" : ""}`}
-              />
+              <GitPullRequestArrow className={`mr-2 h-4 w-4 ${isPulling ? "animate-spin" : ""}`} />
               Git pull
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -284,10 +264,7 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
                   value={sourceBranch}
                   onValueChange={(value) => setSourceBranch(value ?? "")}
                 >
-                  <SelectTrigger
-                    className="mt-2"
-                    data-testid="source-branch-select-trigger"
-                  >
+                  <SelectTrigger className="mt-2" data-testid="source-branch-select-trigger">
                     <SelectValue placeholder="Select source (optional, defaults to HEAD)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -302,10 +279,7 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateDialog(false)}
-              >
+              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                 Cancel
               </Button>
               <Button
@@ -320,16 +294,11 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
         </Dialog>
       </div>
 
-      <Dialog
-        open={!!branchToRename}
-        onOpenChange={(open) => !open && setBranchToRename(null)}
-      >
+      <Dialog open={!!branchToRename} onOpenChange={(open) => !open && setBranchToRename(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename Branch</DialogTitle>
-            <DialogDescription>
-              Enter a new name for branch '{branchToRename}'.
-            </DialogDescription>
+            <DialogDescription>Enter a new name for branch '{branchToRename}'.</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="rename-branch-name">New Name</Label>
@@ -357,16 +326,12 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!branchToMerge}
-        onOpenChange={(open) => !open && setBranchToMerge(null)}
-      >
+      <Dialog open={!!branchToMerge} onOpenChange={(open) => !open && setBranchToMerge(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Merge Branch</DialogTitle>
             <DialogDescription>
-              Are you sure you want to merge '{branchToMerge}' into '
-              {currentBranch}'?
+              Are you sure you want to merge '{branchToMerge}' into '{currentBranch}'?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -392,14 +357,12 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Branch</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the branch '{branchToDelete}'. This
-              action cannot be undone.
+              This will permanently delete the branch '{branchToDelete}'. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!canMutateBranches}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={!canMutateBranches}>Cancel</AlertDialogCancel>
             <Button
               onClick={handleDeleteBranch}
               disabled={!canMutateBranches}
@@ -434,14 +397,10 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
                 </span>
               </span>
             </AlertDialogTitle>
-            <AlertDialogDescription
-              render={<div />}
-              className="mt-4 space-y-4 text-sm"
-            >
+            <AlertDialogDescription render={<div />} className="mt-4 space-y-4 text-sm">
               <p className="text-foreground">
-                A{" "}
-                <span className="font-medium">{switchBlocked?.blockingOp}</span>{" "}
-                operation is currently in progress. Switching to{" "}
+                A <span className="font-medium">{switchBlocked?.blockingOp}</span> operation is
+                currently in progress. Switching to{" "}
                 <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
                   {switchBlocked?.target}
                 </span>{" "}
@@ -451,14 +410,12 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
                 <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
                   <p className="font-medium">Unresolved conflicts detected</p>
                   <p className="mt-1 text-xs">
-                    Aborting will discard any conflict resolution work you’ve
-                    already done.
+                    Aborting will discard any conflict resolution work you’ve already done.
                   </p>
                 </div>
               )}
               <p className="text-muted-foreground">
-                Are you sure you want to abort the {switchBlocked?.blockingOp}{" "}
-                and switch branches?
+                Are you sure you want to abort the {switchBlocked?.blockingOp} and switch branches?
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -475,8 +432,7 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
               className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-600"
               data-testid="abort-confirmation-proceed"
             >
-              Abort {switchBlocked?.blockingOp === "merge" ? "Merge" : "Rebase"}{" "}
-              &amp; Switch
+              Abort {switchBlocked?.blockingOp === "merge" ? "Merge" : "Rebase"} &amp; Switch
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -521,13 +477,7 @@ export function GithubBranchManager({ appId }: BranchManagerProps) {
                       className="flex items-center justify-between text-sm py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
                       data-testid={`branch-item-${branch}`}
                     >
-                      <span
-                        className={
-                          branch === currentBranch
-                            ? "font-bold text-blue-600"
-                            : ""
-                        }
-                      >
+                      <span className={branch === currentBranch ? "font-bold text-blue-600" : ""}>
                         {branch}
                       </span>
                       {branch !== currentBranch && (

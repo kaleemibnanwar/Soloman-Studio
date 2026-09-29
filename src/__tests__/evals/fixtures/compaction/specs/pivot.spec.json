@@ -45,11 +45,7 @@
       "id": "p3",
       "goal": "The pivot. The user tries to plan deployment and reports the blocker: the site deploys to Vercel serverless, and Vercel serverless gives us no sticky sessions and kills long lived sockets (plant F4 in the user or assistant turn discussing the blocker). After weighing options (separate Fly.io box rejected as extra ops burden), the user decides: we will move the whole realtime layer onto Supabase Realtime channels (plant F5). Assistant confirms the consequence explicitly: the hand rolled socket server is dead, Supabase Realtime replaces it entirely (plant T1 currentEvidence). They sketch the migration plan: create a shopping_items table, swap the hook, port presence to channel presence.",
       "turns": 5,
-      "activeFiles": [
-        "server/realtime-server.js",
-        "src/hooks/useListSocket.ts",
-        "package.json"
-      ],
+      "activeFiles": ["server/realtime-server.js", "src/hooks/useListSocket.ts", "package.json"],
       "factIds": ["F4", "F5"]
     },
     {

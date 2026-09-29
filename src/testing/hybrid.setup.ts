@@ -8,9 +8,7 @@ import type { RendererIpcBridge } from "./renderer_ipc_bridge";
 // errors still print. Override with OCTOPUS_STUDIO_TEST_LOG_LEVEL=debug (or another
 // electron-log level) when debugging a test.
 log.transports.console.level =
-  (process.env
-    .OCTOPUS_STUDIO_TEST_LOG_LEVEL as typeof log.transports.console.level) ??
-  "warn";
+  (process.env.OCTOPUS_STUDIO_TEST_LOG_LEVEL as typeof log.transports.console.level) ?? "warn";
 
 type HybridBridgeDiagnosticGlobal = typeof globalThis & {
   __OCTOPUS_STUDIO_HYBRID_BRIDGE__?: RendererIpcBridge;
@@ -81,10 +79,7 @@ vi.mock("react-i18next", async () => {
       return (current as Record<string, unknown>)[segment];
     }, source);
 
-  const interpolate = (
-    value: string,
-    options: Record<string, unknown>,
-  ): string =>
+  const interpolate = (value: string, options: Record<string, unknown>): string =>
     value.replace(/\{\{\s*([^}\s]+)\s*\}\}/g, (_match, name: string) =>
       options[name] == null ? "" : String(options[name]),
     );
@@ -97,9 +92,7 @@ vi.mock("react-i18next", async () => {
     const [explicitNamespace, explicitKey] = key.includes(":")
       ? (key.split(/:(.*)/s).filter(Boolean) as [string, string])
       : [undefined, undefined];
-    const candidateNamespaces = explicitNamespace
-      ? [explicitNamespace]
-      : namespaces;
+    const candidateNamespaces = explicitNamespace ? [explicitNamespace] : namespaces;
     const lookupKey = explicitKey ?? key;
 
     for (const namespace of candidateNamespaces) {
@@ -121,8 +114,7 @@ vi.mock("react-i18next", async () => {
   const makeT =
     (ns?: string | string[]) =>
     (key: string, fallbackOrOptions?: unknown, maybeOptions?: unknown) => {
-      const fallback =
-        typeof fallbackOrOptions === "string" ? fallbackOrOptions : undefined;
+      const fallback = typeof fallbackOrOptions === "string" ? fallbackOrOptions : undefined;
       const options =
         (typeof fallbackOrOptions === "object" && fallbackOrOptions !== null
           ? fallbackOrOptions
@@ -130,9 +122,7 @@ vi.mock("react-i18next", async () => {
       const optionRecord = options as Record<string, unknown>;
       return (
         lookup(key, namespaceList(ns), optionRecord) ??
-        (typeof optionRecord.defaultValue === "string"
-          ? optionRecord.defaultValue
-          : fallback) ??
+        (typeof optionRecord.defaultValue === "string" ? optionRecord.defaultValue : fallback) ??
         key
       );
     };
@@ -160,16 +150,13 @@ afterEach(({ task }) => {
     ].join("\n"),
   );
 
-  const bridge = (globalThis as HybridBridgeDiagnosticGlobal)
-    .__OCTOPUS_STUDIO_HYBRID_BRIDGE__;
+  const bridge = (globalThis as HybridBridgeDiagnosticGlobal).__OCTOPUS_STUDIO_HYBRID_BRIDGE__;
   if (!bridge) return;
 
   console.error(
     [
       "[hybrid.setup] Recent bridge event channels:",
-      JSON.stringify(
-        bridge.sentEvents.slice(-20).map((event) => event.channel),
-      ),
+      JSON.stringify(bridge.sentEvents.slice(-20).map((event) => event.channel)),
     ].join("\n"),
   );
 });

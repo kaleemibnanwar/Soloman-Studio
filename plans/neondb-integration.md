@@ -279,10 +279,7 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userTodos = await db
-    .select()
-    .from(todos)
-    .where(eq(todos.userId, session.user.id));
+  const userTodos = await db.select().from(todos).where(eq(todos.userId, session.user.id));
 
   return Response.json(userTodos);
 }
@@ -294,10 +291,7 @@ export async function POST(request: Request) {
   }
 
   const { title } = await request.json();
-  const [newTodo] = await db
-    .insert(todos)
-    .values({ title, userId: session.user.id })
-    .returning();
+  const [newTodo] = await db.insert(todos).values({ title, userId: session.user.id }).returning();
 
   return Response.json(newTodo, { status: 201 });
 }
@@ -338,10 +332,7 @@ export const authClient = createAuthClient("/api/auth");
 Neon Auth provides pre-built UI components for sign-in/sign-up:
 
 ```tsx
-import {
-  NeonAuthUIProvider,
-  AuthView,
-} from "@neondatabase/neon-js/auth/react/ui";
+import { NeonAuthUIProvider, AuthView } from "@neondatabase/neon-js/auth/react/ui";
 import { authClient } from "@/lib/auth-client";
 
 export function AuthPage() {

@@ -27,9 +27,7 @@ testWithRemoteCatalog(
     await po.page.getByTestId("model-picker").click();
     // Models appear directly in the flat tier list.
     await expect(po.page.getByText("GPT 5.2", { exact: true })).toBeVisible();
-    await expect(
-      po.page.getByText("GPT 5.2 Remote Only", { exact: true }),
-    ).toBeVisible();
+    await expect(po.page.getByText("GPT 5.2 Remote Only", { exact: true })).toBeVisible();
     await po.page
       .getByRole("menuitem", {
         name: /GPT 5\.2 Remote Only.*Effort: Minimal.*Right Arrow to configure effort/,
@@ -37,9 +35,7 @@ testWithRemoteCatalog(
       .locator("[data-effort-chevron]")
       .click();
     await po.page.getByText("Xhigh", { exact: true }).click();
-    await expect(po.page.getByTestId("model-picker")).toContainText(
-      "GPT 5.2 Remote Only (Xhigh)",
-    );
+    await expect(po.page.getByTestId("model-picker")).toContainText("GPT 5.2 Remote Only (Xhigh)");
     await po.sendPrompt("[dump] tc=basic");
     await po.snapshotServerDump("request", {
       name: "remote-catalog-effort",
@@ -48,18 +44,10 @@ testWithRemoteCatalog(
     await po.navigation.goToLibraryTab();
     await po.page.getByRole("link", { name: "Themes" }).click();
     await po.page.getByRole("button", { name: "New Theme" }).click();
-    await expect(
-      po.page.getByRole("dialog").getByText("Create Custom Theme"),
-    ).toBeVisible();
-    await expect(
-      po.page.getByText("Google Remote", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      po.page.getByText("Anthropic Remote", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      po.page.getByText("OpenAI Remote", { exact: true }),
-    ).toBeVisible();
+    await expect(po.page.getByRole("dialog").getByText("Create Custom Theme")).toBeVisible();
+    await expect(po.page.getByText("Google Remote", { exact: true })).toBeVisible();
+    await expect(po.page.getByText("Anthropic Remote", { exact: true })).toBeVisible();
+    await expect(po.page.getByText("OpenAI Remote", { exact: true })).toBeVisible();
   },
 );
 
@@ -71,25 +59,15 @@ testWithFallbackCatalog(
     await po.page.getByTestId("model-picker").click();
     // Models appear directly in the flat tier list.
     await expect(po.page.getByText("GPT 5.2", { exact: true })).toBeVisible();
-    await expect(
-      po.page.getByText("GPT 5.2 Remote Only", { exact: true }),
-    ).not.toBeVisible();
-    await expect(
-      po.page.getByText("GPT 5.2 Remote", { exact: true }),
-    ).not.toBeVisible();
+    await expect(po.page.getByText("GPT 5.2 Remote Only", { exact: true })).not.toBeVisible();
+    await expect(po.page.getByText("GPT 5.2 Remote", { exact: true })).not.toBeVisible();
 
     await po.navigation.goToLibraryTab();
     await po.page.getByRole("link", { name: "Themes" }).click();
     await po.page.getByRole("button", { name: "New Theme" }).click();
-    await expect(
-      po.page.getByRole("dialog").getByText("Create Custom Theme"),
-    ).toBeVisible();
+    await expect(po.page.getByRole("dialog").getByText("Create Custom Theme")).toBeVisible();
     await expect(po.page.getByText("Google", { exact: true })).toBeVisible();
-    await expect(
-      po.page.getByText("Anthropic Remote", { exact: true }),
-    ).not.toBeVisible();
-    await expect(
-      po.page.getByText("OpenAI Remote", { exact: true }),
-    ).not.toBeVisible();
+    await expect(po.page.getByText("Anthropic Remote", { exact: true })).not.toBeVisible();
+    await expect(po.page.getByText("OpenAI Remote", { exact: true })).not.toBeVisible();
   },
 );

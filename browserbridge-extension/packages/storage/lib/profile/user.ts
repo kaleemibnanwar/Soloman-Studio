@@ -1,6 +1,6 @@
-import { StorageEnum } from '../base/enums';
-import { createStorage } from '../base/base';
-import type { BaseStorage } from '../base/types';
+import { StorageEnum } from "../base/enums";
+import { createStorage } from "../base/base";
+import type { BaseStorage } from "../base/types";
 
 // Interface for user profile configuration
 export interface UserProfile {
@@ -16,10 +16,10 @@ export type UserStorage = BaseStorage<UserProfile> & {
 
 // Default profile
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  userId: 'unknown',
+  userId: "unknown",
 };
 
-const storage = createStorage<UserProfile>('user-profile', DEFAULT_USER_PROFILE, {
+const storage = createStorage<UserProfile>("user-profile", DEFAULT_USER_PROFILE, {
   storageEnum: StorageEnum.Local,
   liveUpdate: true,
 });

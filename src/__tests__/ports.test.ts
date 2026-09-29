@@ -15,9 +15,7 @@ describe("ports", () => {
     // must start at or above the top so it never steals another app's slot.
     expect(PROXY_FALLBACK_PORT_START).toBe(PROXY_PORT_BASE + PROXY_PORT_RANGE);
     expect(getAppProxyPort(0)).toBe(PROXY_PORT_BASE);
-    expect(getAppProxyPort(PROXY_PORT_RANGE - 1)).toBeLessThan(
-      PROXY_FALLBACK_PORT_START,
-    );
+    expect(getAppProxyPort(PROXY_PORT_RANGE - 1)).toBeLessThan(PROXY_FALLBACK_PORT_START);
   });
 
   it("keeps proxy ports in a separate range for negative app IDs", () => {

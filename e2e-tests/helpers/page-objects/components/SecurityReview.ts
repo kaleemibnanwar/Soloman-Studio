@@ -14,9 +14,7 @@ export class SecurityReview {
   }
 
   async clickRunSecurityReview() {
-    const runSecurityReviewButton = this.page
-      .getByRole("button", { name: "Run review" })
-      .first();
+    const runSecurityReviewButton = this.page.getByRole("button", { name: "Run review" }).first();
     await runSecurityReviewButton.click();
     // Wait for the "Running review..." button to appear and then disappear
     // This indicates the security review has completed
@@ -29,8 +27,6 @@ export class SecurityReview {
   }
 
   async snapshotSecurityFindingsTable() {
-    await expect(
-      this.page.getByTestId("security-findings-table"),
-    ).toMatchAriaSnapshot();
+    await expect(this.page.getByTestId("security-findings-table")).toMatchAriaSnapshot();
   }
 }

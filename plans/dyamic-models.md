@@ -258,9 +258,7 @@ type ResolvedBuiltinModel = {
   apiName: string;
 };
 
-async function resolveBuiltinModelAlias(
-  aliasId: string,
-): Promise<ResolvedBuiltinModel | null>;
+async function resolveBuiltinModelAlias(aliasId: string): Promise<ResolvedBuiltinModel | null>;
 ```
 
 ### 5. Migrate theme generator to alias-based options

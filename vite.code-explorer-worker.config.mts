@@ -13,21 +13,13 @@ export default defineConfig({
   build: {
     sourcemap: true,
     lib: {
-      entry: path.resolve(
-        __dirname,
-        "workers/code_explorer/code_explorer_worker.ts",
-      ),
+      entry: path.resolve(__dirname, "workers/code_explorer/code_explorer_worker.ts"),
       name: "code_explorer_worker",
       fileName: "code_explorer_worker",
       formats: ["cjs"],
     },
     rollupOptions: {
-      external: [
-        ...nodeBuiltins,
-        "typescript",
-        "@typescript/typescript6",
-        "@typescript/old",
-      ],
+      external: [...nodeBuiltins, "typescript", "@typescript/typescript6", "@typescript/old"],
     },
   },
 });

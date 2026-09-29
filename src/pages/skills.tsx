@@ -52,8 +52,7 @@ export default function SkillsPage() {
   const [saving, setSaving] = useState(false);
   const [deletingSkill, setDeletingSkill] = useState<Skill | null>(null);
 
-  const patch = (partial: Partial<SkillFormState>) =>
-    setForm((prev) => ({ ...prev, ...partial }));
+  const patch = (partial: Partial<SkillFormState>) => setForm((prev) => ({ ...prev, ...partial }));
 
   const openCreate = () => {
     setEditingSkill(null);
@@ -80,8 +79,8 @@ export default function SkillsPage() {
     try {
       if (editingSkill) {
         await ipc.skill.updateSkill({
-          skillId: editingSkill.id,
-          name: form.name.trim(),
+          name: editingSkill.name,
+          newName: form.name.trim(),
           description: form.description.trim(),
           instructions: form.instructions.trim(),
         });
@@ -97,9 +96,7 @@ export default function SkillsPage() {
       setDialogOpen(false);
       // The invalidation bus refreshes the list automatically.
     } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to save skill",
-      );
+      showError(error instanceof Error ? error.message : "Failed to save skill");
     } finally {
       setSaving(false);
     }
@@ -108,13 +105,20 @@ export default function SkillsPage() {
   const handleDelete = async () => {
     if (!deletingSkill) return;
     try {
-      await ipc.skill.deleteSkill(deletingSkill.id);
+      await ipc.skill.deleteSkill(deletingSkill.name);
       showSuccess("Skill deleted");
       setDeletingSkill(null);
     } catch (error) {
-      showError(
-        error instanceof Error ? error.message : "Failed to delete skill",
-      );
+      showError(error instanceof Error ? error.message : "Failed to delete skill");
+    }
+  };
+
+  const openSkillsFolder = async () => {
+    try {
+      const dir = await ipc.skill.getSkillsDir();
+      await ipc.system.showItemInFolder(dir);
+    } catch (error) {
+      showError(error instanceof Error ? error.message : "Failed to open skills folder");
     }
   };
 
@@ -128,7 +132,14 @@ export default function SkillsPage() {
           size="page"
           eyebrow="Library"
           title="Skills"
-          action={<Button onClick={openCreate}>New skill</Button>}
+          action={
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={openSkillsFolder}>
+                Open folder
+              </Button>
+              <Button onClick={openCreate}>New skill</Button>
+            </div>
+          }
         />
 
         <p className="mb-6 text-sm text-muted-foreground">
@@ -145,12 +156,8 @@ export default function SkillsPage() {
           <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
             <Sparkles className="size-7" />
             <div>
-              <p className="text-sm font-medium text-foreground">
-                No skills yet
-              </p>
-              <p className="mt-1 text-xs">
-                Create one, or ask the agent to save one for you.
-              </p>
+              <p className="text-sm font-medium text-foreground">No skills yet</p>
+              <p className="mt-1 text-xs">Create one, or ask the agent to save one for you.</p>
             </div>
             <Button onClick={openCreate} className="mt-2">
               New skill
@@ -160,7 +167,7 @@ export default function SkillsPage() {
           <div className="flex flex-col gap-2">
             {skills.map((skill) => (
               <div
-                key={skill.id}
+                key={skill.name}
                 className="flex items-start justify-between gap-3 rounded-lg border border-border p-3"
               >
                 <div className="min-w-0 flex-1">
@@ -172,12 +179,7 @@ export default function SkillsPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Edit"
-                    onClick={() => openEdit(skill)}
-                  >
+                  <Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(skill)}>
                     <Pencil size={15} />
                   </Button>
                   <Button
@@ -198,9 +200,7 @@ export default function SkillsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {editingSkill ? "Edit skill" : "New skill"}
-            </DialogTitle>
+            <DialogTitle>{editingSkill ? "Edit skill" : "New skill"}</DialogTitle>
             <DialogDescription>
               A name, when to use it, and the full instructions to follow.
             </DialogDescription>
@@ -217,15 +217,12 @@ export default function SkillsPage() {
               />
               <p className="text-xs text-muted-foreground">
                 Lowercase, hyphenated — this is what you type after{" "}
-                <code className="font-mono">/</code> and what the agent calls
-                it by.
+                <code className="font-mono">/</code> and what the agent calls it by.
               </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="skill-description">
-                When should the agent use this?
-              </Label>
+              <Label htmlFor="skill-description">When should the agent use this?</Label>
               <Textarea
                 id="skill-description"
                 rows={2}
@@ -253,11 +250,7 @@ export default function SkillsPage() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving
-                ? "Saving..."
-                : editingSkill
-                  ? "Save changes"
-                  : "Create skill"}
+              {saving ? "Saving..." : editingSkill ? "Save changes" : "Create skill"}
             </Button>
           </DialogFooter>
         </DialogContent>

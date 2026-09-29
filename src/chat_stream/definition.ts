@@ -4,10 +4,7 @@ import { db } from "@/db";
 import { chats } from "@/db/schema";
 import type { DistributedMachineDefinition } from "@/distributed_machines/definition";
 import { REMOTE_MACHINE_PROTOCOL_VERSION } from "@/distributed_machines/remote_protocol";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   cancelActiveStreamsForChat,
   clearPendingActorStreamCancellation,
@@ -59,10 +56,7 @@ async function requireExistingChat(chatId: number): Promise<number> {
     .where(eq(chats.id, chatId))
     .get();
   if (!chat) {
-    throw new OctopusStudioError(
-      `Chat not found: ${chatId}`,
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError(`Chat not found: ${chatId}`, OctopusStudioErrorKind.Auth);
   }
   return chat.appId;
 }
@@ -113,10 +107,7 @@ function createCommandRunner(
     try {
       return loadChatQueue(db, context.key.chatId);
     } catch (error) {
-      console.error(
-        "[chat-stream] Failed to reload authoritative queue",
-        error,
-      );
+      console.error("[chat-stream] Failed to reload authoritative queue", error);
       const snapshot = context.getSnapshot();
       return {
         queueRevision: snapshot.queueRevision,
@@ -185,8 +176,7 @@ function createCommandRunner(
           if (
             current.phase === "cancelling" &&
             current.active?.intent.intentId === command.intent.intentId &&
-            current.active.invocationRef.operationId ===
-              invocationRef.operationId
+            current.active.invocationRef.operationId === invocationRef.operationId
           ) {
             emit({
               type: "STREAM_ENDED",
@@ -291,8 +281,7 @@ function createCommandRunner(
             const active = context.getSnapshot().active;
             if (!active) return;
             const targetAppId =
-              active.targetAppId ??
-              (await requireExistingChat(context.key.chatId));
+              active.targetAppId ?? (await requireExistingChat(context.key.chatId));
             emit({
               type: "STREAM_ENDED",
               intentId: active.intent.intentId,
@@ -357,8 +346,7 @@ function createCommandRunner(
             db,
             active.intent,
             command.response?.pausePromptQueue === true,
-            command.error !== undefined ||
-              command.response?.wasCancelled === true,
+            command.error !== undefined || command.response?.wasCancelled === true,
           );
           publishChatInvalidations(context.key.chatId, active.targetAppId);
           emit({
@@ -407,10 +395,7 @@ function createCommandRunner(
             return;
           }
           const phaseBeforeDispatch = context.getSnapshot().phase;
-          if (
-            phaseBeforeDispatch !== "idle" &&
-            phaseBeforeDispatch !== "errored"
-          ) {
+          if (phaseBeforeDispatch !== "idle" && phaseBeforeDispatch !== "errored") {
             const queue = await restoreClaimedQueueHead(
               db,
               context.key.chatId,
@@ -447,9 +432,7 @@ export const chatStreamDefinition = {
     // Authorization can finish just before deletion installs its fence. Keep
     // the creation boundary fenced too so that race cannot recreate the actor.
     assertChatActorAdmissionOpen(key.chatId);
-    return initialChatStreamHostState(
-      hydrateChatStreamPersistence(db, key.chatId),
-    );
+    return initialChatStreamHostState(hydrateChatStreamPersistence(db, key.chatId));
   },
   transition: (state, event) => transitionChatStreamHost(state, event),
   createScheduler: () => ({
@@ -496,9 +479,7 @@ export const chatStreamDefinition = {
       projectSnapshot(state, key.chatId, metadata.snapshotRevision),
     unavailableSnapshot: (key) => unavailableChatStreamSnapshot(key.chatId),
     revisionPolicy: (event) =>
-      event.type === "SUBMIT" || event.type === "CANCEL"
-        ? "allow-stale"
-        : "reject-stale",
+      event.type === "SUBMIT" || event.type === "CANCEL" ? "allow-stale" : "reject-stale",
     authorizeSubscribe: async ({ key }) => {
       assertChatActorAdmissionOpen(key.chatId, OctopusStudioErrorKind.Auth);
       await requireExistingChat(key.chatId);
@@ -541,8 +522,7 @@ export const chatStreamDefinition = {
       if (
         event.type === "CANCEL" &&
         (!currentState?.active ||
-          currentState.active.invocationRef.operationId !==
-            event.invocationRef.operationId)
+          currentState.active.invocationRef.operationId !== event.invocationRef.operationId)
       ) {
         throw new OctopusStudioError(
           "Cancellation does not target the active chat stream",

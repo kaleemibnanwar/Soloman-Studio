@@ -1,5 +1,5 @@
-import { dereferenceJsonSchema, stringifyCustom } from '../lib/helper.js';
-import { jsonNavigatorOutputSchema } from '../lib/json_schema.js';
+import { dereferenceJsonSchema, stringifyCustom } from "../lib/helper.js";
+import { jsonNavigatorOutputSchema } from "../lib/json_schema.js";
 
 /**
  * This example demonstrates how to flatten the jsonNavigatorOutputSchema
@@ -7,18 +7,18 @@ import { jsonNavigatorOutputSchema } from '../lib/json_schema.js';
  */
 
 // Flatten the schema by dereferencing all references
-console.log('Flattening jsonNavigatorOutputSchema...');
+console.log("Flattening jsonNavigatorOutputSchema...");
 const flattenedSchema = dereferenceJsonSchema(jsonNavigatorOutputSchema);
 
 // Pretty print the flattened schema using the custom function
-console.log('Flattened Schema (Custom Format):');
+console.log("Flattened Schema (Custom Format):");
 console.log(stringifyCustom(flattenedSchema));
 
 // You can also see the size difference
 const originalSize = JSON.stringify(jsonNavigatorOutputSchema).length;
 const flattenedSize = JSON.stringify(flattenedSchema).length;
 
-console.log('\nSize comparison:');
+console.log("\nSize comparison:");
 console.log(`Original schema size: ${originalSize} bytes`);
 console.log(`Flattened schema size: ${flattenedSize} bytes`);
 console.log(

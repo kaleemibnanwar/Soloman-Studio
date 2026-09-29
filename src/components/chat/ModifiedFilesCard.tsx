@@ -54,10 +54,7 @@ export function ModifiedFilesCard({
   const statsByPath = useMemo(() => {
     const map = new Map<string, ReturnType<typeof computeLineDiffStats>>();
     for (const file of changes ?? []) {
-      map.set(
-        file.path,
-        computeLineDiffStats(file.oldContent, file.newContent),
-      );
+      map.set(file.path, computeLineDiffStats(file.oldContent, file.newContent));
     }
     return map;
   }, [changes]);
@@ -81,8 +78,7 @@ export function ModifiedFilesCard({
 
   // Undo and Retry both revert/replace the same last generation, so while either
   // is in flight both are disabled to prevent overlapping operations.
-  const actionsDisabled =
-    isUndoLoading || isRetryLoading || isAnyVersionMutationPending;
+  const actionsDisabled = isUndoLoading || isRetryLoading || isAnyVersionMutationPending;
 
   const footer = (
     <div className="px-3 py-2 flex justify-end gap-2">
@@ -94,11 +90,7 @@ export function ModifiedFilesCard({
         onClick={onUndo}
         className="gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:border-border cursor-pointer transition-colors disabled:cursor-not-allowed"
       >
-        {isUndoLoading ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <Undo size={16} />
-        )}
+        {isUndoLoading ? <Loader2 size={16} className="animate-spin" /> : <Undo size={16} />}
         Undo
       </Button>
       <Button
@@ -109,11 +101,7 @@ export function ModifiedFilesCard({
         onClick={onRetry}
         className="gap-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:border-border cursor-pointer transition-colors disabled:cursor-not-allowed"
       >
-        {isRetryLoading ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <RefreshCw size={16} />
-        )}
+        {isRetryLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
         Retry
       </Button>
     </div>
@@ -128,9 +116,7 @@ export function ModifiedFilesCard({
         {hasChanges && (
           <div className="px-3 py-2 text-sm font-medium">
             Modified files{" "}
-            <span className="text-muted-foreground font-normal">
-              ({changes.length})
-            </span>
+            <span className="text-muted-foreground font-normal">({changes.length})</span>
           </div>
         )}
         {hasChanges && (
@@ -158,9 +144,7 @@ export function ModifiedFilesCard({
                     {meta.label}
                   </span>
                   <span className="min-w-0 flex-1 truncate">
-                    {dir && (
-                      <span className="text-muted-foreground">{dir}</span>
-                    )}
+                    {dir && <span className="text-muted-foreground">{dir}</span>}
                     <span className="font-medium">{name}</span>
                   </span>
                   {stats && (
@@ -171,9 +155,7 @@ export function ModifiedFilesCard({
                         </span>
                       )}
                       {stats.deletions > 0 && (
-                        <span className="text-red-600 dark:text-red-400">
-                          -{stats.deletions}
-                        </span>
+                        <span className="text-red-600 dark:text-red-400">-{stats.deletions}</span>
                       )}
                     </span>
                   )}

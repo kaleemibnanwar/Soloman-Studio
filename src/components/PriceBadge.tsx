@@ -1,38 +1,25 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-const PILL_BASE =
-  "text-[10px] leading-none px-1.5 py-1 rounded-full font-medium";
+const PILL_BASE = "text-[10px] leading-none px-1.5 py-1 rounded-full font-medium";
 
 function HalfDollar() {
   return (
     <span className="relative inline-block align-baseline" aria-hidden="true">
       <span className="opacity-30">$</span>
-      <span
-        className="absolute inset-0"
-        style={{ clipPath: "inset(0 35% 0 0)" }}
-      >
+      <span className="absolute inset-0" style={{ clipPath: "inset(0 35% 0 0)" }}>
         $
       </span>
     </span>
   );
 }
 
-export function PriceBadge({
-  dollarSigns,
-}: {
-  dollarSigns: number | undefined;
-}) {
+export function PriceBadge({ dollarSigns }: { dollarSigns: number | undefined }) {
   if (dollarSigns === undefined || dollarSigns === null) return null;
 
   if (dollarSigns === 0) {
     return (
-      <span
-        className={cn(
-          PILL_BASE,
-          "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-        )}
-      >
+      <span className={cn(PILL_BASE, "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")}>
         Free
       </span>
     );

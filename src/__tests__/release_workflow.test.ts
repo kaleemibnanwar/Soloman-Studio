@@ -9,10 +9,7 @@ describe("release workflow", () => {
     "verifies the draft inside the write-scoped publish job with %j line endings",
     (lineEnding) => {
       const workflow = fs
-        .readFileSync(
-          path.join(process.cwd(), ".github/workflows/release.yml"),
-          "utf8",
-        )
+        .readFileSync(path.join(process.cwd(), ".github/workflows/release.yml"), "utf8")
         .replace(/\r?\n/g, lineEnding);
       const publishJob = workflow.slice(workflow.indexOf("  publish:"));
 

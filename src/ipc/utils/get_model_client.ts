@@ -21,10 +21,7 @@ import { FREE_OPENROUTER_MODEL_NAMES } from "../shared/language_model_constants"
 import { getLanguageModelProviders } from "../shared/language_model_helpers";
 import { resolveBuiltinModelAlias } from "../shared/remote_language_model_catalog";
 import { LanguageModelProvider } from "@/ipc/types";
-import {
-  createOctopusStudioEngine,
-  type OctopusStudioEngineProvider,
-} from "./llm_engine_provider";
+import { createOctopusStudioEngine, type OctopusStudioEngineProvider } from "./llm_engine_provider";
 
 import { getLmStudioBaseUrl } from "./lm_studio_utils";
 import { createOllamaProvider } from "./ollama_provider";
@@ -32,10 +29,7 @@ import { getOllamaApiUrl } from "../handlers/local_model_ollama_handler";
 import { createFallback } from "./fallback_ai_model";
 import { getOctopusStudioEngineBaseUrl } from "./octopus_studio_engine_url";
 import { getTestFetchOption } from "./test_fetch_override";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   findInvalidProviderApiKeyCharacter,
   formatInvalidProviderApiKeyMessage,
@@ -72,6 +66,14 @@ export interface ModelClient {
   model: LanguageModel;
   builtinProviderId?: string;
   reasoningEffortProviderId?: string;
+  /**
+   * True when the provider supports Anthropic-style `cache_control` breakpoints.
+   * Currently only direct Anthropic. MiniMax's Anthropic-compatible endpoint
+   * (api.minimax.io/anthropic) and Bedrock's Anthropic models support the same
+   * mechanism, but they're routed here through OpenAI-compatible / Bedrock
+   * providers whose `providerOptions` keys differ, so they aren't flagged yet.
+   */
+  supportsCacheControl?: boolean;
 }
 
 const logger = log.scope("getModelClient");
@@ -89,16 +91,12 @@ export async function getModelClient(
     modelSelectionOverride ??
     (await resolveModelSelection({
       model,
-      preferredEffortLevel:
-        settings.modelEffortPreferences?.[getModelPreferenceKey(model)],
+      preferredEffortLevel: settings.modelEffortPreferences?.[getModelPreferenceKey(model)],
     }));
   const allProviders = await getLanguageModelProviders();
 
   const octopusStudioApiKey = settings.enableOctopusStudioPro
-    ? getProviderApiKeyForRequest(
-        settings.providerSettings?.auto?.apiKey?.value,
-        "OctopusStudio",
-      )
+    ? getProviderApiKeyForRequest(settings.providerSettings?.auto?.apiKey?.value, "OctopusStudio")
     : undefined;
   const isOctopusStudioProEnabledForRequest = Boolean(
     octopusStudioApiKey && settings.enableOctopusStudioPro,
@@ -114,10 +112,7 @@ export async function getModelClient(
     );
   }
 
-  if (
-    isFreeProModel(model) &&
-    (!settings.enableOctopusStudioPro || !octopusStudioApiKey)
-  ) {
+  if (isFreeProModel(model) && (!settings.enableOctopusStudioPro || !octopusStudioApiKey)) {
     throw new OctopusStudioError(
       "OctopusStudio Free requires an active OctopusStudio Pro API key. Switch to another model or enable OctopusStudio Pro.",
       OctopusStudioErrorKind.Auth,
@@ -141,8 +136,7 @@ export async function getModelClient(
           enableLazyEdits:
             settings.selectedChatMode === "ask"
               ? false
-              : settings.enableProLazyEditsMode &&
-                settings.proLazyEditsMode !== "v2",
+              : settings.enableProLazyEditsMode && settings.proLazyEditsMode !== "v2",
           enableSmartFilesContext,
           enableWebSearch: settings.enableProWebSearch,
         },
@@ -182,9 +176,7 @@ export async function getModelClient(
   // Handle 'auto' provider by trying each model in AUTO_MODELS until one works
   if (model.provider === "auto") {
     if (model.name === "free") {
-      const openRouterProvider = allProviders.find(
-        (p) => p.id === "openrouter",
-      );
+      const openRouterProvider = allProviders.find((p) => p.id === "openrouter");
       if (!openRouterProvider) {
         throw new OctopusStudioError(
           "OpenRouter provider not found",
@@ -214,9 +206,7 @@ export async function getModelClient(
         continue;
       }
 
-      const providerInfo = allProviders.find(
-        (p) => p.id === resolvedModel.providerId,
-      );
+      const providerInfo = allProviders.find((p) => p.id === resolvedModel.providerId);
       const envVarName = providerInfo?.envVarName;
 
       const apiKey = getProviderApiKeyForRequest(
@@ -226,9 +216,7 @@ export async function getModelClient(
       );
 
       if (apiKey) {
-        logger.log(
-          `Using provider: ${resolvedModel.providerId} model: ${resolvedModel.apiName}`,
-        );
+        logger.log(`Using provider: ${resolvedModel.providerId} model: ${resolvedModel.apiName}`);
         if (
           resolvedModel.providerId === "openrouter" &&
           !isOctopusStudioProEnabledForRequest &&
@@ -254,9 +242,7 @@ export async function getModelClient(
       }
     }
     // If no models have API keys, throw an error
-    throw new Error(
-      "No API keys available for any model supported by the 'auto' provider.",
-    );
+    throw new Error("No API keys available for any model supported by the 'auto' provider.");
   }
   return getRegularModelClient(model, settings, providerConfig);
 }
@@ -270,19 +256,14 @@ function getOpenRouterAutoFallbackModelClient({
   settings: UserSettings;
   providerConfig: LanguageModelProvider;
 }): ModelClient {
-  const modelNames = Array.from(
-    new Set([primaryModelName, OPENROUTER_FREE_MODEL_NAME]),
-  );
+  const modelNames = Array.from(new Set([primaryModelName, OPENROUTER_FREE_MODEL_NAME]));
 
   return {
     model: createFallback({
       models: modelNames.map(
         (name) =>
-          getRegularModelClient(
-            { provider: "openrouter", name },
-            settings,
-            providerConfig,
-          ).modelClient.model,
+          getRegularModelClient({ provider: "openrouter", name }, settings, providerConfig)
+            .modelClient.model,
       ),
     }),
     builtinProviderId: "openrouter",
@@ -325,9 +306,7 @@ async function getProModelClient({
         const resolvedProvider = providers.find(
           (providerInfo) => providerInfo.id === resolvedModel.providerId,
         );
-        const resolvedModelId = `${
-          resolvedProvider?.gatewayPrefix || ""
-        }${resolvedModel.apiName}`;
+        const resolvedModelId = `${resolvedProvider?.gatewayPrefix || ""}${resolvedModel.apiName}`;
 
         if (resolvedModel.providerId === "openai") {
           return provider.responses(resolvedModel.apiName, {
@@ -347,9 +326,7 @@ async function getProModelClient({
       }),
     );
 
-    const validModels = fallbackModels.filter(
-      (candidate) => candidate !== null,
-    );
+    const validModels = fallbackModels.filter((candidate) => candidate !== null);
     if (validModels.length === 0) {
       throw new OctopusStudioError(
         "No auto-mode models could be resolved from the catalog",
@@ -369,10 +346,7 @@ async function getProModelClient({
       builtinProviderId: "openai",
     };
   }
-  if (
-    settings.selectedChatMode === "local-agent" &&
-    model.provider === "openai"
-  ) {
+  if (settings.selectedChatMode === "local-agent" && model.provider === "openai") {
     return {
       model: provider.responses(modelId, { providerId: model.provider }),
       builtinProviderId: model.provider,
@@ -406,9 +380,7 @@ function getRegularModelClient(
       ? undefined
       : getProviderApiKeyForRequest(
           settings.providerSettings?.[model.provider]?.apiKey?.value ||
-            (providerConfig.envVarName
-              ? getEnvVar(providerConfig.envVarName)
-              : undefined),
+            (providerConfig.envVarName ? getEnvVar(providerConfig.envVarName) : undefined),
           providerConfig.name ?? providerConfig.id,
         );
   // Create client based on provider ID or type
@@ -435,6 +407,7 @@ function getRegularModelClient(
         modelClient: {
           model: provider(model.name),
           builtinProviderId: providerId,
+          supportsCacheControl: true,
         },
         backupModelClients: [],
       };
@@ -467,9 +440,7 @@ function getRegularModelClient(
     }
     case "vertex": {
       // Vertex uses Google service account credentials with project/location
-      const vertexSettings = settings.providerSettings?.[
-        model.provider
-      ] as VertexProviderSetting;
+      const vertexSettings = settings.providerSettings?.[model.provider] as VertexProviderSetting;
       const project = vertexSettings?.projectId;
       const location = vertexSettings?.location;
       const serviceAccountKey = vertexSettings?.serviceAccountKey?.value;
@@ -496,9 +467,7 @@ function getRegularModelClient(
           // publishers/google/models/<model>. For partner MaaS models the
           // full publisher path is already included.
           model: provider(
-            model.name.includes("/")
-              ? model.name
-              : `publishers/google/models/${model.name}`,
+            model.name.includes("/") ? model.name : `publishers/google/models/${model.name}`,
           ),
           builtinProviderId: providerId,
         },
@@ -543,19 +512,11 @@ function getRegularModelClient(
         };
       }
 
-      const azureSettings = settings.providerSettings?.azure as
-        | AzureProviderSetting
-        | undefined;
-      const azureApiKeyFromSettings = normalizeProviderApiKeyInput(
-        azureSettings?.apiKey?.value,
-      );
-      const azureResourceNameFromSettings = (
-        azureSettings?.resourceName ?? ""
-      ).trim();
+      const azureSettings = settings.providerSettings?.azure as AzureProviderSetting | undefined;
+      const azureApiKeyFromSettings = normalizeProviderApiKeyInput(azureSettings?.apiKey?.value);
+      const azureResourceNameFromSettings = (azureSettings?.resourceName ?? "").trim();
       const envResourceName = (getEnvVar("AZURE_RESOURCE_NAME") ?? "").trim();
-      const envAzureApiKey = normalizeProviderApiKeyInput(
-        getEnvVar("AZURE_API_KEY"),
-      );
+      const envAzureApiKey = normalizeProviderApiKeyInput(getEnvVar("AZURE_API_KEY"));
 
       const resourceName = azureResourceNameFromSettings || envResourceName;
       const azureApiKey = getProviderApiKeyForRequest(
@@ -656,9 +617,7 @@ function getRegularModelClient(
       // Handle custom providers
       if (providerConfig.type === "custom") {
         if (!providerConfig.apiBaseUrl) {
-          throw new Error(
-            `Custom provider ${model.provider} is missing the API Base URL.`,
-          );
+          throw new Error(`Custom provider ${model.provider} is missing the API Base URL.`);
         }
         // Assume custom providers are OpenAI compatible for now
         const provider = createOpenAICompatible({

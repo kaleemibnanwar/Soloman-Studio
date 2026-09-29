@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 import type {
   ConnectionFlowInvocationRef,
   ConnectionFlowProvider,
@@ -167,5 +162,4 @@ export const connectionFlowEvents = {
 // =============================================================================
 
 export const connectionFlowClient = createClient(connectionFlowContracts);
-export const connectionFlowEventClient =
-  createEventClient(connectionFlowEvents);
+export const connectionFlowEventClient = createEventClient(connectionFlowEvents);

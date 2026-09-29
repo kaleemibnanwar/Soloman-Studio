@@ -71,11 +71,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
           bg-card border rounded-lg overflow-hidden
           transform transition-all duration-300 ease-in-out
           cursor-pointer group relative
-          ${
-            isSelected
-              ? "ring-2 ring-primary"
-              : "hover:-translate-y-1"
-          }
+          ${isSelected ? "ring-2 ring-primary" : "hover:-translate-y-1"}
         `}
       >
         <div className="relative">
@@ -95,18 +91,14 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         <div className="p-4">
           <div className="flex justify-between items-center mb-1.5">
             <h2
-              className={`text-lg font-semibold ${
-                isSelected ? "text-primary" : "text-foreground"
-              }`}
+              className={`text-lg font-semibold ${isSelected ? "text-primary" : "text-foreground"}`}
             >
               {template.title}
             </h2>
             {template.isOfficial && !template.isExperimental && (
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  isSelected
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-primary/10 text-primary"
+                  isSelected ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
                 }`}
               >
                 Official
@@ -126,8 +118,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
               className="inline-flex items-center text-sm font-medium text-primary transition-opacity duration-200 hover:opacity-80"
               onClick={handleGithubClick}
             >
-              View on GitHub{" "}
-              <ArrowLeft className="w-4 h-4 ml-1 transform rotate-180" />
+              View on GitHub <ArrowLeft className="w-4 h-4 ml-1 transform rotate-180" />
             </a>
           )}
 

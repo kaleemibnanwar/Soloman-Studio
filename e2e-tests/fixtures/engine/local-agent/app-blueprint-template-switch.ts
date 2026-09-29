@@ -13,8 +13,7 @@ export const fixture: LocalAgentFixture = {
             user_prompt: "Build me a polished notes app",
             template_id: "react",
             theme_id: "default",
-            design_direction:
-              "Simple and professional with strong focus on readability.",
+            design_direction: "Simple and professional with strong focus on readability.",
             primary_color: "#2563EB",
             visuals: [
               {
@@ -28,10 +27,7 @@ export const fixture: LocalAgentFixture = {
       ],
     },
     {
-      text:
-        "Please review the app blueprint and approve it to continue. ".repeat(
-          100,
-        ),
+      text: "Please review the app blueprint and approve it to continue. ".repeat(100),
     },
   ],
 };

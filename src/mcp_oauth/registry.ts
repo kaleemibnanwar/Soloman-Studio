@@ -94,12 +94,7 @@ export interface McpOAuthRegistryOptions {
     invocationRef: McpOAuthInvocationRef,
     result: McpOAuthConnectResult,
   ) => void;
-  observer?: TransitionObserver<
-    McpOAuthState,
-    McpOAuthEvent,
-    never,
-    IgnoreReason
-  >;
+  observer?: TransitionObserver<McpOAuthState, McpOAuthEvent, never, IgnoreReason>;
 }
 
 export type McpOAuthRegistry = ReturnType<typeof createMcpOAuthRegistry>;
@@ -169,12 +164,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
     runtimes.delete(key);
     flowPorts.delete(key);
     activeInvocations.delete(invocationRef);
-    if (
-      sameInvocationRef(
-        activeByServer.get(runtime.serverId) ?? invocationRef,
-        invocationRef,
-      )
-    ) {
+    if (sameInvocationRef(activeByServer.get(runtime.serverId) ?? invocationRef, invocationRef)) {
       activeByServer.delete(runtime.serverId);
     }
     cancelTimeout(invocationRef);
@@ -183,20 +173,16 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
     options.onSettled?.(runtime.serverId, invocationRef, result);
   }
 
-  function closeListener(
-    port: number,
-    invocationRef: McpOAuthInvocationRef,
-  ): Promise<void> {
+  function closeListener(port: number, invocationRef: McpOAuthInvocationRef): Promise<void> {
     cancelTimeout(invocationRef);
     const key = keyOf(invocationRef);
     const listener = listeners.get(key);
     if (!listener) return closeBarriers.get(port) ?? Promise.resolve();
     listeners.delete(key);
     const closing = listener.close().catch(() => undefined);
-    const barrier = Promise.all([
-      closeBarriers.get(port) ?? Promise.resolve(),
-      closing,
-    ]).then(() => undefined);
+    const barrier = Promise.all([closeBarriers.get(port) ?? Promise.resolve(), closing]).then(
+      () => undefined,
+    );
     closeBarriers.set(port, barrier);
     void barrier.finally(() => {
       if (closeBarriers.get(port) === barrier) closeBarriers.delete(port);
@@ -222,10 +208,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
     return state.message;
   }
 
-  async function startBinding(
-    port: number,
-    identity: McpOAuthFlowIdentity,
-  ): Promise<void> {
+  async function startBinding(port: number, identity: McpOAuthFlowIdentity): Promise<void> {
     await (closeBarriers.get(port) ?? Promise.resolve());
     const current = getState(port);
     if (
@@ -269,10 +252,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
     }
   }
 
-  function startAwaitingEffects(
-    port: number,
-    identity: McpOAuthFlowIdentity,
-  ): void {
+  function startAwaitingEffects(port: number, identity: McpOAuthFlowIdentity): void {
     const key = keyOf(identity.invocationRef);
     timeoutHandles.set(
       key,
@@ -308,11 +288,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
     );
   }
 
-  function startExchange(
-    port: number,
-    invocationRef: McpOAuthInvocationRef,
-    code: string,
-  ): void {
+  function startExchange(port: number, invocationRef: McpOAuthInvocationRef, code: string): void {
     cancelTimeout(invocationRef);
     void closeListener(port, invocationRef);
     const runtime = runtimes.get(keyOf(invocationRef));
@@ -327,8 +303,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
               : {
                   type: "EXCHANGE_FAILED",
                   invocationRef,
-                  message:
-                    "OAuth completed without authorization; please try again.",
+                  message: "OAuth completed without authorization; please try again.",
                 },
           );
         },
@@ -388,11 +363,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
       startAwaitingEffects(port, state);
       return;
     }
-    if (
-      state.status === "exchanging" &&
-      event.type === "CALLBACK" &&
-      event.code
-    ) {
+    if (state.status === "exchanging" && event.type === "CALLBACK" && event.code) {
       startExchange(port, state.invocationRef, event.code);
       return;
     }
@@ -437,9 +408,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
     return true;
   }
 
-  function connect(
-    request: McpOAuthConnectRequest,
-  ): Promise<McpOAuthConnectResult> {
+  function connect(request: McpOAuthConnectRequest): Promise<McpOAuthConnectResult> {
     if (disposed) {
       request.onAbort();
       return Promise.resolve({
@@ -460,11 +429,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
           );
         }
 
-        const invocationRef = createInvocationRef(
-          MCP_OAUTH_INVOCATION_KIND,
-          request.serverId,
-          ids,
-        );
+        const invocationRef = createInvocationRef(MCP_OAUTH_INVOCATION_KIND, request.serverId, ids);
         let resolvePromise!: (result: McpOAuthConnectResult) => void;
         const promise = new Promise<McpOAuthConnectResult>((resolve) => {
           resolvePromise = resolve;
@@ -569,9 +534,7 @@ export function createMcpOAuthRegistry(options: McpOAuthRegistryOptions) {
 
   function cancelServer(serverId: number, reason: string): Promise<void> {
     const invocationRef = activeByServer.get(serverId);
-    return invocationRef
-      ? cancelInvocation(invocationRef, reason)
-      : Promise.resolve();
+    return invocationRef ? cancelInvocation(invocationRef, reason) : Promise.resolve();
   }
 
   async function dispose(): Promise<void> {

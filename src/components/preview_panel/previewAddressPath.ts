@@ -1,5 +1,4 @@
-export const PREVIEW_ADDRESS_PATH_ERROR =
-  "Enter a relative preview path like /about.";
+export const PREVIEW_ADDRESS_PATH_ERROR = "Enter a relative preview path like /about.";
 
 export type PreviewAddressPathNormalizationResult =
   | { type: "empty" }
@@ -42,9 +41,7 @@ export function sameOriginStartPath(
   return formatPreviewAddressPath(currentHistoryUrl) || undefined;
 }
 
-export function normalizePreviewAddressPath(
-  value: string,
-): PreviewAddressPathNormalizationResult {
+export function normalizePreviewAddressPath(value: string): PreviewAddressPathNormalizationResult {
   const trimmed = value.trim();
   if (!trimmed) {
     return { type: "empty" };
@@ -59,13 +56,10 @@ export function normalizePreviewAddressPath(
   }
 
   const path =
-    trimmed.startsWith("/") ||
-    trimmed.startsWith("?") ||
-    trimmed.startsWith("#")
+    trimmed.startsWith("/") || trimmed.startsWith("?") || trimmed.startsWith("#")
       ? trimmed
       : `/${trimmed}`;
-  const normalizedPath =
-    path.startsWith("?") || path.startsWith("#") ? `/${path}` : path;
+  const normalizedPath = path.startsWith("?") || path.startsWith("#") ? `/${path}` : path;
 
   try {
     const parsed = new URL(normalizedPath, "http://preview.local");

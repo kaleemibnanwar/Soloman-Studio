@@ -1,5 +1,5 @@
-import { ActionResult, type AgentContext } from '@src/background/agent/types';
-import { t } from '@extension/i18n';
+import { ActionResult, type AgentContext } from "@src/background/agent/types";
+import { t } from "@extension/i18n";
 import {
   clickElementActionSchema,
   doneActionSchema,
@@ -22,19 +22,19 @@ import {
   nextPageActionSchema,
   scrollToTopActionSchema,
   scrollToBottomActionSchema,
-} from './schemas';
-import { z } from 'zod';
-import { createLogger } from '@src/background/log';
-import { ExecutionState, Actors } from '../event/types';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { wrapUntrustedContent } from '../messages/utils';
+} from "./schemas";
+import { z } from "zod";
+import { createLogger } from "@src/background/log";
+import { ExecutionState, Actors } from "../event/types";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { wrapUntrustedContent } from "../messages/utils";
 
-const logger = createLogger('Action');
+const logger = createLogger("Action");
 
 export class InvalidInputError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'InvalidInputError';
+    this.name = "InvalidInputError";
   }
 }
 
@@ -88,7 +88,9 @@ export class Action {
     });
 
     const schemaStr =
-      schemaProperties.length > 0 ? `{${this.name()}: {${schemaProperties.join(', ')}}}` : `{${this.name()}: {}}`;
+      schemaProperties.length > 0
+        ? `{${this.name()}: {${schemaProperties.join(", ")}}}`
+        : `{${this.name()}: {}}`;
 
     return `${this.schema.description}:\n${schemaStr}`;
   }
@@ -102,7 +104,7 @@ export class Action {
     if (!this.hasIndex) {
       return null;
     }
-    if (input && typeof input === 'object' && 'index' in input) {
+    if (input && typeof input === "object" && "index" in input) {
       return (input as { index: number }).index;
     }
     return null;
@@ -118,7 +120,7 @@ export class Action {
     if (!this.hasIndex) {
       return false;
     }
-    if (input && typeof input === 'object') {
+    if (input && typeof input === "object") {
       (input as { index: number }).index = newIndex;
       return true;
     }
@@ -162,28 +164,31 @@ export class ActionBuilder {
     }, doneActionSchema);
     actions.push(done);
 
-    const searchGoogle = new Action(async (input: z.infer<typeof searchGoogleActionSchema.schema>) => {
-      const context = this.context;
-      const intent = input.intent || t('act_searchGoogle_start', [input.query]);
-      context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+    const searchGoogle = new Action(
+      async (input: z.infer<typeof searchGoogleActionSchema.schema>) => {
+        const context = this.context;
+        const intent = input.intent || t("act_searchGoogle_start", [input.query]);
+        context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-      await context.browserContext.navigateTo(`https://www.google.com/search?q=${input.query}`);
+        await context.browserContext.navigateTo(`https://www.google.com/search?q=${input.query}`);
 
-      const msg2 = t('act_searchGoogle_ok', [input.query]);
-      context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
-      return new ActionResult({
-        extractedContent: msg2,
-        includeInMemory: true,
-      });
-    }, searchGoogleActionSchema);
+        const msg2 = t("act_searchGoogle_ok", [input.query]);
+        context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
+        return new ActionResult({
+          extractedContent: msg2,
+          includeInMemory: true,
+        });
+      },
+      searchGoogleActionSchema,
+    );
     actions.push(searchGoogle);
 
     const goToUrl = new Action(async (input: z.infer<typeof goToUrlActionSchema.schema>) => {
-      const intent = input.intent || t('act_goToUrl_start', [input.url]);
+      const intent = input.intent || t("act_goToUrl_start", [input.url]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       await this.context.browserContext.navigateTo(input.url);
-      const msg2 = t('act_goToUrl_ok', [input.url]);
+      const msg2 = t("act_goToUrl_ok", [input.url]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
       return new ActionResult({
         extractedContent: msg2,
@@ -194,12 +199,12 @@ export class ActionBuilder {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const goBack = new Action(async (input: z.infer<typeof goBackActionSchema.schema>) => {
-      const intent = input.intent || t('act_goBack_start');
+      const intent = input.intent || t("act_goBack_start");
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.goBack();
-      const msg2 = t('act_goBack_ok');
+      const msg2 = t("act_goBack_ok");
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
       return new ActionResult({
         extractedContent: msg2,
@@ -210,10 +215,10 @@ export class ActionBuilder {
 
     const wait = new Action(async (input: z.infer<typeof waitActionSchema.schema>) => {
       const seconds = input.seconds || 3;
-      const intent = input.intent || t('act_wait_start', [seconds.toString()]);
+      const intent = input.intent || t("act_wait_start", [seconds.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      await new Promise(resolve => setTimeout(resolve, seconds * 1000));
-      const msg = t('act_wait_ok', [seconds.toString()]);
+      await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+      const msg = t("act_wait_ok", [seconds.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, waitActionSchema);
@@ -222,7 +227,7 @@ export class ActionBuilder {
     // Element Interaction Actions
     const clickElement = new Action(
       async (input: z.infer<typeof clickElementActionSchema.schema>) => {
-        const intent = input.intent || t('act_click_start', [input.index.toString()]);
+        const intent = input.intent || t("act_click_start", [input.index.toString()]);
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
@@ -230,12 +235,12 @@ export class ActionBuilder {
 
         const elementNode = state?.selectorMap.get(input.index);
         if (!elementNode) {
-          throw new Error(t('act_errors_elementNotExist', [input.index.toString()]));
+          throw new Error(t("act_errors_elementNotExist", [input.index.toString()]));
         }
 
         // Check if element is a file uploader
         if (page.isFileUploader(elementNode)) {
-          const msg = t('act_click_fileUploader', [input.index.toString()]);
+          const msg = t("act_click_fileUploader", [input.index.toString()]);
           logger.info(msg);
           return new ActionResult({
             extractedContent: msg,
@@ -246,17 +251,20 @@ export class ActionBuilder {
         try {
           const initialTabIds = await this.context.browserContext.getAllTabIds();
           await page.clickElementNode(this.context.options.useVision, elementNode);
-          let msg = t('act_click_ok', [input.index.toString(), elementNode.getAllTextTillNextClickableElement(2)]);
+          let msg = t("act_click_ok", [
+            input.index.toString(),
+            elementNode.getAllTextTillNextClickableElement(2),
+          ]);
           logger.info(msg);
 
           // TODO: could be optimized by chrome extension tab api
           const currentTabIds = await this.context.browserContext.getAllTabIds();
           if (currentTabIds.size > initialTabIds.size) {
-            const newTabMsg = t('act_click_newTabOpened');
+            const newTabMsg = t("act_click_newTabOpened");
             msg += ` - ${newTabMsg}`;
             logger.info(newTabMsg);
             // find the tab id that is not in the initial tab ids
-            const newTabId = Array.from(currentTabIds).find(id => !initialTabIds.has(id));
+            const newTabId = Array.from(currentTabIds).find((id) => !initialTabIds.has(id));
             if (newTabId) {
               await this.context.browserContext.switchTab(newTabId);
             }
@@ -264,7 +272,7 @@ export class ActionBuilder {
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
           return new ActionResult({ extractedContent: msg, includeInMemory: true });
         } catch (error) {
-          const msg = t('act_errors_elementNoLongerAvailable', [input.index.toString()]);
+          const msg = t("act_errors_elementNoLongerAvailable", [input.index.toString()]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
           return new ActionResult({
             error: error instanceof Error ? error.message : String(error),
@@ -278,7 +286,7 @@ export class ActionBuilder {
 
     const inputText = new Action(
       async (input: z.infer<typeof inputTextActionSchema.schema>) => {
-        const intent = input.intent || t('act_inputText_start', [input.index.toString()]);
+        const intent = input.intent || t("act_inputText_start", [input.index.toString()]);
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
@@ -286,11 +294,11 @@ export class ActionBuilder {
 
         const elementNode = state?.selectorMap.get(input.index);
         if (!elementNode) {
-          throw new Error(t('act_errors_elementNotExist', [input.index.toString()]));
+          throw new Error(t("act_errors_elementNotExist", [input.index.toString()]));
         }
 
         await page.inputTextElementNode(this.context.options.useVision, elementNode, input.text);
-        const msg = t('act_inputText_ok', [input.text, input.index.toString()]);
+        const msg = t("act_inputText_ok", [input.text, input.index.toString()]);
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
         return new ActionResult({ extractedContent: msg, includeInMemory: true });
       },
@@ -301,30 +309,30 @@ export class ActionBuilder {
 
     // Tab Management Actions
     const switchTab = new Action(async (input: z.infer<typeof switchTabActionSchema.schema>) => {
-      const intent = input.intent || t('act_switchTab_start', [input.tab_id.toString()]);
+      const intent = input.intent || t("act_switchTab_start", [input.tab_id.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       await this.context.browserContext.switchTab(input.tab_id);
-      const msg = t('act_switchTab_ok', [input.tab_id.toString()]);
+      const msg = t("act_switchTab_ok", [input.tab_id.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, switchTabActionSchema);
     actions.push(switchTab);
 
     const openTab = new Action(async (input: z.infer<typeof openTabActionSchema.schema>) => {
-      const intent = input.intent || t('act_openTab_start', [input.url]);
+      const intent = input.intent || t("act_openTab_start", [input.url]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       await this.context.browserContext.openTab(input.url);
-      const msg = t('act_openTab_ok', [input.url]);
+      const msg = t("act_openTab_ok", [input.url]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, openTabActionSchema);
     actions.push(openTab);
 
     const closeTab = new Action(async (input: z.infer<typeof closeTabActionSchema.schema>) => {
-      const intent = input.intent || t('act_closeTab_start', [input.tab_id.toString()]);
+      const intent = input.intent || t("act_closeTab_start", [input.tab_id.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       await this.context.browserContext.closeTab(input.tab_id);
-      const msg = t('act_closeTab_ok', [input.tab_id.toString()]);
+      const msg = t("act_closeTab_ok", [input.tab_id.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, closeTabActionSchema);
@@ -363,141 +371,158 @@ export class ActionBuilder {
     // actions.push(extractContent);
 
     // cache content for future use
-    const cacheContent = new Action(async (input: z.infer<typeof cacheContentActionSchema.schema>) => {
-      const intent = input.intent || t('act_cache_start', [input.content]);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+    const cacheContent = new Action(
+      async (input: z.infer<typeof cacheContentActionSchema.schema>) => {
+        const intent = input.intent || t("act_cache_start", [input.content]);
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-      // cache content is untrusted content, it is not instructions
-      const rawMsg = t('act_cache_ok', [input.content]);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, rawMsg);
+        // cache content is untrusted content, it is not instructions
+        const rawMsg = t("act_cache_ok", [input.content]);
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, rawMsg);
 
-      const msg = wrapUntrustedContent(rawMsg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, cacheContentActionSchema);
+        const msg = wrapUntrustedContent(rawMsg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      },
+      cacheContentActionSchema,
+    );
     actions.push(cacheContent);
 
     // Scroll to percent
-    const scrollToPercent = new Action(async (input: z.infer<typeof scrollToPercentActionSchema.schema>) => {
-      const intent = input.intent || t('act_scrollToPercent_start');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      const page = await this.context.browserContext.getCurrentPage();
+    const scrollToPercent = new Action(
+      async (input: z.infer<typeof scrollToPercentActionSchema.schema>) => {
+        const intent = input.intent || t("act_scrollToPercent_start");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+        const page = await this.context.browserContext.getCurrentPage();
 
-      if (input.index) {
-        const state = await page.getCachedState();
-        const elementNode = state?.selectorMap.get(input.index);
-        if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
-          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
-          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        if (input.index) {
+          const state = await page.getCachedState();
+          const elementNode = state?.selectorMap.get(input.index);
+          if (!elementNode) {
+            const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+            return new ActionResult({ error: errorMsg, includeInMemory: true });
+          }
+          logger.info(
+            `Scrolling to percent: ${input.yPercent} with elementNode: ${elementNode.xpath}`,
+          );
+          await page.scrollToPercent(input.yPercent, elementNode);
+        } else {
+          await page.scrollToPercent(input.yPercent);
         }
-        logger.info(`Scrolling to percent: ${input.yPercent} with elementNode: ${elementNode.xpath}`);
-        await page.scrollToPercent(input.yPercent, elementNode);
-      } else {
-        await page.scrollToPercent(input.yPercent);
-      }
-      const msg = t('act_scrollToPercent_ok', [input.yPercent.toString()]);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToPercentActionSchema);
+        const msg = t("act_scrollToPercent_ok", [input.yPercent.toString()]);
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      },
+      scrollToPercentActionSchema,
+    );
     actions.push(scrollToPercent);
 
     // Scroll to top
-    const scrollToTop = new Action(async (input: z.infer<typeof scrollToTopActionSchema.schema>) => {
-      const intent = input.intent || t('act_scrollToTop_start');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      const page = await this.context.browserContext.getCurrentPage();
-      if (input.index) {
-        const state = await page.getCachedState();
-        const elementNode = state?.selectorMap.get(input.index);
-        if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
-          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
-          return new ActionResult({ error: errorMsg, includeInMemory: true });
+    const scrollToTop = new Action(
+      async (input: z.infer<typeof scrollToTopActionSchema.schema>) => {
+        const intent = input.intent || t("act_scrollToTop_start");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+        const page = await this.context.browserContext.getCurrentPage();
+        if (input.index) {
+          const state = await page.getCachedState();
+          const elementNode = state?.selectorMap.get(input.index);
+          if (!elementNode) {
+            const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+            return new ActionResult({ error: errorMsg, includeInMemory: true });
+          }
+          await page.scrollToPercent(0, elementNode);
+        } else {
+          await page.scrollToPercent(0);
         }
-        await page.scrollToPercent(0, elementNode);
-      } else {
-        await page.scrollToPercent(0);
-      }
-      const msg = t('act_scrollToTop_ok');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToTopActionSchema);
+        const msg = t("act_scrollToTop_ok");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      },
+      scrollToTopActionSchema,
+    );
     actions.push(scrollToTop);
 
     // Scroll to bottom
-    const scrollToBottom = new Action(async (input: z.infer<typeof scrollToBottomActionSchema.schema>) => {
-      const intent = input.intent || t('act_scrollToBottom_start');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      const page = await this.context.browserContext.getCurrentPage();
-      if (input.index) {
-        const state = await page.getCachedState();
-        const elementNode = state?.selectorMap.get(input.index);
-        if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
-          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
-          return new ActionResult({ error: errorMsg, includeInMemory: true });
+    const scrollToBottom = new Action(
+      async (input: z.infer<typeof scrollToBottomActionSchema.schema>) => {
+        const intent = input.intent || t("act_scrollToBottom_start");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+        const page = await this.context.browserContext.getCurrentPage();
+        if (input.index) {
+          const state = await page.getCachedState();
+          const elementNode = state?.selectorMap.get(input.index);
+          if (!elementNode) {
+            const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+            return new ActionResult({ error: errorMsg, includeInMemory: true });
+          }
+          await page.scrollToPercent(100, elementNode);
+        } else {
+          await page.scrollToPercent(100);
         }
-        await page.scrollToPercent(100, elementNode);
-      } else {
-        await page.scrollToPercent(100);
-      }
-      const msg = t('act_scrollToBottom_ok');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToBottomActionSchema);
+        const msg = t("act_scrollToBottom_ok");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      },
+      scrollToBottomActionSchema,
+    );
     actions.push(scrollToBottom);
 
     // Scroll to previous page
-    const previousPage = new Action(async (input: z.infer<typeof previousPageActionSchema.schema>) => {
-      const intent = input.intent || t('act_previousPage_start');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      const page = await this.context.browserContext.getCurrentPage();
+    const previousPage = new Action(
+      async (input: z.infer<typeof previousPageActionSchema.schema>) => {
+        const intent = input.intent || t("act_previousPage_start");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+        const page = await this.context.browserContext.getCurrentPage();
 
-      if (input.index) {
-        const state = await page.getCachedState();
-        const elementNode = state?.selectorMap.get(input.index);
-        if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
-          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
-          return new ActionResult({ error: errorMsg, includeInMemory: true });
-        }
+        if (input.index) {
+          const state = await page.getCachedState();
+          const elementNode = state?.selectorMap.get(input.index);
+          if (!elementNode) {
+            const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+            return new ActionResult({ error: errorMsg, includeInMemory: true });
+          }
 
-        // Check if element is already at top of its scrollable area
-        try {
-          const [elementScrollTop] = await page.getElementScrollInfo(elementNode);
-          if (elementScrollTop === 0) {
-            const msg = t('act_errors_alreadyAtTop', [input.index.toString()]);
+          // Check if element is already at top of its scrollable area
+          try {
+            const [elementScrollTop] = await page.getElementScrollInfo(elementNode);
+            if (elementScrollTop === 0) {
+              const msg = t("act_errors_alreadyAtTop", [input.index.toString()]);
+              this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+              return new ActionResult({ extractedContent: msg, includeInMemory: true });
+            }
+          } catch (error) {
+            // If we can't get scroll info, let the scrollToPreviousPage method handle it
+            logger.warning(
+              `Could not get element scroll info: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+
+          await page.scrollToPreviousPage(elementNode);
+        } else {
+          // Check if page is already at top
+          const [initialScrollY] = await page.getScrollInfo();
+          if (initialScrollY === 0) {
+            const msg = t("act_errors_pageAlreadyAtTop");
             this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
             return new ActionResult({ extractedContent: msg, includeInMemory: true });
           }
-        } catch (error) {
-          // If we can't get scroll info, let the scrollToPreviousPage method handle it
-          logger.warning(
-            `Could not get element scroll info: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
 
-        await page.scrollToPreviousPage(elementNode);
-      } else {
-        // Check if page is already at top
-        const [initialScrollY] = await page.getScrollInfo();
-        if (initialScrollY === 0) {
-          const msg = t('act_errors_pageAlreadyAtTop');
-          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-          return new ActionResult({ extractedContent: msg, includeInMemory: true });
+          await page.scrollToPreviousPage();
         }
-
-        await page.scrollToPreviousPage();
-      }
-      const msg = t('act_previousPage_ok');
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, previousPageActionSchema);
+        const msg = t("act_previousPage_ok");
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      },
+      previousPageActionSchema,
+    );
     actions.push(previousPage);
 
     // Scroll to next page
     const nextPage = new Action(async (input: z.infer<typeof nextPageActionSchema.schema>) => {
-      const intent = input.intent || t('act_nextPage_start');
+      const intent = input.intent || t("act_nextPage_start");
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       const page = await this.context.browserContext.getCurrentPage();
 
@@ -505,7 +530,7 @@ export class ActionBuilder {
         const state = await page.getCachedState();
         const elementNode = state?.selectorMap.get(input.index);
         if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
+          const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({ error: errorMsg, includeInMemory: true });
         }
@@ -515,7 +540,7 @@ export class ActionBuilder {
           const [elementScrollTop, elementClientHeight, elementScrollHeight] =
             await page.getElementScrollInfo(elementNode);
           if (elementScrollTop + elementClientHeight >= elementScrollHeight) {
-            const msg = t('act_errors_alreadyAtBottom', [input.index.toString()]);
+            const msg = t("act_errors_alreadyAtBottom", [input.index.toString()]);
             this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
             return new ActionResult({ extractedContent: msg, includeInMemory: true });
           }
@@ -529,50 +554,57 @@ export class ActionBuilder {
         await page.scrollToNextPage(elementNode);
       } else {
         // Check if page is already at bottom
-        const [initialScrollY, initialVisualViewportHeight, initialScrollHeight] = await page.getScrollInfo();
+        const [initialScrollY, initialVisualViewportHeight, initialScrollHeight] =
+          await page.getScrollInfo();
         if (initialScrollY + initialVisualViewportHeight >= initialScrollHeight) {
-          const msg = t('act_errors_pageAlreadyAtBottom');
+          const msg = t("act_errors_pageAlreadyAtBottom");
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
           return new ActionResult({ extractedContent: msg, includeInMemory: true });
         }
 
         await page.scrollToNextPage();
       }
-      const msg = t('act_nextPage_ok');
+      const msg = t("act_nextPage_ok");
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, nextPageActionSchema);
     actions.push(nextPage);
 
     // Scroll to text
-    const scrollToText = new Action(async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {
-      const intent = input.intent || t('act_scrollToText_start', [input.text, input.nth.toString()]);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+    const scrollToText = new Action(
+      async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {
+        const intent =
+          input.intent || t("act_scrollToText_start", [input.text, input.nth.toString()]);
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-      const page = await this.context.browserContext.getCurrentPage();
-      try {
-        const scrolled = await page.scrollToText(input.text, input.nth);
-        const msg = scrolled
-          ? t('act_scrollToText_ok', [input.text, input.nth.toString()])
-          : t('act_scrollToText_notFound', [input.text, input.nth.toString()]);
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-        return new ActionResult({ extractedContent: msg, includeInMemory: true });
-      } catch (error) {
-        const msg = t('act_scrollToText_failed', [error instanceof Error ? error.message : String(error)]);
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
-        return new ActionResult({ error: msg, includeInMemory: true });
-      }
-    }, scrollToTextActionSchema);
+        const page = await this.context.browserContext.getCurrentPage();
+        try {
+          const scrolled = await page.scrollToText(input.text, input.nth);
+          const msg = scrolled
+            ? t("act_scrollToText_ok", [input.text, input.nth.toString()])
+            : t("act_scrollToText_notFound", [input.text, input.nth.toString()]);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({ extractedContent: msg, includeInMemory: true });
+        } catch (error) {
+          const msg = t("act_scrollToText_failed", [
+            error instanceof Error ? error.message : String(error),
+          ]);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
+          return new ActionResult({ error: msg, includeInMemory: true });
+        }
+      },
+      scrollToTextActionSchema,
+    );
     actions.push(scrollToText);
 
     // Keyboard Actions
     const sendKeys = new Action(async (input: z.infer<typeof sendKeysActionSchema.schema>) => {
-      const intent = input.intent || t('act_sendKeys_start', [input.keys]);
+      const intent = input.intent || t("act_sendKeys_start", [input.keys]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.sendKeys(input.keys);
-      const msg = t('act_sendKeys_ok', [input.keys]);
+      const msg = t("act_sendKeys_ok", [input.keys]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, sendKeysActionSchema);
@@ -581,7 +613,7 @@ export class ActionBuilder {
     // Get all options from a native dropdown
     const getDropdownOptions = new Action(
       async (input: z.infer<typeof getDropdownOptionsActionSchema.schema>) => {
-        const intent = input.intent || t('act_getDropdownOptions_start', [input.index.toString()]);
+        const intent = input.intent || t("act_getDropdownOptions_start", [input.index.toString()]);
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
@@ -589,7 +621,7 @@ export class ActionBuilder {
 
         const elementNode = state?.selectorMap.get(input.index);
         if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
+          const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({
             error: errorMsg,
@@ -603,18 +635,18 @@ export class ActionBuilder {
 
           if (options && options.length > 0) {
             // Format options for display
-            const formattedOptions: string[] = options.map(opt => {
+            const formattedOptions: string[] = options.map((opt) => {
               // Encoding ensures AI uses the exact string in select_dropdown_option
               const encodedText = JSON.stringify(opt.text);
               return `${opt.index}: text=${encodedText}`;
             });
 
-            let msg = formattedOptions.join('\n');
-            msg += '\n' + t('act_getDropdownOptions_useExactText');
+            let msg = formattedOptions.join("\n");
+            msg += "\n" + t("act_getDropdownOptions_useExactText");
             this.context.emitEvent(
               Actors.NAVIGATOR,
               ExecutionState.ACT_OK,
-              t('act_getDropdownOptions_ok', [options.length.toString()]),
+              t("act_getDropdownOptions_ok", [options.length.toString()]),
             );
             return new ActionResult({
               extractedContent: msg,
@@ -624,14 +656,16 @@ export class ActionBuilder {
 
           // This code should not be reached as getDropdownOptions throws an error when no options found
           // But keeping as fallback
-          const msg = t('act_getDropdownOptions_noOptions');
+          const msg = t("act_getDropdownOptions_noOptions");
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
           return new ActionResult({
             extractedContent: msg,
             includeInMemory: true,
           });
         } catch (error) {
-          const errorMsg = t('act_getDropdownOptions_failed', [error instanceof Error ? error.message : String(error)]);
+          const errorMsg = t("act_getDropdownOptions_failed", [
+            error instanceof Error ? error.message : String(error),
+          ]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({
             error: errorMsg,
@@ -647,7 +681,8 @@ export class ActionBuilder {
     // Select dropdown option for interactive element index by the text of the option you want to select'
     const selectDropdownOption = new Action(
       async (input: z.infer<typeof selectDropdownOptionActionSchema.schema>) => {
-        const intent = input.intent || t('act_selectDropdownOption_start', [input.text, input.index.toString()]);
+        const intent =
+          input.intent || t("act_selectDropdownOption_start", [input.text, input.index.toString()]);
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
@@ -655,7 +690,7 @@ export class ActionBuilder {
 
         const elementNode = state?.selectorMap.get(input.index);
         if (!elementNode) {
-          const errorMsg = t('act_errors_elementNotExist', [input.index.toString()]);
+          const errorMsg = t("act_errors_elementNotExist", [input.index.toString()]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({
             error: errorMsg,
@@ -664,10 +699,10 @@ export class ActionBuilder {
         }
 
         // Validate that we're working with a select element
-        if (!elementNode.tagName || elementNode.tagName.toLowerCase() !== 'select') {
-          const errorMsg = t('act_selectDropdownOption_notSelect', [
+        if (!elementNode.tagName || elementNode.tagName.toLowerCase() !== "select") {
+          const errorMsg = t("act_selectDropdownOption_notSelect", [
             input.index.toString(),
-            elementNode.tagName || 'unknown',
+            elementNode.tagName || "unknown",
           ]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({
@@ -680,14 +715,14 @@ export class ActionBuilder {
 
         try {
           const result = await page.selectDropdownOption(input.index, input.text);
-          const msg = t('act_selectDropdownOption_ok', [input.text, input.index.toString()]);
+          const msg = t("act_selectDropdownOption_ok", [input.text, input.index.toString()]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
           return new ActionResult({
             extractedContent: result,
             includeInMemory: true,
           });
         } catch (error) {
-          const errorMsg = t('act_selectDropdownOption_failed', [
+          const errorMsg = t("act_selectDropdownOption_failed", [
             error instanceof Error ? error.message : String(error),
           ]);
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);

@@ -26,9 +26,7 @@ const parseRecipients = (value) => {
   }
 
   if (recipients.length === 0) {
-    throw new Error(
-      "SECURITY_ADVISORY_ALERT_EMAILS must contain at least one email address",
-    );
+    throw new Error("SECURITY_ADVISORY_ALERT_EMAILS must contain at least one email address");
   }
 
   return recipients;
@@ -55,9 +53,7 @@ const readResponseBody = async (response) => {
 };
 
 const fetchAdvisoryCount = async ({ apiBaseUrl, repository, token, state }) => {
-  let nextUrl = new URL(
-    `${apiBaseUrl}/repos/${repository}/security-advisories`,
-  );
+  let nextUrl = new URL(`${apiBaseUrl}/repos/${repository}/security-advisories`);
   nextUrl.searchParams.set("state", state);
   nextUrl.searchParams.set("per_page", "100");
 
@@ -74,9 +70,7 @@ const fetchAdvisoryCount = async ({ apiBaseUrl, repository, token, state }) => {
 
     if (!response.ok) {
       const body = await readResponseBody(response);
-      throw new Error(
-        `Failed to list ${state} security advisories: ${response.status} ${body}`,
-      );
+      throw new Error(`Failed to list ${state} security advisories: ${response.status} ${body}`);
     }
 
     const advisories = await response.json();
@@ -109,15 +103,7 @@ const appendStepSummary = async (summary) => {
   await fs.appendFile(path, `${summary}\n`, "utf8");
 };
 
-const sendMailgunEmail = async ({
-  apiKey,
-  domain,
-  from,
-  recipients,
-  subject,
-  text,
-  html,
-}) => {
+const sendMailgunEmail = async ({ apiKey, domain, from, recipients, subject, text, html }) => {
   const response = await fetch(`${MAILGUN_API_BASE_URL}/${domain}/messages`, {
     method: "POST",
     headers: {
@@ -135,9 +121,7 @@ const sendMailgunEmail = async ({
 
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(
-      `Failed to send advisory email: ${response.status} ${body}`,
-    );
+    throw new Error(`Failed to send advisory email: ${response.status} ${body}`);
   }
 };
 
@@ -147,13 +131,9 @@ const main = async () => {
   const mailgunApiKey = requireEnv("MAILGUN_API_KEY");
   const mailgunDomain = requireEnv("MAILGUN_DOMAIN");
   const fromEmail = requireEnv("MAILGUN_FROM_EMAIL");
-  const recipients = parseRecipients(
-    requireEnv("SECURITY_ADVISORY_ALERT_EMAILS"),
-  );
-  const githubApiBaseUrl =
-    process.env.GITHUB_API_URL?.trim() || "https://api.github.com";
-  const githubServerUrl =
-    process.env.GITHUB_SERVER_URL?.trim() || "https://github.com";
+  const recipients = parseRecipients(requireEnv("SECURITY_ADVISORY_ALERT_EMAILS"));
+  const githubApiBaseUrl = process.env.GITHUB_API_URL?.trim() || "https://api.github.com";
+  const githubServerUrl = process.env.GITHUB_SERVER_URL?.trim() || "https://github.com";
   const runId = process.env.GITHUB_RUN_ID?.trim();
 
   const advisoryCounts = Object.fromEntries(
@@ -169,28 +149,19 @@ const main = async () => {
       ]),
     ),
   );
-  const totalCount = ADVISORY_STATES.reduce(
-    (sum, state) => sum + advisoryCounts[state],
-    0,
-  );
+  const totalCount = ADVISORY_STATES.reduce((sum, state) => sum + advisoryCounts[state], 0);
 
   const triageUrl = `${githubServerUrl}/${repository}/security/advisories?state=triage`;
   const draftUrl = `${githubServerUrl}/${repository}/security/advisories?state=draft`;
-  const runUrl = runId
-    ? `${githubServerUrl}/${repository}/actions/runs/${runId}`
-    : null;
+  const runUrl = runId ? `${githubServerUrl}/${repository}/actions/runs/${runId}` : null;
 
   await appendStepSummary(`Repository: \`${repository}\``);
   await appendStepSummary(`Triage advisories: ${advisoryCounts.triage}`);
   await appendStepSummary(`Draft advisories: ${advisoryCounts.draft}`);
-  await appendStepSummary(
-    `Total open advisories in triage/draft: ${totalCount}`,
-  );
+  await appendStepSummary(`Total open advisories in triage/draft: ${totalCount}`);
 
   if (totalCount === 0) {
-    console.log(
-      `No open triage or draft security advisories found for ${repository}.`,
-    );
+    console.log(`No open triage or draft security advisories found for ${repository}.`);
     return;
   }
 

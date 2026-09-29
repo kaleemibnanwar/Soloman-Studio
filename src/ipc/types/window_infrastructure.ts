@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 import {
   QueryInvalidationBatchSchema,
   QueryInvalidationEventSchema,
@@ -133,9 +128,5 @@ export const windowInfrastructureEvents = {
   }),
 } as const;
 
-export const windowInfrastructureClient = createClient(
-  windowInfrastructureContracts,
-);
-export const windowInfrastructureEventClient = createEventClient(
-  windowInfrastructureEvents,
-);
+export const windowInfrastructureClient = createClient(windowInfrastructureContracts);
+export const windowInfrastructureEventClient = createEventClient(windowInfrastructureEvents);

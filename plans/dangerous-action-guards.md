@@ -225,10 +225,7 @@ interface DangerCheckResult {
 ```typescript
 interface ToolDefinition<T> {
   // ... existing fields ...
-  dangerCheck?: (
-    args: T,
-    ctx: AgentContext,
-  ) => Promise<DangerCheckResult | null>;
+  dangerCheck?: (args: T, ctx: AgentContext) => Promise<DangerCheckResult | null>;
 }
 ```
 

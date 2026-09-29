@@ -27,15 +27,9 @@ import {
   getRemoteDesktopConfig,
   type RemoteDesktopConfig,
 } from "@/ipc/shared/remote_desktop_config";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { ZodError } from "zod";
-import {
-  getRecoveryStats,
-  recoverLegacySafeStorageSecret,
-} from "./safe_storage_legacy";
+import { getRecoveryStats, recoverLegacySafeStorageSecret } from "./safe_storage_legacy";
 
 const logger = log.scope("settings");
 
@@ -192,17 +186,14 @@ export function readCrashSentinel(): CrashSentinelData | null {
     if (typeof parsed.ts !== "number") {
       return null;
     }
-    const activeChatId =
-      typeof parsed.activeChatId === "number" ? parsed.activeChatId : undefined;
+    const activeChatId = typeof parsed.activeChatId === "number" ? parsed.activeChatId : undefined;
     return { ts: parsed.ts, activeChatId };
   } catch {
     return null;
   }
 }
 
-export type RendererCrashPerformanceSnapshot = NonNullable<
-  UserSettings["lastKnownPerformance"]
->;
+export type RendererCrashPerformanceSnapshot = NonNullable<UserSettings["lastKnownPerformance"]>;
 
 export interface RendererCrashRecord {
   reason: string;
@@ -257,12 +248,9 @@ export function readRendererCrashRecord(): RendererCrashRecord | null {
       return null;
     }
     const reason = typeof raw.reason === "string" ? raw.reason : "unknown";
-    const exitCode =
-      typeof raw.exitCode === "number" ? raw.exitCode : undefined;
-    const timestamp =
-      typeof raw.timestamp === "number" ? raw.timestamp : Date.now();
-    const count =
-      typeof raw.count === "number" && raw.count > 0 ? raw.count : 1;
+    const exitCode = typeof raw.exitCode === "number" ? raw.exitCode : undefined;
+    const timestamp = typeof raw.timestamp === "number" ? raw.timestamp : Date.now();
+    const count = typeof raw.count === "number" && raw.count > 0 ? raw.count : 1;
     const performance = parseRendererCrashPerformance(raw.performance);
     return { reason, exitCode, timestamp, count, performance };
   } catch (error) {
@@ -285,9 +273,7 @@ export function clearRendererCrashRecord(): void {
 // schema the performance monitor writes, so the two cannot drift. Best
 // effort: a record from a different build may not match the current
 // schema; drop the performance block rather than the whole crash record.
-function parseRendererCrashPerformance(
-  raw: unknown,
-): RendererCrashPerformanceSnapshot | undefined {
+function parseRendererCrashPerformance(raw: unknown): RendererCrashPerformanceSnapshot | undefined {
   const parsed = LastKnownPerformanceSchema.safeParse(raw);
   return parsed.success ? parsed.data : undefined;
 }
@@ -316,8 +302,7 @@ export function resolveEffectiveSettings(
 
   return {
     ...settings,
-    blockUnsafeNpmPackages:
-      remoteConfig?.defaults?.blockUnsafeNpmPackages ?? true,
+    blockUnsafeNpmPackages: remoteConfig?.defaults?.blockUnsafeNpmPackages ?? true,
   };
 }
 
@@ -349,12 +334,7 @@ export function rewriteRecoveredSafeStorageSecretsAfterKeychainUnlock(): number 
     logger.info("Recovered 0 secret(s) after Keychain unlock.");
     return 0;
   }
-  if (
-    !tryWriteSettings(
-      settings,
-      "rewriting settings after legacy safeStorage Keychain unlock",
-    )
-  ) {
+  if (!tryWriteSettings(settings, "rewriting settings after legacy safeStorage Keychain unlock")) {
     return 0;
   }
   logger.info(`Recovered ${recoveredCount} secret(s) after Keychain unlock.`);
@@ -382,26 +362,18 @@ export function writeSettings(settings: Partial<UserSettings>): void {
       settingsForWrite.preserved,
     );
     if (newSettings.githubAccessToken) {
-      newSettings.githubAccessToken = encrypt(
-        newSettings.githubAccessToken.value,
-      );
+      newSettings.githubAccessToken = encrypt(newSettings.githubAccessToken.value);
     }
     if (newSettings.vercelAccessToken) {
-      newSettings.vercelAccessToken = encrypt(
-        newSettings.vercelAccessToken.value,
-      );
+      newSettings.vercelAccessToken = encrypt(newSettings.vercelAccessToken.value);
     }
     if (newSettings.supabase) {
       // Encrypt legacy tokens (kept for backwards compat)
       if (newSettings.supabase.accessToken) {
-        newSettings.supabase.accessToken = encrypt(
-          newSettings.supabase.accessToken.value,
-        );
+        newSettings.supabase.accessToken = encrypt(newSettings.supabase.accessToken.value);
       }
       if (newSettings.supabase.refreshToken) {
-        newSettings.supabase.refreshToken = encrypt(
-          newSettings.supabase.refreshToken.value,
-        );
+        newSettings.supabase.refreshToken = encrypt(newSettings.supabase.refreshToken.value);
       }
       // Encrypt tokens for each organization in the organizations map
       if (newSettings.supabase.organizations) {
@@ -418,21 +390,15 @@ export function writeSettings(settings: Partial<UserSettings>): void {
     }
     if (newSettings.neon) {
       if (newSettings.neon.accessToken) {
-        newSettings.neon.accessToken = encrypt(
-          newSettings.neon.accessToken.value,
-        );
+        newSettings.neon.accessToken = encrypt(newSettings.neon.accessToken.value);
       }
       if (newSettings.neon.refreshToken) {
-        newSettings.neon.refreshToken = encrypt(
-          newSettings.neon.refreshToken.value,
-        );
+        newSettings.neon.refreshToken = encrypt(newSettings.neon.refreshToken.value);
       }
     }
     if (newSettings.imageSearch) {
       if (newSettings.imageSearch.pexelsApiKey) {
-        newSettings.imageSearch.pexelsApiKey = encrypt(
-          newSettings.imageSearch.pexelsApiKey.value,
-        );
+        newSettings.imageSearch.pexelsApiKey = encrypt(newSettings.imageSearch.pexelsApiKey.value);
       }
       if (newSettings.imageSearch.pixabayApiKey) {
         newSettings.imageSearch.pixabayApiKey = encrypt(
@@ -472,23 +438,16 @@ export function writeSettings(settings: Partial<UserSettings>): void {
     }
     // Use StoredUserSettingsSchema for writing to maintain backwards compatibility
     const validatedSettings = StoredUserSettingsSchema.parse(newSettings);
-    writeSettingsFileAtomically(
-      filePath,
-      JSON.stringify(validatedSettings, null, 2),
-      {
-        preserveUnreadableBackup: settingsForWrite.wasUnreadable,
-      },
-    );
+    writeSettingsFileAtomically(filePath, JSON.stringify(validatedSettings, null, 2), {
+      preserveUnreadableBackup: settingsForWrite.wasUnreadable,
+    });
   } catch (error) {
     logger.error("Error writing settings:", error);
     throw toSettingsWriteError(error);
   }
 }
 
-export function tryWriteSettings(
-  settings: Partial<UserSettings>,
-  context: string,
-): boolean {
+export function tryWriteSettings(settings: Partial<UserSettings>, context: string): boolean {
   try {
     writeSettings(settings);
     return true;
@@ -504,9 +463,7 @@ function toSettingsWriteError(error: unknown): OctopusStudioError {
   }
   const message = error instanceof Error ? error.message : String(error);
   const kind =
-    error instanceof ZodError
-      ? OctopusStudioErrorKind.Validation
-      : OctopusStudioErrorKind.External;
+    error instanceof ZodError ? OctopusStudioErrorKind.Validation : OctopusStudioErrorKind.External;
   return new OctopusStudioError(`Failed to write settings: ${message}`, kind, {
     cause: error,
   });
@@ -674,27 +631,14 @@ function readExistingSettingsFile(
       key: string,
     ): Secret | undefined => {
       if (!secret) return undefined;
-      const resolved = resolveStoredSecret(
-        secret,
-        label,
-        ["imageSearch", key],
-        ctx,
-      );
+      const resolved = resolveStoredSecret(secret, label, ["imageSearch", key], ctx);
       return resolved;
     };
-    const pexels = resolveNested(
-      is.pexelsApiKey,
-      "Pexels API key",
-      "pexelsApiKey",
-    );
+    const pexels = resolveNested(is.pexelsApiKey, "Pexels API key", "pexelsApiKey");
     if (pexels) is.pexelsApiKey = pexels;
     else delete is.pexelsApiKey;
 
-    const pixabay = resolveNested(
-      is.pixabayApiKey,
-      "Pixabay API key",
-      "pixabayApiKey",
-    );
+    const pixabay = resolveNested(is.pixabayApiKey, "Pixabay API key", "pixabayApiKey");
     if (pixabay) is.pixabayApiKey = pixabay;
     else delete is.pixabayApiKey;
 
@@ -729,9 +673,7 @@ function readExistingSettingsFile(
       }
     }
     // Decrypt Vertex service account key if present
-    const v = combinedSettings.providerSettings[
-      provider
-    ] as VertexProviderSetting;
+    const v = combinedSettings.providerSettings[provider] as VertexProviderSetting;
     if (provider === "vertex" && v?.serviceAccountKey) {
       const resolved = resolveStoredSecret(
         v.serviceAccountKey,
@@ -803,15 +745,10 @@ function resolveStoredSecret(
       return undefined;
     }
     const storedSecret = parsedSecret.data;
-    if (
-      storedSecret.encryptionType === "electron-safe-storage" &&
-      app.isReady()
-    ) {
+    if (storedSecret.encryptionType === "electron-safe-storage" && app.isReady()) {
       const recovered = recoverLegacySafeStorageSecret(storedSecret.value);
       if (recovered !== null) {
-        logger.info(
-          `Recovered ${label} using a legacy safeStorage Keychain identity.`,
-        );
+        logger.info(`Recovered ${label} using a legacy safeStorage Keychain identity.`);
         return {
           value: recovered.trim(),
           encryptionType: storedSecret.encryptionType,
@@ -831,11 +768,7 @@ function resolveStoredSecret(
   }
 }
 
-function warnPreservedSecretOnce(
-  key: string,
-  label: string,
-  error: unknown,
-): void {
+function warnPreservedSecretOnce(key: string, label: string, error: unknown): void {
   if (warnedPreservedSecrets.has(key)) {
     return;
   }
@@ -1044,9 +977,7 @@ function notifyRendererError(payload: RendererErrorToast): void {
   sendRendererErrorToast(windows, payload);
 }
 
-export function notifyRendererErrorToastListenerReady(
-  webContents: WebContents,
-): void {
+export function notifyRendererErrorToastListenerReady(webContents: WebContents): void {
   rendererErrorToastReadyWebContents.add(webContents);
   const window = BrowserWindow.fromWebContents(webContents);
   if (window) {
@@ -1088,9 +1019,7 @@ function writeSettingsFileAtomically(
     if (fs.existsSync(filePath)) {
       fs.copyFileSync(
         filePath,
-        options.preserveUnreadableBackup
-          ? recoveryBackupFilePath
-          : backupFilePath,
+        options.preserveUnreadableBackup ? recoveryBackupFilePath : backupFilePath,
       );
     }
     fs.renameSync(tempFilePath, filePath);

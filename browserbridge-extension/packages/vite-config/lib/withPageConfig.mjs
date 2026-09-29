@@ -1,17 +1,17 @@
-import { defineConfig } from 'vite';
-import { watchRebuildPlugin } from '@extension/hmr';
-import react from '@vitejs/plugin-react-swc';
-import deepmerge from 'deepmerge';
-import { isDev, isProduction } from './env.mjs';
+import { defineConfig } from "vite";
+import { watchRebuildPlugin } from "@extension/hmr";
+import react from "@vitejs/plugin-react-swc";
+import deepmerge from "deepmerge";
+import { isDev, isProduction } from "./env.mjs";
 
-export const watchOption = isDev ? {
-  buildDelay: 100,
-  chokidar: {
-    ignored:[
-      /\/packages\/.*\.(ts|tsx|map)$/,
-    ]
-  }
-}: undefined;
+export const watchOption = isDev
+  ? {
+      buildDelay: 100,
+      chokidar: {
+        ignored: [/\/packages\/.*\.(ts|tsx|map)$/],
+      },
+    }
+  : undefined;
 
 /**
  * @typedef {import('vite').UserConfig} UserConfig
@@ -22,7 +22,7 @@ export function withPageConfig(config) {
   return defineConfig(
     deepmerge(
       {
-        base: '',
+        base: "",
         plugins: [react(), isDev && watchRebuildPlugin({ refresh: true })],
         server: {
           sourcemapIgnoreList: false,
@@ -34,13 +34,13 @@ export function withPageConfig(config) {
           emptyOutDir: isProduction,
           watch: watchOption,
           rollupOptions: {
-            external: ['chrome'],
+            external: ["chrome"],
           },
         },
         define: {
-          'process.env.NODE_ENV': isDev ? `"development"` : `"production"`,
+          "process.env.NODE_ENV": isDev ? `"development"` : `"production"`,
         },
-        envDir: '../..'
+        envDir: "../..",
       },
       config,
     ),

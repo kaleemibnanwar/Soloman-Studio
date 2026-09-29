@@ -12,11 +12,7 @@ export function isStreamActive(
       state.phase === "finalizing"
     );
   }
-  return (
-    state.type === "starting" ||
-    state.type === "streaming" ||
-    state.type === "cancelling"
-  );
+  return state.type === "starting" || state.type === "streaming" || state.type === "cancelling";
 }
 
 export function selectStreamError(
@@ -31,11 +27,7 @@ export function selectStreamError(
 }
 
 export function streamInvocationRef(
-  state:
-    | Pick<ChatStreamRemoteSnapshot, "invocationRef">
-    | { readonly type: string },
+  state: Pick<ChatStreamRemoteSnapshot, "invocationRef"> | { readonly type: string },
 ): ChatStreamRemoteSnapshot["invocationRef"] | undefined {
-  return "invocationRef" in state
-    ? (state.invocationRef ?? undefined)
-    : undefined;
+  return "invocationRef" in state ? (state.invocationRef ?? undefined) : undefined;
 }

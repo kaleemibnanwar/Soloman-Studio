@@ -24,10 +24,7 @@ vi.hoisted(() => {
 
 import { screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { apps } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -71,18 +68,13 @@ describe("local agent supabase deploy progress (integration)", () => {
       { timeout: 15_000 },
     );
 
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/supabase-deploy-progress",
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/supabase-deploy-progress");
     send();
 
     // The finished <octopus-studio-status> card renders in the messages list — the same
     // progress surface the e2e polled, in its terminal state.
     await waitFor(
-      () =>
-        expect(
-          screen.getByText("Supabase functions deployed: 20/20 complete"),
-        ).toBeTruthy(),
+      () => expect(screen.getByText("Supabase functions deployed: 20/20 complete")).toBeTruthy(),
       { timeout: 30_000 },
     );
 
@@ -93,23 +85,15 @@ describe("local agent supabase deploy progress (integration)", () => {
     // by the stream-end event and the absence of error events (read off the
     // renderer bridge that received them).
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
-    expect(harness.bridge.sentEvents.map((e) => e.channel)).toContain(
-      "chat:stream:end",
-    );
+    expect(harness.bridge.sentEvents.map((e) => e.channel)).toContain("chat:stream:end");
 
     // All 21 files (shared helper + 20 edge functions) were written.
-    expect(harness.appFileExists("supabase/functions/_shared/cors.ts")).toBe(
-      true,
-    );
+    expect(harness.appFileExists("supabase/functions/_shared/cors.ts")).toBe(true);
     for (let i = 1; i <= 20; i++) {
       const name = `queue-test-${String(i).padStart(2, "0")}`;
-      expect(harness.appFileExists(`supabase/functions/${name}/index.ts`)).toBe(
-        true,
-      );
+      expect(harness.appFileExists(`supabase/functions/${name}/index.ts`)).toBe(true);
     }
 
     // In-flight queue progress was streamed to the renderer while deploys

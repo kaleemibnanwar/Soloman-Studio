@@ -9,14 +9,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { RotateCcw, Search, X } from "lucide-react";
 import { useAtom } from "jotai";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ContextMenu,
@@ -127,9 +120,7 @@ function EmptyTerminalState({
         <h2 className="text-base font-semibold">{title}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         {cwd && (
-          <code className="mt-3 block truncate rounded-md bg-muted px-2 py-1 text-xs">
-            {cwd}
-          </code>
+          <code className="mt-3 block truncate rounded-md bg-muted px-2 py-1 text-xs">{cwd}</code>
         )}
         <div className="mt-4 flex justify-center gap-2">
           {cwd && (
@@ -191,14 +182,13 @@ export default function TerminalPanel({
     terminalRef.current?.write(chunk);
   }, []);
 
-  const { session, status, error, exit, write, resize, restart, kill } =
-    useTerminalSession({
-      appId,
-      enabled: appId !== null,
-      cols: terminalSize.cols,
-      rows: terminalSize.rows,
-      onData: handleTerminalData,
-    });
+  const { session, status, error, exit, write, resize, restart, kill } = useTerminalSession({
+    appId,
+    enabled: appId !== null,
+    cols: terminalSize.cols,
+    rows: terminalSize.rows,
+    onData: handleTerminalData,
+  });
 
   useEffect(() => {
     writeRef.current = write;
@@ -241,8 +231,7 @@ export default function TerminalPanel({
       allowProposedApi: true,
       allowTransparency: true,
       cursorBlink: true,
-      fontFamily:
-        '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+      fontFamily: '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
       fontSize: initialFontSizeRef.current,
       screenReaderMode: true,
       scrollback: 10_000,
@@ -271,10 +260,8 @@ export default function TerminalPanel({
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
     searchAddonRef.current = searchAddon;
-    const isDevelopment =
-      (import.meta as { env?: { MODE?: string } }).env?.MODE === "development";
-    const shouldExposeTerminalForDebug =
-      isDevelopment || (window as any).__OCTOPUS_STUDIO_E2E__;
+    const isDevelopment = (import.meta as { env?: { MODE?: string } }).env?.MODE === "development";
+    const shouldExposeTerminalForDebug = isDevelopment || (window as any).__OCTOPUS_STUDIO_E2E__;
     if (shouldExposeTerminalForDebug) {
       (window as any).__OCTOPUS_STUDIO_TERMINAL__ = terminal;
     }
@@ -445,9 +432,7 @@ export default function TerminalPanel({
     >
       <TerminalEscapeBanner appName={appLabel} cwd={cwd} onExit={onExit} />
       <div className="sr-only" aria-live="polite">
-        {status === "ready"
-          ? t("terminal.screenReaderOpened", { appName: appLabel, cwd })
-          : ""}
+        {status === "ready" ? t("terminal.screenReaderOpened", { appName: appLabel, cwd }) : ""}
       </div>
       <div className="relative min-h-0 flex-1">
         <ContextMenu>
@@ -465,12 +450,8 @@ export default function TerminalPanel({
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onClick={handleCopy}>
-              {t("terminal.context.copy")}
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handlePaste}>
-              {t("terminal.context.paste")}
-            </ContextMenuItem>
+            <ContextMenuItem onClick={handleCopy}>{t("terminal.context.copy")}</ContextMenuItem>
+            <ContextMenuItem onClick={handlePaste}>{t("terminal.context.paste")}</ContextMenuItem>
             <ContextMenuItem onClick={() => terminalRef.current?.clear()}>
               {t("terminal.context.clear")}
             </ContextMenuItem>
@@ -483,9 +464,7 @@ export default function TerminalPanel({
             >
               {t("terminal.context.restart")}
             </ContextMenuItem>
-            <ContextMenuItem onClick={onExit}>
-              {t("terminal.context.exit")}
-            </ContextMenuItem>
+            <ContextMenuItem onClick={onExit}>{t("terminal.context.exit")}</ContextMenuItem>
             <ContextMenuItem variant="destructive" onClick={kill}>
               {t("terminal.context.kill")}
             </ContextMenuItem>
@@ -495,9 +474,7 @@ export default function TerminalPanel({
         {showLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/95">
             {reducedMotion ? (
-              <span className="text-sm text-muted-foreground">
-                {t("terminal.loading")}
-              </span>
+              <span className="text-sm text-muted-foreground">{t("terminal.loading")}</span>
             ) : (
               <StreamingLoadingAnimation variant="initial" />
             )}
@@ -534,12 +511,7 @@ export default function TerminalPanel({
                 <RotateCcw className="mr-1.5 size-3.5" />
                 {t("terminal.restartShell")}
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={onExit}
-              >
+              <Button type="button" size="sm" variant="outline" onClick={onExit}>
                 {t("terminal.backToChat")}
               </Button>
             </div>

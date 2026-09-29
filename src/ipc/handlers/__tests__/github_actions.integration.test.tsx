@@ -2,22 +2,13 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { apps, chats } from "@/db/schema";
 import { readSettings, writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 type TestApp = {
@@ -32,13 +23,7 @@ type PushEvent = {
   operation: "push" | "create" | "delete";
 };
 
-const fixtureAppDir = path.join(
-  process.cwd(),
-  "e2e-tests",
-  "fixtures",
-  "import-app",
-  "minimal",
-);
+const fixtureAppDir = path.join(process.cwd(), "e2e-tests", "fixtures", "import-app", "minimal");
 
 function git(appDir: string, ...args: string[]): string {
   return execFileSync(
@@ -87,10 +72,7 @@ describe("GitHub connector actions (integration)", () => {
     git(appDir, "add", "-A");
     git(appDir, "commit", "-m", "init");
 
-    const [appRow] = await harness.db
-      .insert(apps)
-      .values({ name, path: appDir })
-      .returning();
+    const [appRow] = await harness.db.insert(apps).values({ name, path: appDir }).returning();
     await harness.db.insert(chats).values({ appId: appRow.id });
     return { appId: appRow.id, name, appDir };
   }
@@ -106,17 +88,13 @@ describe("GitHub connector actions (integration)", () => {
   }
 
   async function connectGitHub(app: TestApp) {
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Connect to GitHub" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "Connect to GitHub" }));
 
     await screen.findByText("FAKE-CODE");
     await screen.findByText("https://github.com/login/device");
     await waitFor(
       () => {
-        expect(readSettings().githubAccessToken?.value).toBe(
-          "fake_access_token_12345",
-        );
+        expect(readSettings().githubAccessToken?.value).toBe("fake_access_token_12345");
       },
       { timeout: 15_000 },
     );
@@ -136,21 +114,16 @@ describe("GitHub connector actions (integration)", () => {
     await waitFor(
       async () => {
         const events = (await harness.github.pushEvents()) as PushEvent[];
-        expect(events).toEqual(
-          expect.arrayContaining([expect.objectContaining(expected)]),
-        );
+        expect(events).toEqual(expect.arrayContaining([expect.objectContaining(expected)]));
       },
       { timeout: 20_000 },
     );
   }
 
   async function createRepoThroughConnector(repoName: string, branch = "main") {
-    fireEvent.change(
-      await screen.findByTestId("github-create-repo-name-input"),
-      {
-        target: { value: repoName },
-      },
-    );
+    fireEvent.change(await screen.findByTestId("github-create-repo-name-input"), {
+      target: { value: repoName },
+    });
     await screen.findByText("Repository name is available!", undefined, {
       timeout: 10_000,
     });
@@ -199,14 +172,9 @@ describe("GitHub connector actions (integration)", () => {
       const app = await createFixtureApp(`github-create-${testCase.repo}`);
       await mountAppDetails(app);
       await connectGitHub(app);
-      const connectedRepo = await createRepoThroughConnector(
-        testCase.repoInput,
-        branch,
-      );
+      const connectedRepo = await createRepoThroughConnector(testCase.repoInput, branch);
 
-      expect(
-        within(connectedRepo).getByText(`testuser/${testCase.repo}`),
-      ).toBeTruthy();
+      expect(within(connectedRepo).getByText(`testuser/${testCase.repo}`)).toBeTruthy();
       await waitForPushEvent({
         repo: testCase.repo,
         branch,
@@ -234,9 +202,7 @@ describe("GitHub connector actions (integration)", () => {
     });
     fireEvent.click(disconnectButton);
     await waitFor(() =>
-      expect(
-        screen.queryByRole("button", { name: "Disconnect from GitHub" }),
-      ).toBeNull(),
+      expect(screen.queryByRole("button", { name: "Disconnect from GitHub" })).toBeNull(),
     );
     expect(readSettings().githubAccessToken).toBeUndefined();
     expect(readSettings().githubUser).toBeUndefined();
@@ -244,17 +210,13 @@ describe("GitHub connector actions (integration)", () => {
     cleanup();
     await mountAppDetails(app);
     const reconnectCard = await screen.findByTestId("github-unconnected-repo");
-    expect(
-      within(reconnectCard).getByText("Reconnect your GitHub account"),
-    ).toBeTruthy();
+    expect(within(reconnectCard).getByText("Reconnect your GitHub account")).toBeTruthy();
     expect(
       within(reconnectCard).getByText(
         "This app is linked to testuser/test-new-repo-hybrid-reconnect, but GitHub credentials are missing from settings.",
       ),
     ).toBeTruthy();
-    expect(
-      within(reconnectCard).getByRole("button", { name: "Connect to GitHub" }),
-    ).toBeTruthy();
+    expect(within(reconnectCard).getByRole("button", { name: "Connect to GitHub" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sync to GitHub" })).toBeNull();
   }, 90_000);
 
@@ -275,9 +237,7 @@ describe("GitHub connector actions (integration)", () => {
       await mountAppDetails(app);
       await connectGitHub(app);
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Connect to existing repo" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Connect to existing repo" }));
       await screen.findByText("Select a repository", undefined, {
         timeout: 10_000,
       });
@@ -292,12 +252,9 @@ describe("GitHub connector actions (integration)", () => {
           await screen.findByTestId("github-branch-select"),
           /Type custom branch name/,
         );
-        fireEvent.change(
-          await screen.findByTestId("github-custom-branch-input"),
-          {
-            target: { value: testCase.branch },
-          },
-        );
+        fireEvent.change(await screen.findByTestId("github-custom-branch-input"), {
+          target: { value: testCase.branch },
+        });
       } else {
         await harness.selectFromBaseUiSelect(
           await screen.findByTestId("github-branch-select"),
@@ -312,9 +269,7 @@ describe("GitHub connector actions (integration)", () => {
         {},
         { timeout: 30_000 },
       );
-      expect(
-        within(connectedRepo).getByText("testuser/existing-app"),
-      ).toBeTruthy();
+      expect(within(connectedRepo).getByText("testuser/existing-app")).toBeTruthy();
       await waitForPushEvent({
         repo: "existing-app",
         branch: testCase.branch,

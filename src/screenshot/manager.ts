@@ -15,11 +15,7 @@ export class ScreenshotManager {
   constructor(readonly commands: ScreenshotCommandAdapter) {
     this.host = new KeyedControllerHost(
       (appId) =>
-        new ScreenshotController(
-          appId,
-          commands,
-          createTraceObserver("screenshot", appId),
-        ),
+        new ScreenshotController(appId, commands, createTraceObserver("screenshot", appId)),
     );
   }
 

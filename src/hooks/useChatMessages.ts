@@ -24,9 +24,7 @@ export function useChatMessages(chatId: number | null | undefined): Message[] {
   );
 }
 
-export function useChatMessagesLoaded(
-  chatId: number | null | undefined,
-): boolean {
+export function useChatMessagesLoaded(chatId: number | null | undefined): boolean {
   return useAtomValue(
     useMemo(
       () =>

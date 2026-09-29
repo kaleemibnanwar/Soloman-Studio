@@ -1,8 +1,5 @@
 import { useState } from "react";
-import {
-  createMachineProvider,
-  useRegisterEntityDisposer,
-} from "@/state_machines/react";
+import { createMachineProvider, useRegisterEntityDisposer } from "@/state_machines/react";
 import { AppRunRemoteManager } from "./remote_manager";
 
 function useOwnedAppRunManager(): AppRunRemoteManager {

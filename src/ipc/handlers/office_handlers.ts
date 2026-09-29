@@ -6,7 +6,7 @@ import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { createTypedHandler } from "./base";
 import { officeContracts } from "../types/office";
-import { generateDocx, generateXlsx, parseDocx, parsePptx, parseXlsx } from "../utils/office_open";
+import { generateDocx, generateXlsx, parseDocx, parsePptx, parseXlsx } from "../office/office_open";
 import { getOctopusStudioAppPath, getChatProjectRootPath } from "../../paths/paths";
 import { safeJoin } from "../utils/path_utils";
 import { gitService } from "../services/git_service";
@@ -33,7 +33,11 @@ async function resolveProjectPath(appId: number): Promise<string> {
     : getOctopusStudioAppPath(project.path ?? "");
 }
 
-async function writeGeneratedFile(appId: number, relPath: string, buffer: Uint8Array): Promise<void> {
+async function writeGeneratedFile(
+  appId: number,
+  relPath: string,
+  buffer: Uint8Array,
+): Promise<void> {
   const projectPath = await resolveProjectPath(appId);
   const full = safeJoin(projectPath, relPath);
 

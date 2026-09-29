@@ -95,11 +95,7 @@ export type GithubOpsState =
       type: "conflicted";
       files: readonly string[];
       origin: ConflictOrigin;
-      resolution?:
-        | "resolving"
-        | "checking"
-        | "verification-failed"
-        | "ready-to-sync";
+      resolution?: "resolving" | "checking" | "verification-failed" | "ready-to-sync";
       resolutionChatId?: number;
       verificationAttempt?: number;
       verificationError?: string;
@@ -175,9 +171,8 @@ export type GithubOpsIgnoreReason =
   | "stale-op"
   | "no-change";
 
-export type GithubOpsTransitionResult =
-  import("@/state_machines/types").TransitionResult<
-    GithubOpsState,
-    GithubOpsCommand,
-    GithubOpsIgnoreReason
-  >;
+export type GithubOpsTransitionResult = import("@/state_machines/types").TransitionResult<
+  GithubOpsState,
+  GithubOpsCommand,
+  GithubOpsIgnoreReason
+>;

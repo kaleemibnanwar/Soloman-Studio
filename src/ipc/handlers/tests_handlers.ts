@@ -29,33 +29,24 @@ import {
   planLegacyMigration,
 } from "../utils/legacy_test_migration";
 import { assertMutationPathAllowed, safeJoin } from "../utils/path_utils";
-import { gitAdd, gitRemove } from "../utils/git_utils";
+import { gitAdd, gitRemove } from "../git/git_utils";
 import { gitService } from "../services/git_service";
-import { runningApps } from "../utils/process_manager";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { runningApps } from "../process/process_manager";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import { broadcastToRegisteredWindows } from "@/ipc/utils/window_broadcast";
-import { spawnStreaming } from "../utils/spawn_streaming";
+import { spawnStreaming } from "../process/spawn_streaming";
 import {
   ensurePlaywrightBootstrap,
   OCTOPUS_STUDIO_CONFIG_FILENAME,
   TEST_BASE_URL_ENV,
   TEST_RESULTS_JSON,
 } from "../utils/playwright_bootstrap";
-import {
-  parsePlaywrightReport,
-  PLAYWRIGHT_REPORT_ERROR_FILE,
-} from "../utils/playwright_report";
+import { parsePlaywrightReport, PLAYWRIGHT_REPORT_ERROR_FILE } from "../utils/playwright_report";
 import { parseTestCases } from "../utils/parse_test_cases";
 import { getPackageManagerCommandEnv } from "../utils/socket_firewall";
 import { queueCloudSandboxSnapshotSync } from "../utils/cloud_sandbox_provider";
 import { sendTelemetryEvent } from "../utils/telemetry";
-import {
-  prepareIsolatedTestDatabase,
-  type PreparedIsolation,
-} from "../services/isolated_test_db";
+import { prepareIsolatedTestDatabase, type PreparedIsolation } from "../services/isolated_test_db";
 import { readTestScreenshotDataUrl } from "../utils/test_screenshot";
 import { isRecordingActive } from "../services/recording_registry";
 import { readSettings } from "@/main/settings";
@@ -123,15 +114,9 @@ export async function listSpecFiles(appPath: string): Promise<string[]> {
  * that actually exist). A file that can't be read/parsed yields no cases and
  * is still runnable as a whole.
  */
-export async function readSpecTestCases(
-  appPath: string,
-  testFile: string,
-): Promise<TestCase[]> {
+export async function readSpecTestCases(appPath: string, testFile: string): Promise<TestCase[]> {
   try {
-    const content = await fs.promises.readFile(
-      path.join(appPath, testFile),
-      "utf8",
-    );
+    const content = await fs.promises.readFile(path.join(appPath, testFile), "utf8");
     return parseTestCases(content);
   } catch (error) {
     logger.warn(`Failed to parse test cases in ${testFile}: ${error}`);
@@ -173,10 +158,7 @@ async function getApp(appId: number) {
     where: eq(apps.id, appId),
   });
   if (!app) {
-    throw new OctopusStudioError(
-      `App with id ${appId} not found`,
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError(`App with id ${appId} not found`, OctopusStudioErrorKind.NotFound);
   }
   return app;
 }
@@ -199,10 +181,7 @@ function emitOutput(
   });
 }
 
-function emitRunState(
-  event: IpcMainInvokeEvent,
-  payload: TestsRunStatePayload,
-): void {
+function emitRunState(event: IpcMainInvokeEvent, payload: TestsRunStatePayload): void {
   broadcastToRegisteredWindows(event.sender, "tests:run-state", payload);
 }
 
@@ -270,10 +249,8 @@ export async function runAppTestsCore({
 }: RunAppTestsCoreOptions): Promise<RunAppTestsResult> {
   const app = await getApp(appId);
   const appPath = getOctopusStudioAppPath(app.path);
-  const emit = (chunk: string, phase: "setup" | "running") =>
-    onOutput?.(chunk, phase);
-  const normalizedTestFile =
-    testFile === undefined ? undefined : normalizeRunTestFile(testFile);
+  const emit = (chunk: string, phase: "setup" | "running") => onOutput?.(chunk, phase);
+  const normalizedTestFile = testFile === undefined ? undefined : normalizeRunTestFile(testFile);
 
   // Reject anything that doesn't look like one of our spec paths before it
   // reaches the Playwright CLI (the Zod schema only checks it's a string).
@@ -292,8 +269,7 @@ export async function runAppTestsCore({
       appId,
       results: [],
       infraError: {
-        message:
-          "Start the app before running tests — the dev server isn't running.",
+        message: "Start the app before running tests — the dev server isn't running.",
       },
     };
   }
@@ -335,12 +311,7 @@ export async function runAppTestsCore({
   // hardcode a baseURL, or may point at a different testDir. Ours is the only
   // one that honors OCTOPUS_STUDIO_TEST_BASE_URL, so it's passed explicitly rather than
   // OctopusStudio taking over the canonical config name.
-  const args = [
-    "playwright",
-    "test",
-    "--config",
-    OCTOPUS_STUDIO_CONFIG_FILENAME,
-  ];
+  const args = ["playwright", "test", "--config", OCTOPUS_STUDIO_CONFIG_FILENAME];
   if (normalizedTestFile) {
     const escapedFile = escapeRegExpForSelector(normalizedTestFile);
     const target =
@@ -485,9 +456,7 @@ export async function runAppTestsCore({
     };
   }
 
-  const reportLevelError = results.find(
-    (r) => r.file === PLAYWRIGHT_REPORT_ERROR_FILE,
-  );
+  const reportLevelError = results.find((r) => r.file === PLAYWRIGHT_REPORT_ERROR_FILE);
   if (reportLevelError) {
     return {
       appId,
@@ -503,9 +472,7 @@ export async function runAppTestsCore({
   // 4. Instrumentation (first-run pass-rate + related metrics).
   const passed = results.filter((r) => r.status === "passed").length;
   const failed = results.filter((r) => r.status === "failed").length;
-  const inconclusive = results.filter(
-    (r) => r.status === "inconclusive",
-  ).length;
+  const inconclusive = results.filter((r) => r.status === "inconclusive").length;
   sendTelemetryEvent("e2e_tests_run", {
     total: results.length,
     passed,
@@ -565,8 +532,7 @@ export async function runAppTestsWithIsolation({
   source,
   externalSignal,
 }: RunTestsWithIsolationOptions): Promise<RunAppTestsResult> {
-  const normalizedTestFile =
-    testFile === undefined ? undefined : normalizeRunTestFile(testFile);
+  const normalizedTestFile = testFile === undefined ? undefined : normalizeRunTestFile(testFile);
 
   // Reject an invalid target before the expensive isolation setup (Neon
   // branch creation, env swap, double dev-server restart) — the same check
@@ -632,9 +598,7 @@ export async function runAppTestsWithIsolation({
    * reports an ordinary infrastructure error while the app is still pointed at
    * the temporary branch.
    */
-  const withEnvRestoreWarning = (
-    result: RunAppTestsResult,
-  ): RunAppTestsResult => {
+  const withEnvRestoreWarning = (result: RunAppTestsResult): RunAppTestsResult => {
     if (!envRestoreFailed) return result;
     const restoreMessage =
       "Octopus Studio couldn't restore your app's real database settings after the test run. Restore .env.local before running the app again.";
@@ -694,10 +658,7 @@ export async function runAppTestsWithIsolation({
       logger.info(
         `Test run for app ${appId} is waiting for another app operation to finish before isolation setup`,
       );
-      emit(
-        "Waiting for a previous test cleanup or app operation to finish…\n",
-        "setup",
-      );
+      emit("Waiting for a previous test cleanup or app operation to finish…\n", "setup");
     }
     finalResult = await appOperationCoordinator.run(
       {
@@ -800,13 +761,9 @@ export async function runAppTestsWithIsolation({
     // routes it by kind instead of counting it as unclassified.
     throw isOctopusStudioError(error)
       ? error
-      : new OctopusStudioError(
-          finalResult.infraError!.message,
-          OctopusStudioErrorKind.Internal,
-          {
-            cause: error,
-          },
-        );
+      : new OctopusStudioError(finalResult.infraError!.message, OctopusStudioErrorKind.Internal, {
+          cause: error,
+        });
   } finally {
     if (externalSignal) {
       externalSignal.removeEventListener("abort", onExternalAbort);
@@ -879,16 +836,13 @@ export function registerTestsHandlers() {
     return { ok: true as const };
   });
 
-  createTypedHandler(
-    testsContracts.getTestScreenshot,
-    async (_event, params) => {
-      const app = await getApp(params.appId);
-      const appPath = getOctopusStudioAppPath(app.path);
-      return {
-        dataUrl: await readTestScreenshotDataUrl(appPath, params.path),
-      };
-    },
-  );
+  createTypedHandler(testsContracts.getTestScreenshot, async (_event, params) => {
+    const app = await getApp(params.appId);
+    const appPath = getOctopusStudioAppPath(app.path);
+    return {
+      dataUrl: await readTestScreenshotDataUrl(appPath, params.path),
+    };
+  });
 
   createTypedHandler(
     testsContracts.runAppTests,
@@ -956,12 +910,11 @@ export function registerTestsHandlers() {
         // Best-effort by design: a git failure (untracked file, non-repo app)
         // must not report the delete itself as failed. We surface whether it was
         // committed so the UI doesn't promise a recovery path that may not exist.
-        const { commitHash, uncommittedReason } =
-          await gitService.removeFileAndCommit({
-            path: appPath,
-            filepath: testFile,
-            message: `delete test ${testFile}`,
-          });
+        const { commitHash, uncommittedReason } = await gitService.removeFileAndCommit({
+          path: appPath,
+          filepath: testFile,
+          message: `delete test ${testFile}`,
+        });
         if (uncommittedReason === "untracked") {
           // Git removed nothing (untracked spec, or the app isn't a repo), so the
           // file is still on disk and it's on us to delete it.
@@ -986,197 +939,187 @@ export function registerTestsHandlers() {
     );
   });
 
-  createTypedHandler(
-    testsContracts.detectLegacyTests,
-    async (_event, params) => {
-      const app = await getApp(params.appId);
-      const appPath = getOctopusStudioAppPath(app.path);
-      const specs = await detectLegacyPlaywrightSpecs(appPath);
-      const files = specs.map((file) => ({
-        file,
-        targetExists: fs.existsSync(safeJoin(appPath, legacyToE2ePath(file))),
-      }));
-      return { files };
-    },
-  );
+  createTypedHandler(testsContracts.detectLegacyTests, async (_event, params) => {
+    const app = await getApp(params.appId);
+    const appPath = getOctopusStudioAppPath(app.path);
+    const specs = await detectLegacyPlaywrightSpecs(appPath);
+    const files = specs.map((file) => ({
+      file,
+      targetExists: fs.existsSync(safeJoin(appPath, legacyToE2ePath(file))),
+    }));
+    return { files };
+  });
 
-  createTypedHandler(
-    testsContracts.migrateLegacyTests,
-    async (_event, params) => {
-      const app = await getApp(params.appId);
-      const appPath = getOctopusStudioAppPath(app.path);
-      // Serialize against test runs (same numeric appId lock) so a move can't
-      // interleave with a run's env swap / dev-server restart.
-      //
-      // Same claim conflict as `deleteAppTest`: refuse with a reason rather than
-      // queueing the migration behind the recording's `test-files` hold.
-      return await appOperationCoordinator.run(
-        {
-          appId: params.appId,
-          operation: "migrate-legacy-tests",
-          resources: [readAppResource("app-path"), "repository", "test-files"],
-          refuseWhenRecording: "migrate legacy tests",
-        },
-        async () => {
-          const results: MigrateLegacyTestResult[] = [];
+  createTypedHandler(testsContracts.migrateLegacyTests, async (_event, params) => {
+    const app = await getApp(params.appId);
+    const appPath = getOctopusStudioAppPath(app.path);
+    // Serialize against test runs (same numeric appId lock) so a move can't
+    // interleave with a run's env swap / dev-server restart.
+    //
+    // Same claim conflict as `deleteAppTest`: refuse with a reason rather than
+    // queueing the migration behind the recording's `test-files` hold.
+    return await appOperationCoordinator.run(
+      {
+        appId: params.appId,
+        operation: "migrate-legacy-tests",
+        resources: [readAppResource("app-path"), "repository", "test-files"],
+        refuseWhenRecording: "migrate legacy tests",
+      },
+      async () => {
+        const results: MigrateLegacyTestResult[] = [];
 
-          // Validate + normalize the requested specs up front; invalid ones are
-          // reported and excluded from the move plan. Deduplicate so the same
-          // path submitted twice doesn't produce a spurious second failure.
-          const validSpecs: string[] = [];
-          const seenSpecs = new Set<string>();
-          for (const requested of params.files) {
-            const sourceRel = normalizeLegacyTestFile(requested);
-            if (!sourceRel) {
-              results.push({
-                file: requested,
-                ok: false,
-                error: "Not a valid tests/*.spec.{ts,tsx,js,jsx} path",
-              });
-              continue;
-            }
-            if (seenSpecs.has(sourceRel)) {
-              continue; // Duplicate request; already accounted for.
-            }
-            seenSpecs.add(sourceRel);
-            validSpecs.push(sourceRel);
+        // Validate + normalize the requested specs up front; invalid ones are
+        // reported and excluded from the move plan. Deduplicate so the same
+        // path submitted twice doesn't produce a spurious second failure.
+        const validSpecs: string[] = [];
+        const seenSpecs = new Set<string>();
+        for (const requested of params.files) {
+          const sourceRel = normalizeLegacyTestFile(requested);
+          if (!sourceRel) {
+            results.push({
+              file: requested,
+              ok: false,
+              error: "Not a valid tests/*.spec.{ts,tsx,js,jsx} path",
+            });
+            continue;
           }
-
-          // Only ever move files detection actually classified as legacy
-          // Playwright specs, regardless of what the renderer submitted — a
-          // valid-looking path alone must not move an unrelated tests/ spec.
-          const detected = new Set(await detectLegacyPlaywrightSpecs(appPath));
-          const plannableSpecs: string[] = [];
-          for (const sourceRel of validSpecs) {
-            if (detected.has(sourceRel)) {
-              plannableSpecs.push(sourceRel);
-            } else {
-              results.push({
-                file: sourceRel,
-                ok: false,
-                error: "Not a Playwright spec in tests/",
-              });
-            }
+          if (seenSpecs.has(sourceRel)) {
+            continue; // Duplicate request; already accounted for.
           }
+          seenSpecs.add(sourceRel);
+          validSpecs.push(sourceRel);
+        }
 
-          // Move one tests/ file into e2e-tests/ (git-aware, never overwriting).
-          // Both paths are canonically validated (`assertMutationPathAllowed`) so
-          // a symlinked e2e-tests/ can't redirect the write outside the app.
-          const moveOne = async (
-            sourceRel: string,
-          ): Promise<{ ok: boolean; movedTo?: string; error?: string }> => {
-            const destRel = legacyToE2ePath(sourceRel);
-            try {
-              await assertMutationPathAllowed({
-                appPath,
-                relativePath: sourceRel,
-                followFinalSymlink: false,
-              });
-              await assertMutationPathAllowed({
-                appPath,
-                relativePath: destRel,
-                followFinalSymlink: false,
-              });
-              const src = safeJoin(appPath, sourceRel);
-              const dst = safeJoin(appPath, destRel);
-              if (!fs.existsSync(src)) {
-                return { ok: false, error: "Source file no longer exists" };
-              }
-              if (fs.existsSync(dst)) {
-                // Never overwrite an existing destination.
-                return { ok: false, error: `${destRel} already exists` };
-              }
-              await fs.promises.mkdir(path.dirname(dst), { recursive: true });
-              await moveFileWithFallback(src, dst);
-              // Stage the move (add new, remove old) without committing, so the
-              // user reviews it through the normal uncommitted-changes flow.
-              // Staging is best-effort: the file has already moved on disk, so a
-              // git failure (lock contention, untracked source, non-repo app)
-              // must not report the move itself as failed.
-              try {
-                await gitAdd({ path: appPath, filepath: destRel });
-              } catch (error) {
-                logger.warn(
-                  `Moved ${sourceRel} but couldn't git-add ${destRel}: ${error}`,
-                );
-              }
-              try {
-                await gitRemove({ path: appPath, filepath: sourceRel });
-              } catch (error) {
-                // The source may be untracked (never committed); the file is
-                // already gone from disk, so staging the new one is enough.
-                logger.warn(
-                  `Moved ${sourceRel} but couldn't git-remove it (likely untracked): ${error}`,
-                );
-              }
-              return { ok: true, movedTo: destRel };
-            } catch (error) {
-              logger.warn(`Failed to migrate ${sourceRel}: ${error}`);
-              return {
-                ok: false,
-                error: error instanceof Error ? error.message : String(error),
-              };
-            }
-          };
-
-          // Plan by connected component: a spec is moved only when its whole
-          // import group can move (no shared fixture or dependency left behind,
-          // no destination collision). Specs that can't move are reported as
-          // blocked rather than migrated into a broken state.
-          const plan =
-            plannableSpecs.length > 0
-              ? await planLegacyMigration(appPath, plannableSpecs)
-              : {
-                  movableSpecs: [] as string[],
-                  supportFiles: [] as string[],
-                  blockedSpecs: [] as { file: string; reason: string }[],
-                  skippedSupportFiles: [] as string[],
-                };
-
-          // Move support files first so a spec never lands beside a fixture that
-          // hasn't moved yet.
-          const movedSupportFiles: string[] = [];
-          const skippedSupportFiles = [...plan.skippedSupportFiles];
-          for (const support of plan.supportFiles) {
-            const outcome = await moveOne(support);
-            if (outcome.ok && outcome.movedTo) {
-              movedSupportFiles.push(outcome.movedTo);
-            } else {
-              skippedSupportFiles.push(support);
-            }
-          }
-
-          // Move the specs that planned cleanly.
-          for (const sourceRel of plan.movableSpecs) {
-            const outcome = await moveOne(sourceRel);
+        // Only ever move files detection actually classified as legacy
+        // Playwright specs, regardless of what the renderer submitted — a
+        // valid-looking path alone must not move an unrelated tests/ spec.
+        const detected = new Set(await detectLegacyPlaywrightSpecs(appPath));
+        const plannableSpecs: string[] = [];
+        for (const sourceRel of validSpecs) {
+          if (detected.has(sourceRel)) {
+            plannableSpecs.push(sourceRel);
+          } else {
             results.push({
               file: sourceRel,
-              ok: outcome.ok,
-              movedTo: outcome.movedTo,
-              error: outcome.error,
-            });
-          }
-
-          // Report specs that couldn't move without breaking an import.
-          for (const blocked of plan.blockedSpecs) {
-            results.push({
-              file: blocked.file,
               ok: false,
-              error: blocked.reason,
+              error: "Not a Playwright spec in tests/",
             });
           }
+        }
 
-          return {
-            results,
-            movedSupportFiles,
-            skippedSupportFiles: [...new Set(skippedSupportFiles)].sort(
-              (a, b) => a.localeCompare(b),
-            ),
-          };
-        },
-      );
-    },
-  );
+        // Move one tests/ file into e2e-tests/ (git-aware, never overwriting).
+        // Both paths are canonically validated (`assertMutationPathAllowed`) so
+        // a symlinked e2e-tests/ can't redirect the write outside the app.
+        const moveOne = async (
+          sourceRel: string,
+        ): Promise<{ ok: boolean; movedTo?: string; error?: string }> => {
+          const destRel = legacyToE2ePath(sourceRel);
+          try {
+            await assertMutationPathAllowed({
+              appPath,
+              relativePath: sourceRel,
+              followFinalSymlink: false,
+            });
+            await assertMutationPathAllowed({
+              appPath,
+              relativePath: destRel,
+              followFinalSymlink: false,
+            });
+            const src = safeJoin(appPath, sourceRel);
+            const dst = safeJoin(appPath, destRel);
+            if (!fs.existsSync(src)) {
+              return { ok: false, error: "Source file no longer exists" };
+            }
+            if (fs.existsSync(dst)) {
+              // Never overwrite an existing destination.
+              return { ok: false, error: `${destRel} already exists` };
+            }
+            await fs.promises.mkdir(path.dirname(dst), { recursive: true });
+            await moveFileWithFallback(src, dst);
+            // Stage the move (add new, remove old) without committing, so the
+            // user reviews it through the normal uncommitted-changes flow.
+            // Staging is best-effort: the file has already moved on disk, so a
+            // git failure (lock contention, untracked source, non-repo app)
+            // must not report the move itself as failed.
+            try {
+              await gitAdd({ path: appPath, filepath: destRel });
+            } catch (error) {
+              logger.warn(`Moved ${sourceRel} but couldn't git-add ${destRel}: ${error}`);
+            }
+            try {
+              await gitRemove({ path: appPath, filepath: sourceRel });
+            } catch (error) {
+              // The source may be untracked (never committed); the file is
+              // already gone from disk, so staging the new one is enough.
+              logger.warn(
+                `Moved ${sourceRel} but couldn't git-remove it (likely untracked): ${error}`,
+              );
+            }
+            return { ok: true, movedTo: destRel };
+          } catch (error) {
+            logger.warn(`Failed to migrate ${sourceRel}: ${error}`);
+            return {
+              ok: false,
+              error: error instanceof Error ? error.message : String(error),
+            };
+          }
+        };
+
+        // Plan by connected component: a spec is moved only when its whole
+        // import group can move (no shared fixture or dependency left behind,
+        // no destination collision). Specs that can't move are reported as
+        // blocked rather than migrated into a broken state.
+        const plan =
+          plannableSpecs.length > 0
+            ? await planLegacyMigration(appPath, plannableSpecs)
+            : {
+                movableSpecs: [] as string[],
+                supportFiles: [] as string[],
+                blockedSpecs: [] as { file: string; reason: string }[],
+                skippedSupportFiles: [] as string[],
+              };
+
+        // Move support files first so a spec never lands beside a fixture that
+        // hasn't moved yet.
+        const movedSupportFiles: string[] = [];
+        const skippedSupportFiles = [...plan.skippedSupportFiles];
+        for (const support of plan.supportFiles) {
+          const outcome = await moveOne(support);
+          if (outcome.ok && outcome.movedTo) {
+            movedSupportFiles.push(outcome.movedTo);
+          } else {
+            skippedSupportFiles.push(support);
+          }
+        }
+
+        // Move the specs that planned cleanly.
+        for (const sourceRel of plan.movableSpecs) {
+          const outcome = await moveOne(sourceRel);
+          results.push({
+            file: sourceRel,
+            ok: outcome.ok,
+            movedTo: outcome.movedTo,
+            error: outcome.error,
+          });
+        }
+
+        // Report specs that couldn't move without breaking an import.
+        for (const blocked of plan.blockedSpecs) {
+          results.push({
+            file: blocked.file,
+            ok: false,
+            error: blocked.reason,
+          });
+        }
+
+        return {
+          results,
+          movedSupportFiles,
+          skippedSupportFiles: [...new Set(skippedSupportFiles)].sort((a, b) => a.localeCompare(b)),
+        };
+      },
+    );
+  });
 
   logger.debug("Registered tests IPC handlers");
 }

@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { remoteMachineHost } from "@/ipc/services/distributed_machine_actor_host";
 import { planHandoffDefinition } from "@/plan_handoff/definition";
 import {
@@ -38,9 +35,7 @@ export async function startPlanHandoffFromMain(input: {
       chatId: input.sourceChatId,
     }));
   assertChatActorAdmissionOpen(input.sourceChatId);
-  const planHash = createHash("sha256")
-    .update(serializePlanDocument(plan))
-    .digest("hex");
+  const planHash = createHash("sha256").update(serializePlanDocument(plan)).digest("hex");
   const handoffId = uuidIdSource.next("plan-handoff");
   const intent: PlanHandoffIntent = {
     schemaVersion: 1,
@@ -52,9 +47,7 @@ export async function startPlanHandoffFromMain(input: {
     planVersion: planHash,
     planHash,
     plan,
-    originWindowSessionId: windowRegistry.sessionForWebContents(
-      input.senderWebContentsId,
-    ),
+    originWindowSessionId: windowRegistry.sessionForWebContents(input.senderWebContentsId),
   };
   const actor = remoteMachineHost.localRef(
     planHandoffDefinition,

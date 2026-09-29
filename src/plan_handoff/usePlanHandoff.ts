@@ -27,18 +27,14 @@ export function getRemotePlanHandoffSnapshot(
   manager: Pick<PlanHandoffRemoteManager, "getSnapshot">,
   chatId: number | null,
 ): PlanHandoffRemoteSnapshot {
-  return chatId === null
-    ? NO_CHAT_HANDOFF_SNAPSHOT
-    : manager.getSnapshot(chatId);
+  return chatId === null ? NO_CHAT_HANDOFF_SNAPSHOT : manager.getSnapshot(chatId);
 }
 
 /**
  * React binding for reading a chat's handoff state. Snapshots are immutable
  * and reference-stable between transitions, as useSyncExternalStore requires.
  */
-export function usePlanHandoffState(
-  chatId: number | null,
-): PlanHandoffRemoteSnapshot {
+export function usePlanHandoffState(chatId: number | null): PlanHandoffRemoteSnapshot {
   const manager = usePlanHandoffManager();
   return useRemotePlanHandoffState(manager, chatId);
 }
@@ -50,9 +46,7 @@ function useRemotePlanHandoffState(
   const sourceChatId = chatId ?? NO_CHAT_ID;
   const subscribe = useCallback(
     (listener: () => void) =>
-      chatId === null
-        ? () => undefined
-        : manager.subscribeKey(sourceChatId, listener),
+      chatId === null ? () => undefined : manager.subscribeKey(sourceChatId, listener),
     [chatId, manager, sourceChatId],
   );
   const getSnapshot = useCallback(

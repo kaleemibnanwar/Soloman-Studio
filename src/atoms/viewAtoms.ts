@@ -26,9 +26,9 @@ export const stagedDiffFileAtom = atom<string | null>(null);
  * Instance keys make unmount cleanup naturally refcounted, so one editor closing
  * cannot clear a sibling editor's dirty flag.
  */
-export const unsavedEditorFilesAtom = atom<
-  Map<string, { appId: number; filePath: string }>
->(new Map());
+export const unsavedEditorFilesAtom = atom<Map<string, { appId: number; filePath: string }>>(
+  new Map(),
+);
 
 export const setUnsavedEditorFileAtom = atom(
   null,
@@ -64,6 +64,4 @@ export const setUnsavedEditorFileAtom = atom(
     set(unsavedEditorFilesAtom, next);
   },
 );
-export const activeSettingsSectionAtom = atom<string | null>(
-  SECTION_IDS.general,
-);
+export const activeSettingsSectionAtom = atom<string | null>(SECTION_IDS.general);

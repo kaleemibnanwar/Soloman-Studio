@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Check, FileText } from "lucide-react";
@@ -20,10 +14,7 @@ import { useStreamChat } from "@/hooks/useStreamChat";
 import { usePlan } from "@/hooks/usePlan";
 import { useChatMode } from "@/hooks/useChatMode";
 import { usePlanDocument } from "@/hooks/usePlanDocument";
-import {
-  usePlanHandoff,
-  usePlanHandoffState,
-} from "@/plan_handoff/usePlanHandoff";
+import { usePlanHandoff, usePlanHandoffState } from "@/plan_handoff/usePlanHandoff";
 import { SelectionCommentButton } from "./plan/SelectionCommentButton";
 import { CommentsFloatingButton } from "./plan/CommentsFloatingButton";
 import { CommentPopover } from "./plan/CommentPopover";
@@ -42,9 +33,7 @@ export const PlanPanel: React.FC = () => {
       ? (handoff.failure ?? "Plan implementation could not be started.")
       : null;
   const isAccepted =
-    handoff.phase !== "idle" &&
-    handoff.phase !== "failed" &&
-    handoff.phase !== "cancelled";
+    handoff.phase !== "idle" && handoff.phase !== "failed" && handoff.phase !== "cancelled";
   const previewMode = useAtomValue(previewModeAtom);
   const setPreviewMode = useSetAtom(previewModeAtom);
   const { streamMessage, isStreaming } = useStreamChat();
@@ -88,9 +77,7 @@ export const PlanPanel: React.FC = () => {
   // say whether implementation continued here or started in a new chat. Derived
   // from the atom (not local state) so it survives unmount/remount, e.g. when
   // switching preview tabs.
-  const acceptedInNewChat = chatId
-    ? (acceptInNewChatByChatId.get(chatId) ?? null)
-    : null;
+  const acceptedInNewChat = chatId ? (acceptInNewChatByChatId.get(chatId) ?? null) : null;
   const [isSendingComments, setIsSendingComments] = useState(false);
 
   useEffect(() => {
@@ -174,9 +161,7 @@ export const PlanPanel: React.FC = () => {
     if (currentAnnotations.length === 0) return;
 
     const prompt = currentAnnotations
-      .map(
-        (a, i) => `**Comment ${i + 1}:**\n> ${a.selectedText}\n\n${a.comment}`,
-      )
+      .map((a, i) => `**Comment ${i + 1}:**\n> ${a.selectedText}\n\n${a.comment}`)
       .join("\n\n---\n\n");
 
     setIsSendingComments(true);
@@ -237,10 +222,7 @@ export const PlanPanel: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-hidden">
-        <div
-          className="relative h-full overflow-y-auto p-4"
-          ref={scrollContainerRef}
-        >
+        <div className="relative h-full overflow-y-auto p-4" ref={scrollContainerRef}>
           {chatId && (
             <CommentsFloatingButton
               chatId={chatId}
@@ -253,14 +235,10 @@ export const PlanPanel: React.FC = () => {
             <div className="px-4 py-3 border-b">
               <div className="flex items-center gap-2">
                 <FileText className="text-blue-500" size={20} />
-                <h2 className="text-lg font-semibold">
-                  {currentTitle || "Implementation Plan"}
-                </h2>
+                <h2 className="text-lg font-semibold">{currentTitle || "Implementation Plan"}</h2>
               </div>
               {currentSummary && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {currentSummary}
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">{currentSummary}</p>
               )}
             </div>
             <div className="p-4">

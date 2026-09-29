@@ -24,10 +24,7 @@ export const queryKeys = {
     nodejsStatus: ["system", "nodejsStatus"] as const,
     platform: ["system", "platform"] as const,
     subscriptionStatus: ["system", "subscriptionStatus"] as const,
-    initialLoadTelemetryContext: [
-      "system",
-      "initialLoadTelemetryContext",
-    ] as const,
+    initialLoadTelemetryContext: ["system", "initialLoadTelemetryContext"] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -44,13 +41,10 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   apps: {
     all: ["apps"] as const,
-    detail: ({ appId }: { appId: number | null }) =>
-      ["apps", "detail", appId] as const,
-    screenshots: ({ appId }: { appId: number | null }) =>
-      ["apps", "screenshots", appId] as const,
+    detail: ({ appId }: { appId: number | null }) => ["apps", "detail", appId] as const,
+    screenshots: ({ appId }: { appId: number | null }) => ["apps", "screenshots", appId] as const,
     thumbnails: ["apps", "thumbnails"] as const,
-    search: ({ query }: { query: string }) =>
-      ["apps", "search", query] as const,
+    search: ({ query }: { query: string }) => ["apps", "search", query] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -66,8 +60,7 @@ export const queryKeys = {
   chats: {
     all: ["chats"] as const,
     list: ({ appId }: { appId: number | null }) => ["chats", appId] as const,
-    detail: ({ chatId }: { chatId: number | null }) =>
-      ["chats", "detail", chatId] as const,
+    detail: ({ chatId }: { chatId: number | null }) => ["chats", "detail", chatId] as const,
     search: ({ appId, query }: { appId: number | null; query: string }) =>
       ["chats", "search", appId, query] as const,
   },
@@ -85,13 +78,8 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   plans: {
     all: ["plans"] as const,
-    forChat: ({
-      appId,
-      chatId,
-    }: {
-      appId: number | null;
-      chatId: number | null;
-    }) => ["plans", "forChat", appId, chatId] as const,
+    forChat: ({ appId, chatId }: { appId: number | null; chatId: number | null }) =>
+      ["plans", "forChat", appId, chatId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -99,8 +87,7 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   proposals: {
     all: ["proposal"] as const,
-    detail: ({ chatId }: { chatId: number | undefined }) =>
-      ["proposal", chatId] as const,
+    detail: ({ chatId }: { chatId: number | undefined }) => ["proposal", chatId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -109,40 +96,25 @@ export const queryKeys = {
   versions: {
     all: ["versions"] as const,
     list: ({ appId }: { appId: number | null }) => ["versions", appId] as const,
-    changes: ({
-      appId,
-      versionId,
-    }: {
-      appId: number | null;
-      versionId: string | null;
-    }) => ["versions", appId, "changes", versionId] as const,
+    changes: ({ appId, versionId }: { appId: number | null; versionId: string | null }) =>
+      ["versions", appId, "changes", versionId] as const,
     restoreToMessageMutation: ({ appId }: { appId: number | null }) =>
       ["restoreToMessageVersion", appId] as const,
-    revertMutation: ({ appId }: { appId: number | null }) =>
-      ["revertVersion", appId] as const,
+    revertMutation: ({ appId }: { appId: number | null }) => ["revertVersion", appId] as const,
   },
 
   branches: {
     all: ["branches"] as const,
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["branches", appId] as const,
-    current: ({ appId }: { appId: number | null }) =>
-      ["branches", appId, "current"] as const,
-    inventory: ({ appId }: { appId: number }) =>
-      ["branches", appId, "inventory"] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["branches", appId] as const,
+    current: ({ appId }: { appId: number | null }) => ["branches", appId, "current"] as const,
+    inventory: ({ appId }: { appId: number }) => ["branches", appId, "inventory"] as const,
   },
 
   uncommittedFiles: {
     all: ["uncommittedFiles"] as const,
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["uncommittedFiles", appId] as const,
-    diff: ({
-      appId,
-      filePath,
-    }: {
-      appId: number | null;
-      filePath: string | null;
-    }) => ["uncommittedFiles", appId, "diff", filePath] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["uncommittedFiles", appId] as const,
+    diff: ({ appId, filePath }: { appId: number | null; filePath: string | null }) =>
+      ["uncommittedFiles", appId, "diff", filePath] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -150,8 +122,7 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   problems: {
     all: ["problems"] as const,
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["problems", appId] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["problems", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -159,10 +130,8 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   tests: {
     all: ["tests"] as const,
-    list: ({ appId }: { appId: number | null }) =>
-      ["tests", "list", appId] as const,
-    legacy: ({ appId }: { appId: number | null }) =>
-      ["tests", "legacy", appId] as const,
+    list: ({ appId }: { appId: number | null }) => ["tests", "list", appId] as const,
+    legacy: ({ appId }: { appId: number | null }) => ["tests", "legacy", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -170,8 +139,7 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   contextPaths: {
     all: ["context-paths"] as const,
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["context-paths", appId] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["context-paths", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -196,13 +164,8 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   appFiles: {
     all: ["app-files"] as const,
-    content: ({
-      appId,
-      filePath,
-    }: {
-      appId: number | null;
-      filePath: string | null;
-    }) => ["app-files", "content", appId, filePath] as const,
+    content: ({ appId, filePath }: { appId: number | null; filePath: string | null }) =>
+      ["app-files", "content", appId, filePath] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -218,8 +181,7 @@ export const queryKeys = {
   // Security Review
   // ─────────────────────────────────────────────────────────────────────────────
   securityReview: {
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["security-review", appId] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["security-review", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -227,8 +189,7 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   appTheme: {
     all: ["app-theme"] as const,
-    byApp: ({ appId }: { appId: number | undefined }) =>
-      ["app-theme", appId] as const,
+    byApp: ({ appId }: { appId: number | undefined }) => ["app-theme", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -289,8 +250,7 @@ export const queryKeys = {
   },
 
   cloudSandboxes: {
-    status: ({ appId }: { appId: number | null }) =>
-      ["cloudSandboxStatus", appId] as const,
+    status: ({ appId }: { appId: number | null }) => ["cloudSandboxStatus", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -312,20 +272,16 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   vercel: {
     all: ["vercel"] as const,
-    deployments: ({ appId }: { appId: number }) =>
-      ["vercel", "deployments", appId] as const,
-    syncPreview: ({ appId }: { appId: number | null }) =>
-      ["vercel", "syncPreview", appId] as const,
+    deployments: ({ appId }: { appId: number }) => ["vercel", "deployments", appId] as const,
+    syncPreview: ({ appId }: { appId: number | null }) => ["vercel", "syncPreview", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
   // App Upgrades
   // ─────────────────────────────────────────────────────────────────────────────
   appUpgrades: {
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["app-upgrades", appId] as const,
-    isCapacitor: ({ appId }: { appId: number | null }) =>
-      ["is-capacitor", appId] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["app-upgrades", appId] as const,
+    isCapacitor: ({ appId }: { appId: number | null }) => ["is-capacitor", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -363,13 +319,8 @@ export const queryKeys = {
      * project's verdict. Invalidate with `legacyAppKeyForApp` to clear every
      * project's entry for an app.
      */
-    legacyAppKey: ({
-      appId,
-      projectId,
-    }: {
-      appId: number | null;
-      projectId: string | null;
-    }) => ["supabase", "legacyAppKey", appId, projectId] as const,
+    legacyAppKey: ({ appId, projectId }: { appId: number | null; projectId: string | null }) =>
+      ["supabase", "legacyAppKey", appId, projectId] as const,
     legacyAppKeyForApp: ({ appId }: { appId: number | null }) =>
       ["supabase", "legacyAppKey", appId] as const,
     branches: ({
@@ -411,15 +362,9 @@ export const queryKeys = {
   neon: {
     all: ["neon"] as const,
     projects: ["neon", "projects"] as const,
-    project: ({ appId }: { appId: number | null }) =>
-      ["neon", "project", appId] as const,
-    emailPasswordConfig: ({
-      appId,
-      branchId,
-    }: {
-      appId: number | null;
-      branchId: string | null;
-    }) => ["neon", "emailPasswordConfig", appId, branchId] as const,
+    project: ({ appId }: { appId: number | null }) => ["neon", "project", appId] as const,
+    emailPasswordConfig: ({ appId, branchId }: { appId: number | null; branchId: string | null }) =>
+      ["neon", "emailPasswordConfig", appId, branchId] as const,
     branchEnvVars: ({
       appId,
       branchType,
@@ -433,8 +378,7 @@ export const queryKeys = {
   // App Environment Variables
   // ─────────────────────────────────────────────────────────────────────────────
   appEnvVars: {
-    byApp: ({ appId }: { appId: number | null }) =>
-      ["app-env-vars", appId] as const,
+    byApp: ({ appId }: { appId: number | null }) => ["app-env-vars", appId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -461,55 +405,35 @@ export type AppQueryKey =
   | QueryKeyOf<(typeof queryKeys.system)[keyof typeof queryKeys.system]>
   | QueryKeyOf<(typeof queryKeys.settings)[keyof typeof queryKeys.settings]>
   | QueryKeyOf<(typeof queryKeys.apps)[keyof typeof queryKeys.apps]>
-  | QueryKeyOf<
-      (typeof queryKeys.appCollections)[keyof typeof queryKeys.appCollections]
-    >
+  | QueryKeyOf<(typeof queryKeys.appCollections)[keyof typeof queryKeys.appCollections]>
   | QueryKeyOf<(typeof queryKeys.chats)[keyof typeof queryKeys.chats]>
   | QueryKeyOf<(typeof queryKeys.tasks)[keyof typeof queryKeys.tasks]>
   | QueryKeyOf<(typeof queryKeys.plans)[keyof typeof queryKeys.plans]>
   | QueryKeyOf<(typeof queryKeys.proposals)[keyof typeof queryKeys.proposals]>
   | QueryKeyOf<(typeof queryKeys.versions)[keyof typeof queryKeys.versions]>
   | QueryKeyOf<(typeof queryKeys.branches)[keyof typeof queryKeys.branches]>
-  | QueryKeyOf<
-      (typeof queryKeys.uncommittedFiles)[keyof typeof queryKeys.uncommittedFiles]
-    >
+  | QueryKeyOf<(typeof queryKeys.uncommittedFiles)[keyof typeof queryKeys.uncommittedFiles]>
   | QueryKeyOf<(typeof queryKeys.problems)[keyof typeof queryKeys.problems]>
   | QueryKeyOf<(typeof queryKeys.tests)[keyof typeof queryKeys.tests]>
-  | QueryKeyOf<
-      (typeof queryKeys.contextPaths)[keyof typeof queryKeys.contextPaths]
-    >
+  | QueryKeyOf<(typeof queryKeys.contextPaths)[keyof typeof queryKeys.contextPaths]>
   | QueryKeyOf<(typeof queryKeys.tokenCount)[keyof typeof queryKeys.tokenCount]>
   | QueryKeyOf<(typeof queryKeys.appFiles)[keyof typeof queryKeys.appFiles]>
   | QueryKeyOf<(typeof queryKeys.files)[keyof typeof queryKeys.files]>
   | QueryKeyOf<(typeof queryKeys.appName)[keyof typeof queryKeys.appName]>
-  | QueryKeyOf<
-      (typeof queryKeys.securityReview)[keyof typeof queryKeys.securityReview]
-    >
+  | QueryKeyOf<(typeof queryKeys.securityReview)[keyof typeof queryKeys.securityReview]>
   | QueryKeyOf<(typeof queryKeys.appTheme)[keyof typeof queryKeys.appTheme]>
   | QueryKeyOf<(typeof queryKeys.themes)[keyof typeof queryKeys.themes]>
-  | QueryKeyOf<
-      (typeof queryKeys.customThemes)[keyof typeof queryKeys.customThemes]
-    >
+  | QueryKeyOf<(typeof queryKeys.customThemes)[keyof typeof queryKeys.customThemes]>
   | QueryKeyOf<(typeof queryKeys.templates)[keyof typeof queryKeys.templates]>
   | QueryKeyOf<(typeof queryKeys.prompts)[keyof typeof queryKeys.prompts]>
   | QueryKeyOf<(typeof queryKeys.agentTools)[keyof typeof queryKeys.agentTools]>
-  | QueryKeyOf<
-      (typeof queryKeys.languageModels)[keyof typeof queryKeys.languageModels]
-    >
+  | QueryKeyOf<(typeof queryKeys.languageModels)[keyof typeof queryKeys.languageModels]>
   | QueryKeyOf<(typeof queryKeys.userBudget)[keyof typeof queryKeys.userBudget]>
-  | QueryKeyOf<
-      (typeof queryKeys.cloudSandboxes)[keyof typeof queryKeys.cloudSandboxes]
-    >
-  | QueryKeyOf<
-      (typeof queryKeys.freeAgentQuota)[keyof typeof queryKeys.freeAgentQuota]
-    >
-  | QueryKeyOf<
-      (typeof queryKeys.freeModelQuota)[keyof typeof queryKeys.freeModelQuota]
-    >
+  | QueryKeyOf<(typeof queryKeys.cloudSandboxes)[keyof typeof queryKeys.cloudSandboxes]>
+  | QueryKeyOf<(typeof queryKeys.freeAgentQuota)[keyof typeof queryKeys.freeAgentQuota]>
+  | QueryKeyOf<(typeof queryKeys.freeModelQuota)[keyof typeof queryKeys.freeModelQuota]>
   | QueryKeyOf<(typeof queryKeys.vercel)[keyof typeof queryKeys.vercel]>
-  | QueryKeyOf<
-      (typeof queryKeys.appUpgrades)[keyof typeof queryKeys.appUpgrades]
-    >
+  | QueryKeyOf<(typeof queryKeys.appUpgrades)[keyof typeof queryKeys.appUpgrades]>
   | QueryKeyOf<(typeof queryKeys.mcp)[keyof typeof queryKeys.mcp]>
   | QueryKeyOf<(typeof queryKeys.supabase)[keyof typeof queryKeys.supabase]>
   | QueryKeyOf<(typeof queryKeys.github)[keyof typeof queryKeys.github]>

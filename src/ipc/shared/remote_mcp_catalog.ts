@@ -1,9 +1,6 @@
 import log from "electron-log";
 import { z } from "zod";
-import {
-  McpCatalogEntrySchema,
-  type McpCatalogEntry,
-} from "@/ipc/types/mcp_catalog";
+import { McpCatalogEntrySchema, type McpCatalogEntry } from "@/ipc/types/mcp_catalog";
 
 const logger = log.scope("remote_mcp_catalog");
 
@@ -67,9 +64,7 @@ async function fetchRemoteMcpCatalog(): Promise<{
     signal: AbortSignal.timeout(REMOTE_MCP_CATALOG_TIMEOUT_MS),
   });
   if (!response.ok) {
-    throw new Error(
-      `MCP catalog request failed with status ${response.status}`,
-    );
+    throw new Error(`MCP catalog request failed with status ${response.status}`);
   }
   const parsed = McpCatalogResponseSchema.parse(await response.json());
   return {
@@ -102,8 +97,7 @@ export async function getRemoteMcpCatalog(): Promise<McpCatalogEntry[]> {
         // transient bad response isn't pinned for the full TTL.
         catalogCache = {
           entries,
-          expiresAt:
-            entries.length > 0 ? expiresAt : Date.now() + FAILURE_CACHE_TTL_MS,
+          expiresAt: entries.length > 0 ? expiresAt : Date.now() + FAILURE_CACHE_TTL_MS,
         };
         return entries;
       } catch (error) {

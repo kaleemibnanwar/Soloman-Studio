@@ -9,11 +9,7 @@ import { uuidIdSource, type IdSource } from "@/state_machines/clock";
 import type { ChatStreamRuntimeDeps } from "./runtime_deps";
 import { ChatStreamPreviewStore } from "./preview_store";
 import { CHAT_STREAM_INVOCATION_KIND } from "./invocation";
-import type {
-  StreamEvent,
-  StreamRequest,
-  StreamSettledResult,
-} from "./renderer_facade";
+import type { StreamEvent, StreamRequest, StreamSettledResult } from "./renderer_facade";
 import {
   chatStreamClientDefinition,
   chatStreamKey,
@@ -102,9 +98,7 @@ export type QueueMutationWithoutRevision =
 export class ChatStreamRemoteManager {
   private readonly client: RemoteMachineClient;
   private readonly subscriptions = new Map<number, RetainedSubscription>();
-  private readonly streamFinishedListeners = new Set<
-    (event: StreamFinishedEvent) => void
-  >();
+  private readonly streamFinishedListeners = new Set<(event: StreamFinishedEvent) => void>();
   private readonly pendingSubmissions = new Map<string, PendingSubmission>();
   private readonly submissionTails = new Map<number, Promise<void>>();
   private readonly snapshotListeners = new Map<number, Set<() => void>>();
@@ -121,8 +115,7 @@ export class ChatStreamRemoteManager {
   private readonly completionCursorInitialized = new Set<number>();
   private readonly refs = new Map<number, RemoteChatRef>();
   private readonly previews = new ChatStreamPreviewStore();
-  private runtimeDeps: Omit<ChatStreamRuntimeDeps, "getIsStreaming"> | null =
-    null;
+  private runtimeDeps: Omit<ChatStreamRuntimeDeps, "getIsStreaming"> | null = null;
   private stopConnection?: () => void;
   private disposed = false;
 
@@ -146,9 +139,7 @@ export class ChatStreamRemoteManager {
     this.stopConnection = undefined;
   }
 
-  registerRuntimeDeps(
-    deps: Omit<ChatStreamRuntimeDeps, "getIsStreaming">,
-  ): void {
+  registerRuntimeDeps(deps: Omit<ChatStreamRuntimeDeps, "getIsStreaming">): void {
     this.runtimeDeps = deps;
   }
 
@@ -157,8 +148,7 @@ export class ChatStreamRemoteManager {
     if (ref) return ref;
     const actor = this.actor(chatId);
     ref = {
-      getSnapshot: () =>
-        this.projectOptimisticAdmission(chatId, actor.getSnapshot()),
+      getSnapshot: () => this.projectOptimisticAdmission(chatId, actor.getSnapshot()),
       subscribe: (listener) => {
         const release = this.retainSubscription(chatId, actor);
         const listeners = this.snapshotListeners.get(chatId) ?? new Set();
@@ -183,10 +173,7 @@ export class ChatStreamRemoteManager {
   }
 
   getSnapshot(chatId: number): ChatStreamRemoteSnapshot {
-    return this.projectOptimisticAdmission(
-      chatId,
-      this.actor(chatId).getSnapshot(),
-    );
+    return this.projectOptimisticAdmission(chatId, this.actor(chatId).getSnapshot());
   }
 
   getIsStreaming(chatId: number): boolean {
@@ -221,17 +208,14 @@ export class ChatStreamRemoteManager {
     };
   }
 
-  subscribeStreamFinished(
-    listener: (event: StreamFinishedEvent) => void,
-  ): () => void {
+  subscribeStreamFinished(listener: (event: StreamFinishedEvent) => void): () => void {
     this.streamFinishedListeners.add(listener);
     return () => this.streamFinishedListeners.delete(listener);
   }
 
   getPreviewSnapshot = this.previews.getSnapshot;
   subscribePreview = this.previews.subscribeKey;
-  setPreview = (chatId: number, content: string): boolean =>
-    this.previews.set(chatId, content);
+  setPreview = (chatId: number, content: string): boolean => this.previews.set(chatId, content);
 
   async dispatchQueueEvent(
     chatId: number,
@@ -241,25 +225,24 @@ export class ChatStreamRemoteManager {
     const actor = this.actor(chatId);
     // Preserve the revision that produced the mutation. Resync is only for
     // transport freshness; it must not silently rebase stale renderer intent.
-    const mutationQueueRevision =
-      expectedQueueRevision ?? actor.getSnapshot().queueRevision;
+    const mutationQueueRevision = expectedQueueRevision ?? actor.getSnapshot().queueRevision;
     const release = this.retainSubscription(chatId, actor);
     let releaseSettlement = IDLE_UNSUBSCRIBE;
     try {
       await actor.resync();
       const mutationId = this.ids.next("chat-queue");
-      const settlement = new Promise<
-        NonNullable<ChatStreamRemoteSnapshot["lastQueueMutation"]>
-      >((resolve) => {
-        const inspect = () => {
-          const result = actor.getSnapshot().lastQueueMutation;
-          if (result?.mutationId !== mutationId) return;
-          releaseSettlement();
-          resolve(result);
-        };
-        releaseSettlement = actor.subscribe(inspect);
-        inspect();
-      });
+      const settlement = new Promise<NonNullable<ChatStreamRemoteSnapshot["lastQueueMutation"]>>(
+        (resolve) => {
+          const inspect = () => {
+            const result = actor.getSnapshot().lastQueueMutation;
+            if (result?.mutationId !== mutationId) return;
+            releaseSettlement();
+            resolve(result);
+          };
+          releaseSettlement = actor.subscribe(inspect);
+          inspect();
+        },
+      );
       const receipt = await actor.dispatch({
         ...event,
         mutationId,
@@ -292,8 +275,7 @@ export class ChatStreamRemoteManager {
     this.lastCompletionByChat.delete(chatId);
     this.completionCursorInitialized.delete(chatId);
     for (const [intentId, pending] of this.pendingSubmissions) {
-      if (pending.request.chatId === chatId)
-        this.takePendingSubmission(intentId);
+      if (pending.request.chatId === chatId) this.takePendingSubmission(intentId);
     }
     this.submissionTails.delete(chatId);
     this.previews.disposeKey(chatId);
@@ -367,10 +349,7 @@ export class ChatStreamRemoteManager {
       .catch((error) => this.reportCompatibilityDispatchFailure(action, error));
   }
 
-  private reportCompatibilityDispatchFailure(
-    action: string,
-    error: unknown,
-  ): void {
+  private reportCompatibilityDispatchFailure(action: string, error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[chat-stream] Failed to ${action}`, error);
     showWarning(`Failed to ${action}: ${message}`);
@@ -399,14 +378,7 @@ export class ChatStreamRemoteManager {
     const previous = this.submissionTails.get(request.chatId);
     const submission = (previous ?? Promise.resolve())
       .catch(() => undefined)
-      .then(() =>
-        this.prepareAndDispatchSubmission(
-          request,
-          actor,
-          intentId,
-          invocationRef,
-        ),
-      );
+      .then(() => this.prepareAndDispatchSubmission(request, actor, intentId, invocationRef));
     this.submissionTails.set(request.chatId, submission);
     void submission.finally(() => {
       if (this.submissionTails.get(request.chatId) === submission) {
@@ -445,9 +417,7 @@ export class ChatStreamRemoteManager {
       };
       const intent: SerializableChatTurnIntent = {
         ...withoutHash,
-        payloadHash: await sha256Hex(
-          serializeImmutableChatTurnPayload(withoutHash),
-        ),
+        payloadHash: await sha256Hex(serializeImmutableChatTurnPayload(withoutHash)),
       };
       if (this.disposed || !this.pendingSubmissions.has(intentId)) return;
       const receipt = await actor.dispatch({ type: "SUBMIT", intent });
@@ -465,9 +435,7 @@ export class ChatStreamRemoteManager {
     }
   }
 
-  private takePendingSubmission(
-    intentId: string,
-  ): PendingSubmission | undefined {
+  private takePendingSubmission(intentId: string): PendingSubmission | undefined {
     const pending = this.pendingSubmissions.get(intentId);
     if (!pending) return undefined;
     this.pendingSubmissions.delete(intentId);
@@ -488,9 +456,7 @@ export class ChatStreamRemoteManager {
       }
       return this.releaseSubscription(chatId, existing);
     }
-    const unsubscribe = actor.subscribe(() =>
-      this.handleSnapshot(chatId, actor.getSnapshot()),
-    );
+    const unsubscribe = actor.subscribe(() => this.handleSnapshot(chatId, actor.getSnapshot()));
     const subscription: RetainedSubscription = {
       consumers: 1,
       unsubscribe,
@@ -517,10 +483,7 @@ export class ChatStreamRemoteManager {
     });
   }
 
-  private releaseSubscription(
-    chatId: number,
-    subscription: RetainedSubscription,
-  ): () => void {
+  private releaseSubscription(chatId: number, subscription: RetainedSubscription): () => void {
     let active = true;
     return () => {
       if (!active) return;
@@ -529,10 +492,7 @@ export class ChatStreamRemoteManager {
       subscription.consumers -= 1;
       if (subscription.consumers > 0) return;
       queueMicrotask(() => {
-        if (
-          this.subscriptions.get(chatId) !== subscription ||
-          subscription.consumers > 0
-        ) {
+        if (this.subscriptions.get(chatId) !== subscription || subscription.consumers > 0) {
           return;
         }
         subscription.unsubscribe();
@@ -541,24 +501,15 @@ export class ChatStreamRemoteManager {
     };
   }
 
-  private handleSnapshot(
-    chatId: number,
-    snapshot: ChatStreamRemoteSnapshot,
-  ): void {
+  private handleSnapshot(chatId: number, snapshot: ChatStreamRemoteSnapshot): void {
     if (this.disposed) return;
     const acceptance = snapshot.lastAcceptance;
-    if (
-      acceptance &&
-      this.lastAcceptanceByChat.get(chatId) !== acceptance.intentId
-    ) {
+    if (acceptance && this.lastAcceptanceByChat.get(chatId) !== acceptance.intentId) {
       this.lastAcceptanceByChat.set(chatId, acceptance.intentId);
       const pending = this.pendingSubmissions.get(acceptance.intentId);
       if (pending) {
         pending.acceptanceDelivered = true;
-        if (
-          acceptance.acceptance === "message-accepted" ||
-          acceptance.acceptance === "replayed"
-        ) {
+        if (acceptance.acceptance === "message-accepted" || acceptance.acceptance === "replayed") {
           pending.request.onAccepted?.();
           const replayedCompletion = snapshot.lastCompletion;
           if (
@@ -576,9 +527,7 @@ export class ChatStreamRemoteManager {
           pending.request.onSettled?.({ success: false, queued: true });
           this.takePendingSubmission(acceptance.intentId);
         } else {
-          pending.request.onAcceptanceRejected?.(
-            acceptance.error ?? "Chat submission rejected",
-          );
+          pending.request.onAcceptanceRejected?.(acceptance.error ?? "Chat submission rejected");
           pending.request.onSettled?.({ success: false });
           this.takePendingSubmission(acceptance.intentId);
         }
@@ -592,10 +541,7 @@ export class ChatStreamRemoteManager {
         return;
       }
     }
-    if (
-      !completion ||
-      this.lastCompletionByChat.get(chatId) === completion.intentId
-    ) {
+    if (!completion || this.lastCompletionByChat.get(chatId) === completion.intentId) {
       return;
     }
     this.lastCompletionByChat.set(chatId, completion.intentId);
@@ -642,11 +588,7 @@ export class ChatStreamRemoteManager {
     }
     for (const warningMessage of completion.warningMessages ?? []) {
       if (warningMessage.startsWith(PNPM_MINIMUM_RELEASE_AGE_WARNING_PREFIX)) {
-        if (
-          !shouldShowPnpmMinimumReleaseAgeWarning(
-            this.runtimeDeps?.getSettings(),
-          )
-        ) {
+        if (!shouldShowPnpmMinimumReleaseAgeWarning(this.runtimeDeps?.getSettings())) {
           continue;
         }
         if (targetAppId !== null) {
@@ -681,11 +623,9 @@ export class ChatStreamRemoteManager {
           const currentSnapshot = this.getSnapshot(chatId);
           if (
             (currentSnapshot.invocationRef?.operationId !== undefined &&
-              currentSnapshot.invocationRef.operationId !==
-                completedInvocation) ||
+              currentSnapshot.invocationRef.operationId !== completedInvocation) ||
             (currentSnapshot.lastCompletion !== null &&
-              currentSnapshot.lastCompletion.invocationRef.operationId !==
-                completedInvocation)
+              currentSnapshot.lastCompletion.invocationRef.operationId !== completedInvocation)
           ) {
             return;
           }
@@ -695,10 +635,7 @@ export class ChatStreamRemoteManager {
           );
           this.store.set(chatMessagesByIdAtom, (previous) => {
             const currentMessages = previous.get(chatId);
-            if (
-              currentMessages &&
-              currentMessages.length > latestChat.messages.length
-            ) {
+            if (currentMessages && currentMessages.length > latestChat.messages.length) {
               return previous;
             }
             const next = new Map(previous);
@@ -713,10 +650,7 @@ export class ChatStreamRemoteManager {
         })
         .catch((error) => {
           if (this.disposed) return;
-          console.error(
-            "[chat-stream] Failed to refresh completed chat",
-            error,
-          );
+          console.error("[chat-stream] Failed to refresh completed chat", error);
         });
     }
     if (completion.updatedFiles && snapshot.chatId > 0) {
@@ -748,8 +682,7 @@ export class ChatStreamRemoteManager {
       return snapshot;
     }
     const pendingEntry = [...this.pendingSubmissions.entries()].find(
-      ([, submission]) =>
-        submission.request.chatId === chatId && !submission.acceptanceDelivered,
+      ([, submission]) => submission.request.chatId === chatId && !submission.acceptanceDelivered,
     );
     if (!pendingEntry) {
       this.optimisticSnapshots.delete(chatId);

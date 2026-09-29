@@ -13,11 +13,7 @@ import fs from "fs";
 import path from "path";
 import { expect } from "@playwright/test";
 
-import {
-  test,
-  testSkipIfWindows,
-  testWithConfigSkipIfWindows,
-} from "./helpers/test_helper";
+import { test, testSkipIfWindows, testWithConfigSkipIfWindows } from "./helpers/test_helper";
 
 // Marks a blob that safeStorage could not encrypt, mirroring the tag
 // used in src/ipc/utils/secret_storage.ts.
@@ -106,9 +102,7 @@ function readDatabaseBytes(userDataDir: string): Buffer {
   // The write-ahead log holds recent writes that haven't been folded
   // into the main file yet, so a secret could hide there.
   return Buffer.concat(
-    [dbPath, `${dbPath}-wal`]
-      .filter((p) => fs.existsSync(p))
-      .map((p) => fs.readFileSync(p)),
+    [dbPath, `${dbPath}-wal`].filter((p) => fs.existsSync(p)).map((p) => fs.readFileSync(p)),
   );
 }
 
@@ -119,9 +113,7 @@ testSkipIfWindows(
     await po.navigation.goToPluginsTab();
     await po.plugins.openAddPluginDialog();
 
-    await po.page
-      .getByRole("textbox", { name: "My MCP Server" })
-      .fill(NEW_SERVER_NAME);
+    await po.page.getByRole("textbox", { name: "My MCP Server" }).fill(NEW_SERVER_NAME);
     await po.page.getByRole("textbox", { name: "node" }).fill("node");
     await po.page
       .getByRole("textbox", { name: "path/to/mcp-server.js --flag" })
@@ -130,9 +122,7 @@ testSkipIfWindows(
 
     await po.plugins.openPluginDetail(NEW_SERVER_NAME);
     const detail = po.page.getByTestId("plugin-detail");
-    await detail
-      .getByRole("button", { name: "Add Environment Variable" })
-      .click();
+    await detail.getByRole("button", { name: "Add Environment Variable" }).click();
     await detail.getByRole("textbox", { name: "Key" }).fill("API_KEY");
     await detail.getByRole("textbox", { name: "Value" }).fill(NEW_SECRET);
     await detail.getByRole("button", { name: "Save" }).click();
@@ -141,11 +131,7 @@ testSkipIfWindows(
     // only if the stored ciphertext actually decrypts.
     await expect(detail.getByText(NEW_SECRET)).toBeVisible();
 
-    const stored = await readStoredSecrets(
-      po.userDataDir,
-      NEW_SERVER_NAME,
-      "envEncrypted",
-    );
+    const stored = await readStoredSecrets(po.userDataDir, NEW_SERVER_NAME, "envEncrypted");
     expectRealCiphertext(stored.envEncrypted, NEW_SECRET);
     // Nothing created on this build should populate the legacy column.
     expect(stored.envJson).toBeNull();
@@ -158,12 +144,7 @@ const testWithLegacyDb = testWithConfigSkipIfWindows({
   preLaunchHook: async ({ userDataDir }) => {
     fs.mkdirSync(userDataDir, { recursive: true });
     fs.copyFileSync(
-      path.join(
-        __dirname,
-        "fixtures",
-        "mcp",
-        "plaintext-headers-pre-encryption.db",
-      ),
+      path.join(__dirname, "fixtures", "mcp", "plaintext-headers-pre-encryption.db"),
       path.join(userDataDir, "sqlite.db"),
     );
   },
@@ -180,11 +161,7 @@ testWithLegacyDb(
     // Readable only if the header survived the migration and decrypts.
     await expect(detail.getByText(LEGACY_SECRET)).toBeVisible();
 
-    const stored = await readStoredSecrets(
-      po.userDataDir,
-      LEGACY_SERVER_NAME,
-      "headersEncrypted",
-    );
+    const stored = await readStoredSecrets(po.userDataDir, LEGACY_SERVER_NAME, "headersEncrypted");
     expectRealCiphertext(stored.headersEncrypted, LEGACY_SECRET);
 
     // The plaintext column is deliberately left alone so a build

@@ -1,14 +1,7 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 
-const ProviderIdSchema = z.enum([
-  "openai",
-  "anthropic",
-  "google",
-  "vertex",
-  "openrouter",
-  "xai",
-]);
+const ProviderIdSchema = z.enum(["openai", "anthropic", "google", "vertex", "openrouter", "xai"]);
 
 const ThemeGenerationAliasIdSchema = z.enum([
   "octopusStudio/theme-generator/google",
@@ -117,8 +110,7 @@ function buildCatalogResponse(now = new Date()) {
         id: "vertex",
         displayName: "Google Vertex AI",
         type: "cloud",
-        websiteUrl:
-          "https://cloud.google.com/vertex-ai/generative-ai/docs/models",
+        websiteUrl: "https://cloud.google.com/vertex-ai/generative-ai/docs/models",
         supportsThinking: true,
         gatewayPrefix: "gemini/",
       },

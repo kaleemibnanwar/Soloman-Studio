@@ -30,10 +30,7 @@ interface OctopusStudioGrepProps {
   };
 }
 
-export const OctopusStudioGrep: React.FC<OctopusStudioGrepProps> = ({
-  children,
-  node,
-}) => {
+export const OctopusStudioGrep: React.FC<OctopusStudioGrepProps> = ({ children, node }) => {
   const [isContentVisible, setIsContentVisible] = useState(false);
 
   const state = node?.properties?.state as CustomTagState;
@@ -76,29 +73,13 @@ export const OctopusStudioGrep: React.FC<OctopusStudioGrepProps> = ({
     >
       <OctopusStudioCardHeader icon={<Search size={15} />} accentColor="violet">
         <OctopusStudioBadge color="violet">GREP</OctopusStudioBadge>
-        {appName && (
-          <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>
-        )}
-        <span className="font-medium text-sm text-foreground truncate">
-          {description}
-        </span>
+        {appName && <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>}
+        <span className="font-medium text-sm text-foreground truncate">{description}</span>
         {resultSummary && (
-          <span className="text-xs text-muted-foreground shrink-0">
-            ({resultSummary})
-          </span>
+          <span className="text-xs text-muted-foreground shrink-0">({resultSummary})</span>
         )}
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Searching..."
-          />
-        )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Searching..." />}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
         </div>

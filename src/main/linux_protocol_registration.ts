@@ -53,8 +53,7 @@ function quote(value: string): string {
 // The Exec target differs per packaging format. Pure so it can be unit-tested
 // without touching the real environment.
 export function computeExecCommand(inputs: ExecInputs): ExecCommand {
-  const { defaultApp, execPath, argv, appImagePath, nodeEnv, devUserDataDir } =
-    inputs;
+  const { defaultApp, execPath, argv, appImagePath, nodeEnv, devUserDataDir } = inputs;
 
   // AppImage: process.execPath points at the ephemeral /tmp/.mount_* extract
   // that changes every launch, so it must not be used. appImagePath (from
@@ -98,8 +97,7 @@ export function computeExecCommand(inputs: ExecInputs): ExecCommand {
               : []),
           ]
         : [];
-    const envPrefix =
-      envAssignments.length > 0 ? `${envAssignments.join(" ")} ` : "";
+    const envPrefix = envAssignments.length > 0 ? `${envAssignments.join(" ")} ` : "";
     return {
       exec: `${envPrefix}${quote(execPath)} ${quote(script)} %u`,
       tryExec: execPath,
@@ -145,9 +143,7 @@ export function buildDesktopFile(command: ExecCommand): string {
 // is baked into the dev handler so a browser-launched deep link forwards into
 // this instance regardless of the launcher's working directory. Callers in the
 // main process pass it; it's ignored outside dev.
-export async function registerOctopusStudioProtocolLinux(
-  devUserDataDir?: string,
-): Promise<void> {
+export async function registerOctopusStudioProtocolLinux(devUserDataDir?: string): Promise<void> {
   if (process.platform !== "linux") {
     return;
   }
@@ -168,8 +164,7 @@ export async function registerOctopusStudioProtocolLinux(
 
     // Honor XDG_DATA_HOME so the file lands where the desktop environment
     // actually searches; fall back to the spec default otherwise.
-    const dataHome =
-      process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
+    const dataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
     const appsDir = path.join(dataHome, "applications");
     const desktopPath = path.join(appsDir, DESKTOP_FILENAME);
 
@@ -188,11 +183,9 @@ export async function registerOctopusStudioProtocolLinux(
 
     // xdg-mime is the step that actually sets the default, so only claim
     // success when it succeeds.
-    const registered = await execFileAsync(
-      "xdg-mime",
-      ["default", DESKTOP_FILENAME, MIME_TYPE],
-      { timeout: 5000 },
-    )
+    const registered = await execFileAsync("xdg-mime", ["default", DESKTOP_FILENAME, MIME_TYPE], {
+      timeout: 5000,
+    })
       .then(() => true)
       .catch((error) => {
         logger.warn("xdg-mime default failed:", error);

@@ -20,17 +20,10 @@ function stripItemIdFromPart(part: Record<string, unknown>): boolean {
     const container = part[field];
     if (!container || typeof container !== "object") continue;
 
-    const containerRecord = container as Record<
-      string,
-      Record<string, unknown>
-    >;
+    const containerRecord = container as Record<string, Record<string, unknown>>;
     for (const key of PROVIDER_KEYS_WITH_ITEM_ID) {
       const providerData = containerRecord[key];
-      if (
-        providerData &&
-        typeof providerData === "object" &&
-        "itemId" in providerData
-      ) {
+      if (providerData && typeof providerData === "object" && "itemId" in providerData) {
         delete providerData.itemId;
         didStrip = true;
         // Clean up empty provider data
@@ -73,10 +66,7 @@ export function cleanMessage<T extends ModelMessage>(message: T): T {
   let didModify = false;
 
   for (let i = 0; i < message.content.length; i++) {
-    const part = message.content[i] as { type?: string } & Record<
-      string,
-      unknown
-    >;
+    const part = message.content[i] as { type?: string } & Record<string, unknown>;
 
     // Check if this is orphaned reasoning (no following output)
     if (part.type === "reasoning") {
@@ -97,10 +87,7 @@ export function cleanMessage<T extends ModelMessage>(message: T): T {
 
     // Ensure tool-call input is always a valid object (prevents LiteLLM
     // sending empty string as input when converting OpenAI→Anthropic format)
-    if (
-      part.type === "tool-call" &&
-      (!part.input || typeof part.input !== "object")
-    ) {
+    if (part.type === "tool-call" && (!part.input || typeof part.input !== "object")) {
       part.input = {};
       didModify = true;
     }
@@ -122,9 +109,7 @@ export function cleanMessage<T extends ModelMessage>(message: T): T {
  * retries, aborts, or mid-turn message insertion. Normalize the transcript
  * before saving or sending it to a provider.
  */
-export function sanitizeToolCallTranscript(
-  messages: ModelMessage[],
-): ModelMessage[] {
+export function sanitizeToolCallTranscript(messages: ModelMessage[]): ModelMessage[] {
   const cleaned = messages.map(cleanMessage);
   const sanitized: ModelMessage[] = [];
 
@@ -149,15 +134,10 @@ export function sanitizeToolCallTranscript(
       toolCallIds,
       collectToolResults(cleaned.slice(i + 1, scanEnd), expectedToolCallIds),
     );
-    const completedToolCallIds = new Set(
-      collectedToolResults.map((part) => part.toolCallId),
-    );
+    const completedToolCallIds = new Set(collectedToolResults.map((part) => part.toolCallId));
 
     if (completedToolCallIds.size > 0) {
-      const pairedAssistant = keepCompletedToolCalls(
-        message,
-        completedToolCallIds,
-      );
+      const pairedAssistant = keepCompletedToolCalls(message, completedToolCallIds);
       if (!pairedAssistant) {
         continue;
       }
@@ -203,9 +183,7 @@ function getCanonicalToolMessage(
     return null;
   }
 
-  return message.content.every(
-    (part, index) => part === collectedToolResults[index],
-  )
+  return message.content.every((part, index) => part === collectedToolResults[index])
     ? message
     : null;
 }
@@ -264,9 +242,7 @@ function orderToolResultsByCallOrder(
   toolCallIds: string[],
   toolResults: ToolResultTranscriptPart[],
 ): ToolResultTranscriptPart[] {
-  const resultByToolCallId = new Map(
-    toolResults.map((part) => [part.toolCallId, part]),
-  );
+  const resultByToolCallId = new Map(toolResults.map((part) => [part.toolCallId, part]));
 
   return toolCallIds.flatMap((toolCallId) => {
     const result = resultByToolCallId.get(toolCallId);
@@ -321,9 +297,7 @@ export function isToolCallPart(part: unknown): part is ToolCallTranscriptPart {
   );
 }
 
-export function isToolResultPart(
-  part: unknown,
-): part is ToolResultTranscriptPart {
+export function isToolResultPart(part: unknown): part is ToolResultTranscriptPart {
   return (
     typeof part === "object" &&
     part !== null &&
@@ -372,9 +346,7 @@ export function getAiMessagesJsonIfWithinLimit(
     return payload;
   }
 
-  logger.warn(
-    `ai_messages_json too large (${jsonStr.length} bytes), skipping save`,
-  );
+  logger.warn(`ai_messages_json too large (${jsonStr.length} bytes), skipping save`);
   return undefined;
 }
 
@@ -398,10 +370,7 @@ export function parseAiMessagesJson(msg: DbMessageForParsing): ModelMessage[] {
     const parsed = msg.aiMessagesJson;
 
     // Legacy shape: stored directly as a ModelMessage[]
-    if (
-      Array.isArray(parsed) &&
-      parsed.every((m) => m && typeof m.role === "string")
-    ) {
+    if (Array.isArray(parsed) && parsed.every((m) => m && typeof m.role === "string")) {
       return sanitizeToolCallTranscript(parsed);
     }
 

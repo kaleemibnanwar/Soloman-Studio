@@ -262,10 +262,7 @@ export const AppRunProducerEventSchema = z.discriminatedUnion("type", [
 ]);
 export type AppRunProducerEvent = z.infer<typeof AppRunProducerEventSchema>;
 
-export const AppRunWireEventSchema = z.union([
-  AppRunIntentEventSchema,
-  AppRunProducerEventSchema,
-]);
+export const AppRunWireEventSchema = z.union([AppRunIntentEventSchema, AppRunProducerEventSchema]);
 export type AppRunWireEvent = z.infer<typeof AppRunWireEventSchema>;
 
 export type AppRunRemoteIntentClass =
@@ -314,18 +311,8 @@ export const AppRunRemoteSnapshotSchema = z
     appId: z.number().int().positive(),
     revision: expectedRevisionSchema,
     previewReloadEpoch: expectedRevisionSchema,
-    phase: z.enum([
-      "idle",
-      "starting",
-      "ready",
-      "reloading",
-      "stopping",
-      "stopped",
-      "errored",
-    ]),
-    operation: z
-      .enum(["run", "restart", "rebuild", "stop", "reload"])
-      .nullable(),
+    phase: z.enum(["idle", "starting", "ready", "reloading", "stopping", "stopped", "errored"]),
+    operation: z.enum(["run", "restart", "rebuild", "stop", "reload"]).nullable(),
     startedAt: finiteTimestampSchema.nullable(),
     url: runUrlSchema.nullable(),
     operationError: runErrorSchema.nullable(),
@@ -357,10 +344,7 @@ export function projectAppRunRemoteSnapshot(
   lastSettlement: AppRunRemoteSnapshot["lastSettlement"] = null,
   observedExit: AppRunRemoteSnapshot["exit"] = null,
 ): AppRunRemoteSnapshot {
-  if (
-    state.type !== "idle" &&
-    (state.appId !== appId || state.invocationRef.entityKey !== appId)
-  ) {
+  if (state.type !== "idle" && (state.appId !== appId || state.invocationRef.entityKey !== appId)) {
     throw new Error("App-run projection state does not match its actor key");
   }
 
@@ -413,9 +397,7 @@ export function projectAppRunRemoteSnapshot(
   }
 }
 
-function selectRemoteCapabilities(
-  state: RunState,
-): AppRunRemoteSnapshot["capabilities"] {
+function selectRemoteCapabilities(state: RunState): AppRunRemoteSnapshot["capabilities"] {
   switch (state.type) {
     case "idle":
     case "stopped":

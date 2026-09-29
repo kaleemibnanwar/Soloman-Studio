@@ -28,9 +28,10 @@ interface OctopusStudioImageGenerationProps {
   node?: OctopusStudioImageGenerationNode;
 }
 
-export const OctopusStudioImageGeneration: React.FC<
-  OctopusStudioImageGenerationProps
-> = ({ children, node }) => {
+export const OctopusStudioImageGeneration: React.FC<OctopusStudioImageGenerationProps> = ({
+  children,
+  node,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -48,9 +49,7 @@ export const OctopusStudioImageGeneration: React.FC<
   const { app } = useLoadApp(selectedAppId);
   const appPath = app?.resolvedPath ?? app?.path ?? "";
   const normalizedImagePath = imagePath.split("\\").join("/");
-  const hasTraversal = normalizedImagePath
-    .split("/")
-    .some((seg: string) => seg === "..");
+  const hasTraversal = normalizedImagePath.split("/").some((seg: string) => seg === "..");
   const imageUrl =
     appPath && normalizedImagePath && !hasTraversal
       ? `octopus-studio-media://media/${encodeURIComponent(appPath)}/${normalizedImagePath
@@ -62,8 +61,7 @@ export const OctopusStudioImageGeneration: React.FC<
     appPath && normalizedImagePath && !hasTraversal
       ? `${appPath}/${normalizedImagePath}`
       : undefined;
-  const canViewImage =
-    state === "finished" && !!imagePath && !!imageUrl && !imageError;
+  const canViewImage = state === "finished" && !!imagePath && !!imageUrl && !imageError;
 
   return (
     <>
@@ -75,29 +73,16 @@ export const OctopusStudioImageGeneration: React.FC<
       >
         <div className="flex items-start">
           <div className="flex-1 min-w-0">
-            <OctopusStudioCardHeader
-              icon={<ImageIcon size={15} />}
-              accentColor="violet"
-            >
-              <OctopusStudioBadge color="violet">
-                Image Generation
-              </OctopusStudioBadge>
+            <OctopusStudioCardHeader icon={<ImageIcon size={15} />} accentColor="violet">
+              <OctopusStudioBadge color="violet">Image Generation</OctopusStudioBadge>
               {!isExpanded && prompt && (
-                <span className="text-sm text-muted-foreground italic truncate">
-                  {prompt}
-                </span>
+                <span className="text-sm text-muted-foreground italic truncate">{prompt}</span>
               )}
               {inProgress && (
-                <OctopusStudioStateIndicator
-                  state="pending"
-                  pendingLabel="Generating..."
-                />
+                <OctopusStudioStateIndicator state="pending" pendingLabel="Generating..." />
               )}
               {aborted && (
-                <OctopusStudioStateIndicator
-                  state="aborted"
-                  abortedLabel="Did not finish"
-                />
+                <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />
               )}
               <div className="ml-auto flex items-center gap-1">
                 <OctopusStudioExpandIcon isExpanded={isExpanded} />
@@ -107,27 +92,27 @@ export const OctopusStudioImageGeneration: React.FC<
               <div className="text-sm text-muted-foreground space-y-2">
                 {prompt && (
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Prompt:
-                    </span>
-                    <div className="italic mt-0.5 text-foreground">
-                      {prompt}
-                    </div>
+                    <span className="text-xs font-medium text-muted-foreground">Prompt:</span>
+                    <div className="italic mt-0.5 text-foreground">{prompt}</div>
                   </div>
                 )}
                 {imagePath && (
                   <div>
+                    <span className="text-xs font-medium text-muted-foreground">Saved to:</span>
+                    <div className="mt-0.5 font-mono text-xs text-foreground">{imagePath}</div>
+                  </div>
+                )}
+                {absolutePath && (
+                  <div>
                     <span className="text-xs font-medium text-muted-foreground">
-                      Saved to:
+                      Absolute path (OS):
                     </span>
-                    <div className="mt-0.5 font-mono text-xs text-foreground">
-                      {imagePath}
+                    <div className="mt-0.5 font-mono text-xs text-foreground select-all">
+                      {absolutePath}
                     </div>
                   </div>
                 )}
-                {children && (
-                  <div className="mt-0.5 text-foreground">{children}</div>
-                )}
+                {children && <div className="mt-0.5 text-foreground">{children}</div>}
               </div>
             </OctopusStudioCardContent>
           </div>

@@ -1,17 +1,10 @@
 import { OpenAICompatibleChatLanguageModel } from "@ai-sdk/openai-compatible";
 import { OpenAIResponsesLanguageModel } from "@ai-sdk/openai/internal";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import {
-  FetchFunction,
-  loadApiKey,
-  withoutTrailingSlash,
-} from "@ai-sdk/provider-utils";
+import { FetchFunction, loadApiKey, withoutTrailingSlash } from "@ai-sdk/provider-utils";
 
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { getExtraProviderOptionsForEngine } from "./thinking_utils";
 import { getTestFetchOption } from "./test_fetch_override";
 import { OCTOPUS_STUDIO_INTERNAL_REQUEST_ID_HEADER } from "./provider_options";
@@ -75,10 +68,7 @@ Creates a chat model for text generation.
 */
   chatModel(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 
-  freeChatModel(
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ): LanguageModel;
+  freeChatModel(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 
   responses(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 
@@ -174,21 +164,13 @@ export function createOctopusStudioEngine(
         // Parse the request body to manipulate it
         const parsedBody = {
           ...JSON.parse(init.body),
-          ...getExtraProviderOptionsForEngine(
-            providerId,
-            options.settings,
-            modelSelection,
-          ),
+          ...getExtraProviderOptionsForEngine(providerId, options.settings, modelSelection),
         };
 
         const getOctopusStudioOption = (key: string) =>
-          key in parsedBody
-            ? parsedBody[key]
-            : octopusStudioProviderOptions?.[key];
+          key in parsedBody ? parsedBody[key] : octopusStudioProviderOptions?.[key];
 
-        const octopusStudioVersionedFiles = getOctopusStudioOption(
-          "octopusStudioVersionedFiles",
-        );
+        const octopusStudioVersionedFiles = getOctopusStudioOption("octopusStudioVersionedFiles");
         if ("octopusStudioVersionedFiles" in parsedBody) {
           delete parsedBody.octopusStudioVersionedFiles;
         }
@@ -212,14 +194,11 @@ export function createOctopusStudioEngine(
           delete parsedBody.octopusStudioAppId;
         }
         const octopusStudioDisableFiles =
-          disableOctopusStudioOptions ||
-          getOctopusStudioOption("octopusStudioDisableFiles");
+          disableOctopusStudioOptions || getOctopusStudioOption("octopusStudioDisableFiles");
         if ("octopusStudioDisableFiles" in parsedBody) {
           delete parsedBody.octopusStudioDisableFiles;
         }
-        const octopusStudioMentionedApps = getOctopusStudioOption(
-          "octopusStudioMentionedApps",
-        );
+        const octopusStudioMentionedApps = getOctopusStudioOption("octopusStudioMentionedApps");
         if ("octopusStudioMentionedApps" in parsedBody) {
           delete parsedBody.octopusStudioMentionedApps;
         }
@@ -244,23 +223,19 @@ export function createOctopusStudioEngine(
             files: octopusStudioFiles,
             versioned_files: octopusStudioVersionedFiles,
             enable_lazy_edits: options.octopusStudioOptions.enableLazyEdits,
-            enable_smart_files_context:
-              options.octopusStudioOptions.enableSmartFilesContext,
+            enable_smart_files_context: options.octopusStudioOptions.enableSmartFilesContext,
             smart_context_mode: octopusStudioSmartContextMode,
             enable_web_search: options.octopusStudioOptions.enableWebSearch,
             app_id: octopusStudioAppId,
           };
           if (octopusStudioMentionedApps?.length) {
-            parsedBody.octopus_studio_options.mentioned_apps =
-              octopusStudioMentionedApps;
+            parsedBody.octopus_studio_options.mentioned_apps = octopusStudioMentionedApps;
           }
         }
 
         // Return modified request with files included and requestId in headers
-        const {
-          [OCTOPUS_STUDIO_INTERNAL_REQUEST_ID_HEADER]: _,
-          ...outgoingHeaders
-        } = (init.headers as Record<string, string>) ?? {};
+        const { [OCTOPUS_STUDIO_INTERNAL_REQUEST_ID_HEADER]: _, ...outgoingHeaders } =
+          (init.headers as Record<string, string>) ?? {};
         const modifiedInit = {
           ...init,
           headers: {
@@ -303,15 +278,10 @@ export function createOctopusStudioEngine(
     return new OpenAICompatibleChatLanguageModel(modelId, config);
   };
 
-  const createFreeChatModel = (
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ) => createChatModel(modelId, chatParams, "/free");
+  const createFreeChatModel = (modelId: ExampleChatModelId, chatParams: ChatParams) =>
+    createChatModel(modelId, chatParams, "/free");
 
-  const createResponsesModel = (
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ) => {
+  const createResponsesModel = (modelId: ExampleChatModelId, chatParams: ChatParams) => {
     const config = {
       ...getCommonModelConfig(),
       fetch: createOctopusStudioFetch({ providerId: chatParams.providerId }),
@@ -320,13 +290,8 @@ export function createOctopusStudioEngine(
     return new OpenAIResponsesLanguageModel(modelId, config);
   };
 
-  const createAnthropicModel = (
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ) => {
-    const createModel = (
-      octopusStudioProviderOptions?: OctopusStudioEngineProviderOptions,
-    ) => {
+  const createAnthropicModel = (modelId: ExampleChatModelId, chatParams: ChatParams) => {
+    const createModel = (octopusStudioProviderOptions?: OctopusStudioEngineProviderOptions) => {
       const provider = createAnthropic({
         authToken: getOctopusStudioEngineApiKey(options.apiKey),
         baseURL,
@@ -354,13 +319,9 @@ export function createOctopusStudioEngine(
       modelId: model.modelId,
       supportedUrls: model.supportedUrls,
       doGenerate: (callOptions) =>
-        createModel(getOctopusStudioProviderOptions(callOptions)).doGenerate(
-          callOptions,
-        ),
+        createModel(getOctopusStudioProviderOptions(callOptions)).doGenerate(callOptions),
       doStream: (callOptions) =>
-        createModel(getOctopusStudioProviderOptions(callOptions)).doStream(
-          callOptions,
-        ),
+        createModel(getOctopusStudioProviderOptions(callOptions)).doStream(callOptions),
     } satisfies LanguageModel;
 
     const defaultObjectGenerationMode = (

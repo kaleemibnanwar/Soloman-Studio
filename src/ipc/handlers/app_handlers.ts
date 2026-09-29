@@ -1,4 +1,4 @@
-import { app, dialog } from "electron";
+import { app, dialog, shell } from "electron";
 import { closeDatabase, db, getDatabaseFilePaths } from "../../db";
 import { apps, chats, messages, versions } from "../../db/schema";
 import { desc, eq, inArray, like } from "drizzle-orm";
@@ -22,6 +22,7 @@ import {
   getChatProjectRootPath,
 } from "../../paths/paths";
 import { promises as fsPromises } from "node:fs";
+import yauzl from "yauzl";
 
 // Import our utility modules
 import {
@@ -29,10 +30,7 @@ import {
   slugifyAppFolderName,
   validateAppFolderName,
 } from "../../shared/app_names";
-import {
-  resolveUniqueAppName,
-  resolveUniqueFolderName,
-} from "../utils/app_name_resolution";
+import { resolveUniqueAppName, resolveUniqueFolderName } from "../utils/app_name_resolution";
 import {
   AppDeletionInProgressError,
   appOperationCoordinator,
@@ -45,7 +43,7 @@ import {
   stopAppByInfo,
   setCurrentlySelectedAppId,
   startAppGarbageCollection,
-} from "../utils/process_manager";
+} from "../process/process_manager";
 import { getEnvVar } from "../utils/read_env";
 import { readSettings } from "../../main/settings";
 import { addLog } from "../../lib/log_store";
@@ -54,7 +52,7 @@ import {
   OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME,
   MAX_SCREENSHOTS_PER_APP,
   SCREENSHOT_FILENAME_REGEX,
-} from "../utils/media_path_utils";
+} from "../media/media_path_utils";
 import {
   appRuntimeService,
   ensureProxyForRunningApp,
@@ -62,12 +60,9 @@ import {
   registerCloudSandboxSyncUpdateListener,
 } from "../services/app_runtime_service";
 import { getIpcAppRuntimeOutput } from "../services/app_runtime_transport";
-import {
-  assertNoActiveRecording,
-  endRecordingForApp,
-} from "../services/recording_registry";
+import { assertNoActiveRecording, endRecordingForApp } from "../services/recording_registry";
 import { forgetAppRecordedDrafts } from "../services/recorded_test_drafts";
-import { getPtySessionManager } from "../utils/pty_session_manager";
+import { getPtySessionManager } from "../process/pty_session_manager";
 import { sameInvocationRef } from "@/state_machines/invocation_ref";
 import { userInputRegistry } from "@/user_input/main";
 import { clearLegacyWindowSessionPersistence } from "@/window_infrastructure/main/window_session";
@@ -118,11 +113,7 @@ import {
 import { createFromTemplate } from "./createFromTemplate";
 import { getInitialChatModeForNewChat } from "./chat_mode_resolution";
 import { ensureOctopusStudioGitignored } from "./gitignoreUtils";
-import {
-  gitListBranches,
-  gitRenameBranch,
-  getCurrentCommitHash,
-} from "../utils/git_utils";
+import { gitListBranches, gitRenameBranch, getCurrentCommitHash } from "../git/git_utils";
 import { gitService } from "../services/git_service";
 import { normalizePath } from "../../../shared/normalizePath";
 import { safeJoin } from "../utils/path_utils";
@@ -133,14 +124,14 @@ import {
   deployAllSupabaseFunctions,
   extractFunctionNameFromPath,
 } from "@/supabase_admin/supabase_utils";
-import { getVercelTeamSlug } from "../utils/vercel_utils";
-import { storeDbTimestampAtCurrentVersion } from "../utils/neon_timestamp_utils";
+import { getVercelTeamSlug } from "../vercel/vercel_utils";
+import { storeDbTimestampAtCurrentVersion } from "../neon/neon_timestamp_utils";
 import {
   deleteTempTestBranch,
   isTestBranchCleanupOnly,
   restoreAppFromTestBranch,
   trackedBranchId,
-} from "../utils/neon_test_branch";
+} from "../neon/neon_test_branch";
 import type { AppSearchResult } from "@/lib/schemas";
 
 import {
@@ -190,10 +181,7 @@ async function renameDirectoryWithCaseHop(fromPath: string, toPath: string) {
     try {
       await fsPromises.rename(tempPath, fromPath);
     } catch (rollbackError) {
-      logger.error(
-        `Failed to restore ${fromPath} after case-hop rename failure:`,
-        rollbackError,
-      );
+      logger.error(`Failed to restore ${fromPath} after case-hop rename failure:`, rollbackError);
     }
     throw error;
   }
@@ -261,10 +249,7 @@ async function copyDir(
   await fsPromises.cp(source, destination, {
     recursive: true,
     filter: (src: string) => {
-      if (
-        options?.excludeNodeModules &&
-        path.basename(src) === "node_modules"
-      ) {
+      if (options?.excludeNodeModules && path.basename(src) === "node_modules") {
         return false;
       }
       if (filter) {
@@ -318,9 +303,7 @@ export async function searchAppFilesWithRipgrep({
           const absolutePath = path.isAbsolute(matchPath)
             ? matchPath
             : path.join(appPath, matchPath);
-          const relativePath = normalizePath(
-            path.relative(appPath, absolutePath),
-          );
+          const relativePath = normalizePath(path.relative(appPath, absolutePath));
           if (relativePath.startsWith("..")) {
             continue; // outside app directory
           }
@@ -328,11 +311,7 @@ export async function searchAppFilesWithRipgrep({
           const lineText = event.data.lines?.text as string;
           const lineNumber = event.data.line_number as number;
           const submatch = event.data.submatches?.[0];
-          if (
-            typeof lineText !== "string" ||
-            typeof lineNumber !== "number" ||
-            !submatch
-          ) {
+          if (typeof lineText !== "string" || typeof lineNumber !== "number" || !submatch) {
             continue;
           }
 
@@ -356,9 +335,7 @@ export async function searchAppFilesWithRipgrep({
               existing.snippets = [];
             }
             // Only add if this line number isn't already in the snippets
-            const existingLine = existing.snippets.find(
-              (s) => s.line === snippet.line,
-            );
+            const existingLine = existing.snippets.find((s) => s.line === snippet.line);
             if (!existingLine) {
               existing.snippets.push(snippet);
             }
@@ -396,6 +373,7 @@ interface DeleteAppByIdOptions {
   allowMissing?: boolean;
   knownAppPath?: string;
   publishDisposal?: boolean;
+  keepProjectFiles?: boolean;
 }
 
 async function removeAppFiles(appId: number, appPath: string): Promise<void> {
@@ -445,9 +423,7 @@ async function ensureAppOffTestBranch(appId: number): Promise<void> {
   try {
     restored = await restoreAppFromTestBranch(app);
   } catch (error) {
-    logger.error(
-      `App ${appId}: retrying the .env.local restore before relaunch failed: ${error}`,
-    );
+    logger.error(`App ${appId}: retrying the .env.local restore before relaunch failed: ${error}`);
   }
   if (restored || cleanupOnly) {
     // Cleanup-only means `.env.local` was durably recorded as safe before the
@@ -461,10 +437,7 @@ async function ensureAppOffTestBranch(appId: number): Promise<void> {
   );
 }
 
-async function deleteAppById(
-  appId: number,
-  options: DeleteAppByIdOptions = {},
-): Promise<void> {
+async function deleteAppById(appId: number, options: DeleteAppByIdOptions = {}): Promise<void> {
   // Close coordinator admission before waiting for the global deletion queue
   // or recorder teardown. Otherwise a recording can enter while this app's
   // delete is queued behind another app, then hold the resources this deletion
@@ -493,9 +466,7 @@ async function deleteAppById(
     if (!envRestored) {
       // The app directory is about to be removed, so a stale `.env.local`
       // inside it goes with it — this is diagnosis, not a refusal.
-      logger.warn(
-        `App ${appId}: isolation teardown couldn't restore .env.local before deletion`,
-      );
+      logger.warn(`App ${appId}: isolation teardown couldn't restore .env.local before deletion`);
     }
 
     // A teardown that couldn't restore the environment deliberately KEEPS the
@@ -605,14 +576,11 @@ async function deleteAppByIdExclusive(
     releaseStreamAdmissionBlock = blockNewStreamsForApp(appId);
     githubOpsService.beginAppDeletion(appId);
     githubDeletionStarted = true;
-    imageGenerationDeletion =
-      imageGenerationActorService.beginAppDeletion(appId);
+    imageGenerationDeletion = imageGenerationActorService.beginAppDeletion(appId);
     releaseChatCreation = beginAppChatDeletion(appId);
 
     await versionPreviewActorService.prepareAppDeletion(appId);
-    await imageGenerationActorService.prepareAppDeletion(
-      imageGenerationDeletion,
-    );
+    await imageGenerationActorService.prepareAppDeletion(imageGenerationDeletion);
     await appOperationDeletion.drain();
     // Actor cancellation can wait for an in-flight stream to finish writes.
     // Coordinator and actor admission are closed before either snapshot, so a
@@ -624,86 +592,79 @@ async function deleteAppByIdExclusive(
       ...appChats.map(({ id: chatId }) => beginChatActorDeletion(chatId)),
     );
     await Promise.all(
-      appChats.map(({ id: chatId }) =>
-        waitForChatActorIdle(chatId, { cancelActive: true }),
-      ),
+      appChats.map(({ id: chatId }) => waitForChatActorIdle(chatId, { cancelActive: true })),
     );
 
-    const { appPath, doomedRow } = await appOperationDeletion.runExclusive(
-      async () => {
-        const app = await db.query.apps.findFirst({
-          where: eq(apps.id, appId),
-        });
+    const { appPath, doomedRow } = await appOperationDeletion.runExclusive(async () => {
+      const app = await db.query.apps.findFirst({
+        where: eq(apps.id, appId),
+      });
 
-        if (!app) {
-          if (options.allowMissing && options.knownAppPath) {
-            await appRunDeletion.seal();
-            appRunDeletion.commit();
-            deletionCommitted = true;
-            return { appPath: options.knownAppPath, doomedRow: null };
-          }
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
-        }
-
-        if (runningApps.has(appId)) {
-          const appInfo = runningApps.get(appId)!;
-          try {
-            logger.log(`Stopping app ${appId} before deletion.`);
-            await stopAppByInfo(appId, appInfo);
-          } catch (error: any) {
-            logger.error(`Error stopping app ${appId} before deletion:`, error);
-            // Continue with deletion even if stopping fails
-          }
-        }
-
-        await appRunDeletion.seal();
-        // Re-read rather than reuse `app` from the top of this lock: the stop
-        // above can clear the temporary-branch columns on its way out, and a
-        // delete that queued behind a still-ending recording can arrive here with
-        // an id that only landed on the row after that first read. This is the
-        // last moment the row exists, so it is the only reading that can't go
-        // stale before the delete.
-        const doomedRow = await db.query.apps.findFirst({
-          where: eq(apps.id, appId),
-        });
-        try {
-          // `doomedRow` for the same reason it is re-read above: the test-user
-          // id can land on the row after the first read, and deleting from the
-          // stale row would orphan that user in the user's Supabase project
-          // with the row that reconciliation needs to find it already gone.
-          const testUserDeleted = await deleteTempTestUser(doomedRow ?? app);
-          if (!testUserDeleted) {
-            throw new OctopusStudioError(
-              "Failed to delete the app's temporary Supabase test user. Please retry app deletion.",
-              OctopusStudioErrorKind.External,
-            );
-          }
-          await db.delete(apps).where(eq(apps.id, appId));
+      if (!app) {
+        if (options.allowMissing && options.knownAppPath) {
+          await appRunDeletion.seal();
           appRunDeletion.commit();
           deletionCommitted = true;
-          // Note: Associated chats will cascade delete
-          if (options.publishDisposal !== false) {
-            for (const { id: chatId } of appChats) {
-              entityDisposalBus.publish({ kind: "chat", id: chatId });
-            }
-            entityDisposalBus.publish({ kind: "app", id: appId });
-          }
+          return { appPath: options.knownAppPath, doomedRow: null };
+        }
+        throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
+      }
+
+      if (runningApps.has(appId)) {
+        const appInfo = runningApps.get(appId)!;
+        try {
+          logger.log(`Stopping app ${appId} before deletion.`);
+          await stopAppByInfo(appId, appInfo);
         } catch (error: any) {
-          logger.error(`Error deleting app ${appId} from database:`, error);
+          logger.error(`Error stopping app ${appId} before deletion:`, error);
+          // Continue with deletion even if stopping fails
+        }
+      }
+
+      await appRunDeletion.seal();
+      // Re-read rather than reuse `app` from the top of this lock: the stop
+      // above can clear the temporary-branch columns on its way out, and a
+      // delete that queued behind a still-ending recording can arrive here with
+      // an id that only landed on the row after that first read. This is the
+      // last moment the row exists, so it is the only reading that can't go
+      // stale before the delete.
+      const doomedRow = await db.query.apps.findFirst({
+        where: eq(apps.id, appId),
+      });
+      try {
+        // `doomedRow` for the same reason it is re-read above: the test-user
+        // id can land on the row after the first read, and deleting from the
+        // stale row would orphan that user in the user's Supabase project
+        // with the row that reconciliation needs to find it already gone.
+        const testUserDeleted = await deleteTempTestUser(doomedRow ?? app);
+        if (!testUserDeleted) {
           throw new OctopusStudioError(
-            `Failed to delete app from database: ${error.message}`,
+            "Failed to delete the app's temporary Supabase test user. Please retry app deletion.",
             OctopusStudioErrorKind.External,
           );
         }
-        return {
-          appPath: getOctopusStudioAppPath(app.path),
-          doomedRow: doomedRow ?? null,
-        };
-      },
-    );
+        await db.delete(apps).where(eq(apps.id, appId));
+        appRunDeletion.commit();
+        deletionCommitted = true;
+        // Note: Associated chats will cascade delete
+        if (options.publishDisposal !== false) {
+          for (const { id: chatId } of appChats) {
+            entityDisposalBus.publish({ kind: "chat", id: chatId });
+          }
+          entityDisposalBus.publish({ kind: "app", id: appId });
+        }
+      } catch (error: any) {
+        logger.error(`Error deleting app ${appId} from database:`, error);
+        throw new OctopusStudioError(
+          `Failed to delete app from database: ${error.message}`,
+          OctopusStudioErrorKind.External,
+        );
+      }
+      return {
+        appPath: getOctopusStudioAppPath(app.path),
+        doomedRow: doomedRow ?? null,
+      };
+    });
     deletedRow = doomedRow;
 
     const actorCleanup = await Promise.allSettled([
@@ -715,10 +676,7 @@ async function deleteAppByIdExclusive(
     ]);
     for (const result of actorCleanup) {
       if (result.status === "rejected") {
-        logger.warn(
-          `Post-deletion actor cleanup failed for app ${appId}`,
-          result.reason,
-        );
+        logger.warn(`Post-deletion actor cleanup failed for app ${appId}`, result.reason);
       }
     }
 
@@ -726,16 +684,17 @@ async function deleteAppByIdExclusive(
     appRuntimeService.clearRuntimeLogs(appId);
     getPtySessionManager().killForApp(appId);
     appRuntimeService.cleanup(appId);
-    try {
-      await removeAppFiles(appId, appPath);
-    } catch (error) {
-      // Database deletion is the authoritative state transition. A failed
-      // best-effort filesystem cleanup must not make renderers treat the
-      // already-deleted app as retryable or suppress contract invalidations.
-      logger.warn(
-        `App ${appId} was deleted, but its files require manual cleanup`,
-        error,
-      );
+    if (!options.keepProjectFiles) {
+      try {
+        await removeAppFiles(appId, appPath);
+      } catch (error) {
+        // Database deletion is the authoritative state transition. A failed
+        // best-effort filesystem cleanup must not make renderers treat the
+        // already-deleted app as retryable or suppress contract invalidations.
+        logger.warn(`App ${appId} was deleted, but its files require manual cleanup`, error);
+      }
+    } else {
+      logger.log(`App ${appId}: Preserving project files at "${appPath}" as requested by user.`);
     }
   } finally {
     for (const release of releaseChatActorAdmission) release();
@@ -749,10 +708,7 @@ async function deleteAppByIdExclusive(
           );
         } catch (error) {
           if (deletionCommitted) {
-            logger.warn(
-              `Post-deletion image-generation cleanup failed for app ${appId}`,
-              error,
-            );
+            logger.warn(`Post-deletion image-generation cleanup failed for app ${appId}`, error);
           } else {
             imageGenerationCleanupFailed = true;
             imageGenerationCleanupError = error;
@@ -782,10 +738,7 @@ async function deleteAppByIdExclusive(
  * auto-created chat project folders under octopus-studio-projects). Appends a numeric
  * suffix if the slug already exists on disk.
  */
-async function resolveUniqueChatProjectFolder(
-  base: string,
-  slug: string,
-): Promise<string> {
+async function resolveUniqueChatProjectFolder(base: string, slug: string): Promise<string> {
   for (let suffix = 1; suffix <= 100; suffix++) {
     const candidate = suffix === 1 ? slug : `${slug}-${suffix}`;
     if (!fs.existsSync(path.join(base, candidate))) {
@@ -811,6 +764,140 @@ function resolveAppRootPath(app: {
     : getOctopusStudioAppPath(app.path);
 }
 
+const MAX_ARCHIVE_ENTRIES = 5000;
+
+/**
+ * File extensions the preview may hand to the OS default application. Kept to
+ * non-executable document/media/archive/font types so "open with default app"
+ * cannot run executables or scripts from the app tree.
+ */
+const OPENABLE_FILE_EXTENSIONS = new Set([
+  // Documents
+  ".doc",
+  ".docx",
+  ".odt",
+  ".pdf",
+  ".txt",
+  ".md",
+  ".rtf",
+  ".pages",
+  ".wpd",
+  ".wps",
+  // Spreadsheets
+  ".xls",
+  ".xlsx",
+  ".ods",
+  ".csv",
+  ".tsv",
+  ".numbers",
+  // Presentations
+  ".ppt",
+  ".pptx",
+  ".odp",
+  ".key",
+  // Images
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".svg",
+  ".bmp",
+  ".ico",
+  ".avif",
+  ".tif",
+  ".tiff",
+  ".heic",
+  // Video
+  ".mp4",
+  ".webm",
+  ".mov",
+  ".m4v",
+  ".mkv",
+  ".avi",
+  ".ogv",
+  // Audio
+  ".mp3",
+  ".wav",
+  ".ogg",
+  ".m4a",
+  ".aac",
+  ".flac",
+  ".opus",
+  ".wma",
+  // Archives
+  ".zip",
+  ".tar",
+  ".gz",
+  ".tgz",
+  ".7z",
+  ".rar",
+  // Fonts
+  ".ttf",
+  ".otf",
+  ".woff",
+  ".woff2",
+  ".eot",
+]);
+
+/**
+ * Reads a zip archive's central directory (no entry decompression) so the
+ * archive preview can list contents cheaply, even for large files.
+ */
+function listZipEntries(filePath: string): Promise<{
+  entries: {
+    name: string;
+    isDirectory: boolean;
+    uncompressedSize: number;
+    compressedSize: number;
+  }[];
+  truncated: boolean;
+}> {
+  return new Promise((resolve, reject) => {
+    yauzl.open(
+      filePath,
+      { lazyEntries: true, autoClose: true, decodeStrings: true },
+      (err, zipfile) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const entries: {
+          name: string;
+          isDirectory: boolean;
+          uncompressedSize: number;
+          compressedSize: number;
+        }[] = [];
+        let truncated = false;
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          resolve({ entries, truncated });
+        };
+        zipfile.on("entry", (entry: yauzl.Entry) => {
+          if (entries.length >= MAX_ARCHIVE_ENTRIES) {
+            truncated = true;
+            zipfile.close();
+            finish();
+            return;
+          }
+          entries.push({
+            name: entry.fileName,
+            isDirectory: entry.fileName.endsWith("/"),
+            uncompressedSize: entry.uncompressedSize,
+            compressedSize: entry.compressedSize,
+          });
+          zipfile.readEntry();
+        });
+        zipfile.on("end", finish);
+        zipfile.on("error", reject);
+        zipfile.readEntry();
+      },
+    );
+  });
+}
+
 export function registerAppHandlers() {
   registerCloudSandboxSyncUpdateListener();
 
@@ -819,42 +906,33 @@ export function registerAppHandlers() {
     app.quit();
   });
 
-  createTypedHandler(
-    appContracts.createChatProject,
-    async (_, { name, directory }) => {
-      const appName = name.trim();
-      // If the user didn't pick a workspace folder, create one under the
-      // octopus-studio-projects base directory (the chat sibling of octopus-studio-apps), using a
-      // unique slug derived from the project name.
-      let resolvedDirectory = directory ? path.resolve(directory) : null;
-      if (!resolvedDirectory) {
-        const base = getOctopusStudioProjectsBaseDirectory();
-        const slug = slugifyAppFolderName(appName);
-        resolvedDirectory = path.join(
-          base,
-          await resolveUniqueChatProjectFolder(base, slug),
-        );
-        fs.mkdirSync(resolvedDirectory, { recursive: true });
-      }
-      const [created] = await db
-        .insert(apps)
-        .values({
-          name: appName,
-          type: "chat",
-          path: "",
-          directory: resolvedDirectory,
-        })
-        .returning();
-      return { appId: created.id };
-    },
-  );
+  createTypedHandler(appContracts.createChatProject, async (_, { name, directory }) => {
+    const appName = name.trim();
+    // If the user didn't pick a workspace folder, create one under the
+    // octopus-studio-projects base directory (the chat sibling of octopus-studio-apps), using a
+    // unique slug derived from the project name.
+    let resolvedDirectory = directory ? path.resolve(directory) : null;
+    if (!resolvedDirectory) {
+      const base = getOctopusStudioProjectsBaseDirectory();
+      const slug = slugifyAppFolderName(appName);
+      resolvedDirectory = path.join(base, await resolveUniqueChatProjectFolder(base, slug));
+      fs.mkdirSync(resolvedDirectory, { recursive: true });
+    }
+    const [created] = await db
+      .insert(apps)
+      .values({
+        name: appName,
+        type: "chat",
+        path: "",
+        directory: resolvedDirectory,
+      })
+      .returning();
+    return { appId: created.id };
+  });
 
   createTypedHandler(appContracts.createApp, async (event, params) => {
     if (params.firstPromptCreationOperationId) {
-      firstPromptCreationRegistry.track(
-        params.firstPromptCreationOperationId,
-        event.sender,
-      );
+      firstPromptCreationRegistry.track(params.firstPromptCreationOperationId, event.sender);
     }
     let app!: typeof apps.$inferSelect;
     let fullAppPath!: string;
@@ -873,9 +951,7 @@ export function registerAppHandlers() {
         );
       }
 
-      const appPath = await resolveUniqueFolderName(
-        slugifyAppFolderName(appName),
-      );
+      const appPath = await resolveUniqueFolderName(slugifyAppFolderName(appName));
       fullAppPath = getOctopusStudioAppPath(appPath);
 
       if (!isAppLocationAccessible(fullAppPath)) {
@@ -902,9 +978,7 @@ export function registerAppHandlers() {
         .returning();
     } catch (error) {
       if (params.firstPromptCreationOperationId) {
-        firstPromptCreationRegistry.commit(
-          params.firstPromptCreationOperationId,
-        );
+        firstPromptCreationRegistry.commit(params.firstPromptCreationOperationId);
       }
       throw error;
     }
@@ -922,9 +996,7 @@ export function registerAppHandlers() {
     };
 
     try {
-      const initialChatMode = await getInitialChatModeForNewChat(
-        params.initialChatMode,
-      );
+      const initialChatMode = await getInitialChatModeForNewChat(params.initialChatMode);
 
       // Create an initial chat for this app
       const [chat] = await db
@@ -1032,10 +1104,7 @@ export function registerAppHandlers() {
       {
         appId,
         operation: "copy-app",
-        resources: [
-          readAppResource("app-path"),
-          readAppResource("runtime-config"),
-        ],
+        resources: [readAppResource("app-path"), readAppResource("runtime-config")],
         // Repeated here so the refusal is atomic with admission. The preflight
         // above still runs first — it has to precede `restoreAppFromTestBranch`,
         // which takes these same claims — but a recording can start in the gap
@@ -1052,10 +1121,7 @@ export function registerAppHandlers() {
         });
 
         if (!originalApp) {
-          throw new OctopusStudioError(
-            "Original app not found.",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Original app not found.", OctopusStudioErrorKind.NotFound);
         }
 
         // The recovery above ran before admission, so a test run could have
@@ -1073,9 +1139,7 @@ export function registerAppHandlers() {
           );
         }
 
-        const newFolderName = await resolveUniqueFolderName(
-          slugifyAppFolderName(newAppName),
-        );
+        const newFolderName = await resolveUniqueFolderName(slugifyAppFolderName(newAppName));
         const originalAppPath = getOctopusStudioAppPath(originalApp.path);
         const newAppPath = getOctopusStudioAppPath(newFolderName);
 
@@ -1161,14 +1225,14 @@ export function registerAppHandlers() {
     });
 
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     // Get app files
-    const appPath = getOctopusStudioAppPath(app.path);
+    const appPath =
+      app.type === "chat"
+        ? getChatProjectRootPath(app.directory, app.id)
+        : getOctopusStudioAppPath(app.path);
     let files: string[] = [];
 
     try {
@@ -1186,8 +1250,7 @@ export function registerAppHandlers() {
     // Check for multi-organization credentials or legacy single account
     const hasSupabaseCredentials =
       (app.supabaseOrganizationSlug &&
-        settings.supabase?.organizations?.[app.supabaseOrganizationSlug]
-          ?.accessToken?.value) ||
+        settings.supabase?.organizations?.[app.supabaseOrganizationSlug]?.accessToken?.value) ||
       settings.supabase?.accessToken?.value;
     if (app.supabaseProjectId && hasSupabaseCredentials) {
       try {
@@ -1225,7 +1288,9 @@ export function registerAppHandlers() {
     const appsWithResolvedPath = allApps.map((app) => ({
       ...app,
       resolvedPath:
-        app.type === "chat" ? undefined : getOctopusStudioAppPath(app.path),
+        app.type === "chat"
+          ? getChatProjectRootPath(app.directory, app.id)
+          : getOctopusStudioAppPath(app.path),
     }));
     return {
       apps: appsWithResolvedPath,
@@ -1239,10 +1304,7 @@ export function registerAppHandlers() {
     });
 
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = resolveAppRootPath(app);
@@ -1257,12 +1319,74 @@ export function registerAppHandlers() {
     } catch (error) {
       if (isOctopusStudioError(error)) throw error;
       logger.error(`Error reading file ${filePath} for app ${appId}:`, error);
+      throw new OctopusStudioError("Failed to read file", OctopusStudioErrorKind.External, {
+        cause: error,
+      });
+    }
+  });
+
+  createTypedHandler(appContracts.listArchiveEntries, async (_, params) => {
+    const { appId, filePath } = params;
+    const app = await db.query.apps.findFirst({
+      where: eq(apps.id, appId),
+    });
+
+    if (!app) {
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
+    }
+
+    const appPath = resolveAppRootPath(app);
+    const fullPath = safeJoin(appPath, filePath);
+
+    try {
+      const { entries, truncated } = await listZipEntries(fullPath);
+      // Directories first, then alphabetically, so the preview reads like a
+      // file tree rather than the zip's raw central-directory order.
+      entries.sort((a, b) => {
+        if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+      return { entries, truncated };
+    } catch (error) {
+      // Non-zip archives (tar/gz/7z/rar) or corrupt files: surface a readable
+      // message so the preview can offer "open with your default app".
       throw new OctopusStudioError(
-        "Failed to read file",
+        "This archive format can't be listed inline",
+        OctopusStudioErrorKind.Validation,
+        { cause: error },
+      );
+    }
+  });
+
+  createTypedHandler(appContracts.openFileExternally, async (_, params) => {
+    const { appId, filePath } = params;
+    const app = await db.query.apps.findFirst({
+      where: eq(apps.id, appId),
+    });
+
+    if (!app) {
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
+    }
+
+    const appPath = resolveAppRootPath(app);
+    const fullPath = safeJoin(appPath, filePath);
+
+    // Only non-executable document/media/archive/font types may be handed to the
+    // OS default handler. The app tree holds AI-generated code, so opening an
+    // arbitrary file there could run an executable or script.
+    const ext = path.extname(fullPath).toLowerCase();
+    if (!OPENABLE_FILE_EXTENSIONS.has(ext)) {
+      throw new OctopusStudioError(
+        "This file type can't be opened externally",
+        OctopusStudioErrorKind.Validation,
+      );
+    }
+
+    const result = await shell.openPath(fullPath);
+    if (result) {
+      throw new OctopusStudioError(
+        `Failed to open file: ${result}`,
         OctopusStudioErrorKind.External,
-        {
-          cause: error,
-        },
       );
     }
   });
@@ -1326,98 +1450,80 @@ export function registerAppHandlers() {
     });
   });
 
-  createTypedHandler(
-    appContracts.getCloudSandboxStatus,
-    async (event, params) => {
-      const { appId } = params;
-      const appInfo = runningApps.get(appId);
+  createTypedHandler(appContracts.getCloudSandboxStatus, async (event, params) => {
+    const { appId } = params;
+    const appInfo = runningApps.get(appId);
 
-      if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
+    if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
+      return null;
+    }
+    const sandboxId = appInfo.cloudSandboxId;
+    const invocationRef = appInfo.invocationRef;
+
+    try {
+      const status = await getCloudSandboxStatus(sandboxId);
+      const latestAppInfo = runningApps.get(appId);
+      const sameInvocation = invocationRef
+        ? !!latestAppInfo?.invocationRef &&
+          sameInvocationRef(latestAppInfo.invocationRef, invocationRef)
+        : !latestAppInfo?.invocationRef;
+      if (
+        latestAppInfo !== appInfo ||
+        latestAppInfo.cloudSandboxId !== sandboxId ||
+        !sameInvocation
+      ) {
         return null;
       }
-      const sandboxId = appInfo.cloudSandboxId;
-      const invocationRef = appInfo.invocationRef;
+      const previewChanged =
+        appInfo.cloudPreviewUrl !== status.previewUrl ||
+        appInfo.cloudPreviewAuthToken !== status.previewAuthToken;
+      appInfo.cloudPreviewUrl = status.previewUrl;
+      appInfo.cloudPreviewAuthToken = status.previewAuthToken;
 
-      try {
-        const status = await getCloudSandboxStatus(sandboxId);
-        const latestAppInfo = runningApps.get(appId);
-        const sameInvocation = invocationRef
-          ? !!latestAppInfo?.invocationRef &&
-            sameInvocationRef(latestAppInfo.invocationRef, invocationRef)
-          : !latestAppInfo?.invocationRef;
-        if (
-          latestAppInfo !== appInfo ||
-          latestAppInfo.cloudSandboxId !== sandboxId ||
-          !sameInvocation
-        ) {
-          return null;
-        }
-        const previewChanged =
-          appInfo.cloudPreviewUrl !== status.previewUrl ||
-          appInfo.cloudPreviewAuthToken !== status.previewAuthToken;
-        appInfo.cloudPreviewUrl = status.previewUrl;
-        appInfo.cloudPreviewAuthToken = status.previewAuthToken;
-
-        if (previewChanged && appInfo.proxyWorker) {
-          await ensureProxyForRunningApp({
-            appId,
-            output: invocationRef
-              ? appRunActorService.outputFor(appId, invocationRef)
-              : getIpcAppRuntimeOutput(event.sender),
-            originalUrl: status.previewUrl,
-            mode: "cloud",
-            invocationRef,
-          });
-        } else {
-          appInfo.originalUrl = status.previewUrl;
-        }
-
-        return {
-          ...status,
-          localSyncErrorMessage: appInfo.cloudSyncErrorMessage ?? null,
-        };
-      } catch (error) {
-        logger.error(
-          `Failed to fetch cloud sandbox status for app ${appId}:`,
-          error,
-        );
-        throw new OctopusStudioError(
-          formatCloudSandboxError(error),
-          OctopusStudioErrorKind.External,
-        );
-      }
-    },
-  );
-
-  createTypedHandler(
-    appContracts.createCloudSandboxShareLink,
-    async (_, params) => {
-      const { appId, expiresInSeconds } = params;
-      const appInfo = runningApps.get(appId);
-
-      if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
-        throw new OctopusStudioError(
-          `App ${appId} is not running in cloud mode`,
-          OctopusStudioErrorKind.External,
-        );
-      }
-
-      try {
-        return await createCloudSandboxShareLink(appInfo.cloudSandboxId, {
-          expiresInSeconds,
+      if (previewChanged && appInfo.proxyWorker) {
+        await ensureProxyForRunningApp({
+          appId,
+          output: invocationRef
+            ? appRunActorService.outputFor(appId, invocationRef)
+            : getIpcAppRuntimeOutput(event.sender),
+          originalUrl: status.previewUrl,
+          mode: "cloud",
+          invocationRef,
         });
-      } catch (error) {
-        logger.error(
-          `Failed to create cloud sandbox share link for app ${appId}:`,
-          error,
-        );
-        throw new OctopusStudioError(
-          formatCloudSandboxError(error),
-          OctopusStudioErrorKind.External,
-        );
+      } else {
+        appInfo.originalUrl = status.previewUrl;
       }
-    },
-  );
+
+      return {
+        ...status,
+        localSyncErrorMessage: appInfo.cloudSyncErrorMessage ?? null,
+      };
+    } catch (error) {
+      logger.error(`Failed to fetch cloud sandbox status for app ${appId}:`, error);
+      throw new OctopusStudioError(formatCloudSandboxError(error), OctopusStudioErrorKind.External);
+    }
+  });
+
+  createTypedHandler(appContracts.createCloudSandboxShareLink, async (_, params) => {
+    const { appId, expiresInSeconds } = params;
+    const appInfo = runningApps.get(appId);
+
+    if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
+      throw new OctopusStudioError(
+        `App ${appId} is not running in cloud mode`,
+        OctopusStudioErrorKind.External,
+      );
+    }
+
+    try {
+      return await createCloudSandboxShareLink(appInfo.cloudSandboxId, {
+        expiresInSeconds,
+      });
+    } catch (error) {
+      logger.error(`Failed to create cloud sandbox share link for app ${appId}:`, error);
+      throw new OctopusStudioError(formatCloudSandboxError(error), OctopusStudioErrorKind.External);
+    }
+  });
 
   createTypedHandler(appContracts.restartApp, async (_, params) => {
     // Same reasoning as stopApp: the restart tears down the dev server the
@@ -1447,10 +1553,7 @@ export function registerAppHandlers() {
     });
 
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = resolveAppRootPath(app);
@@ -1503,9 +1606,7 @@ export function registerAppHandlers() {
       // Check if shared module was modified - redeploy all functions
       if (isSharedServerModule(filePath)) {
         try {
-          logger.info(
-            `Shared module ${filePath} modified, redeploying all Supabase functions`,
-          );
+          logger.info(`Shared module ${filePath} modified, redeploying all Supabase functions`);
           const settings = readSettings();
           const deployErrors = await deployAllSupabaseFunctions({
             appPath,
@@ -1519,10 +1620,7 @@ export function registerAppHandlers() {
             };
           }
         } catch (error) {
-          logger.error(
-            `Error redeploying Supabase functions after shared module change:`,
-            error,
-          );
+          logger.error(`Error redeploying Supabase functions after shared module change:`, error);
           return {
             warning: `File saved, but failed to redeploy Supabase functions: ${error}`,
           };
@@ -1550,7 +1648,7 @@ export function registerAppHandlers() {
   });
 
   createTypedHandler(appContracts.deleteApp, async (_, params) => {
-    await deleteAppById(params.appId);
+    await deleteAppById(params.appId, { keepProjectFiles: params.keepProjectFiles });
   });
 
   createTypedHandler(appContracts.deleteApps, async (_, params) => {
@@ -1563,7 +1661,7 @@ export function registerAppHandlers() {
     await Promise.all(
       params.appIds.map(async (appId) => {
         try {
-          await deleteAppById(appId);
+          await deleteAppById(appId, { keepProjectFiles: params.keepProjectFiles });
           results.push({ appId, success: true });
         } catch (error: any) {
           logger.error(`Error deleting app ${appId} in bulk delete:`, error);
@@ -1613,18 +1711,13 @@ export function registerAppHandlers() {
             .returning({ isFavorite: apps.isFavorite });
 
           if (updated.length === 0) {
-            throw new Error(
-              `Failed to update favorite status for app ID ${appId}.`,
-            );
+            throw new Error(`Failed to update favorite status for app ID ${appId}.`);
           }
 
           // Return the updated isFavorite value
           return { isFavorite: updated[0].isFavorite };
         } catch (error: any) {
-          logger.error(
-            `Error in add-to-favorite handler for app ID ${appId}:`,
-            error,
-          );
+          logger.error(`Error in add-to-favorite handler for app ID ${appId}:`, error);
           throw new OctopusStudioError(
             `Failed to toggle favorite status: ${error.message}`,
             OctopusStudioErrorKind.External,
@@ -1682,10 +1775,7 @@ export function registerAppHandlers() {
         });
 
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
 
         // Security: reject NEW absolute paths - rename-app should only accept relative paths for new paths
@@ -1703,10 +1793,7 @@ export function registerAppHandlers() {
         if (appPath !== app.path) {
           const validationError = validateAppFolderName(appPath);
           if (validationError) {
-            throw new OctopusStudioError(
-              validationError,
-              OctopusStudioErrorKind.Validation,
-            );
+            throw new OctopusStudioError(validationError, OctopusStudioErrorKind.Validation);
           }
         }
 
@@ -1761,8 +1848,7 @@ export function registerAppHandlers() {
               return false;
             }
             return (
-              getOctopusStudioAppPath(existingApp.path).toLowerCase() ===
-              newAppPath.toLowerCase()
+              getOctopusStudioAppPath(existingApp.path).toLowerCase() === newAppPath.toLowerCase()
             );
           });
         }
@@ -1781,9 +1867,7 @@ export function registerAppHandlers() {
             await stopAppByInfo(appId, appInfo);
           } catch (error: any) {
             logger.error(`Error stopping app ${appId} before renaming:`, error);
-            throw new Error(
-              `Failed to stop app before renaming: ${error.message}`,
-            );
+            throw new Error(`Failed to stop app before renaming: ${error.message}`);
           }
         }
 
@@ -1793,8 +1877,7 @@ export function registerAppHandlers() {
         // defaults), so copy-then-delete would destroy the app. fs.rename
         // handles case-only changes correctly on those filesystems.
         const isCaseOnlyRename =
-          newAppPath !== oldAppPath &&
-          newAppPath.toLowerCase() === oldAppPath.toLowerCase();
+          newAppPath !== oldAppPath && newAppPath.toLowerCase() === oldAppPath.toLowerCase();
         // Only move files if needed
         if (isCaseOnlyRename) {
           try {
@@ -1830,10 +1913,7 @@ export function registerAppHandlers() {
               excludeNodeModules: true,
             });
           } catch (error: any) {
-            logger.error(
-              `Error moving app files from ${oldAppPath} to ${newAppPath}:`,
-              error,
-            );
+            logger.error(`Error moving app files from ${oldAppPath} to ${newAppPath}:`, error);
             if (isOctopusStudioError(error)) {
               throw error;
             }
@@ -1845,10 +1925,7 @@ export function registerAppHandlers() {
                   force: true,
                 });
               } catch (cleanupError) {
-                logger.warn(
-                  `Failed to clean up partial move at ${newAppPath}:`,
-                  cleanupError,
-                );
+                logger.warn(`Failed to clean up partial move at ${newAppPath}:`, cleanupError);
               }
             }
             throw new OctopusStudioError(
@@ -1866,10 +1943,7 @@ export function registerAppHandlers() {
             //
             // Not deleting the old directory is annoying, but not a big deal
             // since the user can do it themselves if they need to.
-            logger.warn(
-              `Error deleting old app directory ${oldAppPath}:`,
-              error,
-            );
+            logger.warn(`Error deleting old app directory ${oldAppPath}:`, error);
           }
         }
 
@@ -1907,10 +1981,7 @@ export function registerAppHandlers() {
               // Delete the new directory
               await fsPromises.rm(newAppPath, { recursive: true, force: true });
             } catch (rollbackError) {
-              logger.error(
-                `Failed to rollback file move during rename error:`,
-                rollbackError,
-              );
+              logger.error(`Failed to rollback file move during rename error:`, rollbackError);
             }
           }
 
@@ -1935,10 +2006,10 @@ export function registerAppHandlers() {
       app && path.isAbsolute(app.path)
         ? (folderName: string) => path.join(path.dirname(app.path), folderName)
         : undefined;
-    const folderName = await resolveUniqueFolderName(
-      slugifyAppFolderName(displayName),
-      { excludeAppId: params.appId, resolveCandidate },
-    );
+    const folderName = await resolveUniqueFolderName(slugifyAppFolderName(displayName), {
+      excludeAppId: params.appId,
+      resolveCandidate,
+    });
     return { folderName };
   });
 
@@ -2018,9 +2089,7 @@ export function registerAppHandlers() {
       // Delete any app paths that were in the database before we deleted it
       for (const { appPath } of allAppPaths) {
         // We don't rely on getOctopusStudioAppPath here because we've already cleared the settings
-        const resolvedAppPath = path.isAbsolute(appPath)
-          ? appPath
-          : path.join(basePath, appPath);
+        const resolvedAppPath = path.isAbsolute(appPath) ? appPath : path.join(basePath, appPath);
         await fsPromises.rm(resolvedAppPath, {
           recursive: true,
           force: true,
@@ -2072,10 +2141,7 @@ export function registerAppHandlers() {
           where: eq(apps.id, appId),
         });
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
         const appPath = getOctopusStudioAppPath(app.path);
 
@@ -2095,9 +2161,7 @@ export function registerAppHandlers() {
             // and 'main' already exists, we might want to allow this if 'main' is the current branch
             // and just switch to it, or delete 'master'.
             // For now, let's keep it simple and throw an error.
-            throw new Error(
-              `Branch '${newBranchName}' already exists. Cannot rename.`,
-            );
+            throw new Error(`Branch '${newBranchName}' already exists. Cannot rename.`);
           }
 
           await gitRenameBranch({
@@ -2109,9 +2173,7 @@ export function registerAppHandlers() {
             `Branch renamed from '${oldBranchName}' to '${newBranchName}' for app ${appId}`,
           );
         } catch (error: any) {
-          logger.error(
-            `Failed to rename branch for app ${appId}: ${error.message}`,
-          );
+          logger.error(`Failed to rename branch for app ${appId}: ${error.message}`);
           throw new Error(
             `Failed to rename branch '${oldBranchName}' to '${newBranchName}': ${error.message}`,
           );
@@ -2131,10 +2193,7 @@ export function registerAppHandlers() {
     const appInfo = runningApps.get(appId);
 
     if (!appInfo) {
-      throw new OctopusStudioError(
-        `App ${appId} is not running`,
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError(`App ${appId} is not running`, OctopusStudioErrorKind.External);
     }
 
     const { process } = appInfo;
@@ -2176,10 +2235,7 @@ export function registerAppHandlers() {
     });
 
     if (!appRecord) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = getOctopusStudioAppPath(appRecord.path);
@@ -2194,90 +2250,78 @@ export function registerAppHandlers() {
   });
 
   // search-app is not in app contracts - keep using handle
-  handle(
-    "search-app",
-    async (_, searchQuery: string): Promise<AppSearchResult[]> => {
-      // Use parameterized query to prevent SQL injection
-      const pattern = `%${searchQuery.replace(/[%_]/g, "\\$&")}%`;
+  handle("search-app", async (_, searchQuery: string): Promise<AppSearchResult[]> => {
+    // Use parameterized query to prevent SQL injection
+    const pattern = `%${searchQuery.replace(/[%_]/g, "\\$&")}%`;
 
-      // 1) Apps whose name matches
-      const appNameMatches = await db
-        .select({
-          id: apps.id,
-          name: apps.name,
-          createdAt: apps.createdAt,
-        })
-        .from(apps)
-        .where(like(apps.name, pattern))
-        .orderBy(desc(apps.createdAt));
+    // 1) Apps whose name matches
+    const appNameMatches = await db
+      .select({
+        id: apps.id,
+        name: apps.name,
+        createdAt: apps.createdAt,
+      })
+      .from(apps)
+      .where(like(apps.name, pattern))
+      .orderBy(desc(apps.createdAt));
 
-      const appNameMatchesResult: AppSearchResult[] = appNameMatches.map(
-        (r) => ({
-          id: r.id,
-          name: r.name,
-          createdAt: r.createdAt,
-          matchedChatTitle: null,
-          matchedChatMessage: null,
-        }),
-      );
+    const appNameMatchesResult: AppSearchResult[] = appNameMatches.map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.createdAt,
+      matchedChatTitle: null,
+      matchedChatMessage: null,
+    }));
 
-      // 2) Apps whose chat title matches
-      const chatTitleMatches = await db
-        .select({
-          id: apps.id,
-          name: apps.name,
-          createdAt: apps.createdAt,
-          matchedChatTitle: chats.title,
-        })
-        .from(apps)
-        .innerJoin(chats, eq(apps.id, chats.appId))
-        .where(like(chats.title, pattern))
-        .orderBy(desc(apps.createdAt));
+    // 2) Apps whose chat title matches
+    const chatTitleMatches = await db
+      .select({
+        id: apps.id,
+        name: apps.name,
+        createdAt: apps.createdAt,
+        matchedChatTitle: chats.title,
+      })
+      .from(apps)
+      .innerJoin(chats, eq(apps.id, chats.appId))
+      .where(like(chats.title, pattern))
+      .orderBy(desc(apps.createdAt));
 
-      const chatTitleMatchesResult: AppSearchResult[] = chatTitleMatches.map(
-        (r) => ({
-          id: r.id,
-          name: r.name,
-          createdAt: r.createdAt,
-          matchedChatTitle: r.matchedChatTitle,
-          matchedChatMessage: null,
-        }),
-      );
+    const chatTitleMatchesResult: AppSearchResult[] = chatTitleMatches.map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.createdAt,
+      matchedChatTitle: r.matchedChatTitle,
+      matchedChatMessage: null,
+    }));
 
-      // 3) Apps whose chat message content matches
-      const chatMessageMatches = await db
-        .select({
-          id: apps.id,
-          name: apps.name,
-          createdAt: apps.createdAt,
-          matchedChatTitle: chats.title,
-          matchedChatMessage: messages.content,
-        })
-        .from(apps)
-        .innerJoin(chats, eq(apps.id, chats.appId))
-        .innerJoin(messages, eq(chats.id, messages.chatId))
-        .where(like(messages.content, pattern))
-        .orderBy(desc(apps.createdAt));
+    // 3) Apps whose chat message content matches
+    const chatMessageMatches = await db
+      .select({
+        id: apps.id,
+        name: apps.name,
+        createdAt: apps.createdAt,
+        matchedChatTitle: chats.title,
+        matchedChatMessage: messages.content,
+      })
+      .from(apps)
+      .innerJoin(chats, eq(apps.id, chats.appId))
+      .innerJoin(messages, eq(chats.id, messages.chatId))
+      .where(like(messages.content, pattern))
+      .orderBy(desc(apps.createdAt));
 
-      // Flatten and dedupe by app id
-      const allMatches: AppSearchResult[] = [
-        ...appNameMatchesResult,
-        ...chatTitleMatchesResult,
-        ...chatMessageMatches,
-      ];
-      const uniqueApps = Array.from(
-        new Map(allMatches.map((app) => [app.id, app])).values(),
-      );
+    // Flatten and dedupe by app id
+    const allMatches: AppSearchResult[] = [
+      ...appNameMatchesResult,
+      ...chatTitleMatchesResult,
+      ...chatMessageMatches,
+    ];
+    const uniqueApps = Array.from(new Map(allMatches.map((app) => [app.id, app])).values());
 
-      // Sort newest apps first
-      uniqueApps.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+    // Sort newest apps first
+    uniqueApps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      return uniqueApps;
-    },
-  );
+    return uniqueApps;
+  });
 
   // Handler for adding logs to central store from renderer
   createTypedHandler(miscContracts.addLog, async (_, entry) => {
@@ -2318,10 +2362,7 @@ export function registerAppHandlers() {
     });
 
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const trimmedInstall = installCommand?.trim() || null;
@@ -2330,17 +2371,13 @@ export function registerAppHandlers() {
 
     // Both commands must be provided together, or both must be null
     if ((trimmedInstall === null) !== (trimmedStart === null)) {
-      throw new Error(
-        "Both install and start commands are required when customizing",
-      );
+      throw new Error("Both install and start commands are required when customizing");
     }
 
     // The preview URL overrides the auto-detected dev-server URL, so it must
     // be an absolute http(s) URL when provided (e.g. http://127.0.0.1:10202).
     if (trimmedPreviewUrl && !/^https?:\/\//.test(trimmedPreviewUrl)) {
-      throw new Error(
-        "Preview URL must be an absolute http:// or https:// URL",
-      );
+      throw new Error("Preview URL must be an absolute http:// or https:// URL");
     }
 
     await db
@@ -2389,10 +2426,7 @@ export function registerAppHandlers() {
         });
 
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
 
         const currentResolvedPath = getOctopusStudioAppPath(app.path);
@@ -2405,10 +2439,7 @@ export function registerAppHandlers() {
         if (currentResolvedPath === nextResolvedPath) {
           // Path hasn't changed, but we should update to absolute path format if needed
           if (!path.isAbsolute(app.path)) {
-            await db
-              .update(apps)
-              .set({ path: nextResolvedPath })
-              .where(eq(apps.id, appId));
+            await db.update(apps).set({ path: nextResolvedPath }).where(eq(apps.id, appId));
           }
           return {
             resolvedPath: nextResolvedPath,
@@ -2442,10 +2473,7 @@ export function registerAppHandlers() {
           logger.warn(
             `Source path ${currentResolvedPath} does not exist. Updating database path only.`,
           );
-          await db
-            .update(apps)
-            .set({ path: nextResolvedPath })
-            .where(eq(apps.id, appId));
+          await db.update(apps).set({ path: nextResolvedPath }).where(eq(apps.id, appId));
           return {
             resolvedPath: nextResolvedPath,
           };
@@ -2473,10 +2501,7 @@ export function registerAppHandlers() {
           });
 
           // Update path to absolute path
-          await db
-            .update(apps)
-            .set({ path: nextResolvedPath })
-            .where(eq(apps.id, appId));
+          await db.update(apps).set({ path: nextResolvedPath }).where(eq(apps.id, appId));
 
           try {
             await fsPromises.rm(currentResolvedPath, {
@@ -2484,10 +2509,7 @@ export function registerAppHandlers() {
               force: true,
             });
           } catch (error: any) {
-            logger.warn(
-              `Error deleting old app directory ${currentResolvedPath}:`,
-              error,
-            );
+            logger.warn(`Error deleting old app directory ${currentResolvedPath}:`, error);
           }
 
           return {
@@ -2502,10 +2524,7 @@ export function registerAppHandlers() {
                 force: true,
               });
             } catch (cleanupError) {
-              logger.warn(
-                `Failed to clean up partial move at ${nextResolvedPath}:`,
-                cleanupError,
-              );
+              logger.warn(`Failed to clean up partial move at ${nextResolvedPath}:`, cleanupError);
             }
           }
           logger.error(
@@ -2541,10 +2560,7 @@ export function registerAppHandlers() {
       where: eq(apps.id, appId),
     });
     if (!appRecord) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = getOctopusStudioAppPath(appRecord.path);
@@ -2577,9 +2593,7 @@ export function registerAppHandlers() {
     }
 
     if (!SCREENSHOT_FILENAME_REGEX.test(`${commitHash}.png`)) {
-      logger.warn(
-        `Skipping screenshot save for app ${appId}: unexpected commit hash format`,
-      );
+      logger.warn(`Skipping screenshot save for app ${appId}: unexpected commit hash format`);
       return;
     }
 
@@ -2594,33 +2608,22 @@ export function registerAppHandlers() {
           where: eq(apps.id, appId),
         });
         if (!appRecord) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
 
         const appPath = getOctopusStudioAppPath(appRecord.path);
-        const screenshotDir = path.join(
-          appPath,
-          OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME,
-        );
+        const screenshotDir = path.join(appPath, OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME);
         await fsPromises.mkdir(screenshotDir, { recursive: true });
 
         const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
-        await fsPromises.writeFile(
-          path.join(screenshotDir, `${commitHash}.png`),
-          buffer,
-        );
+        await fsPromises.writeFile(path.join(screenshotDir, `${commitHash}.png`), buffer);
 
         // Prune: keep only the newest MAX_SCREENSHOTS_PER_APP by mtime.
         try {
           const screenshots = await readScreenshotEntries(screenshotDir);
           for (const extra of screenshots.slice(MAX_SCREENSHOTS_PER_APP)) {
-            await fsPromises
-              .unlink(path.join(screenshotDir, extra.name))
-              .catch(() => {});
+            await fsPromises.unlink(path.join(screenshotDir, extra.name)).catch(() => {});
           }
         } catch (err) {
           logger.warn(`Failed to prune screenshots for app ${appId}`, err);
@@ -2636,17 +2639,11 @@ export function registerAppHandlers() {
       where: eq(apps.id, appId),
     });
     if (!appRecord) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = getOctopusStudioAppPath(appRecord.path);
-    const screenshotDir = path.join(
-      appPath,
-      OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME,
-    );
+    const screenshotDir = path.join(appPath, OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME);
 
     const entries = await readScreenshotEntries(screenshotDir);
     const screenshots = entries.map(({ name }) => ({
@@ -2674,10 +2671,7 @@ export function registerAppHandlers() {
           return { appId, thumbnailUrl: null };
         }
         const appPath = getOctopusStudioAppPath(record.path);
-        const screenshotDir = path.join(
-          appPath,
-          OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME,
-        );
+        const screenshotDir = path.join(appPath, OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME);
         const entries = await readScreenshotEntries(screenshotDir);
         const latest = entries[0];
         if (!latest) {
@@ -2702,10 +2696,7 @@ export function registerAppHandlers() {
       .whenReady()
       .then(() => {
         void reconcileCloudSandboxes().catch((error) => {
-          logger.warn(
-            "Failed to reconcile cloud sandboxes after ready:",
-            error,
-          );
+          logger.warn("Failed to reconcile cloud sandboxes after ready:", error);
         });
       })
       .catch((err) => {
@@ -2718,10 +2709,7 @@ export function registerAppHandlers() {
   if (IS_TEST_BUILD) {
     registerTrustedIpcHandler(
       "test:set-needs-app-blueprint",
-      async (
-        _event,
-        { appName, value }: { appName: string; value: boolean },
-      ) => {
+      async (_event, { appName, value }: { appName: string; value: boolean }) => {
         const result = await db
           .update(apps)
           .set({ needsAppBlueprint: value })
@@ -2738,10 +2726,7 @@ export function registerAppHandlers() {
         // apps.name is not unique, so resolve and assert BEFORE writing: an
         // update-then-check has already overwritten every matching row's Neon
         // columns by the time it throws, and nothing rolls that back.
-        const matches = await db
-          .select({ id: apps.id })
-          .from(apps)
-          .where(eq(apps.name, appName));
+        const matches = await db.select({ id: apps.id }).from(apps).where(eq(apps.name, appName));
         if (matches.length !== 1) {
           throw new OctopusStudioError(
             `Expected exactly one app named ${appName}, but matched ${matches.length}`,

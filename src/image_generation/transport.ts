@@ -94,9 +94,7 @@ export const ImageGenerationRemoteSnapshotSchema = z
     revision: z.number().int().nonnegative(),
   })
   .strict();
-export type ImageGenerationRemoteSnapshot = z.infer<
-  typeof ImageGenerationRemoteSnapshotSchema
->;
+export type ImageGenerationRemoteSnapshot = z.infer<typeof ImageGenerationRemoteSnapshotSchema>;
 
 export function projectImageGenerationRemoteSnapshot(
   state: ImageGenerationActorState,
@@ -123,9 +121,7 @@ export function projectImageGenerationRemoteSnapshot(
           }
         : {}),
       ...(job.error ? { error: job.error } : {}),
-      ...(job.lateAfterCancel !== undefined
-        ? { lateAfterCancel: job.lateAfterCancel }
-        : {}),
+      ...(job.lateAfterCancel !== undefined ? { lateAfterCancel: job.lateAfterCancel } : {}),
       activeInvocationRef,
     })),
     revision,

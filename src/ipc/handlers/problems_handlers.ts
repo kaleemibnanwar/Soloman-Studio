@@ -10,10 +10,7 @@ import { getOctopusStudioAppPath } from "@/paths/paths";
 import log from "electron-log";
 import { createTypedHandler } from "./base";
 import { miscContracts } from "../types/misc";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("problems_handlers");
 
@@ -50,13 +47,9 @@ export function registerProblemsHandlers() {
           appPath,
         });
         logger.info("Type checking precondition failed:", message);
-        throw new OctopusStudioError(
-          message,
-          OctopusStudioErrorKind.Precondition,
-          {
-            cause: error,
-          },
-        );
+        throw new OctopusStudioError(message, OctopusStudioErrorKind.Precondition, {
+          cause: error,
+        });
       }
 
       logger.error("Error checking problems:", error);

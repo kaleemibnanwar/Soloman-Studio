@@ -16,10 +16,7 @@ export interface ExploreCodeInput {
   maxDepth?: number;
 }
 
-export function exploreCode(
-  ts: TypeScriptModule,
-  input: ExploreCodeInput,
-): CodeExplorerResult {
+export function exploreCode(ts: TypeScriptModule, input: ExploreCodeInput): CodeExplorerResult {
   const built = buildCodeExplorerIndex(ts, input);
   return searchCodeExplorerIndex(built, input);
 }
@@ -40,10 +37,7 @@ export interface CodeExplorerConfigDiagnostic {
 
 export function buildCodeExplorerIndex(
   ts: TypeScriptModule,
-  input: Pick<
-    ExploreCodeInput,
-    "appPath" | "tsconfigPath" | "tsBuildInfoCacheDir"
-  >,
+  input: Pick<ExploreCodeInput, "appPath" | "tsconfigPath" | "tsBuildInfoCacheDir">,
 ): BuiltCodeExplorerIndex {
   const indexStart = performance.now();
   const projects = createProjectPrograms(ts, {
@@ -57,9 +51,7 @@ export function buildCodeExplorerIndex(
     index,
     indexMs,
     tsconfigPaths: projects.map((project) => project.tsconfigPath),
-    rootFileNames: projects.flatMap((project) =>
-      project.program.getRootFileNames(),
-    ),
+    rootFileNames: projects.flatMap((project) => project.program.getRootFileNames()),
     configDiagnostics: projects.flatMap((project) =>
       project.configFileParsingDiagnostics.map((diagnostic) => ({
         code: diagnostic.code,

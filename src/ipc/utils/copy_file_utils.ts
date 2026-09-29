@@ -2,26 +2,20 @@ import fs from "node:fs";
 import path from "node:path";
 import log from "electron-log";
 import { assertMutationPathAllowed, safeJoin } from "./path_utils";
-import { gitAdd } from "./git_utils";
+import { gitAdd } from "../git/git_utils";
 import {
   OCTOPUS_STUDIO_MEDIA_DIR_NAME,
   isWithinOctopusStudioMediaDir,
   resolveAttachmentLogicalPath,
-} from "./media_path_utils";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+} from "../media/media_path_utils";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import { deploySupabaseFunction } from "../../supabase_admin/supabase_management_client";
 import {
   isServerFunction,
   isSharedServerModule,
   extractFunctionNameFromPath,
 } from "../../supabase_admin/supabase_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { db } from "@/db";
 import { apps } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -79,10 +73,7 @@ export async function executeCopyFile({
         where: eq(apps.id, appId),
       });
       if (!app) {
-        throw new OctopusStudioError(
-          "App not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
       }
       // Chat projects have no `app.path` (sentinel "") and resolve to their
       // workspace folder instead — matches how ctx.appPath was resolved for
@@ -135,10 +126,7 @@ export async function executeCopyFile({
       // symlink inside the allowed directory that points outside it.
       const realFromPath = fs.realpathSync(fromFullPath);
       const resolvedAppPath = fs.realpathSync(appPath);
-      if (
-        path.isAbsolute(from) &&
-        !isWithinOctopusStudioMediaDir(realFromPath, resolvedAppPath)
-      ) {
+      if (path.isAbsolute(from) && !isWithinOctopusStudioMediaDir(realFromPath, resolvedAppPath)) {
         throw new Error(
           `Source path resolves to a location outside the .octopusStudio/media directory (possible symlink traversal)`,
         );
@@ -174,8 +162,7 @@ export async function executeCopyFile({
       }
 
       // Deploy Supabase function if applicable
-      const effectiveSharedModulesChanged =
-        isSharedModulesChanged || sharedModuleChanged;
+      const effectiveSharedModulesChanged = isSharedModulesChanged || sharedModuleChanged;
       let deployError: unknown;
       let skippedFunctionDeploy: string | undefined;
       if (supabaseProjectId && isServerFunction(operationPath)) {
@@ -189,10 +176,7 @@ export async function executeCopyFile({
               organizationSlug: supabaseOrganizationSlug ?? null,
             });
           } catch (error) {
-            logger.error(
-              "Failed to deploy Supabase function after copy:",
-              error,
-            );
+            logger.error("Failed to deploy Supabase function after copy:", error);
             deployError = error;
           }
         } else {

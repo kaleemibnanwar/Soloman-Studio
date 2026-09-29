@@ -1,5 +1,5 @@
 - main:
-  - heading "Blank page" [level=1]
+    - heading "Blank page" [level=1]
 - link "Made with OctopusStudio (EDITED)":
-  - /url: https://www.octopus-studio.sh/
+    - /url: https://www.octopus-studio.sh/
 - alert

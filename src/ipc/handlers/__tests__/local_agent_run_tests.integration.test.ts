@@ -11,10 +11,7 @@ import { screen, waitFor } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 
 import { apps } from "@/db/schema";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local-agent run_tests (integration)", () => {
@@ -35,10 +32,7 @@ describe("local-agent run_tests (integration)", () => {
       },
     });
     // The run_tests tool is gated on the app having opted into testing.
-    await harness.db
-      .update(apps)
-      .set({ testingEnabled: true })
-      .where(eq(apps.id, harness.appId));
+    await harness.db.update(apps).set({ testingEnabled: true }).where(eq(apps.id, harness.appId));
   }, 60_000);
 
   afterAll(async () => {
@@ -60,9 +54,7 @@ describe("local-agent run_tests (integration)", () => {
 
     await harness.waitForStreamEnd(harness.chatId);
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const messages = await harness.db.query.messages.findMany();
@@ -71,9 +63,7 @@ describe("local-agent run_tests (integration)", () => {
     const content = assistant.content;
 
     // Narration from both turns.
-    expect(content).toContain(
-      "I'll write an end-to-end test for the home page.",
-    );
+    expect(content).toContain("I'll write an end-to-end test for the home page.");
     expect(content).toContain("Now let me run the test to verify it works.");
 
     // The run_tests tool ran and returned the dev-server warning, uncounted.

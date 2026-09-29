@@ -2,9 +2,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import type { QueryInvalidationScope } from "./types";
 
-export function queryKeysForInvalidationScope(
-  scope: QueryInvalidationScope,
-): readonly QueryKey[] {
+export function queryKeysForInvalidationScope(scope: QueryInvalidationScope): readonly QueryKey[] {
   switch (scope.family) {
     case "apps":
       return [queryKeys.apps.all];

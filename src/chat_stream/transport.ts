@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  ChatStreamParamsSchema,
-  ChatResponseEndSchema,
-} from "@/ipc/types/chat";
+import { ChatStreamParamsSchema, ChatResponseEndSchema } from "@/ipc/types/chat";
 import { ChatStreamInvocationRefSchema } from "@/ipc/types/chat";
 import { REMOTE_MACHINE_PROTOCOL_VERSION } from "@/distributed_machines/remote_protocol";
 import type { RemoteClientDefinition } from "@/distributed_machines/remote_client";
@@ -58,20 +55,13 @@ export const SerializableChatTurnIntentSchema = z
     schemaVersion: z.literal(1),
     intentId: z.string().min(1).max(256),
     appId: z.number().int().positive().optional(),
-    originWindowSessionId: z
-      .string()
-      .min(1)
-      .max(MAX_CHAT_WIRE_ID_CHARS)
-      .optional(),
+    originWindowSessionId: z.string().min(1).max(MAX_CHAT_WIRE_ID_CHARS).optional(),
     payloadHash: z.string().regex(/^[a-f0-9]{64}$/),
     owner: ChatTurnOwnerSchema.optional(),
   })
   .and(ChatStreamParamsSchema)
   .superRefine((intent, context) => {
-    if (
-      intent.invocationRef &&
-      intent.invocationRef.entityKey !== intent.chatId
-    ) {
+    if (intent.invocationRef && intent.invocationRef.entityKey !== intent.chatId) {
       context.addIssue({
         code: "custom",
         path: ["invocationRef", "entityKey"],
@@ -79,9 +69,7 @@ export const SerializableChatTurnIntentSchema = z
       });
     }
   });
-export type SerializableChatTurnIntent = z.infer<
-  typeof SerializableChatTurnIntentSchema
->;
+export type SerializableChatTurnIntent = z.infer<typeof SerializableChatTurnIntentSchema>;
 
 export const ChatQueueEntrySchema = z
   .object({
@@ -266,14 +254,7 @@ export const ChatStreamRemoteSnapshotSchema = z
     schemaVersion: z.literal(1),
     chatId: z.number().int().positive(),
     revision: z.number().int().nonnegative(),
-    phase: z.enum([
-      "idle",
-      "admitting",
-      "streaming",
-      "cancelling",
-      "finalizing",
-      "errored",
-    ]),
+    phase: z.enum(["idle", "admitting", "streaming", "cancelling", "finalizing", "errored"]),
     invocationRef: ChatStreamInvocationRefSchema.nullable(),
     error: z.string().nullable(),
     queueRevision: expectedQueueRevision,
@@ -290,12 +271,7 @@ export const ChatStreamRemoteSnapshotSchema = z
     lastAcceptance: z
       .object({
         intentId: z.string(),
-        acceptance: z.enum([
-          "queued",
-          "message-accepted",
-          "replayed",
-          "rejected",
-        ]),
+        acceptance: z.enum(["queued", "message-accepted", "replayed", "rejected"]),
         acceptedMessageId: z.number().int().positive().optional(),
         error: z.string().optional(),
       })
@@ -327,13 +303,9 @@ export const ChatStreamRemoteSnapshotSchema = z
       .nullable(),
   })
   .strict();
-export type ChatStreamRemoteSnapshot = z.infer<
-  typeof ChatStreamRemoteSnapshotSchema
->;
+export type ChatStreamRemoteSnapshot = z.infer<typeof ChatStreamRemoteSnapshotSchema>;
 
-export function unavailableChatStreamSnapshot(
-  chatId: number,
-): ChatStreamRemoteSnapshot {
+export function unavailableChatStreamSnapshot(chatId: number): ChatStreamRemoteSnapshot {
   return {
     schemaVersion: 1,
     chatId,

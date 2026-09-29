@@ -56,10 +56,7 @@ vi.mock("electron", async () => {
   return createElectronMock(h);
 });
 
-import {
-  setupChatFlowHarness,
-  type ChatFlowHarness,
-} from "@/testing/chat_flow_harness";
+import { setupChatFlowHarness, type ChatFlowHarness } from "@/testing/chat_flow_harness";
 
 describe("my feature (integration)", () => {
   let harness: ChatFlowHarness;
@@ -175,9 +172,7 @@ actually returns, don't assume the old spike's `Echo:` behavior.
 ```ts
 // Files written by octopus-studio-write tags:
 expect(harness.appFileExists("src/foo/bar.tsx")).toBe(true);
-expect(harness.readAppFile("src/foo/bar.tsx").trim()).toBe(
-  "// BEGINNING OF FILE",
-);
+expect(harness.readAppFile("src/foo/bar.tsx").trim()).toBe("// BEGINNING OF FILE");
 
 // Commit happened (init commit + the applied change):
 expect(harness.gitLog().length).toBeGreaterThan(1);

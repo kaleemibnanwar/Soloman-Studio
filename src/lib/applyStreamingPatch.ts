@@ -15,9 +15,7 @@ import { hashPrefix } from "@/lib/prefixHash";
  * The caller should resync on false instead of splicing a new tail onto the wrong base.
  */
 export function applyStreamingPatch(
-  setMessagesById: (
-    update: (prev: Map<number, Message[]>) => Map<number, Message[]>,
-  ) => void,
+  setMessagesById: (update: (prev: Map<number, Message[]>) => Map<number, Message[]>) => void,
   chatId: number,
   streamingMessageId: number,
   streamingPatch: StreamingPatch,

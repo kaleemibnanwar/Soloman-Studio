@@ -9,10 +9,7 @@ interface OctopusStudioThinkProps {
   children?: React.ReactNode;
 }
 
-export const OctopusStudioThink: React.FC<OctopusStudioThinkProps> = ({
-  children,
-  node,
-}) => {
+export const OctopusStudioThink: React.FC<OctopusStudioThinkProps> = ({ children, node }) => {
   const state = node?.properties?.state as CustomTagState;
   const inProgress = state === "pending";
   const [isExpanded, setIsExpanded] = useState(inProgress);
@@ -89,9 +86,7 @@ export const OctopusStudioThink: React.FC<OctopusStudioThinkProps> = ({
       {/* Expandable content */}
       <div
         className={`grid transition-all duration-200 ease-in-out ${
-          isExpanded
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+          isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden">

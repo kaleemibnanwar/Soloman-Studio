@@ -1,9 +1,6 @@
 import { createTypedHandler } from "./base";
 import { migrationContracts } from "../types/migration";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   logger,
   prepareMigrationContext,
@@ -11,16 +8,9 @@ import {
   detectDestructiveStatements,
   deriveDestructiveReasons,
 } from "../utils/migration_utils";
-import {
-  getAppWithNeonBranch,
-  getProductionBranchId,
-} from "../utils/neon_utils";
+import { getAppWithNeonBranch, getProductionBranchId } from "../neon/neon_utils";
 import { executeNeonStatementsInTransaction } from "../../neon_admin/neon_context";
-import {
-  storePreview,
-  peekPreview,
-  deletePreview,
-} from "../utils/migration_plan_store";
+import { storePreview, peekPreview, deletePreview } from "../utils/migration_plan_store";
 
 // =============================================================================
 // Handler Registration
@@ -47,8 +37,7 @@ export function registerMigrationHandlers() {
     });
     const statements = schemaDiffStatements.map((statement) => statement.sql);
 
-    const destructiveStatements =
-      detectDestructiveStatements(schemaDiffStatements);
+    const destructiveStatements = detectDestructiveStatements(schemaDiffStatements);
     const warningReasons = deriveDestructiveReasons(destructiveStatements);
     const hasDataLoss = destructiveStatements.length > 0;
 
@@ -101,9 +90,7 @@ export function registerMigrationHandlers() {
     }
 
     if (stored.statements.length === 0) {
-      logger.info(
-        `Schemas already in sync for app ${appId}, nothing to migrate.`,
-      );
+      logger.info(`Schemas already in sync for app ${appId}, nothing to migrate.`);
       deletePreview(migrationId);
       return { success: true, noChanges: true };
     }
@@ -139,9 +126,7 @@ export function registerMigrationHandlers() {
       statements: stored.statements,
     });
     deletePreview(migrationId);
-    logger.info(
-      `Migration ${migrationId} applied successfully for app ${appId}`,
-    );
+    logger.info(`Migration ${migrationId} applied successfully for app ${appId}`);
     return { success: true };
   });
 }

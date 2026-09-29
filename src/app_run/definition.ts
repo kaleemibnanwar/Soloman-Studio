@@ -45,10 +45,7 @@ import {
 import { transition } from "./transition";
 import { ignore } from "@/state_machines/types";
 import { MainAppRuntimeOutput } from "@/ipc/services/main_app_runtime_output";
-import {
-  appRunOperationRegistry,
-  type AppRunOperationOutcome,
-} from "./operations";
+import { appRunOperationRegistry, type AppRunOperationOutcome } from "./operations";
 import { appRunRemoteIntentContract } from "./remote_intent_contract";
 import { sameInvocationRef } from "@/state_machines/invocation_ref";
 
@@ -60,10 +57,7 @@ type CorrelatedRunCommand =
     })
   | Exclude<RunCommand, { type: "start" | "stop" }>;
 
-function correlateCommand(
-  command: RunCommand,
-  event: AppRunActorEvent,
-): CorrelatedRunCommand {
+function correlateCommand(command: RunCommand, event: AppRunActorEvent): CorrelatedRunCommand {
   if (command.type !== "start" && command.type !== "stop") return command;
   const requestId =
     ("requestId" in event && event.requestId) ||
@@ -91,11 +85,7 @@ function invocation(appId: number, operationId: string): AppRunInvocationRef {
   };
 }
 
-function toDomainEvent(
-  key: AppRunKey,
-  state: AppRunActorState,
-  event: AppRunActorEvent,
-): RunEvent {
+function toDomainEvent(key: AppRunKey, state: AppRunActorState, event: AppRunActorEvent): RunEvent {
   switch (event.type) {
     case "START":
       return {
@@ -106,10 +96,7 @@ function toDomainEvent(
             ? state.runState.invocationRef
             : state.runState.type === "errored" &&
                 state.reusableStartInvocation &&
-                isCurrentInvocation(
-                  state.runState,
-                  state.reusableStartInvocation,
-                )
+                isCurrentInvocation(state.runState, state.reusableStartInvocation)
               ? state.reusableStartInvocation
               : invocation(key.appId, event.operationId),
         startedAt: event.startedAt,
@@ -197,10 +184,7 @@ function toDomainEvent(
   }
 }
 
-function isCurrentInvocation(
-  state: RunState | undefined,
-  ref: AppRunInvocationRef,
-): boolean {
+function isCurrentInvocation(state: RunState | undefined, ref: AppRunInvocationRef): boolean {
   return (
     state !== undefined &&
     state.type !== "idle" &&
@@ -232,18 +216,14 @@ type AppRunCorrelatedProducerEvent = AppRunProducerEvent & {
   readonly requestId?: RequestId;
 };
 
-export type AppRunActorEvent =
-  | AppRunAdmittedIntent
-  | AppRunCorrelatedProducerEvent;
+export type AppRunActorEvent = AppRunAdmittedIntent | AppRunCorrelatedProducerEvent;
 
 type AppRunCorrelatedOutcome = CorrelatedOperationOutcome<
   AppRunOperationOutcome,
   AppRunInvocationRef
 >;
 
-function settlementFor(
-  event: AppRunActorEvent,
-): AppRunActorState["lastSettlement"] {
+function settlementFor(event: AppRunActorEvent): AppRunActorState["lastSettlement"] {
   const requestId =
     ("requestId" in event && event.requestId) ||
     ("operationId" in event ? (event.operationId as RequestId) : undefined);
@@ -287,8 +267,7 @@ export function resolveAppRunInvocationRef(
 ): AppRunInvocationRef {
   switch (event.type) {
     case "START":
-      return state.runState.type === "ready" ||
-        state.runState.type === "reloading"
+      return state.runState.type === "ready" || state.runState.type === "reloading"
         ? state.runState.invocationRef
         : state.runState.type === "errored" &&
             state.reusableStartInvocation &&
@@ -307,11 +286,7 @@ export function resolveAppRunInvocationRef(
   }
 }
 
-function transitionActor(
-  key: AppRunKey,
-  state: AppRunActorState,
-  event: AppRunActorEvent,
-) {
+function transitionActor(key: AppRunKey, state: AppRunActorState, event: AppRunActorEvent) {
   if ("invocationRef" in event && event.invocationRef.entityKey !== key.appId) {
     return ignore(state, "stale-operation");
   }
@@ -321,15 +296,11 @@ function transitionActor(
   ) {
     return ignore(state, "stale-operation");
   }
-  if (
-    event.type === "HMR_DETECTED" &&
-    !isCurrentInvocation(state.runState, event.invocationRef)
-  ) {
+  if (event.type === "HMR_DETECTED" && !isCurrentInvocation(state.runState, event.invocationRef)) {
     return ignore(state, "stale-operation");
   }
   const admittedExit =
-    event.type === "PROCESS_EXITED" &&
-    isCurrentInvocation(state.runState, event.invocationRef)
+    event.type === "PROCESS_EXITED" && isCurrentInvocation(state.runState, event.invocationRef)
       ? {
           exitCode: event.exitCode,
           timestamp: event.timestamp,
@@ -337,8 +308,7 @@ function transitionActor(
       : null;
   const result = transition(state.runState, toDomainEvent(key, state, event));
   const settlement =
-    "invocationRef" in event &&
-    !isCurrentInvocation(state.runState, event.invocationRef)
+    "invocationRef" in event && !isCurrentInvocation(state.runState, event.invocationRef)
       ? null
       : settlementFor(event);
   const outcomes = settlement
@@ -367,9 +337,7 @@ function transitionActor(
       ] satisfies AppRunCorrelatedOutcome[])
     : undefined;
   const observedExit =
-    event.type === "START" ||
-    event.type === "RESTART" ||
-    event.type === "EXTERNAL_RESTART_STARTED"
+    event.type === "START" || event.type === "RESTART" || event.type === "EXTERNAL_RESTART_STARTED"
       ? null
       : event.type === "PROCESS_EXITED"
         ? result.kind === "ignored"
@@ -403,9 +371,7 @@ function transitionActor(
         }
       : { ...result, state };
   }
-  const commands = result.commands.map((command) =>
-    correlateCommand(command, event),
-  );
+  const commands = result.commands.map((command) => correlateCommand(command, event));
   const bumpsPreviewReload = result.commands.some(
     (command) =>
       command.type === "applyUrl" ||
@@ -423,8 +389,7 @@ function transitionActor(
         ? state
         : {
             runState: result.state,
-            previewReloadEpoch:
-              state.previewReloadEpoch + (bumpsPreviewReload ? 1 : 0),
+            previewReloadEpoch: state.previewReloadEpoch + (bumpsPreviewReload ? 1 : 0),
             observedExit,
             reusableStartInvocation,
             lastSettlement: settlement ?? state.lastSettlement,
@@ -444,10 +409,7 @@ async function appExists(appId: number): Promise<boolean> {
 
 export async function requireExistingApp(appId: number): Promise<void> {
   if (!(await appExists(appId))) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
 }
 
@@ -469,8 +431,7 @@ function createCommandRunner() {
     command: CorrelatedRunCommand,
     emitActorEvent: (event: AppRunActorEvent) => void,
   ): Promise<void> => {
-    const emit = (event: AppRunCorrelatedProducerEvent) =>
-      emitActorEvent(event);
+    const emit = (event: AppRunCorrelatedProducerEvent) => emitActorEvent(event);
     switch (command.type) {
       case "start": {
         if (command.operation !== "rebuild") {
@@ -488,11 +449,9 @@ function createCommandRunner() {
           timestamp: command.startedAt,
         };
         addLog(logEntry);
-        const output = new MainAppRuntimeOutput(
-          command.appId,
-          command.invocationRef,
-          { send: emit },
-        );
+        const output = new MainAppRuntimeOutput(command.appId, command.invocationRef, {
+          send: emit,
+        });
         output.enqueue({
           type: "info",
           message: logEntry.message,
@@ -648,12 +607,9 @@ export const appRunDefinition = defineFrameworkCoveredRemoteMachine({
         state.lastSettlement,
         state.observedExit,
       ),
-    unavailableSnapshot: (key) =>
-      projectAppRunRemoteSnapshot(key.appId, 0, { type: "idle" }),
+    unavailableSnapshot: (key) => projectAppRunRemoteSnapshot(key.appId, 0, { type: "idle" }),
     revisionPolicy: (event) =>
-      event.type === "START" || event.type === "RESTART"
-        ? "reject-stale"
-        : "allow-stale",
+      event.type === "START" || event.type === "RESTART" ? "reject-stale" : "allow-stale",
     authorizeSubscribe: ({ key }) => authorizeApp(key.appId),
     authorizeDispatch: async ({ key, event, currentState }) => {
       await authorizeApp(key.appId);
@@ -741,11 +697,7 @@ export const appRunDefinition = defineFrameworkCoveredRemoteMachine({
           },
         },
         createInvocationRef: () =>
-          resolveAppRunInvocationRef(
-            context.key,
-            context.currentState as AppRunActorState,
-            event,
-          ),
+          resolveAppRunInvocationRef(context.key, context.currentState as AppRunActorState, event),
         assertFinalAdmission: controls.assertFinalAdmission,
         enqueue: controls.enqueue,
         receiptOnEnqueueFailure: () => ({

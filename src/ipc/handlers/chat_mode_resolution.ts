@@ -1,22 +1,11 @@
-import {
-  isOctopusStudioProEnabled,
-  type ChatMode,
-  type UserSettings,
-} from "@/lib/schemas";
-import {
-  normalizeStoredChatMode,
-  resolveChatMode,
-  type ChatModeResolution,
-} from "@/lib/chatMode";
+import { isOctopusStudioProEnabled, type ChatMode, type UserSettings } from "@/lib/schemas";
+import { normalizeStoredChatMode, resolveChatMode, type ChatModeResolution } from "@/lib/chatMode";
 import {
   FREE_PRO_BUILD_MODE_ERROR,
   getFreeProCompatibleChatMode,
   isFreeProBuildModeCombination,
 } from "@/lib/freeProModel";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { readSettings } from "@/main/settings";
 import { PROVIDER_TO_ENV_VAR } from "@/ipc/shared/language_model_constants";
 import { getEnvVar } from "@/ipc/utils/read_env";
@@ -29,10 +18,7 @@ export function assertChatModeCompatibleWithModel(
   chatMode: ChatMode,
 ): void {
   if (isFreeProBuildModeCombination(settings.selectedModel, chatMode)) {
-    throw new OctopusStudioError(
-      FREE_PRO_BUILD_MODE_ERROR,
-      OctopusStudioErrorKind.Precondition,
-    );
+    throw new OctopusStudioError(FREE_PRO_BUILD_MODE_ERROR, OctopusStudioErrorKind.Precondition);
   }
 }
 
@@ -45,8 +31,7 @@ export async function resolveChatModeForTurn({
   requestedChatMode?: ChatMode | null;
   settings?: UserSettings;
 }): Promise<ChatModeResolution & { settings: UserSettings }> {
-  const modeForTurn =
-    requestedChatMode === undefined ? storedChatMode : requestedChatMode;
+  const modeForTurn = requestedChatMode === undefined ? storedChatMode : requestedChatMode;
   const normalizedChatMode = normalizeStoredChatMode(modeForTurn);
   const envVars = getChatModeEnvVars();
   const freeAgentQuotaAvailable = await getFreeAgentQuotaAvailableIfNeeded(
@@ -78,10 +63,7 @@ export async function getInitialChatModeForNewChat(
 }
 
 function getChatModeEnvVars(): Record<string, string | undefined> {
-  const envVarNames = new Set([
-    ...Object.values(PROVIDER_TO_ENV_VAR),
-    "AZURE_RESOURCE_NAME",
-  ]);
+  const envVarNames = new Set([...Object.values(PROVIDER_TO_ENV_VAR), "AZURE_RESOURCE_NAME"]);
 
   return Object.fromEntries(
     [...envVarNames].map((envVarName) => [envVarName, getEnvVar(envVarName)]),
@@ -98,9 +80,7 @@ async function getFreeAgentQuotaAvailableIfNeeded(
 
   const defaultMayUseLocalAgent =
     !settings.defaultChatMode || settings.defaultChatMode === "local-agent";
-  const needsQuota =
-    chatMode === "local-agent" ||
-    (chatMode === null && defaultMayUseLocalAgent);
+  const needsQuota = chatMode === "local-agent" || (chatMode === null && defaultMayUseLocalAgent);
 
   if (!needsQuota) {
     return undefined;

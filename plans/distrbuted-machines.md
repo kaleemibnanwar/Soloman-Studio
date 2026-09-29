@@ -296,10 +296,7 @@ interface DistributedMachineDefinition<
   readonly id: Id;
   readonly host: "main" | "renderer";
   readonly initialState: (key: Key) => State;
-  readonly transition: (
-    state: State,
-    event: Event,
-  ) => TransitionResult<State, Command, Reason>;
+  readonly transition: (state: State, event: Event) => TransitionResult<State, Command, Reason>;
   readonly createScheduler: (key: Key) => CommandScheduler<Command>;
   readonly createCommandRunner: (
     context: MachineHostContext<Key, State, Event>,
@@ -521,10 +518,7 @@ trusted `unknown`.
 Remote definitions are assembled into a main-owned manifest:
 
 ```ts
-const remoteMachineManifest = createRemoteMachineManifest([
-  appRunMachine,
-  githubOpsMachine,
-]);
+const remoteMachineManifest = createRemoteMachineManifest([appRunMachine, githubOpsMachine]);
 ```
 
 The manifest:
@@ -684,10 +678,7 @@ interface RemoteActorRef<State, Event, Reason> {
 The React hook exposes transport status explicitly:
 
 ```ts
-const { state, projection, connection, dispatch } = useDistributedMachine(
-  appRunMachine,
-  appId,
-);
+const { state, projection, connection, dispatch } = useDistributedMachine(appRunMachine, appId);
 ```
 
 Rules:

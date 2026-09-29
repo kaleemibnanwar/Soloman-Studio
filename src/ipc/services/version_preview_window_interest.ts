@@ -1,7 +1,4 @@
-import {
-  windowRegistry,
-  type WindowRegistry,
-} from "@/window_infrastructure/main/window_registry";
+import { windowRegistry, type WindowRegistry } from "@/window_infrastructure/main/window_registry";
 
 export type VersionPreviewWindowRelease =
   | "not-owned"
@@ -79,5 +76,4 @@ export class VersionPreviewWindowInterestService {
   }
 }
 
-export const versionPreviewWindowInterestService =
-  new VersionPreviewWindowInterestService();
+export const versionPreviewWindowInterestService = new VersionPreviewWindowInterestService();

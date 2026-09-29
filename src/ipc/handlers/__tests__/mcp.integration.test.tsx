@@ -7,10 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { ipc } from "@/ipc/types";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("MCP chat flows (integration)", () => {
@@ -124,10 +121,7 @@ describe("MCP chat flows (integration)", () => {
     const chatId = await mountChat();
 
     const streamEnd = harness.waitForNextStreamEnd(chatId, 30_000);
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/mcp-calculator-direct",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/mcp-calculator-direct", { chatId });
     send();
 
     await streamEnd;
@@ -149,24 +143,18 @@ describe("MCP chat flows (integration)", () => {
     await screen.findByText(/reviewing this request/i);
     await clickAllowOnce();
     await streamEnd;
-    await waitFor(() =>
-      expect(screen.queryByText(/reviewing this request/i)).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByText(/reviewing this request/i)).toBeNull());
   }, 60_000);
 
   it("renders MCP tool search cards in local-agent search mode", async () => {
-    const previousThreshold =
-      process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD;
+    const previousThreshold = process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD;
     process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD = "0";
     try {
       await harness.mcp.addStdioServer();
 
       const chatId = await mountChat();
       const streamEnd = harness.waitForNextStreamEnd(chatId, 30_000);
-      const { send } = await harness.typeInChat(
-        "tc=local-agent/mcp-tool-search",
-        { chatId },
-      );
+      const { send } = await harness.typeInChat("tc=local-agent/mcp-tool-search", { chatId });
       send();
       await streamEnd;
       expect(screen.getByText("MCP Tools")).toBeTruthy();
@@ -175,25 +163,20 @@ describe("MCP chat flows (integration)", () => {
       if (previousThreshold === undefined) {
         delete process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD;
       } else {
-        process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD =
-          previousThreshold;
+        process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD = previousThreshold;
       }
     }
   }, 60_000);
 
   it("renders MCP tool schema cards in local-agent search mode", async () => {
-    const previousThreshold =
-      process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD;
+    const previousThreshold = process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD;
     process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD = "0";
     try {
       await harness.mcp.addStdioServer();
 
       const chatId = await mountChat();
       const streamEnd = harness.waitForNextStreamEnd(chatId, 30_000);
-      const { send } = await harness.typeInChat(
-        "tc=local-agent/get-mcp-tool-schema",
-        { chatId },
-      );
+      const { send } = await harness.typeInChat("tc=local-agent/get-mcp-tool-schema", { chatId });
       send();
       await streamEnd;
       expect(screen.getByText("MCP Tool Schema")).toBeTruthy();
@@ -202,8 +185,7 @@ describe("MCP chat flows (integration)", () => {
       if (previousThreshold === undefined) {
         delete process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD;
       } else {
-        process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD =
-          previousThreshold;
+        process.env.OCTOPUS_STUDIO_MCP_INLINE_TOKEN_THRESHOLD = previousThreshold;
       }
     }
   }, 60_000);

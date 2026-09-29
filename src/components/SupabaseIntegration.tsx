@@ -6,11 +6,7 @@ import { Label } from "@/components/ui/label";
 // We might need a Supabase icon here, but for now, let's use a generic one or text.
 // import { Supabase } from "lucide-react"; // Placeholder
 import { DatabaseZap, Trash2 } from "lucide-react"; // Using DatabaseZap as a placeholder
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useSettings } from "@/hooks/useSettings";
 import { useSupabase } from "@/hooks/useSupabase";
 import { showSuccess, showError } from "@/lib/toast";
@@ -24,8 +20,7 @@ export function SupabaseIntegration() {
   // Check if there are any connected organizations
   const isConnected = isSupabaseConnected(settings);
 
-  const { organizations, refetchOrganizations, deleteOrganization } =
-    useSupabase();
+  const { organizations, refetchOrganizations, deleteOrganization } = useSupabase();
 
   const handleDisconnectAllFromSupabase = async () => {
     setIsDisconnecting(true);
@@ -43,9 +38,7 @@ export function SupabaseIntegration() {
         showError(t("integrations.supabase.failedDisconnect"));
       }
     } catch (err: any) {
-      showError(
-        err.message || "An error occurred while disconnecting from Supabase",
-      );
+      showError(err.message || "An error occurred while disconnecting from Supabase");
     } finally {
       setIsDisconnecting(false);
     }
@@ -106,9 +99,7 @@ export function SupabaseIntegration() {
           disabled={isDisconnecting}
           className="flex items-center gap-2"
         >
-          {isDisconnecting
-            ? t("common:disconnecting")
-            : t("integrations.supabase.disconnectAll")}
+          {isDisconnecting ? t("common:disconnecting") : t("integrations.supabase.disconnectAll")}
           <DatabaseZap className="h-4 w-4" />
         </Button>
       </div>
@@ -137,18 +128,14 @@ export function SupabaseIntegration() {
                     variant="ghost"
                     size="sm"
                     className="h-7 px-2 text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() =>
-                      handleDeleteOrganization(org.organizationSlug)
-                    }
+                    onClick={() => handleDeleteOrganization(org.organizationSlug)}
                   />
                 }
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
                 <span className="text-xs">Disconnect</span>
               </TooltipTrigger>
-              <TooltipContent>
-                {t("integrations.supabase.disconnectOrganization")}
-              </TooltipContent>
+              <TooltipContent>{t("integrations.supabase.disconnectOrganization")}</TooltipContent>
             </Tooltip>
           </div>
         ))}
@@ -163,10 +150,7 @@ export function SupabaseIntegration() {
             onCheckedChange={handleMigrationSettingChange}
           />
           <div className="space-y-1">
-            <Label
-              htmlFor="supabase-migrations"
-              className="text-sm font-medium"
-            >
+            <Label htmlFor="supabase-migrations" className="text-sm font-medium">
               {t("integrations.supabase.writeSqlMigrations")}
             </Label>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -185,16 +169,13 @@ export function SupabaseIntegration() {
             onCheckedChange={handleSkipPruneSettingChange}
           />
           <div className="space-y-1">
-            <Label
-              htmlFor="skip-prune-edge-functions"
-              className="text-sm font-medium"
-            >
+            <Label htmlFor="skip-prune-edge-functions" className="text-sm font-medium">
               Keep extra Supabase edge functions
             </Label>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              When disabled, edge functions deployed to Supabase but not present
-              in your codebase will be automatically deleted during sync
-              operations (e.g., after reverting or modifying shared modules).
+              When disabled, edge functions deployed to Supabase but not present in your codebase
+              will be automatically deleted during sync operations (e.g., after reverting or
+              modifying shared modules).
             </p>
           </div>
         </div>

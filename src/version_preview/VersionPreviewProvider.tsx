@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type PropsWithChildren,
-} from "react";
+import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "jotai";
 import { toast } from "sonner";
@@ -21,17 +15,13 @@ import { ownsHistoricalCheckout } from "./state";
 import { versionPreviewKey } from "./transport";
 import { VersionPreviewWindowInterestClient } from "./window_interest_client";
 
-const PresentationStoreContext =
-  createContext<VersionPreviewPresentationStore | null>(null);
-const WindowInterestContext =
-  createContext<VersionPreviewWindowInterestClient | null>(null);
+const PresentationStoreContext = createContext<VersionPreviewPresentationStore | null>(null);
+const WindowInterestContext = createContext<VersionPreviewWindowInterestClient | null>(null);
 
 export function useVersionPreviewPresentationStore() {
   const store = useContext(PresentationStoreContext);
   if (!store) {
-    throw new Error(
-      "useVersionPreview must be used within VersionPreviewProvider",
-    );
+    throw new Error("useVersionPreview must be used within VersionPreviewProvider");
   }
   return store;
 }
@@ -39,18 +29,14 @@ export function useVersionPreviewPresentationStore() {
 export function useVersionPreviewWindowInterestClient() {
   const client = useContext(WindowInterestContext);
   if (!client) {
-    throw new Error(
-      "useVersionPreview must be used within VersionPreviewProvider",
-    );
+    throw new Error("useVersionPreview must be used within VersionPreviewProvider");
   }
   return client;
 }
 
 export function VersionPreviewProvider({ children }: PropsWithChildren) {
   const [presentation] = useState(() => new VersionPreviewPresentationStore());
-  const [windowInterest] = useState(
-    () => new VersionPreviewWindowInterestClient(),
-  );
+  const [windowInterest] = useState(() => new VersionPreviewWindowInterestClient());
   const client = useRemoteMachineClient();
   const jotaiStore = useStore();
   const queryClient = useQueryClient();
@@ -81,10 +67,7 @@ export function VersionPreviewProvider({ children }: PropsWithChildren) {
               if (attempt === 2) throw error;
               try {
                 await client
-                  .actor(
-                    versionPreviewClientDefinition,
-                    versionPreviewKey(releasedAppId),
-                  )
+                  .actor(versionPreviewClientDefinition, versionPreviewKey(releasedAppId))
                   .resync();
               } catch {
                 // The stable release operation remains safe to retry even when
@@ -137,9 +120,7 @@ export function VersionPreviewProvider({ children }: PropsWithChildren) {
               });
             })
             .catch(() => {
-              toast.warning(
-                "The version changed, but the restored chat could not be refreshed.",
-              );
+              toast.warning("The version changed, but the restored chat could not be refreshed.");
             });
         }
         if (result.createdChatId !== null) {
@@ -165,10 +146,7 @@ export function VersionPreviewProvider({ children }: PropsWithChildren) {
         unsubscribeActor = () => undefined;
         return;
       }
-      const actor = client.actor(
-        versionPreviewClientDefinition,
-        versionPreviewKey(appId),
-      );
+      const actor = client.actor(versionPreviewClientDefinition, versionPreviewKey(appId));
       let previousStateType = actor.getView().state.state.type;
       let restorationStarted = false;
       let restoredPresentation = false;
@@ -259,23 +237,16 @@ export function VersionPreviewProvider({ children }: PropsWithChildren) {
                       if (receipt.kind === "applied") return;
                       if (
                         receipt.kind === "rejected" &&
-                        (receipt.reason === "revision-conflict" ||
-                          receipt.reason === "stale-actor")
+                        (receipt.reason === "revision-conflict" || receipt.reason === "stale-actor")
                       ) {
                         await actor.resync();
                         continue;
                       }
-                      throw new Error(
-                        "The version recovery retry was not accepted",
-                      );
+                      throw new Error("The version recovery retry was not accepted");
                     }
-                    throw new Error(
-                      "The version recovery retry remained stale",
-                    );
+                    throw new Error("The version recovery retry remained stale");
                   })().catch(() => {
-                    toast.error(
-                      "Version recovery could not be started. Please try again.",
-                    );
+                    toast.error("Version recovery could not be started. Please try again.");
                   });
                 },
               },
@@ -302,10 +273,7 @@ export function VersionPreviewProvider({ children }: PropsWithChildren) {
       inspect();
     };
     subscribeSelected();
-    const unsubscribeSelection = jotaiStore.sub(
-      selectedAppIdAtom,
-      subscribeSelected,
-    );
+    const unsubscribeSelection = jotaiStore.sub(selectedAppIdAtom, subscribeSelected);
     return () => {
       unsubscribeSelection();
       unsubscribeActor();

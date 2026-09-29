@@ -10,10 +10,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { queueCloudSandboxSnapshotSync } from "./cloud_sandbox_provider";
 
 const logger = log.scope("app_env_var_utils");
@@ -66,9 +63,7 @@ export async function updateDbPushEnvVar({
     const envVars = await readEnvVarsOrEmpty({ appPath });
 
     // Update or add OCTOPUS_STUDIO_DISABLE_DB_PUSH
-    const existingVar = envVars.find(
-      (envVar) => envVar.key === "OCTOPUS_STUDIO_DISABLE_DB_PUSH",
-    );
+    const existingVar = envVars.find((envVar) => envVar.key === "OCTOPUS_STUDIO_DISABLE_DB_PUSH");
     if (existingVar) {
       existingVar.value = disabled ? "true" : "false";
     } else {
@@ -85,9 +80,7 @@ export async function updateDbPushEnvVar({
       changedPaths: [ENV_FILE_NAME],
     });
   } catch (error) {
-    logger.error(
-      `Failed to update DB push environment variable for app ${appPath}: ${error}`,
-    );
+    logger.error(`Failed to update DB push environment variable for app ${appPath}: ${error}`);
     throw error;
   }
 }
@@ -99,9 +92,7 @@ export async function readPostgresUrlFromEnvFile({
 }): Promise<string> {
   const contents = await readEnvFile({ appPath });
   const envVars = parseEnvFile(contents);
-  const postgresUrl = envVars.find(
-    (envVar) => envVar.key === "POSTGRES_URL",
-  )?.value;
+  const postgresUrl = envVars.find((envVar) => envVar.key === "POSTGRES_URL")?.value;
   if (!postgresUrl) {
     throw new OctopusStudioError(
       "POSTGRES_URL not found in .env.local",
@@ -111,11 +102,7 @@ export async function readPostgresUrlFromEnvFile({
   return postgresUrl;
 }
 
-export async function readEnvFile({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<string> {
+export async function readEnvFile({ appPath }: { appPath: string }): Promise<string> {
   return fs.promises.readFile(getEnvFilePath({ appPath }), "utf8");
 }
 
@@ -134,11 +121,7 @@ export async function readEnvFileIfExists({
   }
 }
 
-export async function readEnvVarsOrEmpty({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<EnvVar[]> {
+export async function readEnvVarsOrEmpty({ appPath }: { appPath: string }): Promise<EnvVar[]> {
   const content = await readEnvFileIfExists({ appPath });
   return content ? parseEnvFile(content) : [];
 }
@@ -255,8 +238,7 @@ export async function updateNeonEnvVars({
     // Auth activation failed or is not available on this branch —
     // remove stale auth env vars so the old branch's values don't linger.
     envVars = envVars.filter(
-      (v) =>
-        v.key !== "NEON_AUTH_BASE_URL" && v.key !== "NEON_AUTH_COOKIE_SECRET",
+      (v) => v.key !== "NEON_AUTH_BASE_URL" && v.key !== "NEON_AUTH_COOKIE_SECRET",
     );
   }
 
@@ -269,19 +251,12 @@ export async function updateNeonEnvVars({
 }
 
 /** Keys that are unambiguously Neon-owned and always safe to remove. */
-const NEON_ONLY_ENV_VAR_KEYS = [
-  "NEON_AUTH_BASE_URL",
-  "NEON_AUTH_COOKIE_SECRET",
-];
+const NEON_ONLY_ENV_VAR_KEYS = ["NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET"];
 
 /** Generic DB keys that should only be removed if their value looks Neon-owned. */
 const GENERIC_DB_ENV_VAR_KEYS = ["DATABASE_URL", "POSTGRES_URL"];
 
-export async function removeNeonEnvVars({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<void> {
+export async function removeNeonEnvVars({ appPath }: { appPath: string }): Promise<void> {
   const existingContent = await readEnvFileIfExists({ appPath });
   if (!existingContent) {
     return;
@@ -291,10 +266,7 @@ export async function removeNeonEnvVars({
 
   const filtered = envVars.filter((envVar) => {
     if (NEON_ONLY_ENV_VAR_KEYS.includes(envVar.key)) return false;
-    if (
-      GENERIC_DB_ENV_VAR_KEYS.includes(envVar.key) &&
-      envVar.value.includes(".neon.tech")
-    ) {
+    if (GENERIC_DB_ENV_VAR_KEYS.includes(envVar.key) && envVar.value.includes(".neon.tech")) {
       return false;
     }
     return true;
@@ -314,9 +286,7 @@ export function serializeEnvFile(envVars: EnvVar[]): string {
     .map(({ key, value }) => {
       // Add quotes if value contains spaces or special characters
       const needsQuotes = /[\s#"'=&?]/.test(value);
-      const quotedValue = needsQuotes
-        ? `"${value.replace(/"/g, '\\"')}"`
-        : value;
+      const quotedValue = needsQuotes ? `"${value.replace(/"/g, '\\"')}"` : value;
       return `${key}=${quotedValue}`;
     })
     .join("\n");

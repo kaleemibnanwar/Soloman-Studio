@@ -6,11 +6,18 @@ import {
   type CellPos,
   type CellStyle,
   type SheetState,
+  DEFAULT_MIN_ROWS,
+  DEFAULT_MIN_COLS,
   makeGrid,
   makeRef,
   parseRef,
 } from "./spreadsheet/types";
-import { type FormulaValue, evaluateWorkbook, isFormula, isFormulaError } from "./spreadsheet/formulaEngine";
+import {
+  type FormulaValue,
+  evaluateWorkbook,
+  isFormula,
+  isFormulaError,
+} from "./spreadsheet/formulaEngine";
 
 interface XlsxEditorProps {
   appId: number | null;
@@ -46,7 +53,12 @@ interface WorksheetLike {
 interface WorkbookStyles {
   fonts?: { bold?: boolean; italic?: boolean; underline?: boolean; color?: string }[];
   fills?: { color?: string; type?: string }[];
-  cellXfs?: { fontId?: number; fillId?: number; numFmtId?: number; alignment?: { horizontal?: string } }[];
+  cellXfs?: {
+    fontId?: number;
+    fillId?: number;
+    numFmtId?: number;
+    alignment?: { horizontal?: string };
+  }[];
   numFmts?: { numFmtId: number; formatCode: string }[];
   [key: string]: unknown;
 }
@@ -222,13 +234,18 @@ function expandSqref(sqref: string, rowCount: number, colCount: number): CellPos
     const maxRow = Math.min(Math.max(start.row, end.row), rowCount - 1);
     const maxCol = Math.min(Math.max(start.col, end.col), colCount - 1);
     for (let r = Math.min(start.row, end.row); r <= maxRow; r++) {
-      for (let c = Math.min(start.col, end.col); c <= maxCol; c++) positions.push({ row: r, col: c });
+      for (let c = Math.min(start.col, end.col); c <= maxCol; c++)
+        positions.push({ row: r, col: c });
     }
   }
   return positions;
 }
 
-function worksheetToSheet(worksheet: WorksheetLike, workbook: WorkbookStyles, id: string): SheetState {
+function worksheetToSheet(
+  worksheet: WorksheetLike,
+  workbook: WorkbookStyles,
+  id: string,
+): SheetState {
   let maxRow = 0;
   let maxCol = 0;
   for (const row of worksheet.rows ?? []) {
@@ -238,8 +255,8 @@ function worksheetToSheet(worksheet: WorksheetLike, workbook: WorkbookStyles, id
       if (parsed) maxCol = Math.max(maxCol, parsed.col + 1);
     }
   }
-  const rowCount = Math.max(maxRow, 1);
-  const colCount = Math.max(maxCol, 1);
+  const rowCount = Math.max(maxRow, DEFAULT_MIN_ROWS);
+  const colCount = Math.max(maxCol, DEFAULT_MIN_COLS);
   const grid = makeGrid(rowCount, colCount);
   for (const row of worksheet.rows ?? []) {
     const rIdx = (row.rowNumber ?? 0) - 1;
@@ -270,31 +287,33 @@ function sheetToWorksheet(
   original: WorksheetLike | undefined,
   computed: FormulaValue[][],
 ): WorksheetLike {
-  const rows = sheet.grid.map((row, rIdx) => ({
-    rowNumber: rIdx + 1,
-    cells: row
-      .map((cell, cIdx): CellLike | null => {
-        if (cell.text === "" && cell.style == null) return null;
-        const officeStyle = cellStyleToOfficeStyle(cell.style);
-        const cellOptions: CellLike = {
-          reference: makeRef(rIdx, cIdx),
-          value: parseCellInput(cell.text),
-        };
-        if (isFormula(cell.text)) {
-          cellOptions.formula = cell.text.slice(1);
-          const value = computed[rIdx]?.[cIdx];
-          if (value !== undefined && isFormulaError(value)) {
-            cellOptions.error = value as string;
-            cellOptions.value = null;
-          } else if (value !== undefined) {
-            cellOptions.value = value;
+  const rows = sheet.grid
+    .map((row, rIdx) => ({
+      rowNumber: rIdx + 1,
+      cells: row
+        .map((cell, cIdx): CellLike | null => {
+          if (cell.text === "" && cell.style == null) return null;
+          const officeStyle = cellStyleToOfficeStyle(cell.style);
+          const cellOptions: CellLike = {
+            reference: makeRef(rIdx, cIdx),
+            value: parseCellInput(cell.text),
+          };
+          if (isFormula(cell.text)) {
+            cellOptions.formula = cell.text.slice(1);
+            const value = computed[rIdx]?.[cIdx];
+            if (value !== undefined && isFormulaError(value)) {
+              cellOptions.error = value as string;
+              cellOptions.value = null;
+            } else if (value !== undefined) {
+              cellOptions.value = value;
+            }
           }
-        }
-        if (officeStyle) cellOptions.style = officeStyle;
-        return cellOptions;
-      })
-      .filter((c): c is CellLike => c !== null),
-  }));
+          if (officeStyle) cellOptions.style = officeStyle;
+          return cellOptions;
+        })
+        .filter((c): c is CellLike => c !== null),
+    }))
+    .filter((row) => row.cells.length > 0);
 
   const validationGroups = new Map<string, { options: string[]; refs: string[] }>();
   sheet.grid.forEach((row, r) =>
@@ -353,7 +372,9 @@ export function XlsxEditor({ appId, filePath }: XlsxEditorProps) {
           return;
         }
         const data = result.data as { worksheets?: WorksheetLike[] } & WorkbookStyles;
-        const worksheets = data.worksheets?.length ? data.worksheets : [{ name: "Sheet1", rows: [] }];
+        const worksheets = data.worksheets?.length
+          ? data.worksheets
+          : [{ name: "Sheet1", rows: [] }];
         originalWorksheets.current = new Map();
         const nextSheets = worksheets.map((worksheet, i) => {
           const id = `sheet-${i}`;

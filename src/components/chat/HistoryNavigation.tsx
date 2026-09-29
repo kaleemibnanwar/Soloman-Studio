@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  KEY_ARROW_UP_COMMAND,
-  KEY_ESCAPE_COMMAND,
-  COMMAND_PRIORITY_CRITICAL,
-} from "lexical";
+import { KEY_ARROW_UP_COMMAND, KEY_ESCAPE_COMMAND, COMMAND_PRIORITY_CRITICAL } from "lexical";
 
 export const HISTORY_TRIGGER = "\u200B";
 
@@ -36,9 +32,7 @@ export function HistoryNavigation({
 }: HistoryNavigationProps) {
   const [editor] = useLexicalComposerContext();
   const syntheticUpScheduledRef = useRef(false);
-  const selectLastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const selectLastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleArrowUp = useCallback(
     (event: KeyboardEvent) => {

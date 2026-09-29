@@ -24,15 +24,10 @@ export function missingPublicTableComment(tableName: string): string {
   return `-- No public table named "${singleLineName}" found.`;
 }
 
-export function renderSchemaSql(
-  schema: Schema,
-  options: RenderSchemaSqlOptions = {},
-): string {
+export function renderSchemaSql(schema: Schema, options: RenderSchemaSqlOptions = {}): string {
   const deferredChecks: { table: Table; constraint: CheckConstraint }[] = [];
   const omittedComments: string[] = [];
-  const renderedFunctionNames = new Set(
-    schema.functions.map((fn) => fqName(fn.name)),
-  );
+  const renderedFunctionNames = new Set(schema.functions.map((fn) => fqName(fn.name)));
   const renderableSchema: Schema = {
     ...schema,
     tables: schema.tables.map((table) => {
@@ -41,19 +36,14 @@ export function renderSchemaSql(
           .filter(
             (column) =>
               column.isGenerated &&
-              dependsOnRenderedFunction(
-                column.dependsOnFunctions,
-                renderedFunctionNames,
-              ),
+              dependsOnRenderedFunction(column.dependsOnFunctions, renderedFunctionNames),
           )
           .map((column) => column.name),
       );
       for (const constraint of table.checkConstraints) {
         if (
           constraint.dependsOnFunctions.length > 0 ||
-          constraint.keyColumns.some((columnName) =>
-            deferredGeneratedColumnNames.has(columnName),
-          )
+          constraint.keyColumns.some((columnName) => deferredGeneratedColumnNames.has(columnName))
         ) {
           deferredChecks.push({ table, constraint });
         }
@@ -69,10 +59,7 @@ export function renderSchemaSql(
           .filter((column) => !deferredGeneratedColumnNames.has(column.name))
           .map((column) =>
             column.default.length > 0 &&
-            dependsOnRenderedFunction(
-              column.dependsOnFunctions,
-              renderedFunctionNames,
-            )
+            dependsOnRenderedFunction(column.dependsOnFunctions, renderedFunctionNames)
               ? { ...column, default: "" }
               : column,
           ),
@@ -84,14 +71,9 @@ export function renderSchemaSql(
             ),
         ),
         policies: table.policies.filter(
-          (policy) =>
-            !dependsOnRenderedFunction(
-              policy.dependsOnFunctions,
-              renderedFunctionNames,
-            ),
+          (policy) => !dependsOnRenderedFunction(policy.dependsOnFunctions, renderedFunctionNames),
         ),
-        replicaIdentity:
-          table.replicaIdentity === "i" ? "d" : table.replicaIdentity,
+        replicaIdentity: table.replicaIdentity === "i" ? "d" : table.replicaIdentity,
       };
     }),
     indexes: schema.indexes.filter((index) => {
@@ -128,9 +110,7 @@ export function renderSchemaSql(
     noConcurrentIndexOperations: options.noConcurrentIndexOperations ?? true,
     schemaRendering: true,
   });
-  const planStatements = plan.statements.map((statement) =>
-    terminateSqlStatement(statement.sql),
-  );
+  const planStatements = plan.statements.map((statement) => terminateSqlStatement(statement.sql));
   const functionStatementSql = new Set(
     schema.functions.map((fn) => terminateSqlStatement(fn.functionDef)),
   );
@@ -141,17 +121,13 @@ export function renderSchemaSql(
     }
   }
   const deferredStatements = [
-    ...deferredPlan.statements.map((statement) =>
-      terminateSqlStatement(statement.sql),
-    ),
+    ...deferredPlan.statements.map((statement) => terminateSqlStatement(statement.sql)),
     ...deferredChecks.map(({ table, constraint }) =>
       renderFunctionBackedCheckConstraint(table, constraint),
     ),
   ];
   const insertionIndex =
-    lastFunctionStatementIndex >= 0
-      ? lastFunctionStatementIndex + 1
-      : planStatements.length;
+    lastFunctionStatementIndex >= 0 ? lastFunctionStatementIndex + 1 : planStatements.length;
   const statements = [
     ...planStatements.slice(0, insertionIndex),
     ...deferredStatements,
@@ -168,15 +144,10 @@ function dependsOnRenderedFunction(
   dependencies: readonly SchemaQualifiedName[],
   renderedFunctionNames: ReadonlySet<string>,
 ): boolean {
-  return dependencies.some((dependency) =>
-    renderedFunctionNames.has(fqName(dependency)),
-  );
+  return dependencies.some((dependency) => renderedFunctionNames.has(fqName(dependency)));
 }
 
-function renderFunctionBackedCheckConstraint(
-  table: Table,
-  constraint: CheckConstraint,
-): string {
+function renderFunctionBackedCheckConstraint(table: Table, constraint: CheckConstraint): string {
   let sql = `ALTER TABLE ${fqName(table.name)} ADD CONSTRAINT ${escapeIdentifier(constraint.name)} CHECK(${constraint.expression})`;
   if (!constraint.isInheritable) {
     sql += " NO INHERIT";
@@ -187,10 +158,7 @@ function renderFunctionBackedCheckConstraint(
   return terminateSqlStatement(sql);
 }
 
-export function filterSchemaForTable(
-  schema: Schema,
-  options: FilterSchemaForTableOptions,
-): Schema {
+export function filterSchemaForTable(schema: Schema, options: FilterSchemaForTableOptions): Schema {
   const schemaName = options.schemaName ?? "public";
   const selectedTableName = {
     schemaName,
@@ -205,53 +173,34 @@ export function filterSchemaForTable(
   }
 
   const tableNames = new Set(tables.map((table) => fqName(table.name)));
-  const triggers = schema.triggers.filter((trigger) =>
-    tableNames.has(fqName(trigger.owningTable)),
-  );
+  const triggers = schema.triggers.filter((trigger) => tableNames.has(fqName(trigger.owningTable)));
   const functionNames = collectRelevantFunctionNames(schema.functions, [
     ...triggers.map((trigger) => trigger.functionName),
     ...tables.flatMap((table) => [
       ...table.columns.flatMap((column) => column.dependsOnFunctions),
-      ...table.checkConstraints.flatMap(
-        (constraint) => constraint.dependsOnFunctions,
-      ),
+      ...table.checkConstraints.flatMap((constraint) => constraint.dependsOnFunctions),
       ...table.policies.flatMap((policy) => policy.dependsOnFunctions),
     ]),
   ]);
   const functions = schema.functions
     .filter((fn) => functionNames.has(fqName(fn.name)))
     .sort((left, right) =>
-      fqName(left.name) < fqName(right.name)
-        ? -1
-        : fqName(left.name) > fqName(right.name)
-          ? 1
-          : 0,
+      fqName(left.name) < fqName(right.name) ? -1 : fqName(left.name) > fqName(right.name) ? 1 : 0,
     );
-  const requiredSchemaNames = new Set([
-    schemaName,
-    ...functions.map((fn) => fn.name.schemaName),
-  ]);
+  const requiredSchemaNames = new Set([schemaName, ...functions.map((fn) => fn.name.schemaName)]);
 
   return {
     ...emptySchema(),
     namedSchemas: schema.namedSchemas
       .filter((namedSchema) => requiredSchemaNames.has(namedSchema.name))
-      .sort((left, right) =>
-        left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
-      ),
-    extensions: schema.extensions.filter(
-      (extension) => extension.name.schemaName === schemaName,
-    ),
+      .sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0)),
+    extensions: schema.extensions.filter((extension) => extension.name.schemaName === schemaName),
     // Keep all enums in the schema. Column type strings do not retain a typed
     // reference back to enum objects, so this avoids dropping enum definitions
     // needed by the selected table.
-    enums: schema.enums.filter(
-      (schemaEnum) => schemaEnum.name.schemaName === schemaName,
-    ),
+    enums: schema.enums.filter((schemaEnum) => schemaEnum.name.schemaName === schemaName),
     tables,
-    indexes: schema.indexes.filter((index) =>
-      tableNames.has(fqName(index.owningRelName)),
-    ),
+    indexes: schema.indexes.filter((index) => tableNames.has(fqName(index.owningRelName))),
     foreignKeyConstraints: schema.foreignKeyConstraints.filter((constraint) =>
       tableNames.has(fqName(constraint.owningTable)),
     ),
@@ -261,8 +210,7 @@ export function filterSchemaForTable(
     sequences: schema.sequences.filter(
       (sequence) =>
         sequence.name.schemaName === schemaName &&
-        (sequence.owner === null ||
-          tableNames.has(fqName(sequence.owner.tableName))),
+        (sequence.owner === null || tableNames.has(fqName(sequence.owner.tableName))),
     ),
     functions,
     triggers,
@@ -278,9 +226,7 @@ function collectRelevantFunctionNames(
   functions: readonly FunctionSchema[],
   roots: readonly SchemaQualifiedName[],
 ): ReadonlySet<string> {
-  const functionsByName = new Map(
-    functions.map((fn) => [fqName(fn.name), fn] as const),
-  );
+  const functionsByName = new Map(functions.map((fn) => [fqName(fn.name), fn] as const));
   const names = new Set<string>();
   const stack = roots.map((name) => fqName(name));
 
@@ -302,12 +248,6 @@ function collectRelevantFunctionNames(
   return names;
 }
 
-function sameSchemaQualifiedName(
-  left: SchemaQualifiedName,
-  right: SchemaQualifiedName,
-): boolean {
-  return (
-    left.schemaName === right.schemaName &&
-    left.escapedName === right.escapedName
-  );
+function sameSchemaQualifiedName(left: SchemaQualifiedName, right: SchemaQualifiedName): boolean {
+  return left.schemaName === right.schemaName && left.escapedName === right.escapedName;
 }

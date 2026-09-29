@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  ArrowUp,
-  Info,
-  KeyRound,
-  Trash2,
-  Clipboard,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { ArrowUp, Info, KeyRound, Trash2, Clipboard, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Accordion,
@@ -15,11 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AzureConfiguration } from "./AzureConfiguration";
 import { VertexConfiguration } from "./VertexConfiguration";
 import { Input } from "@/components/ui/input";
@@ -98,11 +86,7 @@ export function ApiKeyConfiguration({
   // Special handling for Azure OpenAI which requires environment variables
   if (provider === "azure") {
     return (
-      <AzureConfiguration
-        settings={settings}
-        envVars={envVars}
-        updateSettings={updateSettings}
-      />
+      <AzureConfiguration settings={settings} envVars={envVars} updateSettings={updateSettings} />
     );
   }
   // Special handling for Google Vertex AI which uses service account credentials
@@ -114,17 +98,11 @@ export function ApiKeyConfiguration({
   const userApiKey = settings?.providerSettings?.[provider]?.apiKey?.value;
 
   const isValidUserKey =
-    !!userApiKey &&
-    !userApiKey.startsWith("Invalid Key") &&
-    userApiKey !== "Not Set";
+    !!userApiKey && !userApiKey.startsWith("Invalid Key") && userApiKey !== "Not Set";
   const hasEnvKey = !!envApiKey;
   const isMutatingKey = isSaving || isTesting;
 
-  const activeKeySource = isValidUserKey
-    ? "settings"
-    : hasEnvKey
-      ? "env"
-      : "none";
+  const activeKeySource = isValidUserKey ? "settings" : hasEnvKey ? "env" : "none";
 
   const defaultAccordionValue = [];
   if (isValidUserKey || !hasEnvKey) {
@@ -135,11 +113,7 @@ export function ApiKeyConfiguration({
   }
 
   return (
-    <Accordion
-      multiple
-      className="w-full space-y-4"
-      defaultValue={defaultAccordionValue}
-    >
+    <Accordion multiple className="w-full space-y-4" defaultValue={defaultAccordionValue}>
       <AccordionItem
         value="settings-key"
         className="border rounded-lg px-4 bg-(--background-lightest)"
@@ -173,17 +147,11 @@ export function ApiKeyConfiguration({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label={
-                      showUserApiKey ? "Hide API key" : "Show API key"
-                    }
+                    aria-label={showUserApiKey ? "Hide API key" : "Show API key"}
                     onClick={() => setShowUserApiKey((prev) => !prev)}
                     className="text-muted-foreground hover:text-foreground shrink-0"
                   >
-                    {showUserApiKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showUserApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
                 {activeKeySource === "settings" && (
@@ -227,10 +195,7 @@ export function ApiKeyConfiguration({
                           text = await navigator.clipboard.readText();
                         } catch (error) {
                           showError("Failed to paste from clipboard");
-                          console.error(
-                            "Failed to paste from clipboard",
-                            error,
-                          );
+                          console.error("Failed to paste from clipboard", error);
                           return;
                         }
 
@@ -283,13 +248,10 @@ export function ApiKeyConfiguration({
             </div>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
             {testSuccessMessage && (
-              <p className="text-xs text-green-600 dark:text-green-400">
-                {testSuccessMessage}
-              </p>
+              <p className="text-xs text-green-600 dark:text-green-400">{testSuccessMessage}</p>
             )}
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Setting a key here will override the environment variable (if
-              set).
+              Setting a key here will override the environment variable (if set).
             </p>
           </div>
         </AccordionContent>
@@ -309,9 +271,7 @@ export function ApiKeyConfiguration({
                 <KeyRound className="h-4 w-4" />
                 <AlertTitle>Environment Variable Key ({envVarName})</AlertTitle>
                 <AlertDescription>
-                  <p className="font-mono text-sm">
-                    {maskEnvApiKey(envApiKey)}
-                  </p>
+                  <p className="font-mono text-sm">{maskEnvApiKey(envApiKey)}</p>
                   {activeKeySource === "env" && (
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                       This key is currently active (no settings key set).
@@ -319,8 +279,7 @@ export function ApiKeyConfiguration({
                   )}
                   {activeKeySource === "settings" && (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                      This key is currently being overridden by the key set in
-                      Settings.
+                      This key is currently being overridden by the key set in Settings.
                     </p>
                   )}
                 </AlertDescription>
@@ -339,9 +298,8 @@ export function ApiKeyConfiguration({
               </Alert>
             )}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-              This key is set outside the application. If present, it will be
-              used only if no key is configured in the Settings section above.
-              Requires app restart to detect changes.
+              This key is set outside the application. If present, it will be used only if no key is
+              configured in the Settings section above. Requires app restart to detect changes.
             </p>
           </AccordionContent>
         </AccordionItem>

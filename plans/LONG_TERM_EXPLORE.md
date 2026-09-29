@@ -112,20 +112,12 @@ interface ObservedCandidate {
   id: CandidateId;
   path: string;
   range: { start: number; end: number } | null;
-  source:
-    | "compiler"
-    | "grep"
-    | "read_file"
-    | "list_files"
-    | "framework"
-    | "index";
+  source: "compiler" | "grep" | "read_file" | "list_files" | "framework" | "index";
   symbols: Array<{ name: string; kind: string; line: number }>;
   evidence: {
     summary: string;
     matchedTerms: string[];
-    observedTextKinds: Array<
-      "symbol" | "path" | "line" | "import" | "call" | "route"
-    >;
+    observedTextKinds: Array<"symbol" | "path" | "line" | "import" | "call" | "route">;
   };
   traits: {
     isTest: boolean;

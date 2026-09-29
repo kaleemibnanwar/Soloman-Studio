@@ -30,16 +30,12 @@ export class PreviewPanel {
     await expect(planContent).toBeVisible({ timeout: Timeout.MEDIUM });
 
     await planContent.evaluate((container, text) => {
-      const walker = document.createTreeWalker(
-        container,
-        NodeFilter.SHOW_TEXT,
-        {
-          acceptNode: (node) =>
-            (node.textContent ?? "").trim().length > 0
-              ? NodeFilter.FILTER_ACCEPT
-              : NodeFilter.FILTER_REJECT,
-        },
-      );
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) =>
+          (node.textContent ?? "").trim().length > 0
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT,
+      });
 
       let currentNode: Text | null;
       while ((currentNode = walker.nextNode() as Text | null)) {
@@ -67,14 +63,7 @@ export class PreviewPanel {
   }
 
   async selectPreviewMode(
-    mode:
-      | "code"
-      | "problems"
-      | "preview"
-      | "configure"
-      | "security"
-      | "publish"
-      | "tests",
+    mode: "code" | "problems" | "preview" | "configure" | "security" | "publish" | "tests",
   ) {
     // Mode buttons live inside the preview panel, so the panel must be expanded
     // before they're clickable. If the panel is collapsed, the chat panel covers
@@ -92,9 +81,7 @@ export class PreviewPanel {
           .isVisible()
           .catch(() => false)) === false;
       if (isInOverflow) {
-        await this.page
-          .getByTestId("preview-mode-overflow-button")
-          .click({ timeout: 1_000 });
+        await this.page.getByTestId("preview-mode-overflow-button").click({ timeout: 1_000 });
       }
       await expect(directButton.first()).toBeVisible({ timeout: 1_000 });
       await directButton.first().click({ timeout: 1_000 });
@@ -252,18 +239,14 @@ export class PreviewPanel {
   }
 
   async clickPreviewAnnotatorButton() {
-    await this.page
-      .getByTestId("preview-annotator-button")
-      .click({ timeout: Timeout.EXTRA_LONG });
+    await this.page.getByTestId("preview-annotator-button").click({ timeout: Timeout.EXTRA_LONG });
   }
 
   async waitForAnnotatorMode() {
     // Wait for the annotator toolbar to be visible
-    await expect(this.page.getByRole("button", { name: "Select" })).toBeVisible(
-      {
-        timeout: Timeout.MEDIUM,
-      },
-    );
+    await expect(this.page.getByRole("button", { name: "Select" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
   }
 
   async clickAnnotatorSubmit() {

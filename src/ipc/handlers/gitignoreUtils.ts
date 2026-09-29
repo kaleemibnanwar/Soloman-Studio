@@ -5,10 +5,7 @@ import path from "node:path";
  * Ensures the given entries are listed in the project's `.gitignore`.
  * Creates `.gitignore` if it doesn't exist.
  */
-async function ensureGitignored(
-  appPath: string,
-  entries: string[],
-): Promise<void> {
+async function ensureGitignored(appPath: string, entries: string[]): Promise<void> {
   const gitignorePath = path.join(appPath, ".gitignore");
   let content = "";
   try {
@@ -21,10 +18,7 @@ async function ensureGitignored(
   const lines = content.split(/\r?\n/);
   const missing = entries.filter(
     (entry) =>
-      !lines.some(
-        (line) =>
-          line.trim() === entry || line.trim() === entry.replace(/\/$/, ""),
-      ),
+      !lines.some((line) => line.trim() === entry || line.trim() === entry.replace(/\/$/, "")),
   );
   if (missing.length === 0) return;
 
@@ -40,8 +34,6 @@ async function ensureGitignored(
  * Ensures `.octopusStudio/` is listed in the project's `.gitignore`.
  * Creates `.gitignore` if it doesn't exist.
  */
-export async function ensureOctopusStudioGitignored(
-  appPath: string,
-): Promise<void> {
+export async function ensureOctopusStudioGitignored(appPath: string): Promise<void> {
   await ensureGitignored(appPath, [".octopusStudio/"]);
 }

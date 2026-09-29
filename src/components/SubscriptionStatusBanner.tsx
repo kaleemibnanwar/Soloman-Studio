@@ -26,12 +26,8 @@ export function SubscriptionStatusBanner() {
   const { userBudget } = useUserBudgetInfo({
     enabled: status?.alert === "subscription_ending",
   });
-  const [dismissedAlerts, setDismissedAlerts] = useAtom(
-    dismissedBillingAlertsAtom,
-  );
-  const [shownFingerprints, setShownFingerprints] = useAtom(
-    shownBillingAlertsAtom,
-  );
+  const [dismissedAlerts, setDismissedAlerts] = useAtom(dismissedBillingAlertsAtom);
+  const [shownFingerprints, setShownFingerprints] = useAtom(shownBillingAlertsAtom);
   const previousAlert = useRef<SubscriptionStatus | null>(null);
   const openBillingAction = useMutation({
     mutationFn: (url: string) => ipc.system.openBillingAction(url),
@@ -77,12 +73,7 @@ export function SubscriptionStatusBanner() {
   const isPastDue = status.alert === "payment_past_due";
   const isEnding = status.alert === "subscription_ending";
   const daysUntilEnd = status.effectiveAt
-    ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(status.effectiveAt).getTime() - Date.now()) / DAY_IN_MS,
-        ),
-      )
+    ? Math.max(0, Math.ceil((new Date(status.effectiveAt).getTime() - Date.now()) / DAY_IN_MS))
     : null;
   const remainingCredits = userBudget
     ? Math.round(Math.max(0, userBudget.totalCredits - userBudget.usedCredits))
@@ -90,9 +81,7 @@ export function SubscriptionStatusBanner() {
   const formattedCredits =
     remainingCredits === null
       ? null
-      : new Intl.NumberFormat(i18n.resolvedLanguage ?? i18n.language).format(
-          remainingCredits,
-        );
+      : new Intl.NumberFormat(i18n.resolvedLanguage ?? i18n.language).format(remainingCredits);
   const subscriptionEndingMessage =
     daysUntilEnd === 0
       ? t("billingNudge.subscriptionEndingToday")

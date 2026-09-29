@@ -22,10 +22,7 @@ interface OctopusStudioStepLimitProps {
   children?: React.ReactNode;
 }
 
-export function OctopusStudioStepLimit({
-  node,
-  children,
-}: OctopusStudioStepLimitProps) {
+export function OctopusStudioStepLimit({ node, children }: OctopusStudioStepLimitProps) {
   const { steps = "50", limit: _limit = "50", state } = node.properties;
   const isFinished = state === "finished";
   const content = typeof children === "string" ? children : "";
@@ -50,13 +47,8 @@ export function OctopusStudioStepLimit({
 
   return (
     <OctopusStudioCard state={state} accentColor="amber" isExpanded={true}>
-      <OctopusStudioCardHeader
-        icon={<PauseCircle size={15} />}
-        accentColor="amber"
-      >
-        <span className="font-medium text-sm text-foreground">
-          Paused after {steps} tool calls
-        </span>
+      <OctopusStudioCardHeader icon={<PauseCircle size={15} />} accentColor="amber">
+        <span className="font-medium text-sm text-foreground">Paused after {steps} tool calls</span>
         {isFinished && (
           <Button
             variant="outline"
@@ -75,9 +67,7 @@ export function OctopusStudioStepLimit({
         )}
       </OctopusStudioCardHeader>
       <OctopusStudioCardContent isExpanded={true}>
-        {content && (
-          <div className="p-3 text-sm text-muted-foreground">{content}</div>
-        )}
+        {content && <div className="p-3 text-sm text-muted-foreground">{content}</div>}
       </OctopusStudioCardContent>
     </OctopusStudioCard>
   );

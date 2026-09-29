@@ -3,8 +3,7 @@ export function getNpmPackagePageUrl(packageSpec: string): string {
 
   if (packageSpec.startsWith("@")) {
     const slashIndex = packageSpec.indexOf("/");
-    const selectorIndex =
-      slashIndex === -1 ? -1 : packageSpec.indexOf("@", slashIndex);
+    const selectorIndex = slashIndex === -1 ? -1 : packageSpec.indexOf("@", slashIndex);
     if (selectorIndex !== -1) {
       packageName = packageSpec.slice(0, selectorIndex);
     }

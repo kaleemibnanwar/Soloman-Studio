@@ -33,10 +33,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { showError } from "@/lib/toast";
 import { useSelectChat } from "@/hooks/useSelectChat";
 import { INVALID_FILE_NAME_CHARS } from "@/shared/media_validation";
-import {
-  getFileNameWithoutExtension,
-  getFileExtension,
-} from "./media-library/media-folder-utils";
+import { getFileNameWithoutExtension, getFileExtension } from "./media-library/media-folder-utils";
 import { MediaFolderOpen } from "./media-library/MediaFolderOpen";
 import { ImageLightbox } from "./chat/ImageLightbox";
 import { buildOctopusStudioMediaUrl } from "@/lib/octopusStudioMediaUrl";
@@ -68,13 +65,9 @@ export function OctopusStudioAppMediaFolder({
   searchQuery,
 }: OctopusStudioAppMediaFolderProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [renameTargetFile, setRenameTargetFile] = useState<MediaFile | null>(
-    null,
-  );
+  const [renameTargetFile, setRenameTargetFile] = useState<MediaFile | null>(null);
   const [renameBaseName, setRenameBaseName] = useState("");
-  const [deleteTargetFile, setDeleteTargetFile] = useState<MediaFile | null>(
-    null,
-  );
+  const [deleteTargetFile, setDeleteTargetFile] = useState<MediaFile | null>(null);
   const [moveTargetFile, setMoveTargetFile] = useState<MediaFile | null>(null);
   const [moveTargetAppId, setMoveTargetAppId] = useState<number | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -85,13 +78,9 @@ export function OctopusStudioAppMediaFolder({
   const queryClient = useQueryClient();
   const { selectChat } = useSelectChat();
 
-  const moveTargetApps = useMemo(
-    () => allApps.filter((app) => app.id !== appId),
-    [allApps, appId],
-  );
+  const moveTargetApps = useMemo(() => allApps.filter((app) => app.id !== appId), [allApps, appId]);
 
-  const isBusy =
-    isMutatingMedia || isRenaming || isDeleting || isMoving || isStartingChat;
+  const isBusy = isMutatingMedia || isRenaming || isDeleting || isMoving || isStartingChat;
   const renameError =
     renameBaseName.trim() && INVALID_FILE_NAME_CHARS.test(renameBaseName.trim())
       ? 'Name contains invalid characters (<>:"/\\|?*)'
@@ -228,14 +217,10 @@ export function OctopusStudioAppMediaFolder({
                   }}
                 />
                 <span className="text-sm text-muted-foreground">
-                  {renameTargetFile
-                    ? getFileExtension(renameTargetFile.fileName)
-                    : ""}
+                  {renameTargetFile ? getFileExtension(renameTargetFile.fileName) : ""}
                 </span>
               </div>
-              {renameError && (
-                <p className="text-sm text-destructive">{renameError}</p>
-              )}
+              {renameError && <p className="text-sm text-destructive">{renameError}</p>}
             </div>
             <DialogFooter>
               <Button
@@ -258,8 +243,7 @@ export function OctopusStudioAppMediaFolder({
                   !renameTargetFile ||
                   !renameBaseName.trim() ||
                   !!renameError ||
-                  renameBaseName.trim() ===
-                    getFileNameWithoutExtension(renameTargetFile.fileName)
+                  renameBaseName.trim() === getFileNameWithoutExtension(renameTargetFile.fileName)
                 }
               >
                 Save
@@ -280,9 +264,8 @@ export function OctopusStudioAppMediaFolder({
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Image</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete{" "}
-                <strong>{deleteTargetFile?.fileName}</strong>? This action
-                cannot be undone.
+                Are you sure you want to delete <strong>{deleteTargetFile?.fileName}</strong>? This
+                action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

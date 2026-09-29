@@ -5,13 +5,7 @@ import { Worker } from "node:worker_threads";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-const WORKER_PATH = path.resolve(
-  __dirname,
-  "..",
-  "..",
-  "worker",
-  "proxy_server.js",
-);
+const WORKER_PATH = path.resolve(__dirname, "..", "..", "worker", "proxy_server.js");
 
 /** Finds a currently-free localhost port (closed before returning). */
 function findFreePort(): Promise<number> {
@@ -133,9 +127,7 @@ describe("proxy worker cookie rewriting", () => {
       });
     return {
       waitForStart: async () => {
-        const msg = await waitFor((m) =>
-          m.startsWith("proxy-server-start url="),
-        );
+        const msg = await waitFor((m) => m.startsWith("proxy-server-start url="));
         const port = Number(msg.match(/:(\d+)\b/)?.[1]);
         return port;
       },
@@ -161,9 +153,7 @@ describe("proxy worker cookie rewriting", () => {
   }
 
   it("forces SameSite=None; Secure on a default Lax cookie", async () => {
-    const [cookie] = await proxyCookies([
-      "session=abc123; Path=/; HttpOnly; SameSite=Lax",
-    ]);
+    const [cookie] = await proxyCookies(["session=abc123; Path=/; HttpOnly; SameSite=Lax"]);
 
     expect(cookie).toContain("session=abc123");
     expect(cookie).toContain("HttpOnly");
@@ -176,18 +166,14 @@ describe("proxy worker cookie rewriting", () => {
   });
 
   it("does not duplicate attributes when already None/Secure", async () => {
-    const [cookie] = await proxyCookies([
-      "tok=v; Path=/; Secure; SameSite=None",
-    ]);
+    const [cookie] = await proxyCookies(["tok=v; Path=/; Secure; SameSite=None"]);
 
     expect((cookie.match(/Secure/gi) ?? []).length).toBe(1);
     expect((cookie.match(/SameSite=None/gi) ?? []).length).toBe(1);
   });
 
   it("strips an upstream Partitioned attribute", async () => {
-    const [cookie] = await proxyCookies([
-      "tok=v; Path=/; Secure; SameSite=None; Partitioned",
-    ]);
+    const [cookie] = await proxyCookies(["tok=v; Path=/; Secure; SameSite=None; Partitioned"]);
 
     expect(cookie).toMatch(/;\s*Secure/i);
     expect(cookie).toMatch(/;\s*SameSite=None/i);
@@ -195,10 +181,7 @@ describe("proxy worker cookie rewriting", () => {
   });
 
   it("rewrites every cookie when multiple are set", async () => {
-    const cookies = await proxyCookies([
-      "a=1; Path=/; SameSite=Strict",
-      "b=2; Path=/",
-    ]);
+    const cookies = await proxyCookies(["a=1; Path=/; SameSite=Strict", "b=2; Path=/"]);
 
     expect(cookies).toHaveLength(2);
     for (const c of cookies) {
@@ -212,13 +195,10 @@ describe("proxy worker cookie rewriting", () => {
   it("rewrites cookies on the HTML-injection path", async () => {
     // An extensionless path ("/") with a text/html body takes the injection
     // branch, which rewrites cookies on a shallow-copied headers object.
-    const [cookie] = await proxyCookies(
-      ["session=abc123; Path=/; HttpOnly; SameSite=Lax"],
-      {
-        contentType: "text/html",
-        body: "<html><head></head><body>hi</body></html>",
-      },
-    );
+    const [cookie] = await proxyCookies(["session=abc123; Path=/; HttpOnly; SameSite=Lax"], {
+      contentType: "text/html",
+      body: "<html><head></head><body>hi</body></html>",
+    });
 
     expect(cookie).toContain("session=abc123");
     expect(cookie).toMatch(/;\s*Secure/i);
@@ -248,15 +228,9 @@ describe("proxy worker cookie rewriting", () => {
 
     const escapedToken = "token&lt;&amp;&quot;boundary";
     expect(body).toContain(`data-octopus-studio-auth-token="${escapedToken}"`);
-    expect(body).toContain(
-      `data-octopus-studio-recorder-token="${escapedToken}"`,
-    );
-    expect(body).not.toContain(
-      `data-octopus-studio-auth-token="${authBootstrapToken}"`,
-    );
-    expect(body).not.toContain(
-      `data-octopus-studio-recorder-token="${authBootstrapToken}"`,
-    );
+    expect(body).toContain(`data-octopus-studio-recorder-token="${escapedToken}"`);
+    expect(body).not.toContain(`data-octopus-studio-auth-token="${authBootstrapToken}"`);
+    expect(body).not.toContain(`data-octopus-studio-recorder-token="${authBootstrapToken}"`);
     expect(body).toContain('data.type === "octopus-studio-auth-login"');
   });
 });

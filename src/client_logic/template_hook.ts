@@ -8,20 +8,13 @@ function isAlreadyLinkedNeonProjectError(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
-    (error as { kind?: unknown }).kind ===
-      OctopusStudioErrorKind.Precondition &&
+    (error as { kind?: unknown }).kind === OctopusStudioErrorKind.Precondition &&
     (error as { message?: unknown }).message ===
       "This app already has a Neon project linked. Disconnect it first."
   );
 }
 
-export async function neonTemplateHook({
-  appId,
-  appName,
-}: {
-  appId: number;
-  appName: string;
-}) {
+export async function neonTemplateHook({ appId, appName }: { appId: number; appName: string }) {
   console.log("Creating Neon project");
   let connectionString: string;
   try {

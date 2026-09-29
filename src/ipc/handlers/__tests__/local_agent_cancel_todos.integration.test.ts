@@ -8,13 +8,10 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { chats, messages } from "@/db/schema";
-import { getCurrentCommitHash } from "@/ipc/utils/git_utils";
+import { getCurrentCommitHash } from "@/ipc/git/git_utils";
 import { blockNewStreamsForApp } from "@/ipc/handlers/chat_stream_handlers";
 import { versionPreviewHandlerService } from "@/ipc/handlers/version_handlers";
 
@@ -92,9 +89,7 @@ describe("local-agent cancel todos (integration)", () => {
       wasCancelled: true,
     });
 
-    await waitFor(() =>
-      expect(screen.queryByText("First cancellable task")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByText("First cancellable task")).toBeNull());
     await waitFor(() => {
       const remaining = fs.existsSync(todosDir) ? fs.readdirSync(todosDir) : [];
       expect(remaining).toHaveLength(0);
@@ -150,9 +145,7 @@ describe("local-agent cancel todos (integration)", () => {
               eq(message.role, "assistant"),
             ),
         });
-        const activeChatIds = new Set(
-          activeAssistantChats.map(({ chatId }) => chatId),
-        );
+        const activeChatIds = new Set(activeAssistantChats.map(({ chatId }) => chatId));
         expect(activeChatIds.has(selectedChat.id)).toBe(true);
         expect(activeChatIds.has(backgroundChat.id)).toBe(true);
       },
@@ -188,9 +181,7 @@ describe("local-agent cancel todos (integration)", () => {
           payload.wasCancelled === true,
       )
       .map(({ chatId }) => chatId);
-    expect(new Set(cancelledChatIds)).toEqual(
-      new Set([selectedChat.id, backgroundChat.id]),
-    );
+    expect(new Set(cancelledChatIds)).toEqual(new Set([selectedChat.id, backgroundChat.id]));
     expect(
       harness.bridge.sentEvents
         .slice(cancellationEventBaseline)
@@ -232,12 +223,7 @@ describe("local-agent cancel todos (integration)", () => {
       where: (message, { eq }) => eq(message.chatId, chatId),
       orderBy: (message, { asc }) => [asc(message.id)],
     });
-    expect(persistedMessages.map((message) => message.role)).toEqual([
-      "user",
-      "assistant",
-    ]);
-    expect(persistedMessages[0].content).toContain(
-      "tc=local-agent/simple-response",
-    );
+    expect(persistedMessages.map((message) => message.role)).toEqual(["user", "assistant"]);
+    expect(persistedMessages[0].content).toContain("tc=local-agent/simple-response");
   });
 });

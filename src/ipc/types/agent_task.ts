@@ -6,6 +6,8 @@ export const AgentTaskStatusSchema = z.enum([
   "running",
   "completed",
   "failed",
+  "partial",
+  "blocked",
 ]);
 
 export const AgentTaskSnapshotSchema = z.object({
@@ -13,6 +15,14 @@ export const AgentTaskSnapshotSchema = z.object({
   role: z.string(),
   description: z.string(),
   status: AgentTaskStatusSchema,
+  dependencies: z.array(z.string()),
+  model: z.string().nullable(),
+  inputTokens: z.number().nullable(),
+  outputTokens: z.number().nullable(),
+  costUsd: z.number().nullable(),
+  resultStatus: z.string().nullable(),
+  notes: z.string().nullable(),
+  cached: z.boolean().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

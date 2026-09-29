@@ -35,20 +35,12 @@ export function MediaFolderOpen({
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const filteredFiles = searchQuery
-    ? files.filter((f) =>
-        f.fileName.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+    ? files.filter((f) => f.fileName.toLowerCase().includes(searchQuery.toLowerCase()))
     : files;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredFiles.length / MEDIA_LIBRARY_PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / MEDIA_LIBRARY_PAGE_SIZE));
   const visiblePage = Math.min(currentPage, totalPages);
   const pageStart = (visiblePage - 1) * MEDIA_LIBRARY_PAGE_SIZE;
-  const visibleFiles = filteredFiles.slice(
-    pageStart,
-    pageStart + MEDIA_LIBRARY_PAGE_SIZE,
-  );
+  const visibleFiles = filteredFiles.slice(pageStart, pageStart + MEDIA_LIBRARY_PAGE_SIZE);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -80,9 +72,7 @@ export function MediaFolderOpen({
       </div>
       {filteredFiles.length === 0 ? (
         <p className="text-muted-foreground text-center py-8">
-          {searchQuery
-            ? "No files match your search."
-            : "No media files found."}
+          {searchQuery ? "No files match your search." : "No media files found."}
         </p>
       ) : (
         <>
@@ -108,20 +98,15 @@ export function MediaFolderOpen({
             >
               <span className="text-sm text-muted-foreground">
                 Showing {pageStart + 1}–
-                {Math.min(
-                  pageStart + MEDIA_LIBRARY_PAGE_SIZE,
-                  filteredFiles.length,
-                )}{" "}
-                of {filteredFiles.length}
+                {Math.min(pageStart + MEDIA_LIBRARY_PAGE_SIZE, filteredFiles.length)} of{" "}
+                {filteredFiles.length}
               </span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   aria-label="Previous media page"
-                  onClick={() =>
-                    setCurrentPage((page) => Math.max(1, page - 1))
-                  }
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                   disabled={visiblePage === 1}
                 >
                   <ChevronLeft className="size-4" />
@@ -134,9 +119,7 @@ export function MediaFolderOpen({
                   variant="outline"
                   size="sm"
                   aria-label="Next media page"
-                  onClick={() =>
-                    setCurrentPage((page) => Math.min(totalPages, page + 1))
-                  }
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                   disabled={visiblePage === totalPages}
                 >
                   Next

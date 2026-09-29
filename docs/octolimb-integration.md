@@ -8,6 +8,7 @@ process or externally-installed script.
 ## 1. The Two Components
 
 ### A. Octopus Studio (Electron main process)
+
 - **The bridge itself:** `src/main/octolimb_bridge.ts`. When "Enable
   OctoLimb MCP Bridge" is on in Settings, Octopus Studio starts, in-process:
   - An **MCP-over-HTTP server** on `http://127.0.0.1:32527/mcp`, built with
@@ -25,7 +26,7 @@ process or externally-installed script.
   bridge's URL (`http://127.0.0.1:32527/mcp`) into the SQLite `mcp_servers`
   table, exactly like any other MCP server.
 - **LLM context:** When you talk to an agent, `chat_stream_handlers.ts`
-  fetches tools from all *enabled* `mcp_servers` rows (including OctoLimb,
+  fetches tools from all _enabled_ `mcp_servers` rows (including OctoLimb,
   once it's registered) and injects them into the agent's tool-calling
   context.
 - **Status:** `getOctoLimbBridgeStatus()` reports whether the servers are
@@ -33,6 +34,7 @@ process or externally-installed script.
   this live via a small status line under the toggle.
 
 ### B. Chrome Extension (`octolimb/chrome-extension/`)
+
 - **Location:** `octolimb/chrome-extension/` in this repo — a plain,
   unbundled Manifest V3 extension with no build step. It is deliberately
   excluded from Octopus Studio's own packaging (Studio's packager only
@@ -83,7 +85,7 @@ process or externally-installed script.
 
 ## 2. The Request Flow (End-to-End)
 
-When you prompt: *"using OctoLimb: post something on x"*
+When you prompt: _"using OctoLimb: post something on x"_
 
 1. **Generation:** The AI emits a tool call (e.g. `OctoLimb__go_to_url`).
 2. **Routing:** Octopus Studio routes it to `http://127.0.0.1:32527/mcp`.
@@ -174,9 +176,9 @@ extension:
 anything at replay time: `createOctoLimbMcpServer` in `octolimb_bridge.ts`
 keeps a per-session buffer that every real tool call this session makes
 appends to — direct calls (`go_to_url`, `read_page`, `click_element`, ...)
-*and* the individual steps `run_recipe` executes, whether ad-hoc or
+_and_ the individual steps `run_recipe` executes, whether ad-hoc or
 replaying an existing fingerprint. Two things turn that buffer into a saved
-recipe, and both save the *whole* buffer, not just whatever was passed into
+recipe, and both save the _whole_ buffer, not just whatever was passed into
 one call:
 
 - `done({ text, success: true })` — the model should always call this at

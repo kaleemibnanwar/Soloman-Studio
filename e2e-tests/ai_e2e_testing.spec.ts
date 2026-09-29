@@ -24,15 +24,13 @@ testSkipIfWindows(
     // Clicking "Generate a test" opens the Agent-mode confirmation dialog
     // instead of sending the request straight away.
     await po.page.getByTestId("generate-test-button").click();
-    await expect(po.page.getByTestId("agent-mode-required-dialog")).toBeVisible(
-      { timeout: Timeout.MEDIUM },
-    );
+    await expect(po.page.getByTestId("agent-mode-required-dialog")).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
     // Cancel dismisses it without sending anything to chat.
     await po.page.getByRole("button", { name: "Cancel" }).click();
-    await expect(
-      po.page.getByTestId("agent-mode-required-dialog"),
-    ).toBeHidden();
+    await expect(po.page.getByTestId("agent-mode-required-dialog")).toBeHidden();
     await expect(po.page.getByText("No tests yet")).toBeVisible();
   },
 );
@@ -74,22 +72,17 @@ testSkipIfWindows(
   },
 );
 
-testSkipIfWindows(
-  "warns strongly when the app's data can't be isolated",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    // A plain imported app has no managed database, so runs can't be isolated —
-    // the opt-in gate must show the strongest data-safety warning.
-    await po.importApp("minimal");
+testSkipIfWindows("warns strongly when the app's data can't be isolated", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  // A plain imported app has no managed database, so runs can't be isolated —
+  // the opt-in gate must show the strongest data-safety warning.
+  await po.importApp("minimal");
 
-    await po.previewPanel.selectPreviewMode("tests");
-    await expect(
-      po.page
-        .locator("#preview-panel")
-        .getByText(/can't isolate a custom or non-database backend/),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
-  },
-);
+  await po.previewPanel.selectPreviewMode("tests");
+  await expect(
+    po.page.locator("#preview-panel").getByText(/can't isolate a custom or non-database backend/),
+  ).toBeVisible({ timeout: Timeout.MEDIUM });
+});
 
 testSkipIfWindows(
   "reassures when tests run against an isolated Neon database copy",
@@ -112,9 +105,7 @@ testSkipIfWindows(
     // The gate now shows the calm, reassuring warning instead of the amber one.
     await po.previewPanel.selectPreviewMode("tests");
     await expect(
-      po.page
-        .locator("#preview-panel")
-        .getByText(/temporary copy of your Neon database/),
+      po.page.locator("#preview-panel").getByText(/temporary copy of your Neon database/),
     ).toBeVisible({ timeout: Timeout.MEDIUM });
   },
 );

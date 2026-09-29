@@ -23,16 +23,9 @@ testSkipIfWindows("mcp - call calculator", async ({ po }) => {
   await po.navigation.goToPluginsTab();
   await po.plugins.openAddPluginDialog();
 
-  await po.page
-    .getByRole("textbox", { name: "My MCP Server" })
-    .fill("testing-mcp-server");
+  await po.page.getByRole("textbox", { name: "My MCP Server" }).fill("testing-mcp-server");
   await po.page.getByRole("textbox", { name: "node" }).fill("node");
-  const testMcpServerPath = path.join(
-    __dirname,
-    "..",
-    "testing",
-    "fake-stdio-mcp-server.mjs",
-  );
+  const testMcpServerPath = path.join(__dirname, "..", "testing", "fake-stdio-mcp-server.mjs");
   await po.page
     .getByRole("textbox", { name: "path/to/mcp-server.js --flag" })
     .fill(testMcpServerPath);
@@ -46,9 +39,7 @@ testSkipIfWindows("mcp - call calculator", async ({ po }) => {
   // Environment variables are edited on the plugin's detail page.
   await po.plugins.openPluginDetail("testing-mcp-server");
   const detail = po.page.getByTestId("plugin-detail");
-  await detail
-    .getByRole("button", { name: "Add Environment Variable" })
-    .click();
+  await detail.getByRole("button", { name: "Add Environment Variable" }).click();
   await detail.getByRole("textbox", { name: "Key" }).fill("testKey1");
   await detail.getByRole("textbox", { name: "Value" }).fill("testValue1");
   await detail.getByRole("button", { name: "Save" }).click();
@@ -68,12 +59,7 @@ testSkipIfWindows("mcp - call calculator", async ({ po }) => {
 });
 
 testSkipIfWindows("mcp - call calculator via http", async ({ po }) => {
-  const httpMcpServerPath = path.join(
-    __dirname,
-    "..",
-    "testing",
-    "fake-http-mcp-server.mjs",
-  );
+  const httpMcpServerPath = path.join(__dirname, "..", "testing", "fake-http-mcp-server.mjs");
   const httpServerProcess = spawn("node", [httpMcpServerPath], {
     env: { ...process.env, PORT: "0" },
     stdio: "pipe",
@@ -106,13 +92,9 @@ testSkipIfWindows("mcp - call calculator via http", async ({ po }) => {
     await po.navigation.goToPluginsTab();
     await po.plugins.openAddPluginDialog();
 
-    await po.page
-      .getByRole("textbox", { name: "My MCP Server" })
-      .fill("testing-mcp-server");
+    await po.page.getByRole("textbox", { name: "My MCP Server" }).fill("testing-mcp-server");
     await po.page.getByTestId("mcp-transport-select").selectOption("http");
-    await po.page
-      .getByPlaceholder("http://localhost:3000")
-      .fill(`http://localhost:${port}/mcp`);
+    await po.page.getByPlaceholder("http://localhost:3000").fill(`http://localhost:${port}/mcp`);
     await po.page.getByRole("switch", { name: "Use OAuth" }).click();
     await po.plugins.submitAddPluginDialog();
 

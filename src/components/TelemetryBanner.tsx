@@ -25,16 +25,12 @@ export function PrivacyBanner() {
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm leading-5 text-muted-foreground">
-          <span className="font-medium text-foreground">
-            {t("telemetry.helpImprove")}
-          </span>{" "}
+          <span className="font-medium text-foreground">{t("telemetry.helpImprove")}</span>{" "}
           {t("telemetry.noCodeOrMessages")}{" "}
           <button
             type="button"
             onClick={() => {
-              ipc.system.openExternalUrl(
-                "https://octopusStudio.sh/docs/policies/privacy-policy",
-              );
+              ipc.system.openExternalUrl("https://octopusStudio.sh/docs/policies/privacy-policy");
             }}
             className="font-medium text-blue-600 hover:underline dark:text-blue-400"
           >

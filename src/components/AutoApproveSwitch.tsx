@@ -4,11 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { showInfo } from "@/lib/toast";
 import { useTranslation } from "react-i18next";
 
-export function AutoApproveSwitch({
-  showToast = true,
-}: {
-  showToast?: boolean;
-}) {
+export function AutoApproveSwitch({ showToast = true }: { showToast?: boolean }) {
   const { settings, updateSettings } = useSettings();
   const { t } = useTranslation("settings");
   return (

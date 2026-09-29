@@ -42,10 +42,7 @@ export const GithubOpsKeySchema = z
   .transform(({ appId }) => Object.freeze({ appId }));
 export type GithubOpsKey = z.infer<typeof GithubOpsKeySchema>;
 
-export type GithubOpsInvocationRef = InvocationRef<
-  typeof GITHUB_OPS_INVOCATION_KIND,
-  number
->;
+export type GithubOpsInvocationRef = InvocationRef<typeof GITHUB_OPS_INVOCATION_KIND, number>;
 
 export const GithubOpsInvocationRefSchema = z
   .object({
@@ -83,36 +80,35 @@ const connectRepositoryOperationSchema = z.discriminatedUnion("mode", [
     })
     .strict(),
 ]);
-export const GithubOperationSchema: z.ZodType<GithubOperation> =
-  z.discriminatedUnion("type", [
-    pushOperationSchema,
-    z.object({ type: z.literal("pull") }).strict(),
-    z.object({ type: z.literal("fetch") }).strict(),
-    z.object({ type: z.literal("rebase") }).strict(),
-    z.object({ type: z.literal("rebase-continue") }).strict(),
-    z.object({ type: z.literal("rebase-abort") }).strict(),
-    z.object({ type: z.literal("merge-abort") }).strict(),
-    z.object({ type: z.literal("merge"), branch: z.string() }).strict(),
-    z.object({ type: z.literal("switch"), branch: z.string() }).strict(),
-    z
-      .object({
-        type: z.literal("create-branch"),
-        name: z.string(),
-        from: z.string().optional(),
-        thenSwitch: z.boolean(),
-      })
-      .strict(),
-    z.object({ type: z.literal("delete-branch"), branch: z.string() }).strict(),
-    z
-      .object({
-        type: z.literal("rename-branch"),
-        oldBranch: z.string(),
-        newBranch: z.string(),
-      })
-      .strict(),
-    z.object({ type: z.literal("disconnect") }).strict(),
-    connectRepositoryOperationSchema,
-  ]);
+export const GithubOperationSchema: z.ZodType<GithubOperation> = z.discriminatedUnion("type", [
+  pushOperationSchema,
+  z.object({ type: z.literal("pull") }).strict(),
+  z.object({ type: z.literal("fetch") }).strict(),
+  z.object({ type: z.literal("rebase") }).strict(),
+  z.object({ type: z.literal("rebase-continue") }).strict(),
+  z.object({ type: z.literal("rebase-abort") }).strict(),
+  z.object({ type: z.literal("merge-abort") }).strict(),
+  z.object({ type: z.literal("merge"), branch: z.string() }).strict(),
+  z.object({ type: z.literal("switch"), branch: z.string() }).strict(),
+  z
+    .object({
+      type: z.literal("create-branch"),
+      name: z.string(),
+      from: z.string().optional(),
+      thenSwitch: z.boolean(),
+    })
+    .strict(),
+  z.object({ type: z.literal("delete-branch"), branch: z.string() }).strict(),
+  z
+    .object({
+      type: z.literal("rename-branch"),
+      oldBranch: z.string(),
+      newBranch: z.string(),
+    })
+    .strict(),
+  z.object({ type: z.literal("disconnect") }).strict(),
+  connectRepositoryOperationSchema,
+]);
 
 // Zod cannot select a discriminated-union property schema portably, so keep
 // the operation-name allowlist explicit at the wire boundary.
@@ -157,60 +153,54 @@ const blockedSwitchResumeSchema = z.union([
   z.object({ type: z.literal("rebase-paused") }).strict(),
 ]);
 
-export const GithubOpsStateSchema: z.ZodType<GithubOpsState> =
-  z.discriminatedUnion("type", [
-    z
-      .object({
-        type: z.literal("idle"),
-        banner: githubOpsBannerSchema.nullable(),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal("running"),
-        op: GithubOperationSchema,
-        next: GithubOperationSchema.optional(),
-        awaitingConflicts: z.boolean().optional(),
-        blockedSwitchResume: blockedSwitchResumeSchema.optional(),
-        banner: githubOpsBannerSchema.nullable(),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal("conflicted"),
-        files: z.array(repositoryRelativePathSchema),
-        origin: conflictOriginSchema,
-        resolution: z
-          .enum([
-            "resolving",
-            "checking",
-            "verification-failed",
-            "ready-to-sync",
-          ])
-          .optional(),
-        resolutionChatId: z.number().int().positive().optional(),
-        verificationAttempt: z.number().int().positive().optional(),
-        verificationError: z.string().max(1_000).optional(),
-        banner: githubOpsBannerSchema.nullable(),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal("rebase-paused"),
-        banner: githubOpsBannerSchema.nullable(),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal("switch-blocked"),
-        target: z.string(),
-        blockingOp: z.enum(["merge", "rebase"]),
-        hasConflicts: z.boolean(),
-        resume: blockedSwitchResumeSchema.optional(),
-        banner: githubOpsBannerSchema.nullable(),
-      })
-      .strict(),
-  ]);
+export const GithubOpsStateSchema: z.ZodType<GithubOpsState> = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("idle"),
+      banner: githubOpsBannerSchema.nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("running"),
+      op: GithubOperationSchema,
+      next: GithubOperationSchema.optional(),
+      awaitingConflicts: z.boolean().optional(),
+      blockedSwitchResume: blockedSwitchResumeSchema.optional(),
+      banner: githubOpsBannerSchema.nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("conflicted"),
+      files: z.array(repositoryRelativePathSchema),
+      origin: conflictOriginSchema,
+      resolution: z
+        .enum(["resolving", "checking", "verification-failed", "ready-to-sync"])
+        .optional(),
+      resolutionChatId: z.number().int().positive().optional(),
+      verificationAttempt: z.number().int().positive().optional(),
+      verificationError: z.string().max(1_000).optional(),
+      banner: githubOpsBannerSchema.nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("rebase-paused"),
+      banner: githubOpsBannerSchema.nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("switch-blocked"),
+      target: z.string(),
+      blockingOp: z.enum(["merge", "rebase"]),
+      hasConflicts: z.boolean(),
+      resume: blockedSwitchResumeSchema.optional(),
+      banner: githubOpsBannerSchema.nullable(),
+    })
+    .strict(),
+]);
 
 const operationRequestedSchema = z
   .object({
@@ -316,9 +306,7 @@ export const GithubOpsProducerEventSchema = z.union([
     })
     .strict(),
 ]);
-export type GithubOpsProducerEvent = z.infer<
-  typeof GithubOpsProducerEventSchema
->;
+export type GithubOpsProducerEvent = z.infer<typeof GithubOpsProducerEventSchema>;
 export type GithubOpsWireEvent = GithubOpsIntentEvent | GithubOpsProducerEvent;
 
 export interface GithubOpsActorState {
@@ -336,19 +324,14 @@ export const GithubOpsRemoteSnapshotSchema = z
     conflictResolutionClaimed: z.boolean(),
   })
   .strict();
-export type GithubOpsRemoteSnapshot = z.infer<
-  typeof GithubOpsRemoteSnapshotSchema
->;
+export type GithubOpsRemoteSnapshot = z.infer<typeof GithubOpsRemoteSnapshotSchema>;
 
 export function projectGithubOpsRemoteSnapshot(
   appId: number,
   revision: number,
   actorState: GithubOpsActorState,
 ): GithubOpsRemoteSnapshot {
-  if (
-    actorState.activeInvocationRef &&
-    actorState.activeInvocationRef.entityKey !== appId
-  ) {
+  if (actorState.activeInvocationRef && actorState.activeInvocationRef.entityKey !== appId) {
     throw new Error("GitHub operation invocation does not match its actor key");
   }
   return {
@@ -360,9 +343,7 @@ export function projectGithubOpsRemoteSnapshot(
   };
 }
 
-export function isGithubOpsStateSensitiveIntent(
-  event: GithubOpsIntentEvent,
-): boolean {
+export function isGithubOpsStateSensitiveIntent(event: GithubOpsIntentEvent): boolean {
   switch (event.type) {
     case "OP_REQUESTED":
       return event.op.type !== "fetch";
@@ -383,9 +364,7 @@ export function isGithubOpsStateSensitiveIntent(
   }
 }
 
-export function toGithubOpsDomainEvent(
-  event: GithubOpsWireEvent,
-): GithubOpsEvent {
+export function toGithubOpsDomainEvent(event: GithubOpsWireEvent): GithubOpsEvent {
   switch (event.type) {
     case "OP_REQUESTED":
       return { type: "OP_REQUESTED", op: event.op };

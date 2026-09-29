@@ -50,68 +50,23 @@ const inventories = {
       ["settlement", "src/ipc/services/image_generation_service.ts", 68, 68],
       ["settlement", "src/ipc/services/image_generation_service.ts", 72, 93],
       ["settlement", "src/ipc/services/image_generation_service.ts", 340, 383],
-      [
-        "deletion-fence",
-        "src/ipc/services/image_generation_service.ts",
-        69,
-        71,
-      ],
-      [
-        "deletion-fence",
-        "src/ipc/services/image_generation_service.ts",
-        94,
-        120,
-      ],
-      [
-        "late-producer",
-        "src/ipc/services/image_generation_definition.ts",
-        32,
-        70,
-      ],
-      [
-        "late-producer",
-        "src/ipc/services/image_generation_actor_service.ts",
-        17,
-        39,
-      ],
+      ["deletion-fence", "src/ipc/services/image_generation_service.ts", 69, 71],
+      ["deletion-fence", "src/ipc/services/image_generation_service.ts", 94, 120],
+      ["late-producer", "src/ipc/services/image_generation_definition.ts", 32, 70],
+      ["late-producer", "src/ipc/services/image_generation_actor_service.ts", 17, 39],
     ],
     post: [
       ["admission", "src/hooks/useGenerateImage.ts", 50, 155],
       ["admission", "src/image_generation/hooks.ts", 53, 239],
-      [
-        "settlement",
-        "src/ipc/services/image_generation_operation_service.ts",
-        24,
-        174,
-      ],
+      ["settlement", "src/ipc/services/image_generation_operation_service.ts", 24, 174],
       ["settlement", "src/ipc/services/image_generation_service.ts", 68, 69],
       ["settlement", "src/ipc/services/image_generation_service.ts", 73, 100],
       ["settlement", "src/ipc/services/image_generation_service.ts", 347, 412],
       ["settlement", "src/image_generation/request_scope.tsx", 1, 37],
-      [
-        "deletion-fence",
-        "src/ipc/services/image_generation_service.ts",
-        70,
-        72,
-      ],
-      [
-        "deletion-fence",
-        "src/ipc/services/image_generation_service.ts",
-        101,
-        127,
-      ],
-      [
-        "deletion-fence",
-        "src/ipc/services/image_generation_actor_service.ts",
-        20,
-        114,
-      ],
-      [
-        "late-producer",
-        "src/ipc/services/image_generation_definition.ts",
-        53,
-        154,
-      ],
+      ["deletion-fence", "src/ipc/services/image_generation_service.ts", 70, 72],
+      ["deletion-fence", "src/ipc/services/image_generation_service.ts", 101, 127],
+      ["deletion-fence", "src/ipc/services/image_generation_actor_service.ts", 20, 114],
+      ["late-producer", "src/ipc/services/image_generation_definition.ts", 53, 154],
     ],
   },
 };
@@ -137,11 +92,7 @@ function codeLines(source) {
     ts.LanguageVariant.Standard,
     source,
   );
-  for (
-    let token = scanner.scan();
-    token !== ts.SyntaxKind.EndOfFileToken;
-    token = scanner.scan()
-  ) {
+  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
     const start = source.slice(0, scanner.getTokenPos()).split(/\r?\n/).length;
     const end = source.slice(0, scanner.getTextPos()).split(/\r?\n/).length;
     for (let line = start; line <= end; line += 1) lines.add(line);
@@ -182,10 +133,7 @@ function measure(ref, inventory) {
   const categories = {};
   let total = 0;
   for (const [category, files] of categoryLines) {
-    const count = [...files.values()].reduce(
-      (sum, lines) => sum + lines.size,
-      0,
-    );
+    const count = [...files.values()].reduce((sum, lines) => sum + lines.size, 0);
     categories[category] = count;
     total += count;
   }
@@ -202,12 +150,8 @@ for (const [pilot, inventory] of Object.entries(inventories)) {
     reductionPercent:
       before.total === 0
         ? null
-        : Number(
-            (((before.total - after.total) / before.total) * 100).toFixed(1),
-          ),
+        : Number((((before.total - after.total) / before.total) * 100).toFixed(1)),
   };
 }
 
-process.stdout.write(
-  `${JSON.stringify({ baseline, post, inventories, report }, null, 2)}\n`,
-);
+process.stdout.write(`${JSON.stringify({ baseline, post, inventories, report }, null, 2)}\n`);

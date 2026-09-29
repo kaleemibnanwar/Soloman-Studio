@@ -23,8 +23,7 @@ const options: OptionInfo[] = [
   {
     value: "2",
     label: "Economy (2)",
-    description:
-      "Minimal context to reduce token usage and improve response times.",
+    description: "Minimal context to reduce token usage and improve response times.",
   },
   {
     value: defaultValue,
@@ -39,8 +38,7 @@ const options: OptionInfo[] = [
   {
     value: "10",
     label: "High (10)",
-    description:
-      "Extended context for complex conversations requiring more history.",
+    description: "Extended context for complex conversations requiring more history.",
   },
   {
     value: "100",
@@ -63,12 +61,10 @@ export const MaxChatTurnsSelector: React.FC = () => {
   };
 
   // Determine the current value
-  const currentValue =
-    settings?.maxChatTurnsInContext?.toString() || defaultValue;
+  const currentValue = settings?.maxChatTurnsInContext?.toString() || defaultValue;
 
   // Find the current option to display its description
-  const currentOption =
-    options.find((opt) => opt.value === currentValue) || options[1];
+  const currentOption = options.find((opt) => opt.value === currentValue) || options[1];
 
   return (
     <SettingField
@@ -76,10 +72,7 @@ export const MaxChatTurnsSelector: React.FC = () => {
       label={t("ai.maxChatTurns")}
       description={currentOption.description}
     >
-      <Select
-        value={currentValue}
-        onValueChange={(v) => v && handleValueChange(v)}
-      >
+      <Select value={currentValue} onValueChange={(v) => v && handleValueChange(v)}>
         <SelectTrigger
           className="w-full sm:w-[240px]"
           id="max-chat-turns"

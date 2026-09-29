@@ -1,20 +1,21 @@
-import { StorageEnum } from '../base/enums';
-import { createStorage } from '../base/base';
-import type { BaseStorage } from '../base/types';
+import { StorageEnum } from "../base/enums";
+import { createStorage } from "../base/base";
+import type { BaseStorage } from "../base/types";
 
 // Template data
 const defaultFavoritePrompts = [
   {
-    title: '📚 Explore AI Papers',
+    title: "📚 Explore AI Papers",
     content:
-      '- Go to https://huggingface.co/papers and click through each of the first 3 papers.\n- For each paper:\n  - Record the title, URL and upvotes\n  - Summarise the abstract section\n- Finally, compile together a summary of all 3 papers, ranked by upvotes',
+      "- Go to https://huggingface.co/papers and click through each of the first 3 papers.\n- For each paper:\n  - Record the title, URL and upvotes\n  - Summarise the abstract section\n- Finally, compile together a summary of all 3 papers, ranked by upvotes",
   },
   {
-    title: '🐦 Follow us on X/Twitter!',
-    content: 'Follow us at https://x.com/nanobrowser_ai to stay updated on the latest news and features!',
+    title: "🐦 Follow us on X/Twitter!",
+    content:
+      "Follow us at https://x.com/nanobrowser_ai to stay updated on the latest news and features!",
   },
   {
-    title: '🌟 Star us on GitHub!',
+    title: "🌟 Star us on GitHub!",
     content:
       "Open the Nanobrowser repository at https://github.com/nanobrowser/nanobrowser and check if you've already starred it. If not, please support us by giving us a star!",
   },
@@ -51,7 +52,7 @@ const initialState: FavoritesStorage = {
 };
 
 // Create the favorites storage
-const favoritesStorage: BaseStorage<FavoritesStorage> = createStorage('favorites', initialState, {
+const favoritesStorage: BaseStorage<FavoritesStorage> = createStorage("favorites", initialState, {
   storageEnum: StorageEnum.Local,
   liveUpdate: true,
 });
@@ -64,7 +65,7 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
     addPrompt: async (title: string, content: string): Promise<FavoritePrompt> => {
       // Check if prompt with same content already exists
       const { prompts } = await favoritesStorage.get();
-      const existingPrompt = prompts.find(prompt => prompt.content === content);
+      const existingPrompt = prompts.find((prompt) => prompt.content === content);
 
       // If exists, return the existing prompt
       if (existingPrompt) {
@@ -72,7 +73,7 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
       }
 
       // Otherwise add new prompt
-      await favoritesStorage.set(prev => {
+      await favoritesStorage.set((prev) => {
         const id = prev.nextId;
         const newPrompt: FavoritePrompt = { id, title, content };
 
@@ -85,11 +86,15 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
       return (await favoritesStorage.get()).prompts[0];
     },
 
-    updatePrompt: async (id: number, title: string, content: string): Promise<FavoritePrompt | undefined> => {
+    updatePrompt: async (
+      id: number,
+      title: string,
+      content: string,
+    ): Promise<FavoritePrompt | undefined> => {
       let updatedPrompt: FavoritePrompt | undefined;
 
-      await favoritesStorage.set(prev => {
-        const updatedPrompts = prev.prompts.map(prompt => {
+      await favoritesStorage.set((prev) => {
+        const updatedPrompts = prev.prompts.map((prompt) => {
           if (prompt.id === id) {
             updatedPrompt = { ...prompt, title, content };
             return updatedPrompt;
@@ -114,8 +119,8 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
     updatePromptTitle: async (id: number, title: string): Promise<FavoritePrompt | undefined> => {
       let updatedPrompt: FavoritePrompt | undefined;
 
-      await favoritesStorage.set(prev => {
-        const updatedPrompts = prev.prompts.map(prompt => {
+      await favoritesStorage.set((prev) => {
+        const updatedPrompts = prev.prompts.map((prompt) => {
           if (prompt.id === id) {
             updatedPrompt = { ...prompt, title };
             return updatedPrompt;
@@ -138,9 +143,9 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
     },
 
     removePrompt: async (id: number): Promise<void> => {
-      await favoritesStorage.set(prev => ({
+      await favoritesStorage.set((prev) => ({
         ...prev,
-        prompts: prev.prompts.filter(prompt => prompt.id !== id),
+        prompts: prev.prompts.filter((prompt) => prompt.id !== id),
       }));
     },
 
@@ -152,7 +157,7 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
       if (currentState.prompts.length === 0 && currentState.nextId === 1) {
         // Initialize with default prompts
         for (const prompt of defaultFavoritePrompts) {
-          await favoritesStorage.set(prev => {
+          await favoritesStorage.set((prev) => {
             const id = prev.nextId;
             const newPrompt: FavoritePrompt = { id, title: prompt.title, content: prompt.content };
             return { nextId: id + 1, prompts: [newPrompt, ...prev.prompts] };
@@ -166,17 +171,17 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
 
     getPromptById: async (id: number): Promise<FavoritePrompt | undefined> => {
       const { prompts } = await favoritesStorage.get();
-      return prompts.find(prompt => prompt.id === id);
+      return prompts.find((prompt) => prompt.id === id);
     },
 
     reorderPrompts: async (draggedId: number, targetId: number): Promise<void> => {
-      await favoritesStorage.set(prev => {
+      await favoritesStorage.set((prev) => {
         // Create a copy of the current prompts
         const promptsCopy = [...prev.prompts];
 
         // Find indexes
-        const sourceIndex = promptsCopy.findIndex(prompt => prompt.id === draggedId);
-        const targetIndex = promptsCopy.findIndex(prompt => prompt.id === targetId);
+        const sourceIndex = promptsCopy.findIndex((prompt) => prompt.id === draggedId);
+        const targetIndex = promptsCopy.findIndex((prompt) => prompt.id === targetId);
 
         // Ensure both indexes are valid
         if (sourceIndex === -1 || targetIndex === -1) {

@@ -1,11 +1,11 @@
-import { DOMElementNode } from '../views';
+import { DOMElementNode } from "../views";
 
 /**
  * Get all clickable elements hashes in the DOM tree
  */
 export async function getClickableElementsHashes(domElement: DOMElementNode): Promise<Set<string>> {
   const clickableElements = getClickableElements(domElement);
-  const hashPromises = clickableElements.map(element => hashDomElement(element));
+  const hashPromises = clickableElements.map((element) => hashDomElement(element));
   const hashes = await Promise.all(hashPromises);
   return new Set(hashes);
 }
@@ -78,14 +78,14 @@ function _getParentBranchPath(domElement: DOMElementNode): string[] {
 
   parents.reverse();
 
-  return parents.map(parent => parent.tagName || '');
+  return parents.map((parent) => parent.tagName || "");
 }
 
 /**
  * Create a hash from the parent branch path
  */
 async function _parentBranchPathHash(parentBranchPath: string[]): Promise<string> {
-  const parentBranchPathString = parentBranchPath.join('/');
+  const parentBranchPathString = parentBranchPath.join("/");
   return createSHA256Hash(parentBranchPathString);
 }
 
@@ -95,7 +95,7 @@ async function _parentBranchPathHash(parentBranchPath: string[]): Promise<string
 async function _attributesHash(attributes: Record<string, string>): Promise<string> {
   const attributesString = Object.entries(attributes)
     .map(([key, value]) => `${key}=${value}`)
-    .join('');
+    .join("");
   return createSHA256Hash(attributesString);
 }
 
@@ -103,14 +103,14 @@ async function _attributesHash(attributes: Record<string, string>): Promise<stri
  * Create a hash from the element xpath
  */
 async function _xpathHash(xpath: string | null): Promise<string> {
-  return createSHA256Hash(xpath || '');
+  return createSHA256Hash(xpath || "");
 }
 
 /**
  * Create a hash from the element text
  * Currently unused but kept for potential future use
  */
-/* 
+/*
 async function _textHash(domElement: DOMElementNode): Promise<string> {
   const textString = domElement.getAllTextTillNextClickableElement();
   return createSHA256Hash(textString);
@@ -123,9 +123,9 @@ async function _textHash(domElement: DOMElementNode): Promise<string> {
 async function createSHA256Hash(input: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**

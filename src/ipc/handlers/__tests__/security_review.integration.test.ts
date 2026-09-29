@@ -29,10 +29,7 @@ import path from "node:path";
 
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { messages as messagesTable, security_fix_chats } from "@/db/schema";
 import type { SecurityFinding } from "@/ipc/types/security";
@@ -85,20 +82,16 @@ describe("security review (integration)", () => {
   it("runs a security review and parses findings", async () => {
     const reviewChatId = await harness.createChat();
     harness.mount({ chatId: reviewChatId });
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     // Type + send "/security-review" through the real UI. Baseline-aware wait:
     // the beforeAll turn already emitted a chat:response:end.
     // The 6 KB findings response streams through the full renderer/IPC stack.
     // Loaded Windows runners can exceed the harness's 20-second default while
     // still making steady chunk progress, so give this large turn headroom.
-    const reviewEnd = harness.waitForNextStreamEnd(
-      reviewChatId,
-      LARGE_REVIEW_STREAM_TIMEOUT_MS,
-    );
+    const reviewEnd = harness.waitForNextStreamEnd(reviewChatId, LARGE_REVIEW_STREAM_TIMEOUT_MS);
     const { send } = await harness.typeInChat("/security-review", {
       chatId: reviewChatId,
     });
@@ -107,29 +100,19 @@ describe("security review (integration)", () => {
     // The streamed review renders in the messages list: the intro text and the
     // <octopus-studio-security-finding> cards' content (the same DOM surface the e2e
     // asserted on).
-    await waitFor(
-      () =>
-        expect(
-          screen.getByText(/OK, let's review the security\./),
-        ).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/OK, let's review the security\./)).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await waitFor(
       () => {
-        expect(
-          screen.getAllByText(/Unvalidated File Upload Extensions/).length,
-        ).toBeGreaterThan(0);
-        expect(
-          screen.getAllByText(/SQL Injection in User Lookup/).length,
-        ).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Unvalidated File Upload Extensions/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/SQL Injection in User Lookup/).length).toBeGreaterThan(0);
       },
       { timeout: 20_000 },
     );
     await reviewEnd;
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     const messages = await loadChatMessages(reviewChatId);
@@ -141,16 +124,12 @@ describe("security review (integration)", () => {
     const dump = harness.getServerDump({ type: "all-messages" });
     expect(dump.text).toContain("message: [[SYSTEM_MESSAGE]]");
     expect(dump.text).toContain("This is my codebase.");
-    expect(dump.text.trimEnd()).toMatch(
-      /role: user\nmessage: \/security-review$/,
-    );
+    expect(dump.text.trimEnd()).toMatch(/role: user\nmessage: \/security-review$/);
     expect(dump.text).toMatchSnapshot("security-review-dump");
 
     // The unmasked system prompt actually sent is the security review prompt.
     const raw = JSON.parse(fs.readFileSync(dump.dumpPath, "utf-8"));
-    const systemMessage = raw.body.messages.find(
-      (m: { role: string }) => m.role === "system",
-    );
+    const systemMessage = raw.body.messages.find((m: { role: string }) => m.role === "system");
     expect(systemMessage.content).toContain("Security expert");
 
     // The real get-latest-security-review handler parses the findings.
@@ -179,10 +158,9 @@ ${finding.description}`;
     const commitsBefore = harness.gitLog().length;
     const fixChatId = await harness.createChat();
     harness.mount({ chatId: fixChatId });
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
     const fixEnd = harness.waitForNextStreamEnd(fixChatId);
     const { send } = await harness.typeInChat(prompt, { chatId: fixChatId });
@@ -191,10 +169,7 @@ ${finding.description}`;
     // The fix prompt renders as the user message, and the canned response's
     // trailing "EOM" text renders once the assistant turn streams in.
     await waitFor(
-      () =>
-        expect(
-          screen.getByText(/Please fix the following security issue/),
-        ).toBeTruthy(),
+      () => expect(screen.getByText(/Please fix the following security issue/)).toBeTruthy(),
       { timeout: 15_000 },
     );
     await waitFor(() => expect(screen.getByText(/EOM/)).toBeTruthy(), {
@@ -242,10 +217,7 @@ ${finding.description}`;
     cleanup();
     harness.mount({ withSecurityPanel: true });
     await waitFor(
-      () =>
-        expect(
-          screen.getByRole("button", { name: "Fix all issues" }),
-        ).toBeTruthy(),
+      () => expect(screen.getByRole("button", { name: "Fix all issues" })).toBeTruthy(),
       { timeout: 15_000 },
     );
 
@@ -259,10 +231,7 @@ ${finding.description}`;
         .where(
           and(
             eq(security_fix_chats.appId, harness.appId),
-            eq(
-              security_fix_chats.reviewChatId,
-              (await getLatestSecurityReview()).chatId,
-            ),
+            eq(security_fix_chats.reviewChatId, (await getLatestSecurityReview()).chatId),
           ),
         )
         .orderBy(desc(security_fix_chats.id))
@@ -274,29 +243,20 @@ ${finding.description}`;
     await harness.waitForStreamEnd(bulkFixChatId);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Show fix for all issues" }),
-      ).toBeTruthy();
-      expect(
-        screen
-          .getByRole("button", { name: "Run review" })
-          .getAttribute("data-variant"),
-      ).toBe("primary");
+      expect(screen.getByRole("button", { name: "Show fix for all issues" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Run review" }).getAttribute("data-variant")).toBe(
+        "primary",
+      );
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Show fix for all issues" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Show fix for all issues" }));
     await waitFor(() => {
       expect(harness.currentLocation().search.id).toBe(bulkFixChatId);
     });
 
     // Make the canned rerun write produce a fresh commit too.
     await harness.bridge.settleInFlight();
-    fs.writeFileSync(
-      path.join(harness.appDir, "file1.txt"),
-      "perturbed again\n",
-    );
+    fs.writeFileSync(path.join(harness.appDir, "file1.txt"), "perturbed again\n");
     execFileSync("git", ["add", "-A"], { cwd: harness.appDir });
     execFileSync(
       "git",
@@ -317,20 +277,14 @@ ${finding.description}`;
       name: "More fix actions for all issues",
     });
     await harness.openPopover(moreActions);
-    fireEvent.click(
-      await screen.findByRole("menuitem", { name: "Re-run fix" }),
-    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Re-run fix" }));
     await rerunEnd;
 
     await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Show fix for all issues" }),
-      ).toBeTruthy(),
+      expect(screen.getByRole("button", { name: "Show fix for all issues" })).toBeTruthy(),
     );
     const bulkMessages = await loadChatMessages(bulkFixChatId!);
-    const bulkPrompts = bulkMessages.filter(
-      (message) => message.role === "user",
-    );
+    const bulkPrompts = bulkMessages.filter((message) => message.role === "user");
     expect(bulkPrompts).toHaveLength(2);
     for (const prompt of bulkPrompts) {
       expect(prompt.content).toContain(
@@ -348,52 +302,35 @@ ${finding.description}`;
   it("edit and use knowledge: SECURITY_RULES.md is added to the review context", async () => {
     // The e2e edits the rules via the dialog; the saved file lands in the app
     // dir. Write it directly and run another review.
-    fs.writeFileSync(
-      path.join(harness.appDir, "SECURITY_RULES.md"),
-      "testing\nrules123",
-    );
+    fs.writeFileSync(path.join(harness.appDir, "SECURITY_RULES.md"), "testing\nrules123");
 
     const reviewChatId = await harness.createChat();
     harness.mount({ chatId: reviewChatId });
-    await waitFor(
-      () => expect(screen.getByTestId("chat-input-container")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByTestId("chat-input-container")).toBeTruthy(), {
+      timeout: 15_000,
+    });
 
-    const reviewEnd = harness.waitForNextStreamEnd(
-      reviewChatId,
-      LARGE_REVIEW_STREAM_TIMEOUT_MS,
-    );
+    const reviewEnd = harness.waitForNextStreamEnd(reviewChatId, LARGE_REVIEW_STREAM_TIMEOUT_MS);
     const { send } = await harness.typeInChat("/security-review", {
       chatId: reviewChatId,
     });
     send();
 
     // The review response (with its security-finding cards) renders again.
-    await waitFor(
-      () =>
-        expect(
-          screen.getByText(/OK, let's review the security\./),
-        ).toBeTruthy(),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getByText(/OK, let's review the security\./)).toBeTruthy(), {
+      timeout: 20_000,
+    });
     await reviewEnd;
 
     const dump = harness.getServerDump({ type: "all-messages" });
     // The rules file shows up in the codebase context...
-    expect(dump.text).toContain(
-      '<octopus-studio-file path="SECURITY_RULES.md">',
-    );
+    expect(dump.text).toContain('<octopus-studio-file path="SECURITY_RULES.md">');
     expect(dump.text).toContain("rules123");
 
     // ...and is appended to the (unmasked) security system prompt.
     const raw = JSON.parse(fs.readFileSync(dump.dumpPath, "utf-8"));
-    const systemMessage = raw.body.messages.find(
-      (m: { role: string }) => m.role === "system",
-    );
-    expect(systemMessage.content).toContain(
-      "# Project-specific security rules:",
-    );
+    const systemMessage = raw.body.messages.find((m: { role: string }) => m.role === "system");
+    expect(systemMessage.content).toContain("# Project-specific security rules:");
     expect(systemMessage.content).toContain("rules123");
   }, 120_000);
 });

@@ -46,22 +46,13 @@ import { Timeout } from "../constants";
 const IGNORED_SNAPSHOT_FILE_PATHS = new Set([".gitattributes"]);
 
 function isIgnoredSnapshotFile(filePath: string | undefined): boolean {
-  return (
-    typeof filePath === "string" &&
-    IGNORED_SNAPSHOT_FILE_PATHS.has(normalizePath(filePath))
-  );
+  return typeof filePath === "string" && IGNORED_SNAPSHOT_FILE_PATHS.has(normalizePath(filePath));
 }
 
 function removeIgnoredOctopusStudioFileBlocks(text: string): string {
   return text
-    .replace(
-      /\n?<octopusStudio-file path="\.gitattributes">[\s\S]*?<\/octopusStudio-file>\n*/g,
-      "",
-    )
-    .replace(
-      /This is my codebase\.\s+(<octopusStudio-file)/g,
-      "This is my codebase. $1",
-    );
+    .replace(/\n?<octopusStudio-file path="\.gitattributes">[\s\S]*?<\/octopusStudio-file>\n*/g, "")
+    .replace(/This is my codebase\.\s+(<octopusStudio-file)/g, "This is my codebase. $1");
 }
 
 function sanitizeContentForSnapshot(content: unknown): unknown {
@@ -70,12 +61,7 @@ function sanitizeContentForSnapshot(content: unknown): unknown {
   }
   if (Array.isArray(content)) {
     return content.map((part) => {
-      if (
-        part &&
-        typeof part === "object" &&
-        "text" in part &&
-        typeof part.text === "string"
-      ) {
+      if (part && typeof part === "object" && "text" in part && typeof part.text === "string") {
         return {
           ...part,
           text: removeIgnoredOctopusStudioFileBlocks(part.text),
@@ -103,10 +89,9 @@ function removeIgnoredSnapshotFilesFromDump(dump: any): void {
   }
 
   if (Array.isArray(body.octopus_studio_options?.files)) {
-    body.octopus_studio_options.files =
-      body.octopus_studio_options.files.filter(
-        (file: any) => !isIgnoredSnapshotFile(file.path),
-      );
+    body.octopus_studio_options.files = body.octopus_studio_options.files.filter(
+      (file: any) => !isIgnoredSnapshotFile(file.path),
+    );
   }
 
   if (Array.isArray(body.octopus_studio_options?.mentioned_apps)) {
@@ -145,10 +130,7 @@ function removeIgnoredSnapshotFilesFromDump(dump: any): void {
 
   if (vf.messageIndexToFilePathToFileId) {
     for (const pathToId of Object.values(
-      vf.messageIndexToFilePathToFileId as Record<
-        string,
-        Record<string, string>
-      >,
+      vf.messageIndexToFilePathToFileId as Record<string, Record<string, string>>,
     )) {
       for (const filePath of Object.keys(pathToId)) {
         if (isIgnoredSnapshotFile(filePath)) {
@@ -216,9 +198,7 @@ export class PageObject {
 
   private nextStableMessageSnapshotPath(name?: string) {
     if (name) {
-      const snapshotName = name.endsWith(".aria.yml")
-        ? name
-        : `${name}.aria.yml`;
+      const snapshotName = name.endsWith(".aria.yml") ? name : `${name}.aria.yml`;
       return this.testInfo?.snapshotPath(snapshotName, {
         kind: "aria",
       });
@@ -299,9 +279,7 @@ export class PageObject {
 
     if (actualSnapshot !== expectedSnapshot && this.testInfo) {
       const baseName = path.basename(snapshotPath, ".aria.yml");
-      const actualPath = this.testInfo.outputPath(
-        `${baseName}-actual.aria.yml`,
-      );
+      const actualPath = this.testInfo.outputPath(`${baseName}-actual.aria.yml`);
       fs.writeFileSync(actualPath, actualSnapshot);
       await this.testInfo.attach(`${baseName}-expected`, {
         path: snapshotPath,
@@ -429,9 +407,7 @@ export class PageObject {
 
   async openContextFilesPicker() {
     // Programmatically dismiss toasts using the sonner API by clicking any visible close buttons
-    const toastCloseButtons = this.page.locator(
-      "[data-sonner-toast] button[data-close-button]",
-    );
+    const toastCloseButtons = this.page.locator("[data-sonner-toast] button[data-close-button]");
     const maxAttempts = 20;
     let attempts = 0;
     while ((await toastCloseButtons.count()) > 0 && attempts < maxAttempts) {
@@ -450,26 +426,19 @@ export class PageObject {
     }
 
     // Open the auxiliary actions menu
-    await this.chatActions
-      .getChatInputContainer()
-      .getByTestId("auxiliary-actions-menu")
-      .click();
+    await this.chatActions.getChatInputContainer().getByTestId("auxiliary-actions-menu").click();
 
     // Click on "Codebase context" to open the popover
     await this.page.getByTestId("codebase-context-trigger").click();
 
     // Wait for the popover content to be visible
-    await this.page
-      .getByTestId("manual-context-files-input")
-      .waitFor({ state: "visible" });
+    await this.page.getByTestId("manual-context-files-input").waitFor({ state: "visible" });
 
     return new ContextFilesPickerDialog(this.page, async () => {
       // Close the popover first
       await this.page.keyboard.press("Escape");
       // Wait a bit for the popover to close, then close the dropdown menu
-      await this.page
-        .getByTestId("manual-context-files-input")
-        .waitFor({ state: "hidden" });
+      await this.page.getByTestId("manual-context-files-input").waitFor({ state: "hidden" });
       await this.page.keyboard.press("Escape");
     });
   }
@@ -494,9 +463,7 @@ export class PageObject {
   // ================================
 
   async approveProposal() {
-    const approveButton = this.page
-      .getByTestId("approve-proposal-button")
-      .last();
+    const approveButton = this.page.getByTestId("approve-proposal-button").last();
     await expect(approveButton).toBeEnabled({ timeout: Timeout.MEDIUM });
     await approveButton.click();
     await expect(approveButton).toBeHidden({ timeout: Timeout.MEDIUM });
@@ -521,10 +488,7 @@ export class PageObject {
     // Need to make sure it's NOT visible yet to avoid a race when we opened
     // the auxiliary actions menu earlier.
     await expect(this.page.getByTestId("token-bar-toggle")).not.toBeVisible();
-    await this.chatActions
-      .getChatInputContainer()
-      .getByTestId("auxiliary-actions-menu")
-      .click();
+    await this.chatActions.getChatInputContainer().getByTestId("auxiliary-actions-menu").click();
     await this.page.getByTestId("token-bar-toggle").click();
   }
 
@@ -568,14 +532,10 @@ export class PageObject {
 
       // Sort by relative path to ensure deterministic output
       filesData.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
-      filesData = filesData.filter(
-        (file) => !isIgnoredSnapshotFile(file.relativePath),
-      );
+      filesData = filesData.filter((file) => !isIgnoredSnapshotFile(file.relativePath));
       if (files) {
         filesData = filesData.filter((file) =>
-          files.some(
-            (f) => normalizePath(f) === normalizePath(file.relativePath),
-          ),
+          files.some((f) => normalizePath(f) === normalizePath(file.relativePath)),
         );
       }
 
@@ -625,20 +585,13 @@ export class PageObject {
             /\.octopusStudio\/chats\/\d+\/compaction-[^\s<"]+\.md/g,
             "[[compaction-backup-path]]",
           )
-          .replace(
-            /\[\[octopusStudio-dump-path=([^\]]+)\]\]/g,
-            "[[octopusStudio-dump-path=*]]",
-          );
+          .replace(/\[\[octopusStudio-dump-path=([^\]]+)\]\]/g, "[[octopusStudio-dump-path=*]]");
       }
       return `${normalizedSnapshot.trimEnd()}\n`;
     }, name);
   }
 
-  async snapshotStableAria(
-    locator: Locator,
-    name: string,
-    { timeout }: { timeout?: number } = {},
-  ) {
+  async snapshotStableAria(locator: Locator, name: string, { timeout }: { timeout?: number } = {}) {
     await this.expectStableMessageAriaSnapshot(async () => {
       const rawSnapshot = await locator.ariaSnapshot({ timeout });
       return `${normalizeMessagesAriaSnapshot(rawSnapshot).trimEnd()}\n`;
@@ -651,14 +604,10 @@ export class PageObject {
   ) {
     await this.chatActions.waitForChatCompletion();
     // Get the text content of the messages list
-    const messagesListText = await this.page
-      .getByTestId("messages-list")
-      .textContent();
+    const messagesListText = await this.page.getByTestId("messages-list").textContent();
 
     // Find ALL dump paths using global regex
-    const dumpPathMatches = messagesListText?.match(
-      /\[\[octopusStudio-dump-path=([^\]]+)\]\]/g,
-    );
+    const dumpPathMatches = messagesListText?.match(/\[\[octopusStudio-dump-path=([^\]]+)\]\]/g);
 
     if (!dumpPathMatches || dumpPathMatches.length === 0) {
       throw new Error("No dump path found in messages list");
@@ -667,9 +616,7 @@ export class PageObject {
     // Extract the actual paths from the matches
     const dumpPaths = dumpPathMatches
       .map((match) => {
-        const pathMatch = match.match(
-          /\[\[octopusStudio-dump-path=([^\]]+)\]\]/,
-        );
+        const pathMatch = match.match(/\[\[octopusStudio-dump-path=([^\]]+)\]\]/);
         return pathMatch ? pathMatch[1] : null;
       })
       .filter(Boolean);
@@ -677,8 +624,7 @@ export class PageObject {
     // Select the dump path based on index
     // -1 means last, -2 means second to last, etc.
     // 0 means first, 1 means second, etc.
-    const selectedIndex =
-      dumpIndex < 0 ? dumpPaths.length + dumpIndex : dumpIndex;
+    const selectedIndex = dumpIndex < 0 ? dumpPaths.length + dumpIndex : dumpIndex;
 
     if (selectedIndex < 0 || selectedIndex >= dumpPaths.length) {
       throw new Error(
@@ -693,10 +639,7 @@ export class PageObject {
 
     // Read the JSON file
     const dumpContent: string = (fs.readFileSync(dumpFilePath, "utf-8") as any)
-      .replaceAll(
-        /\[\[octopusStudio-dump-path=([^\]]+)\]\]/g,
-        "[[octopusStudio-dump-path=*]]",
-      )
+      .replaceAll(/\[\[octopusStudio-dump-path=([^\]]+)\]\]/g, "[[octopusStudio-dump-path=*]]")
       // Stabilize compaction backup file paths embedded in message text
       // e.g. .octopusStudio/chats/1/compaction-2026-02-05T21-25-24-285Z.md
       .replaceAll(
@@ -708,34 +651,28 @@ export class PageObject {
     const parsedDump = JSON.parse(dumpContent);
     removeIgnoredSnapshotFilesFromDump(parsedDump);
     if (parsedDump["body"]["input"]) {
-      parsedDump["body"]["input"] = parsedDump["body"]["input"].map(
-        (input: any) => {
-          if (input.role === "system") {
-            input.content = "[[SYSTEM_MESSAGE]]";
-          }
-          return input;
-        },
-      );
+      parsedDump["body"]["input"] = parsedDump["body"]["input"].map((input: any) => {
+        if (input.role === "system") {
+          input.content = "[[SYSTEM_MESSAGE]]";
+        }
+        return input;
+      });
     }
     if (parsedDump["body"]["messages"]) {
-      parsedDump["body"]["messages"] = parsedDump["body"]["messages"].map(
-        (message: any) => {
-          if (message.role === "system") {
-            message.content = "[[SYSTEM_MESSAGE]]";
-          }
-          return message;
-        },
-      );
+      parsedDump["body"]["messages"] = parsedDump["body"]["messages"].map((message: any) => {
+        if (message.role === "system") {
+          message.content = "[[SYSTEM_MESSAGE]]";
+        }
+        return message;
+      });
     }
     if (parsedDump["body"]["system"]) {
-      parsedDump["body"]["system"] = parsedDump["body"]["system"].map(
-        (message: any) => {
-          if (message.type === "text") {
-            message.text = "[[SYSTEM_MESSAGE]]";
-          }
-          return message;
-        },
-      );
+      parsedDump["body"]["system"] = parsedDump["body"]["system"].map((message: any) => {
+        if (message.type === "text") {
+          message.text = "[[SYSTEM_MESSAGE]]";
+        }
+        return message;
+      });
     }
     // Normalize tool call IDs across both raw request snapshots and prettified
     // message dumps. Anthropic direct passthrough stores tool IDs inside content
@@ -748,9 +685,7 @@ export class PageObject {
       normalizeVersionedFiles(parsedDump);
       // Normalize item_reference IDs (e.g., msg_1234567890) to be deterministic
       normalizeItemReferences(parsedDump);
-      expect(
-        JSON.stringify(parsedDump, null, 2).replace(/\\r\\n/g, "\\n"),
-      ).toMatchSnapshot(name);
+      expect(JSON.stringify(parsedDump, null, 2).replace(/\\r\\n/g, "\\n")).toMatchSnapshot(name);
       return;
     }
     expect(

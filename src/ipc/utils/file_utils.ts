@@ -4,7 +4,7 @@ import path from "node:path";
 import fsExtra from "fs-extra";
 import { generateCuteAppName } from "../../lib/utils";
 import { normalizePath } from "../../../shared/normalizePath";
-import { isPathIgnoredByGitIgnore } from "./gitignore_utils";
+import { isPathIgnoredByGitIgnore } from "../git/gitignore_utils";
 
 // Directories to exclude when scanning files
 const EXCLUDED_DIRS = ["node_modules", ".git", ".next"];
@@ -125,8 +125,7 @@ export async function writeMigrationFile(
     })
     .filter((num) => num !== -1);
 
-  const nextMigrationNumber =
-    migrationNumbers.length > 0 ? Math.max(...migrationNumbers) + 1 : 0;
+  const nextMigrationNumber = migrationNumbers.length > 0 ? Math.max(...migrationNumbers) + 1 : 0;
   const paddedNumber = String(nextMigrationNumber).padStart(4, "0");
 
   let description = "migration";

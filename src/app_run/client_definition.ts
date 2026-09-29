@@ -22,8 +22,7 @@ export const appRunClientDefinition = {
     eventCodec: AppRunIntentEventSchema,
     snapshotCodec: AppRunRemoteSnapshotSchema,
     keyToString: (key) => String(key.appId),
-    unavailableSnapshot: (key) =>
-      projectAppRunRemoteSnapshot(key.appId, 0, { type: "idle" }),
+    unavailableSnapshot: (key) => projectAppRunRemoteSnapshot(key.appId, 0, { type: "idle" }),
   },
   remoteIntent: {
     keyCodec: AppRunKeySchema,

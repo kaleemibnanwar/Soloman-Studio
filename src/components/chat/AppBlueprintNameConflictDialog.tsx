@@ -48,9 +48,7 @@ export function AppBlueprintNameConflictDialog({
     debouncedName !== rejectedName ? debouncedName : "",
   );
   const nameExists =
-    trimmedName !== rejectedName &&
-    debouncedName === trimmedName &&
-    !!nameCheckResult?.exists;
+    trimmedName !== rejectedName && debouncedName === trimmedName && !!nameCheckResult?.exists;
   // Disable submit until the user picks a different, non-empty name that
   // isn't already taken. The initial value equals the rejected name, so the
   // button stays disabled until they actually change it. We also wait for the
@@ -77,8 +75,8 @@ export function AppBlueprintNameConflictDialog({
             App name already in use
           </DialogTitle>
           <DialogDescription>
-            An app named &ldquo;{rejectedName}&rdquo; already exists. Please
-            choose a different name to continue approving this blueprint.
+            An app named &ldquo;{rejectedName}&rdquo; already exists. Please choose a different name
+            to continue approving this blueprint.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 py-4">

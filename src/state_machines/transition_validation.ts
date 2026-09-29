@@ -8,17 +8,9 @@ export function describeTransitionValue(value: unknown): string {
   }
 }
 
-export function transitionValuesAreEqual(
-  left: unknown,
-  right: unknown,
-): boolean {
+export function transitionValuesAreEqual(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) return true;
-  if (
-    typeof left !== "object" ||
-    left === null ||
-    typeof right !== "object" ||
-    right === null
-  ) {
+  if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) {
     return false;
   }
   if (Array.isArray(left) || Array.isArray(right)) {
@@ -26,9 +18,7 @@ export function transitionValuesAreEqual(
       Array.isArray(left) &&
       Array.isArray(right) &&
       left.length === right.length &&
-      left.every((value, index) =>
-        transitionValuesAreEqual(value, right[index]),
-      )
+      left.every((value, index) => transitionValuesAreEqual(value, right[index]))
     );
   }
   const leftRecord = left as Record<string, unknown>;
@@ -86,19 +76,13 @@ export function validateTransitionResult<
   }
   if (result.kind === "ignored") {
     if (result.state !== previous) {
-      validationFailure(
-        "Ignored transitions must retain the exact state reference",
-        context,
-      );
+      validationFailure("Ignored transitions must retain the exact state reference", context);
     }
     if (!("reason" in result) || typeof result.reason !== "string") {
       validationFailure("Ignored transitions must include a reason", context);
     }
     if ("commands" in result || "outcomes" in result) {
-      validationFailure(
-        "Ignored transitions must not emit commands or outcomes",
-        context,
-      );
+      validationFailure("Ignored transitions must not emit commands or outcomes", context);
     }
     return;
   }
@@ -108,13 +92,7 @@ export function validateTransitionResult<
   if (result.outcomes !== undefined && !Array.isArray(result.outcomes)) {
     validationFailure("Transition outcomes must be an array", context);
   }
-  if (
-    transitionValuesAreEqual(previous, result.state) &&
-    previous !== result.state
-  ) {
-    validationFailure(
-      "Applied value-equal states must reuse the previous reference",
-      context,
-    );
+  if (transitionValuesAreEqual(previous, result.state) && previous !== result.state) {
+    validationFailure("Applied value-equal states must reuse the previous reference", context);
   }
 }

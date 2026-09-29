@@ -1,9 +1,6 @@
 import { useEffect, useId, useMemo } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  setUnsavedEditorFileAtom,
-  unsavedEditorFilesAtom,
-} from "@/atoms/viewAtoms";
+import { setUnsavedEditorFileAtom, unsavedEditorFilesAtom } from "@/atoms/viewAtoms";
 
 const EMPTY_PATHS: ReadonlySet<string> = new Set<string>();
 

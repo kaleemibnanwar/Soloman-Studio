@@ -9,10 +9,7 @@ import { queryKeys } from "@/lib/queryKeys";
  * Working-tree content changes as the file is edited/saved, so this is not
  * cached indefinitely — it refetches on mount to reflect the latest state.
  */
-export function useUncommittedFileDiff(
-  appId: number | null,
-  filePath: string | null,
-) {
+export function useUncommittedFileDiff(appId: number | null, filePath: string | null) {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.uncommittedFiles.diff({ appId, filePath }),
     queryFn: async () => {

@@ -2,7 +2,6 @@
     <img src="https://github.com/user-attachments/assets/ec60b0c4-87ba-48f4-981a-c55ed0e8497b" height="100" width="375" alt="banner" /><br>
 </h1>
 
-
 <div align="center">
 
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nanobrowser)
@@ -38,7 +37,6 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
 
 > **請注意：** 我們目前支援 OpenAI、Anthropic、Gemini、Ollama、Groq、Cerebras、Llama 以及自訂的 OpenAI 相容供應商，未來將會支援更多。
 
-
 ## 📊 主要功能
 
 - **多代理系統**：由專業的 AI 代理協同合作，完成複雜的網頁工作流程
@@ -48,86 +46,89 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
 - **對話歷史紀錄**：輕鬆存取並管理與 AI 代理的互動歷史
 - **支援多種 LLM**：可連接您偏好的 LLM 供應商，並為不同代理指派不同模型
 
-
 ## 🌐 瀏覽器支援
 
 **正式支援：**
+
 - **Chrome** - 完整支援所有功能
 - **Edge** - 完整支援所有功能
 
 **不支援：**
+
 - Firefox、Safari，以及其他 Chromium 衍生瀏覽器 (Opera、Arc 等)
 
 > **注意**：雖然 Nanobrowser 可能可在其他 Chromium 系瀏覽器上運作，我們仍建議使用 Chrome 或 Edge，以獲得最佳體驗並確保相容性。
 
-
 ## 🚀 快速入門
 
 1. **從 Chrome 線上應用程式商店安裝** (穩定版)：
-   * 前往 [Nanobrowser 的 Chrome 線上應用程式商店頁面](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
-   * 按一下 [新增至 Chrome] 按鈕
-   * 在提示出現時確認安裝
+   - 前往 [Nanobrowser 的 Chrome 線上應用程式商店頁面](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
+   - 按一下 [新增至 Chrome] 按鈕
+   - 在提示出現時確認安裝
 
 > **重要提示**：若要體驗最新功能，請參考下方的 [「手動安裝最新版本」](#-手動安裝最新版本) 進行安裝，因為 Chrome 線上應用程式商店的版本可能會因審核流程而延遲。
 
 2. **設定代理模型**：
-   * 按一下工具列中的 Nanobrowser 圖示以開啟側邊面板
-   * 按一下右上角的 `設定` 圖示
-   * 新增 LLM API 金鑰
-   * 為不同代理 (Navigator、Planner) 選擇要使用的模型
+   - 按一下工具列中的 Nanobrowser 圖示以開啟側邊面板
+   - 按一下右上角的 `設定` 圖示
+   - 新增 LLM API 金鑰
+   - 為不同代理 (Navigator、Planner) 選擇要使用的模型
 
 ## 🔧 手動安裝最新版本
 
 若要取得包含所有最新功能的版本：
 
 1. **下載**
-    * 從官方 GitHub 的 [版本頁面](https://github.com/nanobrowser/nanobrowser/releases) 下載最新的 `nanobrowser.zip` 檔案。
+   - 從官方 GitHub 的 [版本頁面](https://github.com/nanobrowser/nanobrowser/releases) 下載最新的 `nanobrowser.zip` 檔案。
 
 2. **安裝**：
-    * 解壓縮 `nanobrowser.zip`。
-    * 在 Chrome 中開啟 `chrome://extensions/`
-    * 啟用 `開發人員模式` (右上角)
-    * 按一下 `載入未封裝的擴充功能` (左上角)
-    * 選擇已解壓縮的 `nanobrowser` 資料夾。
+   - 解壓縮 `nanobrowser.zip`。
+   - 在 Chrome 中開啟 `chrome://extensions/`
+   - 啟用 `開發人員模式` (右上角)
+   - 按一下 `載入未封裝的擴充功能` (左上角)
+   - 選擇已解壓縮的 `nanobrowser` 資料夾。
 
 3. **設定代理模型**
-    * 按一下工具列中的 Nanobrowser 圖示以開啟側邊面板
-    * 按一下右上角的 `設定` 圖示。
-    * 新增 LLM API 金鑰。
-    * 為不同代理 (Navigator、Planner) 選擇要使用的模型。
+   - 按一下工具列中的 Nanobrowser 圖示以開啟側邊面板
+   - 按一下右上角的 `設定` 圖示。
+   - 新增 LLM API 金鑰。
+   - 為不同代理 (Navigator、Planner) 選擇要使用的模型。
 
 4. **升級**：
-    * 從版本頁面下載最新的 `nanobrowser.zip` 檔案。
-    * 解壓縮並用新檔案覆寫您現有的 Nanobrowser 檔案。
-    * 前往 Chrome 的 `chrome://extensions/` 頁面，然後在 Nanobrowser 卡片上按一下重新整理圖示。
+   - 從版本頁面下載最新的 `nanobrowser.zip` 檔案。
+   - 解壓縮並用新檔案覆寫您現有的 Nanobrowser 檔案。
+   - 前往 Chrome 的 `chrome://extensions/` 頁面，然後在 Nanobrowser 卡片上按一下重新整理圖示。
 
 ## 🛠️ 從原始碼建置
 
 如果您偏好自行建置 Nanobrowser，請依照以下步驟操作：
 
 1. **先決條件**：
-   * [Node.js](https://nodejs.org/) (v22.12.0 或更高版本)
-   * [pnpm](https://pnpm.io/installation) (v9.15.1 或更高版本)
+   - [Node.js](https://nodejs.org/) (v22.12.0 或更高版本)
+   - [pnpm](https://pnpm.io/installation) (v9.15.1 或更高版本)
 
 2. **複製儲存庫**：
+
    ```bash
    git clone https://github.com/nanobrowser/nanobrowser.git
    cd nanobrowser
    ```
 
 3. **安裝相依套件**：
+
    ```bash
    pnpm install
    ```
 
 4. **建置擴充功能**：
+
    ```bash
    pnpm build
    ```
 
 5. **載入擴充功能**：
-   * 建置完成的擴充功能將位於 `dist` 目錄中
-   * 依照「手動安裝」一節中的步驟，將擴充功能載入瀏覽器
+   - 建置完成的擴充功能將位於 `dist` 目錄中
+   - 依照「手動安裝」一節中的步驟，將擴充功能載入瀏覽器
 
 6. **開發模式** (選用)：
    ```bash
@@ -139,6 +140,7 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
 Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能與成本。以下是建議的設定：
 
 ### 追求高效能
+
 - **Planner**：Claude Sonnet 4
   - 更佳的推理與規劃能力
 - **Navigator**：Claude Haiku 3.5
@@ -146,6 +148,7 @@ Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能
   - 在效能與成本之間取得良好平衡
 
 ### 講求成本效益
+
 - **Planner**：Claude Haiku 或 GPT-4o
   - 以較低成本獲得合理的效能
   - 處理複雜任務可能需要更多次的迭代
@@ -154,6 +157,7 @@ Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能
   - 適合基本的導覽任務
 
 ### 本機模型
+
 - **設定選項**：
   - 使用 Ollama 或其他自訂的 OpenAI 相容供應商，在本機執行模型
   - 零 API 成本並確保完全隱私，所有資料都保留在本機電腦
@@ -181,9 +185,11 @@ Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能
 以下是幾個只要一句話就能完成的強大任務：
 
 1. **新聞摘要**：
+
    > "前往 TechCrunch，擷取過去 24 小時內的 10 大頭條新聞"
 
 2. **GitHub 研究**：
+
    > "在 GitHub 上找出星星數最多的熱門 Python 儲存庫"
 
 3. **購物研究**：
@@ -199,18 +205,16 @@ Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能
 
 **我們需要您的幫助，讓 Nanobrowser 變得更好！** 我們歡迎各種形式的貢獻：
 
-*  **分享提示詞與使用案例**
-   * 加入我們的 [Discord 伺服器](https://discord.gg/NN3ABHggMK)。
-   * 分享您如何使用 Nanobrowser，協助我們建立實用的提示詞與實際應用案例資料庫。
-*  **提供回饋意見**
-   * 試用 Nanobrowser，並在我們的 [Discord 伺服器](https://discord.gg/NN3ABHggMK) 上提供效能回饋或改進建議。
-* **貢獻程式碼**
-   * 請參閱我們的 [CONTRIBUTING.md](CONTRIBUTING.md)，瞭解如何為本專案貢獻程式碼的指南。
-   * 針對錯誤修復、新功能或文件改進，提出 Pull Request。
-
+- **分享提示詞與使用案例**
+  - 加入我們的 [Discord 伺服器](https://discord.gg/NN3ABHggMK)。
+  - 分享您如何使用 Nanobrowser，協助我們建立實用的提示詞與實際應用案例資料庫。
+- **提供回饋意見**
+  - 試用 Nanobrowser，並在我們的 [Discord 伺服器](https://discord.gg/NN3ABHggMK) 上提供效能回饋或改進建議。
+- **貢獻程式碼**
+  - 請參閱我們的 [CONTRIBUTING.md](CONTRIBUTING.md)，瞭解如何為本專案貢獻程式碼的指南。
+  - 針對錯誤修復、新功能或文件改進，提出 Pull Request。
 
 我們深信開放原始碼與社群協作的力量。歡迎與我們一同打造網頁自動化的未來！
-
 
 ## 🔒 安全性
 

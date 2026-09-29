@@ -13,13 +13,8 @@ export class ToastNotifications {
     await expect(this.page.locator("[data-sonner-toast]")).toHaveCount(0);
   }
 
-  async waitForToast(
-    type?: "success" | "error" | "warning" | "info",
-    timeout = 5000,
-  ) {
-    const selector = type
-      ? `[data-sonner-toast][data-type="${type}"]`
-      : "[data-sonner-toast]";
+  async waitForToast(type?: "success" | "error" | "warning" | "info", timeout = 5000) {
+    const selector = type ? `[data-sonner-toast][data-type="${type}"]` : "[data-sonner-toast]";
 
     await this.page.waitForSelector(selector, { timeout });
   }
@@ -31,17 +26,13 @@ export class ToastNotifications {
   }
 
   async assertToastVisible(type?: "success" | "error" | "warning" | "info") {
-    const selector = type
-      ? `[data-sonner-toast][data-type="${type}"]`
-      : "[data-sonner-toast]";
+    const selector = type ? `[data-sonner-toast][data-type="${type}"]` : "[data-sonner-toast]";
 
     await expect(this.page.locator(selector)).toBeVisible();
   }
 
   async assertToastWithText(text: string) {
-    await expect(
-      this.page.locator(`[data-sonner-toast]:has-text("${text}")`),
-    ).toBeVisible();
+    await expect(this.page.locator(`[data-sonner-toast]:has-text("${text}")`)).toBeVisible();
   }
 
   async dismissAllToasts() {

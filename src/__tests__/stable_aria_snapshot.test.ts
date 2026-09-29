@@ -22,16 +22,14 @@ describe("normalizeMessagesAriaSnapshot", () => {
 
   it("normalizes volatile durations in button accessible names", () => {
     expect(
-      normalizeMessagesAriaSnapshot(
-        `- button "Script Call calculator_add through MCP 12ms"\n`,
-      ),
+      normalizeMessagesAriaSnapshot(`- button "Script Call calculator_add through MCP 12ms"\n`),
     ).toBe(`- button "Script Call calculator_add through MCP [[duration]]"\n`);
   });
 
   it("normalizes generated pnpm lockfile diff stats", () => {
-    expect(
-      normalizeMessagesAriaSnapshot(`- button "M pnpm-lock.yaml +557 -5"\n`),
-    ).toBe(`- button "M pnpm-lock.yaml [[diff-stats]]"\n`);
+    expect(normalizeMessagesAriaSnapshot(`- button "M pnpm-lock.yaml +557 -5"\n`)).toBe(
+      `- button "M pnpm-lock.yaml [[diff-stats]]"\n`,
+    );
   });
 
   it("elides nested button-card descendants", () => {
@@ -45,9 +43,7 @@ describe("normalizeMessagesAriaSnapshot", () => {
   - img
   - text: "Summary: Create math utilities"
 `),
-    ).toBe(
-      `- 'button "math.ts src/utils/math.ts Edit Summary: Create math utilities"'\n`,
-    );
+    ).toBe(`- 'button "math.ts src/utils/math.ts Edit Summary: Create math utilities"'\n`);
   });
 
   it("elides expanded button descendants while preserving state", () => {
@@ -116,9 +112,7 @@ describe("normalizeMessagesAriaSnapshot", () => {
   });
 
   it("always returns exactly one trailing newline", () => {
-    expect(normalizeMessagesAriaSnapshot("- paragraph: Done\n\n\n")).toBe(
-      "- paragraph: Done\n",
-    );
+    expect(normalizeMessagesAriaSnapshot("- paragraph: Done\n\n\n")).toBe("- paragraph: Done\n");
   });
 
   it("preserves YAML single-quote escaping in button names without doubling it", () => {

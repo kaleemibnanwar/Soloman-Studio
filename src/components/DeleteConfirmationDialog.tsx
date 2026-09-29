@@ -46,17 +46,13 @@ export function DeleteConfirmationDialog({
       )}
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {t("home:deleteItemTitle", { itemType })}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{t("home:deleteItemTitle", { itemType })}</AlertDialogTitle>
           <AlertDialogDescription>
             {t("home:deleteItemConfirmation", { itemName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>
-            {t("common:cancel")}
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t("common:cancel")}</AlertDialogCancel>
           <AlertDialogAction onClick={onDelete} disabled={isDeleting}>
             {isDeleting ? (
               <>

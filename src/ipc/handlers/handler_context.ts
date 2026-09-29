@@ -40,8 +40,6 @@ export function getHandlerContext(): HandlerContext {
  * Swaps the context handlers see. Pass null to restore the production
  * context. Test-only seam.
  */
-export function setHandlerContextForTesting(
-  context: HandlerContext | null,
-): void {
+export function setHandlerContextForTesting(context: HandlerContext | null): void {
   activeContext = context ?? productionContext;
 }

@@ -19,9 +19,10 @@ interface OctopusStudioMcpToolSchemaProps {
   };
 }
 
-export const OctopusStudioMcpToolSchema: React.FC<
-  OctopusStudioMcpToolSchemaProps
-> = ({ children, node }) => {
+export const OctopusStudioMcpToolSchema: React.FC<OctopusStudioMcpToolSchemaProps> = ({
+  children,
+  node,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const tools = node?.properties?.tools || "";
   const state = node?.properties?.state as CustomTagState;
@@ -35,21 +36,13 @@ export const OctopusStudioMcpToolSchema: React.FC<
       onClick={() => setIsExpanded(!isExpanded)}
       isExpanded={isExpanded}
     >
-      <OctopusStudioCardHeader
-        icon={<ScrollText size={15} />}
-        accentColor="indigo"
-      >
+      <OctopusStudioCardHeader icon={<ScrollText size={15} />} accentColor="indigo">
         <OctopusStudioBadge color="indigo">MCP Tool Schema</OctopusStudioBadge>
         {!isExpanded && tools && (
-          <span className="text-sm text-muted-foreground italic truncate min-w-0">
-            {tools}
-          </span>
+          <span className="text-sm text-muted-foreground italic truncate min-w-0">{tools}</span>
         )}
         {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Loading schema..."
-          />
+          <OctopusStudioStateIndicator state="pending" pendingLabel="Loading schema..." />
         )}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isExpanded} />
@@ -59,17 +52,13 @@ export const OctopusStudioMcpToolSchema: React.FC<
         <div className="text-sm text-muted-foreground space-y-2">
           {tools && (
             <div>
-              <span className="text-xs font-medium text-muted-foreground">
-                Tools:
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Tools:</span>
               <div className="italic mt-0.5 text-foreground">{tools}</div>
             </div>
           )}
           {children && (
             <div>
-              <span className="text-xs font-medium text-muted-foreground">
-                Signatures:
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">Signatures:</span>
               <pre className="mt-0.5 whitespace-pre-wrap font-mono text-xs text-foreground overflow-x-auto">
                 {resultText || children}
               </pre>

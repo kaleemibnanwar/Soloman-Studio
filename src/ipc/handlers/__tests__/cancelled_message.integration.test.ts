@@ -15,10 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("cancelled message (integration)", () => {
@@ -126,10 +123,9 @@ describe("cancelled message (integration)", () => {
     // The "Cancelled" indicator renders on exactly two surfaces: the
     // cancelled prompt and the cancelled assistant message (the count the
     // retired e2e spec asserted).
-    await waitFor(
-      () => expect(screen.getAllByText("Cancelled")).toHaveLength(2),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getAllByText("Cancelled")).toHaveLength(2), {
+      timeout: 20_000,
+    });
 
     // Both the user prompt and the cancelled assistant message are kept.
     await waitFor(
@@ -152,16 +148,13 @@ describe("cancelled message (integration)", () => {
     const followUp = await harness.typeInChat("[dump] tc=follow-up");
     followUp.send();
 
-    await waitFor(
-      () => expect(screen.getByText("[dump] tc=follow-up")).toBeTruthy(),
-      { timeout: 15_000 },
-    );
+    await waitFor(() => expect(screen.getByText("[dump] tc=follow-up")).toBeTruthy(), {
+      timeout: 15_000,
+    });
     await followUpEnd;
 
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
     const afterFollowUp = await harness.db.query.messages.findMany();
     expect(afterFollowUp).toHaveLength(4);

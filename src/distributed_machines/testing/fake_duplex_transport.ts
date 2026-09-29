@@ -2,10 +2,7 @@ import type { WindowSessionId } from "@/window_infrastructure/types";
 import { TwoWindowHarness } from "@/testing/two_window_harness";
 import type { z } from "zod";
 import type { RemoteMachineManifest } from "../remote_manifest";
-import type {
-  RemoteMachineClientConnection,
-  RemoteTransportStatus,
-} from "../remote_client";
+import type { RemoteMachineClientConnection, RemoteTransportStatus } from "../remote_client";
 import { RemoteMachineTransportError } from "../remote_client";
 import {
   MachineDisposedEnvelopeSchema,
@@ -16,10 +13,7 @@ import {
   type MachineDisposedEnvelope,
   type MachineSnapshotEnvelope,
 } from "../remote_protocol";
-import {
-  type RemoteTransportEndpoint,
-  RemoteMachineTransport,
-} from "../remote_transport";
+import { type RemoteTransportEndpoint, RemoteMachineTransport } from "../remote_transport";
 
 interface FakeRemoteView {
   readonly generation: number;
@@ -86,14 +80,10 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
   private readonly views = new Map<string, FakeRemoteView>();
   private nextViewGeneration = 1;
   private readonly removeReceiveListener: () => void;
-  private readonly statusListeners = new Set<
-    (status: RemoteTransportStatus) => void
-  >();
+  private readonly statusListeners = new Set<(status: RemoteTransportStatus) => void>();
   private readonly snapshotListeners = new Set<(payload: unknown) => void>();
   private readonly disposedListeners = new Set<(payload: unknown) => void>();
-  private readonly operationOutcomeListeners = new Set<
-    (payload: unknown) => void
-  >();
+  private readonly operationOutcomeListeners = new Set<(payload: unknown) => void>();
   private holdBootstrap = false;
   private readonly bootstrapReleases: Array<() => void> = [];
   private connected = true;
@@ -103,22 +93,19 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     private readonly duplex: FakeDuplexRemoteTransport,
     readonly sessionId: WindowSessionId,
   ) {
-    this.removeReceiveListener = duplex.windows.onReceive(
-      sessionId,
-      (channel, payload) => {
-        if (channel === "distributed-machine:snapshot") {
-          for (const listener of this.snapshotListeners) listener(payload);
-          this.receiveSnapshot(payload);
-        } else if (channel === "distributed-machine:disposed") {
-          for (const listener of this.disposedListeners) listener(payload);
-          this.receiveDisposed(payload);
-        } else if (channel === "distributed-machine:operation-outcome") {
-          for (const listener of this.operationOutcomeListeners) {
-            listener(payload);
-          }
+    this.removeReceiveListener = duplex.windows.onReceive(sessionId, (channel, payload) => {
+      if (channel === "distributed-machine:snapshot") {
+        for (const listener of this.snapshotListeners) listener(payload);
+        this.receiveSnapshot(payload);
+      } else if (channel === "distributed-machine:disposed") {
+        for (const listener of this.disposedListeners) listener(payload);
+        this.receiveDisposed(payload);
+      } else if (channel === "distributed-machine:operation-outcome") {
+        for (const listener of this.operationOutcomeListeners) {
+          listener(payload);
         }
-      },
-    );
+      }
+    });
   }
 
   holdBootstrapResponses(): void {
@@ -129,9 +116,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     return this.status;
   }
 
-  onStatusChange(
-    listener: (status: RemoteTransportStatus) => void,
-  ): () => void {
+  onStatusChange(listener: (status: RemoteTransportStatus) => void): () => void {
     this.statusListeners.add(listener);
     return () => this.statusListeners.delete(listener);
   }
@@ -168,8 +153,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
   async subscribe(address: MachineAddress): Promise<MachineSnapshotEnvelope> {
     this.assertConnected();
     const definition = this.duplex.manifest.get(address.machineId);
-    if (!definition)
-      throw new Error(`Unknown fake machine ${address.machineId}`);
+    if (!definition) throw new Error(`Unknown fake machine ${address.machineId}`);
     const addressKey = this.addressKey(address);
     if (definition.remote.protocolVersion !== address.protocolVersion) {
       await Promise.resolve();
@@ -194,21 +178,14 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     const generation = this.connectionGeneration();
     let mainSubscribed = false;
     try {
-      const bootstrap = await this.duplex.main.subscribe(
-        this.endpoint(),
-        address,
-      );
+      const bootstrap = await this.duplex.main.subscribe(this.endpoint(), address);
       mainSubscribed = true;
       if (this.holdBootstrap) {
-        await new Promise<void>((resolve) =>
-          this.bootstrapReleases.push(resolve),
-        );
+        await new Promise<void>((resolve) => this.bootstrapReleases.push(resolve));
       }
       this.assertGeneration(generation);
       if (!this.isCurrentView(view)) {
-        throw new Error(
-          `Remote subscription was superseded (generation ${view.generation})`,
-        );
+        throw new Error(`Remote subscription was superseded (generation ${view.generation})`);
       }
       const validated = this.validateSnapshot(view, bootstrap, address);
       this.applyBootstrap(view, validated);
@@ -230,9 +207,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     await this.duplex.main.unsubscribe(this.endpoint(), address);
   }
 
-  async dispatch(
-    envelope: MachineDispatchEnvelope,
-  ): Promise<MachineDispatchReceipt> {
+  async dispatch(envelope: MachineDispatchEnvelope): Promise<MachineDispatchReceipt> {
     this.assertConnected();
     const generation = this.connectionGeneration();
     const first = this.duplex.main.dispatch(this.endpoint(), envelope);
@@ -317,10 +292,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     }
   }
 
-  private applyBootstrap(
-    view: FakeRemoteView,
-    bootstrap: MachineSnapshotEnvelope,
-  ): void {
+  private applyBootstrap(view: FakeRemoteView, bootstrap: MachineSnapshotEnvelope): void {
     if (view.disposedActorIds.has(bootstrap.actorInstanceId)) {
       throw new Error("Remote bootstrap references a disposed actor");
     }
@@ -342,10 +314,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     for (const snapshot of buffered) this.applySnapshot(view, snapshot);
   }
 
-  private applySnapshot(
-    view: FakeRemoteView,
-    snapshot: MachineSnapshotEnvelope,
-  ): void {
+  private applySnapshot(view: FakeRemoteView, snapshot: MachineSnapshotEnvelope): void {
     if (view.disposedActorIds.has(snapshot.actorInstanceId)) return;
     if (snapshot.actorInstanceId !== view.actorInstanceId) return;
     const currentRevision = view.revision ?? -1;
@@ -363,10 +332,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
     const requestGeneration = ++view.resyncGeneration;
     let mainSubscribed = false;
     try {
-      const bootstrap = await this.duplex.main.subscribe(
-        this.endpoint(),
-        view.address,
-      );
+      const bootstrap = await this.duplex.main.subscribe(this.endpoint(), view.address);
       mainSubscribed = true;
       if (!this.isCurrentView(view)) {
         if (!this.views.has(this.addressKey(view.address))) {
@@ -386,9 +352,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
   }
 
   private isCurrentView(view: FakeRemoteView): boolean {
-    return (
-      this.connected && this.views.get(this.addressKey(view.address)) === view
-    );
+    return this.connected && this.views.get(this.addressKey(view.address)) === view;
   }
 
   private async compensateSubscription(address: MachineAddress): Promise<void> {
@@ -401,14 +365,10 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
   }
 
   private endpoint(): RemoteTransportEndpoint {
-    return this.duplex.windows.endpoint(
-      this.sessionId,
-    ) as RemoteTransportEndpoint;
+    return this.duplex.windows.endpoint(this.sessionId) as RemoteTransportEndpoint;
   }
 
-  private addressKey(
-    address: Pick<MachineAddress, "machineId" | "encodedKey">,
-  ) {
+  private addressKey(address: Pick<MachineAddress, "machineId" | "encodedKey">) {
     const definition = this.duplex.manifest.get(address.machineId);
     const decoded = definition?.remote.keyCodec.safeParse(address.encodedKey);
     if (!definition || !decoded?.success) {
@@ -440,10 +400,7 @@ export class FakeRemoteRenderer implements RemoteMachineClientConnection {
   }
 
   private assertGeneration(generation: number): void {
-    if (
-      !this.connected ||
-      this.duplex.windows.webContentsId(this.sessionId) !== generation
-    ) {
+    if (!this.connected || this.duplex.windows.webContentsId(this.sessionId) !== generation) {
       throw new FakeTransportDisconnectedError();
     }
   }

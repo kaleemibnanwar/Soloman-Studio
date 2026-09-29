@@ -32,8 +32,7 @@ export const useCopyToClipboard = () => {
   const copyMessageContent = async (messageContent: string) => {
     try {
       // Use the same parsing logic as OctopusStudioMarkdownParser but convert to clean text
-      const formattedContent =
-        convertOctopusStudioContentToMarkdown(messageContent);
+      const formattedContent = convertOctopusStudioContentToMarkdown(messageContent);
 
       // Copy to clipboard
       await navigator.clipboard.writeText(formattedContent);
@@ -156,12 +155,7 @@ export const useCopyToClipboard = () => {
       case "octopus-studio-output": {
         const outputType = attributes.type || "info";
         const message = attributes.message || "";
-        const emoji =
-          outputType === "error"
-            ? "❌"
-            : outputType === "warning"
-              ? "⚠️"
-              : "ℹ️";
+        const emoji = outputType === "error" ? "❌" : outputType === "warning" ? "⚠️" : "ℹ️";
 
         let outputResult = `${emoji} **${outputType.toUpperCase()}**`;
         if (message) {
@@ -279,9 +273,7 @@ export const useCopyToClipboard = () => {
 
       const missingCloseTags = openCount - closeCount;
       if (missingCloseTags > 0) {
-        processedContent += Array(missingCloseTags)
-          .fill(`</${tagName}>`)
-          .join("");
+        processedContent += Array(missingCloseTags).fill(`</${tagName}>`).join("");
       }
     }
 

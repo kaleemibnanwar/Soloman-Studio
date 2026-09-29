@@ -113,15 +113,7 @@ interface ExplorerCandidate {
     isGenerated: boolean;
     isDocsExample: boolean;
     pathKinds: Array<
-      | "route"
-      | "component"
-      | "hook"
-      | "service"
-      | "api"
-      | "store"
-      | "action"
-      | "type"
-      | "config"
+      "route" | "component" | "hook" | "service" | "api" | "store" | "action" | "type" | "config"
     >;
   };
   estimatedTokens: number;

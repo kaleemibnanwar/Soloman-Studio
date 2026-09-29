@@ -51,12 +51,10 @@ export function getProviderOptions({
       octopusStudioSmartContextMode: smartContextMode,
       octopusStudioFiles: versionedFiles ? undefined : files,
       octopusStudioVersionedFiles: versionedFiles,
-      octopusStudioMentionedApps: mentionedAppsCodebases.map(
-        ({ files, appName }) => ({
-          appName,
-          files,
-        }),
-      ),
+      octopusStudioMentionedApps: mentionedAppsCodebases.map(({ files, appName }) => ({
+        appName,
+        files,
+      })),
     },
     openai: {
       reasoningSummary: "auto",
@@ -80,9 +78,7 @@ export function getProviderOptions({
   const isGeminiModel = selectedModelName.startsWith("gemini");
   const isFlashLite = selectedModelName.includes("flash-lite");
   const effortLevel = getModelEffort(modelSelection);
-  const isKnownGeminiEffort = ["minimal", "low", "medium", "high"].includes(
-    effortLevel,
-  );
+  const isKnownGeminiEffort = ["minimal", "low", "medium", "high"].includes(effortLevel);
   const thinkingConfig = {
     includeThoughts: true,
     ...(selectedModelName.startsWith("gemini-3") && isKnownGeminiEffort
@@ -110,7 +106,13 @@ export function getProviderOptions({
   }
 
   if (providerId === "anthropic") {
-    providerOptions.anthropic = getAnthropicProviderOptions(modelSelection);
+    // Anthropic prompt caching: mark the (byte-stable) system prompt + tool
+    // schema prefix as cacheable, ~10% of input cost on cache hits. Other
+    // providers auto-cache on stable prefixes, so they need no explicit block.
+    providerOptions.anthropic = {
+      ...getAnthropicProviderOptions(modelSelection),
+      cacheControl: { type: "ephemeral" },
+    };
   }
 
   return providerOptions;
@@ -129,8 +131,6 @@ export interface GetAiHeadersParams {
  * Returns extra AI request headers for the provider (e.g. beta flags).
  * Currently none; reserved for future provider-specific headers.
  */
-export function getAiHeaders(
-  _params: GetAiHeadersParams,
-): Record<string, string> | undefined {
+export function getAiHeaders(_params: GetAiHeadersParams): Record<string, string> | undefined {
   return undefined;
 }

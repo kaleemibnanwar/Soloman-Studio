@@ -57,10 +57,7 @@ export function computeStreamingPatch(
   if (fullResponse === lastSentContent) return null;
   let lcp = 0;
   const maxLcp = Math.min(lastSentContent.length, fullResponse.length);
-  while (
-    lcp < maxLcp &&
-    lastSentContent.charCodeAt(lcp) === fullResponse.charCodeAt(lcp)
-  ) {
+  while (lcp < maxLcp && lastSentContent.charCodeAt(lcp) === fullResponse.charCodeAt(lcp)) {
     lcp++;
   }
   return {

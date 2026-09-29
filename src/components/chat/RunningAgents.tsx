@@ -3,7 +3,7 @@ import { useRunningAgents } from "@/hooks/useRunningAgents";
 
 const ROLE_LABELS: Record<string, string> = {
   explorer: "Explorer",
-  coder: "Coder",
+  executor: "Executor",
   tester: "Tester",
   debugger: "Debugger",
   reviewer: "Reviewer",
@@ -18,10 +18,7 @@ export function RunningAgents({ chatId }: { chatId: number | undefined }) {
   if (tasks.length === 0) return null;
 
   return (
-    <div
-      data-testid="running-agents"
-      className="flex flex-wrap items-center gap-1.5 px-3 pt-2"
-    >
+    <div data-testid="running-agents" className="flex flex-wrap items-center gap-1.5 px-3 pt-2">
       {tasks.map((task) => {
         const active = task.status === "running" || task.status === "pending";
         return (

@@ -23,12 +23,8 @@ interface OctopusStudioListFilesProps {
   children: React.ReactNode;
 }
 
-export function OctopusStudioListFiles({
-  node,
-  children,
-}: OctopusStudioListFilesProps) {
-  const { directory, recursive, include_ignored, state, appName } =
-    node.properties;
+export function OctopusStudioListFiles({ node, children }: OctopusStudioListFilesProps) {
+  const { directory, recursive, include_ignored, state, appName } = node.properties;
   const isLoading = state === "pending";
   const isRecursive = recursive === "true";
   const isIncludeIgnored = include_ignored === "true";
@@ -45,28 +41,12 @@ export function OctopusStudioListFiles({
       onClick={() => setIsExpanded(!isExpanded)}
       data-testid="octopus-studio-list-files"
     >
-      <OctopusStudioCardHeader
-        icon={<FolderOpen size={15} />}
-        accentColor="slate"
-      >
-        <span className="font-medium text-sm text-foreground truncate">
-          {title}
-        </span>
-        {appName && (
-          <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>
-        )}
-        {isRecursive && (
-          <OctopusStudioBadge color="slate">recursive</OctopusStudioBadge>
-        )}
-        {isIncludeIgnored && (
-          <OctopusStudioBadge color="slate">include ignored</OctopusStudioBadge>
-        )}
-        {isLoading && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Listing..."
-          />
-        )}
+      <OctopusStudioCardHeader icon={<FolderOpen size={15} />} accentColor="slate">
+        <span className="font-medium text-sm text-foreground truncate">{title}</span>
+        {appName && <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>}
+        {isRecursive && <OctopusStudioBadge color="slate">recursive</OctopusStudioBadge>}
+        {isIncludeIgnored && <OctopusStudioBadge color="slate">include ignored</OctopusStudioBadge>}
+        {isLoading && <OctopusStudioStateIndicator state="pending" pendingLabel="Listing..." />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isExpanded} />
         </div>

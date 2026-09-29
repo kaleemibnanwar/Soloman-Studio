@@ -1,11 +1,5 @@
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import type {
-  ChatTabTransferPayload,
-  WindowSessionId,
-} from "@/window_infrastructure/types";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import type { ChatTabTransferPayload, WindowSessionId } from "@/window_infrastructure/types";
 import type { WindowRegistry } from "./window_registry";
 
 interface SourceRemovalReceipt {
@@ -119,10 +113,7 @@ export class ChatTabTransferCoordinator {
     return transfer.payload;
   }
 
-  reject(
-    destinationWindowSessionId: WindowSessionId,
-    transferId: string,
-  ): boolean {
+  reject(destinationWindowSessionId: WindowSessionId, transferId: string): boolean {
     const transfer = this.pending.get(transferId);
     if (transfer?.destinationWindowSessionId === destinationWindowSessionId) {
       // Once removal has been dispatched, the source may have persisted it
@@ -151,9 +142,7 @@ export class ChatTabTransferCoordinator {
     }
     if (transfer.sourceRemoval) return transfer.sourceRemoval.promise;
 
-    const endpoint = this.windows.endpointForSession(
-      transfer.sourceWindowSessionId,
-    );
+    const endpoint = this.windows.endpointForSession(transfer.sourceWindowSessionId);
     if (!endpoint) {
       throw new OctopusStudioError(
         "The source window is no longer available",
@@ -281,10 +270,7 @@ export class ChatTabTransferCoordinator {
     unrefTimer(transfer.expiryTimer);
   }
 
-  private scheduleClaimExpiry(
-    transferId: string,
-    transfer: PendingTransfer,
-  ): void {
+  private scheduleClaimExpiry(transferId: string, transfer: PendingTransfer): void {
     this.clearExpiry(transfer);
     const delay = Math.max(0, transfer.expiresAt - this.now());
     transfer.expiryTimer = setTimeout(() => {
@@ -294,10 +280,7 @@ export class ChatTabTransferCoordinator {
     unrefTimer(transfer.expiryTimer);
   }
 
-  private scheduleTimedOutReceiptExpiry(
-    transferId: string,
-    transfer: PendingTransfer,
-  ): void {
+  private scheduleTimedOutReceiptExpiry(transferId: string, transfer: PendingTransfer): void {
     this.clearExpiry(transfer);
     const receipt = transfer.sourceRemoval;
     const delay = Math.max(0, transfer.expiresAt - this.now());

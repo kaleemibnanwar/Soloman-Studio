@@ -1,20 +1,13 @@
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface CopyErrorMessageProps {
   errorMessage: string;
   className?: string;
 }
 
-export const CopyErrorMessage = ({
-  errorMessage,
-  className = "",
-}: CopyErrorMessageProps) => {
+export const CopyErrorMessage = ({ errorMessage, className = "" }: CopyErrorMessageProps) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = async (e: React.MouseEvent) => {
@@ -54,9 +47,7 @@ export const CopyErrorMessage = ({
           </>
         )}
       </TooltipTrigger>
-      <TooltipContent>
-        {isCopied ? "Copied!" : "Copy error message"}
-      </TooltipContent>
+      <TooltipContent>{isCopied ? "Copied!" : "Copy error message"}</TooltipContent>
     </Tooltip>
   );
 };

@@ -26,12 +26,7 @@ function* packageJsonCandidates(
   }
   let currentPath = path.resolve(appPath);
   while (true) {
-    yield path.join(
-      currentPath,
-      "node_modules",
-      ...packagePathSegments,
-      "package.json",
-    );
+    yield path.join(currentPath, "node_modules", ...packagePathSegments, "package.json");
     const parentPath = path.dirname(currentPath);
     if (parentPath === currentPath) {
       return;
@@ -78,9 +73,7 @@ export function resolveNodeModulePackageJsonPathSync(
   throw lastMissingPathError;
 }
 
-export function resolveTypeScriptPackageJsonPath(
-  appPath: string,
-): Promise<string> {
+export function resolveTypeScriptPackageJsonPath(appPath: string): Promise<string> {
   return resolveNodeModulePackageJsonPath(appPath, ["typescript"]);
 }
 
@@ -98,9 +91,7 @@ export function getNodeModuleEntryPath(
   };
   return path.resolve(
     packageRootPath,
-    typeof packageJson.main === "string"
-      ? packageJson.main
-      : fallbackRelativePath,
+    typeof packageJson.main === "string" ? packageJson.main : fallbackRelativePath,
   );
 }
 

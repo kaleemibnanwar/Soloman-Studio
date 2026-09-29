@@ -7,8 +7,7 @@ import { FolderOpen, RotateCcw } from "lucide-react";
 
 export function CustomAppsFolderSelector() {
   const [isSelectingPath, setIsSelectingPath] = useState(false);
-  const [customAppsFolder, setCustomAppsFolder] =
-    useState<string>("Loading...");
+  const [customAppsFolder, setCustomAppsFolder] = useState<string>("Loading...");
   const [isPathAvailable, setIsPathAvailable] = useState(true);
   const [isPathDefault, setIsPathDefault] = useState(true);
 
@@ -53,8 +52,7 @@ export function CustomAppsFolderSelector() {
 
   const fetchCustomAppsFolder = async () => {
     try {
-      const { path, isPathAvailable, isPathDefault } =
-        await ipc.system.getCustomAppsFolder();
+      const { path, isPathAvailable, isPathDefault } = await ipc.system.getCustomAppsFolder();
       setCustomAppsFolder(path);
       setIsPathAvailable(isPathAvailable);
       setIsPathDefault(isPathDefault);

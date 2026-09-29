@@ -49,14 +49,9 @@ export function FileAttachmentTypeDialog({
             className="flex items-start gap-3 rounded-lg border border-border p-4 text-left hover:bg-muted/50 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={() => onConfirm("chat-context")}
           >
-            <MessageSquare
-              size={20}
-              className="mt-0.5 text-green-500 flex-shrink-0"
-            />
+            <MessageSquare size={20} className="mt-0.5 text-green-500 flex-shrink-0" />
             <div>
-              <div className="font-medium text-sm">
-                {t("attachFileContext")}
-              </div>
+              <div className="font-medium text-sm">{t("attachFileContext")}</div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {t("attachFileContextExample")}
               </div>
@@ -69,9 +64,7 @@ export function FileAttachmentTypeDialog({
           >
             <Upload size={20} className="mt-0.5 text-blue-500 flex-shrink-0" />
             <div>
-              <div className="font-medium text-sm">
-                {t("uploadFileCodebase")}
-              </div>
+              <div className="font-medium text-sm">{t("uploadFileCodebase")}</div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {t("uploadFileCodebaseExample")}
               </div>

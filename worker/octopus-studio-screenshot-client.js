@@ -7,9 +7,7 @@
   let activeCapturePromise = null;
 
   function getLargestDimension(...values) {
-    const validValues = values.filter(
-      (value) => Number.isFinite(value) && value > 0,
-    );
+    const validValues = values.filter((value) => Number.isFinite(value) && value > 0);
     return validValues.length > 0 ? Math.ceil(Math.max(...validValues)) : 1;
   }
 
@@ -136,10 +134,7 @@
       }
       throw new Error("html-to-image library not found");
     } catch (error) {
-      console.error(
-        "[octopusStudio-screenshot] Failed to capture screenshot:",
-        error,
-      );
+      console.error("[octopusStudio-screenshot] Failed to capture screenshot:", error);
       throw error;
     }
   }
@@ -165,9 +160,7 @@
 
       const dataUrl = await captureScreenshot();
 
-      console.debug(
-        "[octopusStudio-screenshot] Screenshot captured successfully",
-      );
+      console.debug("[octopusStudio-screenshot] Screenshot captured successfully");
 
       // Send success response to parent
       window.parent.postMessage(
@@ -180,10 +173,7 @@
         "*",
       );
     } catch (error) {
-      console.error(
-        "[octopusStudio-screenshot] Screenshot capture failed:",
-        error,
-      );
+      console.error("[octopusStudio-screenshot] Screenshot capture failed:", error);
 
       // Send error response to parent
       window.parent.postMessage(

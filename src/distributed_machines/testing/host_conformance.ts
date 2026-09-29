@@ -4,11 +4,7 @@ import {
   createSequentialIdSource,
   type FakeClock,
 } from "@/state_machines/testing";
-import {
-  ActorHost,
-  type ActorHostError,
-  type ActorHostOptions,
-} from "../actor_host";
+import { ActorHost, type ActorHostError, type ActorHostOptions } from "../actor_host";
 import type {
   ActorLifecyclePolicy,
   DistributedMachineDefinition,
@@ -41,11 +37,7 @@ const productionFactory: ActorHostConformanceFactory = {
   create: (options) => new ActorHost(options),
 };
 
-function assert(
-  condition: unknown,
-  scenario: string,
-  detail: string,
-): asserts condition {
+function assert(condition: unknown, scenario: string, detail: string): asserts condition {
   if (!condition) {
     throw new Error(`Actor host conformance failed: ${scenario}: ${detail}`);
   }
@@ -98,14 +90,7 @@ function definition(options: {
     emit: (event: Event) => void,
   ) => void | Promise<void>;
   readonly lifecycle?: ActorLifecyclePolicy<string, State>;
-}): DistributedMachineDefinition<
-  string,
-  string,
-  State,
-  Event,
-  Command,
-  Reason
-> {
+}): DistributedMachineDefinition<string, string, State, Event, Command, Reason> {
   return {
     id: options.id,
     host: "main",
@@ -113,9 +98,7 @@ function definition(options: {
     transition(state, event) {
       switch (event.type) {
         case "SET":
-          return state.value === event.value
-            ? stay(state, [])
-            : change({ value: event.value });
+          return state.value === event.value ? stay(state, []) : change({ value: event.value });
         case "IGNORE":
           return ignore(state, "ignored");
         case "COMMAND":
@@ -289,20 +272,14 @@ export async function runLocalActorHostConformanceSuite(
     const oldId = oldActor.actorInstanceId;
     await host.disposeKey(machine.id, "key");
     const replacement = host.localRef(machine, "key");
-    const stale = host.dispatch(
-      machine,
-      "key",
-      { type: "SET", value: 5 },
-      oldId,
-    );
+    const stale = host.dispatch(machine, "key", { type: "SET", value: 5 }, oldId);
     assert(
       replacement.actorInstanceId !== oldId,
       "key recreation",
       "the actor instance identity was reused",
     );
     assert(
-      (await stale.settled).kind === "failed" &&
-        replacement.getSnapshot().value === 0,
+      (await stale.settled).kind === "failed" && replacement.getSnapshot().value === 0,
       "stale actor rejection",
       "a stale instance dispatch reached the replacement",
     );

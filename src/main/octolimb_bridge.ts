@@ -222,6 +222,11 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
           description:
             "Max characters of body text to return when include_text is true (default 4000)",
         },
+        viewport_expansion: {
+          type: "integer",
+          description:
+            "Expand the viewport by this many pixels when indexing elements (default 0 — only visible elements are indexed). Set to -1 to index all interactive elements on the page regardless of visibility.",
+        },
       },
     },
   },
@@ -671,20 +676,24 @@ function createOctoLimbMcpServer(): McpServer {
   }
 
   function finalizeAutoRecording(success: boolean, instruction: string | undefined): void {
-    if (success && !bufferOverflowed && stepBuffer.length > 0 && sessionDomain && instruction?.trim()) {
+    if (
+      success &&
+      !bufferOverflowed &&
+      stepBuffer.length > 0 &&
+      sessionDomain &&
+      instruction?.trim()
+    ) {
       upsertRecipe({ instruction: instruction.trim(), domain: sessionDomain, steps: stepBuffer });
     }
     stepBuffer = [];
     bufferOverflowed = false;
   }
 
-  async function dispatchRunRecipe(
-    runArgs: {
-      fingerprint?: string;
-      steps?: RecipeStep[];
-      save_as?: { instruction: string; domain: string };
-    },
-  ): Promise<unknown> {
+  async function dispatchRunRecipe(runArgs: {
+    fingerprint?: string;
+    steps?: RecipeStep[];
+    save_as?: { instruction: string; domain: string };
+  }): Promise<unknown> {
     // Every step run_recipe actually executes — ad-hoc `steps` or a
     // fingerprint replay — feeds the same session buffer as a direct
     // individual call, via recordStep. So when `save_as` asks to persist

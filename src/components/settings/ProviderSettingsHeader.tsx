@@ -1,19 +1,9 @@
-import {
-  ArrowUp,
-  Circle,
-  ExternalLink,
-  GiftIcon,
-  KeyRound,
-} from "lucide-react";
+import { ArrowUp, Circle, ExternalLink, GiftIcon, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ipc } from "@/ipc/types";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {} from "react";
 
 interface ProviderSettingsHeaderProps {
@@ -83,18 +73,12 @@ export function ProviderSettingsHeader({
           ) : (
             <Circle
               className={`h-5 w-5 ${
-                isConfigured
-                  ? "fill-green-500 text-green-600"
-                  : "fill-yellow-400 text-yellow-500"
+                isConfigured ? "fill-green-500 text-green-600" : "fill-yellow-400 text-yellow-500"
               }`}
             />
           )}
           <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-            {isLoading
-              ? "Loading..."
-              : isConfigured
-                ? "Setup Complete"
-                : "Not Setup"}
+            {isLoading ? "Loading..." : isConfigured ? "Setup Complete" : "Not Setup"}
           </span>
         </div>
         {!isLoading && hasFreeTier && (
@@ -104,8 +88,7 @@ export function ProviderSettingsHeader({
               Free tier available
             </span>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Free tiers typically allow the provider to use your data to train
-              AI models.
+              Free tiers typically allow the provider to use your data to train AI models.
             </p>
           </>
         )}

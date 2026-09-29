@@ -145,9 +145,7 @@ Reuse the established pattern from `code_explorer.ts`:
 ```ts
 import { createRequire } from "node:module";
 
-function loadAppTypeScript(
-  appPath: string,
-): typeof import("typescript") | null {
+function loadAppTypeScript(appPath: string): typeof import("typescript") | null {
   try {
     const tsPath = require.resolve("typescript", { paths: [appPath] });
     return createRequire(import.meta.url)(tsPath);

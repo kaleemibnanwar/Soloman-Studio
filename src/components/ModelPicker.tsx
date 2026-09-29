@@ -22,11 +22,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { useRouterState } from "@tanstack/react-router";
@@ -40,7 +36,11 @@ import {
 
 const SCROLL_AREA_CLASS = "max-h-100 overflow-y-auto scrollbar-on-hover";
 
-export function ModelPicker() {
+export function ModelPicker({
+  settingKey = "selectedModel",
+}: {
+  settingKey?: "selectedModel" | "routerModel";
+} = {}) {
   const { settings, updateSettings } = useSettings();
   const routerState = useRouterState();
   const isChatRoute = routerState.location.pathname === "/chat";
@@ -52,9 +52,7 @@ export function ModelPicker() {
   } = useChatMode(isChatRoute ? chatId : null);
   const queryClient = useQueryClient();
   const posthog = usePostHog();
-  const hasEstablishedChat = Boolean(
-    chat && (chat.modelSelection || chat.messages.length > 0),
-  );
+  const hasEstablishedChat = Boolean(chat && (chat.modelSelection || chat.messages.length > 0));
 
   const onModelSelect = async ({
     model,
@@ -68,12 +66,17 @@ export function ModelPicker() {
     rememberEffort?: boolean;
   }) => {
     if (!settings || (isChatRoute && chatId != null && chatLoading)) return;
+    // Non-chat settings (e.g. the router model) write straight to their field —
+    // no effort level or per-chat selection to reconcile.
+    if (settingKey !== "selectedModel") {
+      await updateSettings({ [settingKey]: model });
+      return;
+    }
     const modelSelection = createModelSelection({
       model,
       catalogModel,
       preferredEffortLevel:
-        effortLevel ??
-        settings.modelEffortPreferences?.[getModelPreferenceKey(model)],
+        effortLevel ?? settings.modelEffortPreferences?.[getModelPreferenceKey(model)],
     });
     posthog.capture("model-picker:select", {
       provider: model.provider,
@@ -151,33 +154,29 @@ export function ModelPicker() {
   }, [open, loadOllamaModels, loadLMStudioModels]);
 
   // Get display name for the selected model
-  const selectedModel: LargeLanguageModel = chat?.modelSelection ??
-    settings?.selectedModel ?? {
-      provider: "auto",
-      name: "auto",
-    };
+  const selectedModel: LargeLanguageModel =
+    settingKey !== "selectedModel"
+      ? (settings?.[settingKey] ?? { provider: "auto", name: "auto" })
+      : (chat?.modelSelection ?? settings?.selectedModel ?? { provider: "auto", name: "auto" });
 
   const getModelDisplayName = () => {
     if (selectedModel.provider === "ollama") {
       return (
-        ollamaModels.find(
-          (model: LocalModel) => model.modelName === selectedModel.name,
-        )?.displayName || selectedModel.name
+        ollamaModels.find((model: LocalModel) => model.modelName === selectedModel.name)
+          ?.displayName || selectedModel.name
       );
     }
     if (selectedModel.provider === "lmstudio") {
       return (
-        lmStudioModels.find(
-          (model: LocalModel) => model.modelName === selectedModel.name,
-        )?.displayName || selectedModel.name // Fallback to path if not found
+        lmStudioModels.find((model: LocalModel) => model.modelName === selectedModel.name)
+          ?.displayName || selectedModel.name // Fallback to path if not found
       );
     }
 
     // For cloud models, look up in the modelsByProviders data
     if (modelsByProviders && modelsByProviders[selectedModel.provider]) {
       const customFoundModel = modelsByProviders[selectedModel.provider].find(
-        (model) =>
-          model.type === "custom" && model.id === selectedModel.customModelId,
+        (model) => model.type === "custom" && model.id === selectedModel.customModelId,
       );
       if (customFoundModel) {
         return customFoundModel.displayName;
@@ -195,17 +194,13 @@ export function ModelPicker() {
   };
 
   // Determine availability of local models
-  const hasOllamaModels =
-    !ollamaLoading && !ollamaError && ollamaModels.length > 0;
-  const hasLMStudioModels =
-    !lmStudioLoading && !lmStudioError && lmStudioModels.length > 0;
+  const hasOllamaModels = !ollamaLoading && !ollamaError && ollamaModels.length > 0;
+  const hasLMStudioModels = !lmStudioLoading && !lmStudioError && lmStudioModels.length > 0;
 
   if (!settings) {
     return null;
   }
-  const selectedCatalogModel = modelsByProviders?.[
-    selectedModel.provider
-  ]?.find((model) =>
+  const selectedCatalogModel = modelsByProviders?.[selectedModel.provider]?.find((model) =>
     selectedModel.customModelId
       ? model.type === "custom" && model.id === selectedModel.customModelId
       : model.apiName === selectedModel.name,
@@ -253,8 +248,7 @@ export function ModelPicker() {
     showProvider?: boolean;
   }) => {
     const isSelected =
-      selectedModel.provider === providerId &&
-      selectedModel.name === model.apiName;
+      selectedModel.provider === providerId && selectedModel.name === model.apiName;
     const modelRef = {
       name: model.apiName,
       provider: providerId,
@@ -266,8 +260,7 @@ export function ModelPicker() {
       : createModelSelection({
           model: modelRef,
           catalogModel: model,
-          preferredEffortLevel:
-            settings.modelEffortPreferences?.[getModelPreferenceKey(modelRef)],
+          preferredEffortLevel: settings.modelEffortPreferences?.[getModelPreferenceKey(modelRef)],
         }).effortLevel;
     const effortLabel = formatEffortLevel(currentEffort);
     const unlockedAriaLabel = [
@@ -285,9 +278,7 @@ export function ModelPicker() {
         <span className="min-w-0 flex items-center gap-2">
           <ProviderIcon providerId={providerId} apiName={model.apiName} />
           <span className="min-w-0 flex flex-col items-start">
-            <span className="text-[13px] truncate leading-tight">
-              {model.displayName}
-            </span>
+            <span className="text-[13px] truncate leading-tight">{model.displayName}</span>
             {showProvider && (
               <span className="text-xs text-muted-foreground truncate">
                 {getProviderDisplayName(providerId)}
@@ -296,9 +287,7 @@ export function ModelPicker() {
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
-          {isSelected && (
-            <CheckIcon className="size-3.5 text-primary shrink-0" />
-          )}
+          {isSelected && <CheckIcon className="size-3.5 text-primary shrink-0" />}
           <span data-effort-level className="text-xs text-muted-foreground">
             {effortLabel}
           </span>
@@ -359,9 +348,7 @@ export function ModelPicker() {
           {effortSettings.possibleEffortLevels.map((effortLevel) => (
             <DropdownMenuItem
               key={effortLevel}
-              onClick={() =>
-                handleCloudModelSelect(providerId, model, effortLevel)
-              }
+              onClick={() => handleCloudModelSelect(providerId, model, effortLevel)}
             >
               <span>{formatEffortLevel(effortLevel)}</span>
               {effortLevel === effortSettings.defaultEffortLevel && (
@@ -377,10 +364,7 @@ export function ModelPicker() {
     );
   };
 
-  const renderProviderSubmenu = (
-    providerId: string,
-    models: LanguageModel[],
-  ) => {
+  const renderProviderSubmenu = (providerId: string, models: LanguageModel[]) => {
     if (models.length === 0) {
       return null;
     }
@@ -393,17 +377,13 @@ export function ModelPicker() {
             <div className="flex items-center gap-2">
               <span>{providerDisplayName}</span>
               {providerId === "auto" ? null : (
-                <span className="text-xs text-muted-foreground">
-                  {models.length} models
-                </span>
+                <span className="text-xs text-muted-foreground">{models.length} models</span>
               )}
             </div>
           </div>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className={cn("w-64", SCROLL_AREA_CLASS)}>
-          <DropdownMenuLabel>
-            {providerDisplayName + " Models"}
-          </DropdownMenuLabel>
+          <DropdownMenuLabel>{providerDisplayName + " Models"}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {models.map((model) => renderCloudModelItem({ providerId, model }))}
         </DropdownMenuSubContent>
@@ -411,21 +391,16 @@ export function ModelPicker() {
     );
   };
 
-  const renderLocalModelItem = (
-    providerId: "ollama" | "lmstudio",
-    model: LocalModel,
-  ) => {
+  const renderLocalModelItem = (providerId: "ollama" | "lmstudio", model: LocalModel) => {
     const modelRef = { name: model.modelName, provider: providerId };
     const isSelected =
-      selectedModel.provider === providerId &&
-      selectedModel.name === model.modelName;
+      selectedModel.provider === providerId && selectedModel.name === model.modelName;
     const effortSettings = getEffortSettings();
     const currentEffort = isSelected
       ? selectedEffortLevel
       : createModelSelection({
           model: modelRef,
-          preferredEffortLevel:
-            settings.modelEffortPreferences?.[getModelPreferenceKey(modelRef)],
+          preferredEffortLevel: settings.modelEffortPreferences?.[getModelPreferenceKey(modelRef)],
         }).effortLevel;
     const effortLabel = formatEffortLevel(currentEffort);
     const selectLocalModel = (effortLevel?: string) => {
@@ -448,9 +423,7 @@ export function ModelPicker() {
               "bg-primary/8 before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-primary",
           )}
           onClick={(event) => {
-            if (
-              !(event.target as HTMLElement).closest("[data-effort-chevron]")
-            ) {
+            if (!(event.target as HTMLElement).closest("[data-effort-chevron]")) {
               selectLocalModel();
             }
           }}
@@ -458,22 +431,13 @@ export function ModelPicker() {
           <div className="flex w-full items-center gap-2">
             <ProviderIcon providerId={providerId} />
             <div className="min-w-0 flex flex-col items-start">
-              <span className="text-[13px] leading-tight">
-                {model.displayName}
-              </span>
-              <span className="text-xs text-muted-foreground truncate">
-                {model.modelName}
-              </span>
+              <span className="text-[13px] leading-tight">{model.displayName}</span>
+              <span className="text-xs text-muted-foreground truncate">{model.modelName}</span>
             </div>
-            {isSelected && (
-              <CheckIcon className="ml-auto size-3.5 text-primary shrink-0" />
-            )}
+            {isSelected && <CheckIcon className="ml-auto size-3.5 text-primary shrink-0" />}
             <span
               data-effort-level
-              className={cn(
-                "text-xs text-muted-foreground",
-                !isSelected && "ml-auto",
-              )}
+              className={cn("text-xs text-muted-foreground", !isSelected && "ml-auto")}
             >
               {effortLabel}
             </span>
@@ -490,10 +454,7 @@ export function ModelPicker() {
           <DropdownMenuLabel>Effort</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {effortSettings.possibleEffortLevels.map((effortLevel) => (
-            <DropdownMenuItem
-              key={effortLevel}
-              onClick={() => selectLocalModel(effortLevel)}
-            >
+            <DropdownMenuItem key={effortLevel} onClick={() => selectLocalModel(effortLevel)}>
               <span>{formatEffortLevel(effortLevel)}</span>
               {effortLevel === effortSettings.defaultEffortLevel && (
                 <span className="text-xs text-muted-foreground">(default)</span>
@@ -530,9 +491,7 @@ export function ModelPicker() {
           <span className="truncate">
             {getModelDisplayName() === "Auto" && (
               <>
-                <span className="text-xs text-muted-foreground/70">
-                  Model:
-                </span>{" "}
+                <span className="text-xs text-muted-foreground/70">Model:</span>{" "}
               </>
             )}
             {modelDisplayName}
@@ -540,11 +499,8 @@ export function ModelPicker() {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[17rem]" align="start">
           {loading ? (
-            <div className="text-xs text-center py-2 text-muted-foreground">
-              Loading models...
-            </div>
-          ) : !modelsByProviders ||
-            Object.keys(modelsByProviders).length === 0 ? (
+            <div className="text-xs text-center py-2 text-muted-foreground">Loading models...</div>
+          ) : !modelsByProviders || Object.keys(modelsByProviders).length === 0 ? (
             <div className="text-xs text-center py-2 text-muted-foreground">
               No models available
             </div>
@@ -553,8 +509,7 @@ export function ModelPicker() {
               {/* Manually configured cloud providers */}
               {configuredProviderEntries.length === 0 ? (
                 <div className="text-xs text-center py-2 text-muted-foreground px-3">
-                  No providers configured. Add an API key in provider settings
-                  to see cloud models.
+                  No providers configured. Add an API key in provider settings to see cloud models.
                 </div>
               ) : (
                 <>
@@ -583,17 +538,11 @@ export function ModelPicker() {
                     <div className="flex flex-col items-start">
                       <span>Ollama</span>
                       {ollamaLoading ? (
-                        <span className="text-xs text-muted-foreground">
-                          Loading...
-                        </span>
+                        <span className="text-xs text-muted-foreground">Loading...</span>
                       ) : ollamaError ? (
-                        <span className="text-xs text-red-500">
-                          Error loading
-                        </span>
+                        <span className="text-xs text-red-500">Error loading</span>
                       ) : !hasOllamaModels ? (
-                        <span className="text-xs text-muted-foreground">
-                          None available
-                        </span>
+                        <span className="text-xs text-muted-foreground">None available</span>
                       ) : (
                         <span className="text-xs text-muted-foreground">
                           {ollamaModels.length} models
@@ -601,9 +550,7 @@ export function ModelPicker() {
                       )}
                     </div>
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent
-                    className={cn("w-64", SCROLL_AREA_CLASS)}
-                  >
+                  <DropdownMenuSubContent className={cn("w-64", SCROLL_AREA_CLASS)}>
                     <DropdownMenuLabel>Ollama Models</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {ollamaLoading && ollamaModels.length === 0 ? (
@@ -614,9 +561,7 @@ export function ModelPicker() {
                       <div className="px-2 py-1.5 text-sm text-red-600">
                         <div className="flex flex-col">
                           <span>Error loading models</span>
-                          <span className="text-xs text-muted-foreground">
-                            Is Ollama running?
-                          </span>
+                          <span className="text-xs text-muted-foreground">Is Ollama running?</span>
                         </div>
                       </div>
                     ) : !hasOllamaModels ? (
@@ -629,9 +574,7 @@ export function ModelPicker() {
                         </div>
                       </div>
                     ) : (
-                      ollamaModels.map((model: LocalModel) =>
-                        renderLocalModelItem("ollama", model),
-                      )
+                      ollamaModels.map((model: LocalModel) => renderLocalModelItem("ollama", model))
                     )}
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
@@ -645,17 +588,11 @@ export function ModelPicker() {
                     <div className="flex flex-col items-start">
                       <span>LM Studio</span>
                       {lmStudioLoading ? (
-                        <span className="text-xs text-muted-foreground">
-                          Loading...
-                        </span>
+                        <span className="text-xs text-muted-foreground">Loading...</span>
                       ) : lmStudioError ? (
-                        <span className="text-xs text-red-500">
-                          Error loading
-                        </span>
+                        <span className="text-xs text-red-500">Error loading</span>
                       ) : !hasLMStudioModels ? (
-                        <span className="text-xs text-muted-foreground">
-                          None available
-                        </span>
+                        <span className="text-xs text-muted-foreground">None available</span>
                       ) : (
                         <span className="text-xs text-muted-foreground">
                           {lmStudioModels.length} models
@@ -663,9 +600,7 @@ export function ModelPicker() {
                       )}
                     </div>
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent
-                    className={cn("w-64", SCROLL_AREA_CLASS)}
-                  >
+                  <DropdownMenuSubContent className={cn("w-64", SCROLL_AREA_CLASS)}>
                     <DropdownMenuLabel>LM Studio Models</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {lmStudioLoading && lmStudioModels.length === 0 ? (

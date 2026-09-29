@@ -228,7 +228,11 @@ function octolimbDomAction(action, args) {
 // resolves its indexed elements to live DOM nodes, cached on
 // window.__octolimb__ for click_element/input_text/etc. to use by index.
 // Self-contained aside from assuming window.buildDomTree already exists.
-function octolimbIndexPage({ includeText = false, maxTextLength = 4000 } = {}) {
+function octolimbIndexPage({
+  includeText = false,
+  maxTextLength = 4000,
+  viewportExpansion = 0,
+} = {}) {
   // Reset before each build: buildDomTree.js populates this by highlightIndex
   // as it walks (see the OctoLimb addition there), and a stale tail from a
   // previous, larger page would otherwise linger past the new element count.
@@ -237,7 +241,7 @@ function octolimbIndexPage({ includeText = false, maxTextLength = 4000 } = {}) {
   const { map } = window.buildDomTree({
     showHighlightElements: true,
     focusHighlightIndex: -1,
-    viewportExpansion: -1,
+    viewportExpansion,
     debugMode: false,
     startId: 0,
     startHighlightIndex: 0,
@@ -329,9 +333,7 @@ function octolimbIndexPage({ includeText = false, maxTextLength = 4000 } = {}) {
     const isRedundantWrapper =
       !dedupeExemptTags.has(entry.tag) &&
       dedupedElements.some(
-        (ancestor) =>
-          entry.text === ancestor.text &&
-          entry.xpath.startsWith(`${ancestor.xpath}/`),
+        (ancestor) => entry.text === ancestor.text && entry.xpath.startsWith(`${ancestor.xpath}/`),
       );
     if (!isRedundantWrapper) dedupedElements.push(entry);
   }
@@ -548,6 +550,7 @@ export async function runTool(tool, args) {
           {
             includeText: args.include_text ?? false,
             maxTextLength: args.max_text_length ?? 4000,
+            viewportExpansion: args.viewport_expansion ?? 0,
           },
         ],
       });

@@ -4,8 +4,7 @@ import { CreatePromptDialog } from "@/components/CreatePromptDialog";
 import { LibraryCard } from "@/components/LibraryCard";
 
 export default function LibraryPage() {
-  const { prompts, isLoading, createPrompt, updatePrompt, deletePrompt } =
-    usePrompts();
+  const { prompts, isLoading, createPrompt, updatePrompt, deletePrompt } = usePrompts();
   const { prefillData, dialogOpen, handleDialogClose } = useAddPromptDeepLink();
 
   return (
@@ -26,9 +25,7 @@ export default function LibraryPage() {
         {isLoading ? (
           <div>Loading...</div>
         ) : prompts.length === 0 ? (
-          <div className="text-muted-foreground">
-            No prompts yet. Create one to get started.
-          </div>
+          <div className="text-muted-foreground">No prompts yet. Create one to get started.</div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {prompts.map((p) => (

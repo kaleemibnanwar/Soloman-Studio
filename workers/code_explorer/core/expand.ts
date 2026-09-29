@@ -9,8 +9,11 @@ export function expandNodes(
 ): Map<string, number> {
   const selected = new Map<string, number>();
   const queuedBest = new Map<string, number>();
-  const queue: Array<{ nodeId: string; depth: number; score: number }> =
-    roots.map((root) => ({ nodeId: root.nodeId, depth: 0, score: root.score }));
+  const queue: Array<{ nodeId: string; depth: number; score: number }> = roots.map((root) => ({
+    nodeId: root.nodeId,
+    depth: 0,
+    score: root.score,
+  }));
   for (const root of roots) {
     queuedBest.set(root.nodeId, root.score);
   }

@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  createReleaseAlert,
-  parseRecipients,
-} from "./unauthorized-release-alert.mjs";
+import { createReleaseAlert, parseRecipients } from "./unauthorized-release-alert.mjs";
 
 const baseAlert = {
   repository: "octopusStudio-sh/octopusStudio",
@@ -19,17 +16,14 @@ const baseAlert = {
 };
 
 test("parseRecipients trims, deduplicates, and removes empty entries", () => {
-  assert.deepEqual(
-    parseRecipients("one@example.com, two@example.com,one@example.com, "),
-    ["one@example.com", "two@example.com"],
-  );
+  assert.deepEqual(parseRecipients("one@example.com, two@example.com,one@example.com, "), [
+    "one@example.com",
+    "two@example.com",
+  ]);
 });
 
 test("parseRecipients rejects an empty recipient list", () => {
-  assert.throws(
-    () => parseRecipients(" , "),
-    /must contain at least one email address/,
-  );
+  assert.throws(() => parseRecipients(" , "), /must contain at least one email address/);
 });
 
 test("createReleaseAlert reports successful deletion without tag deletion", () => {
@@ -50,8 +44,5 @@ test("createReleaseAlert makes deletion failures urgent and escapes HTML", () =>
   assert.match(alert.subject, /^\[URGENT\]/);
   assert.match(alert.text, /Automatic deletion did not succeed/);
   assert.doesNotMatch(alert.html, /<script>/);
-  assert.match(
-    alert.html,
-    /&lt;script&gt;alert\(&#39;release&#39;\)&lt;\/script&gt;/,
-  );
+  assert.match(alert.html, /&lt;script&gt;alert\(&#39;release&#39;\)&lt;\/script&gt;/);
 });

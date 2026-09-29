@@ -1,8 +1,5 @@
 import { IpcMainInvokeEvent } from "electron";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { readSettings } from "../../main/settings";
 import {
   gitMergeAbort,
@@ -24,7 +21,7 @@ import {
   gitDiscardAllChanges,
   getFileAtCommit,
   isMissingRemoteBranchError,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 import { gitService } from "../services/git_service";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { safeJoin } from "../utils/path_utils";
@@ -33,10 +30,7 @@ import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import log from "electron-log";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import { updateAppGithubRepo, ensureCleanWorkspace } from "./github_handlers";
 import { createTypedHandler } from "./base";
 import { githubContracts, gitContracts } from "../types/github";
@@ -58,11 +52,7 @@ export async function handleAbortMerge(
   { appId }: GitBranchAppIdParams,
 ): Promise<void> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   await gitMergeAbort({ path: appPath });
@@ -76,10 +66,7 @@ export async function handleFetchFromGithub(
   const settings = readSettings();
   const accessToken = settings.githubAccessToken?.value;
   if (!accessToken) {
-    throw new OctopusStudioError(
-      "Not authenticated with GitHub.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
@@ -124,17 +111,10 @@ export async function handleCreateBranch(
     branch.endsWith("/") ||
     branch.includes("@{")
   ) {
-    throw new OctopusStudioError(
-      "Invalid branch name",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid branch name", OctopusStudioErrorKind.Validation);
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   await gitCreateBranch({
@@ -149,11 +129,7 @@ export async function handleDeleteBranch(
   { appId, branch }: GitBranchParams,
 ): Promise<void> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   // Check if branch exists locally
@@ -210,11 +186,7 @@ export async function handleSwitchBranch(
   { appId, branch }: GitBranchParams,
 ): Promise<void> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   // Check for merge or rebase in progress before attempting to switch
@@ -253,11 +225,7 @@ export async function handleRenameBranch(
   { appId, oldBranch, newBranch }: RenameGitBranchParams,
 ): Promise<void> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   // Check if we're renaming the current branch BEFORE renaming to avoid race conditions
@@ -287,11 +255,7 @@ export async function handleMergeBranch(
   { appId, branch }: GitBranchParams,
 ): Promise<void> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   // Check if branch exists locally, if not, check if it's a remote branch
@@ -325,11 +289,7 @@ async function handleListLocalBranches(
   { appId }: GitBranchAppIdParams,
 ): Promise<{ branches: string[]; current: string | null }> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   const branches = await gitListBranches({ path: appPath });
@@ -342,11 +302,7 @@ async function handleListRemoteBranches(
   { appId, remote = "origin" }: { appId: number; remote?: string },
 ): Promise<string[]> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   const branches = await gitListRemoteBranches({ path: appPath, remote });
@@ -358,11 +314,7 @@ async function handleGetUncommittedFiles(
   { appId }: GitBranchAppIdParams,
 ): Promise<UncommittedFile[]> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   return getGitUncommittedFilesWithStatus({ path: appPath });
@@ -373,11 +325,7 @@ async function handleGetUncommittedFileDiff(
   { appId, filePath }: GetUncommittedFileDiffParams,
 ): Promise<UncommittedFileDiff> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+  if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   const appPath = getOctopusStudioAppPath(app.path);
 
   // `filePath` comes from the renderer, so validate up front that it stays
@@ -388,16 +336,11 @@ async function handleGetUncommittedFileDiff(
   try {
     resolvedPath = safeJoin(appPath, filePath);
   } catch {
-    throw new OctopusStudioError(
-      "Invalid file path",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid file path", OctopusStudioErrorKind.Validation);
   }
 
   // "before" side: the file at HEAD. Missing (newly added file) → empty.
-  let oldContent =
-    (await getFileAtCommit({ path: appPath, filePath, commitHash: "HEAD" })) ??
-    "";
+  let oldContent = (await getFileAtCommit({ path: appPath, filePath, commitHash: "HEAD" })) ?? "";
 
   // A renamed file has no HEAD blob under its new path, so the lookup above
   // returns empty and the diff would show the whole file as added. Recover the
@@ -408,8 +351,7 @@ async function handleGetUncommittedFileDiff(
       path: appPath,
     });
     const renamed = uncommitted.find(
-      (file) =>
-        file.path === filePath && file.status === "renamed" && file.oldPath,
+      (file) => file.path === filePath && file.status === "renamed" && file.oldPath,
     );
     if (renamed?.oldPath) {
       oldContent =
@@ -446,11 +388,7 @@ async function withAppGitOp<T>(
     },
     async () => {
       const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-      if (!app)
-        throw new OctopusStudioError(
-          "App not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+      if (!app) throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
       const appPath = getOctopusStudioAppPath(app.path);
 
       if (isGitMergeInProgress({ path: appPath })) {
@@ -499,10 +437,7 @@ export async function handlePullFromGithub(
   const settings = readSettings();
   const accessToken = settings.githubAccessToken?.value;
   if (!accessToken) {
-    throw new OctopusStudioError(
-      "Not authenticated with GitHub.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Not authenticated with GitHub.", OctopusStudioErrorKind.Auth);
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
@@ -531,32 +466,17 @@ export async function handlePullFromGithub(
     if (!isMissingRemoteBranch) {
       throw pullError;
     } else {
-      logger.debug(
-        "[GitHub Handler] Remote branch missing during pull, continuing",
-        errorMessage,
-      );
+      logger.debug("[GitHub Handler] Remote branch missing during pull, continuing", errorMessage);
     }
   }
 }
 
 // --- Registration ---
 export function registerGithubBranchHandlers() {
-  createTypedHandler(
-    githubContracts.listLocalBranches,
-    handleListLocalBranches,
-  );
-  createTypedHandler(
-    githubContracts.listRemoteBranches,
-    handleListRemoteBranches,
-  );
-  createTypedHandler(
-    gitContracts.getUncommittedFiles,
-    handleGetUncommittedFiles,
-  );
-  createTypedHandler(
-    gitContracts.getUncommittedFileDiff,
-    handleGetUncommittedFileDiff,
-  );
+  createTypedHandler(githubContracts.listLocalBranches, handleListLocalBranches);
+  createTypedHandler(githubContracts.listRemoteBranches, handleListRemoteBranches);
+  createTypedHandler(gitContracts.getUncommittedFiles, handleGetUncommittedFiles);
+  createTypedHandler(gitContracts.getUncommittedFileDiff, handleGetUncommittedFileDiff);
   createTypedHandler(gitContracts.commitChanges, handleCommitChanges);
   createTypedHandler(gitContracts.discardChanges, handleDiscardChanges);
 }

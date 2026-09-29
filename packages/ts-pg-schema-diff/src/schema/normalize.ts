@@ -25,18 +25,12 @@ export function normalizeSchema(schema: Schema): Schema {
     procedures: sortByName(schema.procedures),
     triggers: sortByName(schema.triggers),
     views: sortByName(schema.views).map(normalizeView),
-    materializedViews: sortByName(schema.materializedViews).map(
-      normalizeMaterializedView,
-    ),
+    materializedViews: sortByName(schema.materializedViews).map(normalizeMaterializedView),
   };
 }
 
-export function sortByName<T extends SchemaObject>(
-  values: readonly T[],
-): readonly T[] {
-  return [...values].sort((a, b) =>
-    compareStrings(objectName(a), objectName(b)),
-  );
+export function sortByName<T extends SchemaObject>(values: readonly T[]): readonly T[] {
+  return [...values].sort((a, b) => compareStrings(objectName(a), objectName(b)));
 }
 
 function normalizeTable(table: Table): Table {
@@ -46,17 +40,13 @@ function normalizeTable(table: Table): Table {
       ...column,
       dependsOnFunctions: sortQualifiedNames(column.dependsOnFunctions),
     })),
-    checkConstraints: sortByName(table.checkConstraints).map(
-      normalizeCheckConstraint,
-    ),
+    checkConstraints: sortByName(table.checkConstraints).map(normalizeCheckConstraint),
     policies: sortByName(table.policies).map(normalizePolicy),
     privileges: sortByName(table.privileges),
   };
 }
 
-function normalizeCheckConstraint(
-  checkConstraint: CheckConstraint,
-): CheckConstraint {
+function normalizeCheckConstraint(checkConstraint: CheckConstraint): CheckConstraint {
   return {
     ...checkConstraint,
     keyColumns: sortedStrings(checkConstraint.keyColumns),
@@ -115,23 +105,14 @@ function sortedStrings(values: readonly string[]): readonly string[] {
   return [...values].sort(compareStrings);
 }
 
-function sortRecord(
-  record: Readonly<Record<string, string>>,
-): Readonly<Record<string, string>> {
-  const entries = Object.entries(record).sort(([a], [b]) =>
-    compareStrings(a, b),
-  );
+function sortRecord(record: Readonly<Record<string, string>>): Readonly<Record<string, string>> {
+  const entries = Object.entries(record).sort(([a], [b]) => compareStrings(a, b));
   return Object.fromEntries(entries);
 }
 
-function sortQualifiedNames(
-  names: readonly SchemaQualifiedName[],
-): readonly SchemaQualifiedName[] {
+function sortQualifiedNames(names: readonly SchemaQualifiedName[]): readonly SchemaQualifiedName[] {
   return [...names].sort((a, b) =>
-    compareStrings(
-      `${a.schemaName}.${a.escapedName}`,
-      `${b.schemaName}.${b.escapedName}`,
-    ),
+    compareStrings(`${a.schemaName}.${a.escapedName}`, `${b.schemaName}.${b.escapedName}`),
   );
 }
 

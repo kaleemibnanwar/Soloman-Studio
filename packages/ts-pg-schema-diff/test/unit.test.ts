@@ -13,11 +13,7 @@ import {
   renderSchemaSql,
 } from "../src/render/schemaSql.js";
 import { randomPostgresIdentifierToken } from "../src/schema/randomIdentifier.js";
-import {
-  escapeIdentifier,
-  procName,
-  schemaQualifiedName,
-} from "../src/schema/identifiers.js";
+import { escapeIdentifier, procName, schemaQualifiedName } from "../src/schema/identifiers.js";
 import {
   emptySchema,
   type Column,
@@ -135,10 +131,7 @@ describe("generatePlan", () => {
     const current: Schema = {
       ...emptySchema(),
       indexes: [
-        index(
-          "users_name_idx",
-          "CREATE INDEX users_name_idx ON public.users USING btree (name)",
-        ),
+        index("users_name_idx", "CREATE INDEX users_name_idx ON public.users USING btree (name)"),
       ],
     };
     const desired: Schema = {
@@ -380,9 +373,7 @@ describe("generatePlan", () => {
           views: [changedBase],
         },
       ),
-    ).toThrow(
-      'changing the output columns of view "public"."account_summary" is not supported',
-    );
+    ).toThrow('changing the output columns of view "public"."account_summary" is not supported');
   });
 
   it("recreates unchanged indexes after materialized view rebuilds", () => {
@@ -418,10 +409,7 @@ describe("generatePlan", () => {
   it("classifies untrackable routine dependencies as destructive", () => {
     const desired: Schema = {
       ...emptySchema(),
-      functions: [
-        functionSchema("non_sql_func", "plpgsql"),
-        functionSchema("sql_func", "sql"),
-      ],
+      functions: [functionSchema("non_sql_func", "plpgsql"), functionSchema("sql_func", "sql")],
       procedures: [procedure("sync_accounts")],
     };
 
@@ -536,9 +524,7 @@ describe("generatePlan", () => {
           functions: [desiredFunction],
         },
       ),
-    ).toThrow(
-      'changing return type of function "public"."answer"() is not supported',
-    );
+    ).toThrow('changing return type of function "public"."answer"() is not supported');
   });
 
   it("preserves millisecond precision when converting bigint epochs to timestamp variants", () => {
@@ -548,11 +534,7 @@ describe("generatePlan", () => {
     };
     const desired: Schema = {
       ...emptySchema(),
-      tables: [
-        table("events", [
-          column("created_at", "timestamp(3) with time zone", false),
-        ]),
-      ],
+      tables: [table("events", [column("created_at", "timestamp(3) with time zone", false)])],
     };
 
     const result = toSchemaDiffResult(generatePlan(current, desired));
@@ -590,8 +572,7 @@ describe("generatePlan", () => {
       isValid: true,
     });
     const desiredForeignKey = foreignKeyConstraint({
-      constraintDef:
-        'FOREIGN KEY (user_id) REFERENCES "public"."users"(id) NOT VALID',
+      constraintDef: 'FOREIGN KEY (user_id) REFERENCES "public"."users"(id) NOT VALID',
       isValid: false,
     });
 
@@ -616,13 +597,11 @@ describe("generatePlan", () => {
 
   it("ignores NOT VALID suffix casing and whitespace when comparing foreign keys", () => {
     const currentForeignKey = foreignKeyConstraint({
-      constraintDef:
-        'FOREIGN KEY (user_id) REFERENCES "public"."users"(id)   not valid',
+      constraintDef: 'FOREIGN KEY (user_id) REFERENCES "public"."users"(id)   not valid',
       isValid: false,
     });
     const desiredForeignKey = foreignKeyConstraint({
-      constraintDef:
-        'FOREIGN KEY (user_id) REFERENCES "public"."users"(id) NOT VALID',
+      constraintDef: 'FOREIGN KEY (user_id) REFERENCES "public"."users"(id) NOT VALID',
       isValid: false,
     });
 
@@ -663,9 +642,7 @@ describe("generatePlan", () => {
         },
         emptySchema(),
       ),
-    ).toThrow(
-      "dropping an index partition that backs a local constraint is not supported",
-    );
+    ).toThrow("dropping an index partition that backs a local constraint is not supported");
   });
 
   it("rejects creating invalid indexes", () => {
@@ -843,10 +820,7 @@ describe("renderSchemaSql", () => {
       ],
     };
     const invalidIndex: Index = {
-      ...index(
-        "accounts_invalid_idx",
-        "CREATE INDEX accounts_invalid_idx ON public.accounts (id)",
-      ),
+      ...index("accounts_invalid_idx", "CREATE INDEX accounts_invalid_idx ON public.accounts (id)"),
       owningRelName: accounts.name,
       isInvalid: true,
     };
@@ -924,14 +898,10 @@ describe("renderSchemaSql", () => {
     expect(createTableSql).not.toContain("DEFAULT new_account_id()");
     expect(createTableSql).not.toContain('"visible"');
     expect(functionIndex).toBeGreaterThan(-1);
-    expect(sql.indexOf("SET DEFAULT new_account_id()")).toBeGreaterThan(
-      functionIndex,
-    );
+    expect(sql.indexOf("SET DEFAULT new_account_id()")).toBeGreaterThan(functionIndex);
     expect(generatedColumnIndex).toBeGreaterThan(functionIndex);
     expect(sql.indexOf("CREATE POLICY")).toBeGreaterThan(functionIndex);
-    expect(sql.indexOf("CREATE INDEX accounts_visible_idx")).toBeGreaterThan(
-      generatedColumnIndex,
-    );
+    expect(sql.indexOf("CREATE INDEX accounts_visible_idx")).toBeGreaterThan(generatedColumnIndex);
   });
 
   it("filters a schema to a table and its directly relevant objects", () => {
@@ -966,9 +936,7 @@ describe("renderSchemaSql", () => {
       ],
     };
 
-    const filteredSql = renderSchemaSql(
-      filterSchemaForTable(schema, { tableName: "accounts" }),
-    );
+    const filteredSql = renderSchemaSql(filterSchemaForTable(schema, { tableName: "accounts" }));
 
     expect(filteredSql).toContain('CREATE TABLE "public"."accounts"');
     expect(filteredSql).toContain("CREATE INDEX accounts_id_idx");
@@ -1068,10 +1036,7 @@ describe("renderSchemaSql", () => {
     );
 
     expect(filtered.functions).toEqual([policyFunction, defaultFunction]);
-    expect(filtered.namedSchemas.map((schema) => schema.name)).toEqual([
-      "private_data",
-      "public",
-    ]);
+    expect(filtered.namedSchemas.map((schema) => schema.name)).toEqual(["private_data", "public"]);
   });
 });
 
@@ -1115,16 +1080,12 @@ describe("toPublicStatement", () => {
   it("classifies non-removal statements as additive", () => {
     expect(
       toPublicStatement(
-        internalStatement(
-          "CREATE INDEX CONCURRENTLY users_name_idx ON public.users (name)",
-        ),
+        internalStatement("CREATE INDEX CONCURRENTLY users_name_idx ON public.users (name)"),
       ).type,
     ).toBe("additive");
     expect(
       toPublicStatement(
-        internalStatement(
-          'ALTER TABLE "public"."users" VALIDATE CONSTRAINT "users_name_check"',
-        ),
+        internalStatement('ALTER TABLE "public"."users" VALIDATE CONSTRAINT "users_name_check"'),
       ).type,
     ).toBe("additive");
   });
@@ -1138,16 +1099,12 @@ describe("toPublicStatement", () => {
       ).type,
     ).toBe("destructive");
     expect(
-      toPublicStatement(
-        internalStatement(
-          'ALTER TABLE "public"."users" DROP COLUMN "old_name"',
-        ),
-      ).type,
+      toPublicStatement(internalStatement('ALTER TABLE "public"."users" DROP COLUMN "old_name"'))
+        .type,
     ).toBe("destructive");
     expect(
-      toPublicStatement(
-        internalStatement('DROP INDEX CONCURRENTLY "public"."users_name_idx"'),
-      ).type,
+      toPublicStatement(internalStatement('DROP INDEX CONCURRENTLY "public"."users_name_idx"'))
+        .type,
     ).toBe("destructive");
   });
 });
@@ -1219,10 +1176,7 @@ function index(
 
 function materializedViewIndex(name: string): Index {
   return {
-    ...index(
-      name,
-      `CREATE INDEX ${name} ON public.account_names USING btree (name)`,
-    ),
+    ...index(name, `CREATE INDEX ${name} ON public.account_names USING btree (name)`),
     owningRelName: schemaQualifiedName("public", "account_names"),
     owningRelKind: "m",
   };
@@ -1242,11 +1196,7 @@ function foreignKeyConstraint(options: {
   };
 }
 
-function trigger(
-  name: string,
-  getTriggerDefStmt: string,
-  isConstraint = false,
-): Trigger {
+function trigger(name: string, getTriggerDefStmt: string, isConstraint = false): Trigger {
   return {
     kind: "trigger",
     escapedName: escapeIdentifier(name),

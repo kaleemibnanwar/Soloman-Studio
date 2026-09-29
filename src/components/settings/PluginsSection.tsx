@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { LibraryBig, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PluginsList } from "@/components/plugins/PluginsList";
 import { CatalogSection } from "@/components/plugins/catalog/CatalogSection";
 import { useDeepLink } from "@/contexts/DeepLinkContext";
@@ -43,10 +39,7 @@ export function PluginsSection() {
         </Button>
       </div>
 
-      <PluginsList
-        addDialogOpen={isAddDialogOpen}
-        onAddDialogOpenChange={setIsAddDialogOpen}
-      />
+      <PluginsList addDialogOpen={isAddDialogOpen} onAddDialogOpenChange={setIsAddDialogOpen} />
 
       <Dialog open={isCatalogOpen} onOpenChange={setIsCatalogOpen}>
         <DialogContent

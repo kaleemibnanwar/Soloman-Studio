@@ -37,9 +37,7 @@ export const PublishPanel = () => {
             />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Loading...
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Loading...</h2>
       </div>
     );
   }
@@ -62,9 +60,7 @@ export const PublishPanel = () => {
             />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          No App Selected
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">No App Selected</h2>
         <p className="text-gray-600 dark:text-gray-400 max-w-md">
           Select an app to view publishing options.
         </p>
@@ -76,19 +72,15 @@ export const PublishPanel = () => {
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="p-4 space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Publish App
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Publish App</h1>
         </div>
 
         {/* Unified Database section - branch selection + migration + env vars when the
             app has a neon project and branch context, otherwise fall back to PortalMigrate
             for portal template apps. Only one is shown. */}
-        {app.neonProjectId &&
-        (app.neonActiveBranchId || app.neonDevelopmentBranchId) ? (
+        {app.neonProjectId && (app.neonActiveBranchId || app.neonDevelopmentBranchId) ? (
           <DatabaseSection appId={selectedAppId} />
-        ) : app.neonProjectId &&
-          app.files.some((f) => f === "payload.config.ts") ? (
+        ) : app.neonProjectId && app.files.some((f) => f === "payload.config.ts") ? (
           <PortalMigrate appId={selectedAppId} />
         ) : null}
 
@@ -110,11 +102,7 @@ export const PublishPanel = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Sync your code to GitHub for collaboration.
             </p>
-            <GitHubConnector
-              appId={selectedAppId}
-              folderName={app.name}
-              expanded={true}
-            />
+            <GitHubConnector appId={selectedAppId} folderName={app.name} expanded={true} />
             {app.githubOrg && app.githubRepo && (
               <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
                 <GithubCollaboratorManager appId={selectedAppId} />
@@ -133,11 +121,7 @@ export const PublishPanel = () => {
                 }}
                 className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer bg-transparent border-none p-0"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 22.525H0l12-21.05 12 21.05z" />
                 </svg>
                 Vercel
@@ -170,8 +154,8 @@ export const PublishPanel = () => {
                       GitHub Required for Vercel Deployment
                     </h3>
                     <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                      Deploying to Vercel requires connecting to GitHub first.
-                      Please set up your GitHub repository above.
+                      Deploying to Vercel requires connecting to GitHub first. Please set up your
+                      GitHub repository above.
                     </p>
                   </div>
                 </div>

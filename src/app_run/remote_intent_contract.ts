@@ -14,10 +14,7 @@ import {
   type AppRunKey,
   type AppRunRemoteSnapshot,
 } from "./transport";
-import {
-  AppRunInvocationRefSchema,
-  AppRunOperationOutcomeSchema,
-} from "./operations";
+import { AppRunInvocationRefSchema, AppRunOperationOutcomeSchema } from "./operations";
 
 const trackedAtAdmission = {
   completion: "tracked-completion",
@@ -50,8 +47,7 @@ export const appRunRemoteIntentContract = defineRemoteIntentContract<
   keyIntentRelationship: {
     kind: "validate",
     validate: (key, intent) =>
-      intent.type !== "STOP_REQUESTED" ||
-      intent.activeInvocationRef.entityKey === key.appId,
+      intent.type !== "STOP_REQUESTED" || intent.activeInvocationRef.entityKey === key.appId,
   },
   intents: {
     START: {

@@ -2,10 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import {
   CHAT_PROMPT_LENGTH_LIMIT_MESSAGE,
@@ -49,33 +46,23 @@ describe("chat input proposal gating (integration)", () => {
       const { send } = await harness.typeInChat("tc=write-index", { chatId });
       send();
 
-      await waitFor(
-        () => expect(screen.getByText(/And it's done!/)).toBeTruthy(),
-        { timeout: 20_000 },
-      );
+      await waitFor(() => expect(screen.getByText(/And it's done!/)).toBeTruthy(), {
+        timeout: 20_000,
+      });
       await harness.waitForStreamEnd(chatId);
 
-      const proposalButton = await screen.findByTestId(
-        actionTestId,
-        {},
-        { timeout: 15_000 },
-      );
+      const proposalButton = await screen.findByTestId(actionTestId, {}, { timeout: 15_000 });
 
       harness.setChatInputValue("test message", { chatId });
 
-      const sendButton = await screen.findByLabelText(
-        /^(sendMessage|Send message)$/,
-      );
-      await waitFor(() =>
-        expect((sendButton as HTMLButtonElement).disabled).toBe(true),
-      );
+      const sendButton = await screen.findByLabelText(/^(sendMessage|Send message)$/);
+      await waitFor(() => expect((sendButton as HTMLButtonElement).disabled).toBe(true));
 
       fireEvent.click(proposalButton);
 
-      await waitFor(
-        () => expect((sendButton as HTMLButtonElement).disabled).toBe(false),
-        { timeout: 15_000 },
-      );
+      await waitFor(() => expect((sendButton as HTMLButtonElement).disabled).toBe(false), {
+        timeout: 15_000,
+      });
     },
     60_000,
   );
@@ -88,9 +75,7 @@ describe("chat input proposal gating (integration)", () => {
 
     send();
 
-    expect(
-      await screen.findByText(CHAT_PROMPT_LENGTH_LIMIT_MESSAGE),
-    ).toBeTruthy();
+    expect(await screen.findByText(CHAT_PROMPT_LENGTH_LIMIT_MESSAGE)).toBeTruthy();
     expect(harness.getChatInputValue(chatId)).toBe(prompt);
   });
 });

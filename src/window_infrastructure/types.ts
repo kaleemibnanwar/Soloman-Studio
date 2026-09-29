@@ -10,8 +10,7 @@ export type WindowSessionId = string & {
 // The first product window keeps one deterministic identity across launches so
 // its renderer-local presentation state remains addressable without requiring
 // main-process window-session persistence.
-export const PRIMARY_WINDOW_SESSION_ID =
-  "00000000-0000-4000-8000-000000000001" as WindowSessionId;
+export const PRIMARY_WINDOW_SESSION_ID = "00000000-0000-4000-8000-000000000001" as WindowSessionId;
 
 export type TabInstanceId = string & {
   readonly [tabInstanceIdBrand]: true;
@@ -87,9 +86,7 @@ export const ChatTabPresentationStateSchema = z.object({
     )
     .max(100),
 });
-export type ChatTabPresentationState = z.infer<
-  typeof ChatTabPresentationStateSchema
->;
+export type ChatTabPresentationState = z.infer<typeof ChatTabPresentationStateSchema>;
 
 export const ChatTabTransferPayloadSchema = z.object({
   tabInstanceId: TabInstanceIdSchema,
@@ -97,9 +94,7 @@ export const ChatTabTransferPayloadSchema = z.object({
   appId: z.number().int().positive(),
   presentation: ChatTabPresentationStateSchema,
 });
-export type ChatTabTransferPayload = z.infer<
-  typeof ChatTabTransferPayloadSchema
->;
+export type ChatTabTransferPayload = z.infer<typeof ChatTabTransferPayloadSchema>;
 
 export const AppVisibleEntitySchema = z.object({
   kind: z.literal("app"),
@@ -209,9 +204,7 @@ export const QueryInvalidationScopeSchema = z.discriminatedUnion("family", [
   }),
   z.object({ family: z.literal("octolimb-bridge") }),
 ]);
-export type QueryInvalidationScope = z.infer<
-  typeof QueryInvalidationScopeSchema
->;
+export type QueryInvalidationScope = z.infer<typeof QueryInvalidationScopeSchema>;
 
 export const QueryInvalidationEventSchema = z.object({
   epoch: z.number().int().positive(),
@@ -219,17 +212,13 @@ export const QueryInvalidationEventSchema = z.object({
   originWindowSessionId: WindowSessionIdSchema.optional(),
   originHandledScopes: z.array(QueryInvalidationScopeSchema).optional(),
 });
-export type QueryInvalidationEvent = z.infer<
-  typeof QueryInvalidationEventSchema
->;
+export type QueryInvalidationEvent = z.infer<typeof QueryInvalidationEventSchema>;
 
 export const QueryInvalidationBatchSchema = z.object({
   invalidations: z.array(QueryInvalidationEventSchema).min(1),
   recoveryScopes: z.array(QueryInvalidationScopeSchema),
 });
-export type QueryInvalidationBatch = z.infer<
-  typeof QueryInvalidationBatchSchema
->;
+export type QueryInvalidationBatch = z.infer<typeof QueryInvalidationBatchSchema>;
 
 export const WindowInterestSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -259,9 +248,7 @@ export function windowInterestKey(interest: WindowInterest): string {
     : `${interest.kind}:${interest.chatId}`;
 }
 
-export function queryInvalidationScopeKey(
-  scope: QueryInvalidationScope,
-): string {
+export function queryInvalidationScopeKey(scope: QueryInvalidationScope): string {
   switch (scope.family) {
     case "app":
     case "versions":

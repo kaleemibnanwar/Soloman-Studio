@@ -27,9 +27,9 @@ testSkipIfWindows(
     });
 
     const messages = po.page.getByTestId("messages-list");
-    await expect(
-      messages.getByText("Let's connect a database first."),
-    ).toBeVisible({ timeout: Timeout.LONG });
+    await expect(messages.getByText("Let's connect a database first.")).toBeVisible({
+      timeout: Timeout.LONG,
+    });
 
     // Pick a provider in the chat card, which hands off to the Configure panel.
     const supabaseRadio = messages.getByRole("radio", { name: /Supabase/ });
@@ -39,12 +39,8 @@ testSkipIfWindows(
 
     // Both Continue buttons — the Configure panel's and the chat card's mirror —
     // stay disabled until the connector actually links a project.
-    const chatContinue = po.page.getByTestId(
-      "integration-chat-continue-button",
-    );
-    const panelContinue = po.page.getByTestId(
-      "integration-setup-continue-button",
-    );
+    const chatContinue = po.page.getByTestId("integration-chat-continue-button");
+    const panelContinue = po.page.getByTestId("integration-setup-continue-button");
     await expect(panelContinue).toBeVisible({ timeout: Timeout.MEDIUM });
     await expect(panelContinue).toBeDisabled();
     await expect(chatContinue).toBeDisabled();
@@ -61,16 +57,14 @@ testSkipIfWindows(
     // The regression: the armed follow-up is dispatched as a real turn, so the
     // conversation keeps going instead of stopping after Continue.
     await expect(
-      messages.getByText(
-        "Continue. I have completed the supabase integration.",
-      ),
+      messages.getByText("Continue. I have completed the supabase integration."),
     ).toBeVisible({ timeout: Timeout.LONG });
 
     // The request settled: the card drops its pending controls and switches to
     // the completed state.
     await expect(chatContinue).toBeHidden();
-    await expect(
-      messages.getByText("Supabase integration complete"),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(messages.getByText("Supabase integration complete")).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
   },
 );

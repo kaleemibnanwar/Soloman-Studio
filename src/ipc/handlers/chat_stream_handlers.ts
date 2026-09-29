@@ -15,8 +15,7 @@ import {
 } from "ai";
 
 import { db } from "../../db";
-import { agentEvents, agentTasks, chats, messages } from "../../db/schema";
-import { mcpServers } from "../../db/schema";
+import { chats, messages } from "../../db/schema";
 const scheduleChatSearchIndexing = () => {};
 import { and, eq, isNull } from "drizzle-orm";
 import type { SmartContextMode } from "../../lib/schemas";
@@ -72,15 +71,12 @@ import { getMaxOutputTokens, getTemperature } from "../utils/token_utils";
 import { ECONOMY_MAX_CHAT_TURNS, MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
 import { validateChatContext } from "../utils/context_paths_utils";
 import { getProviderOptions, getAiHeaders } from "../utils/provider_options";
-import { sanitizeMcpToolResult } from "../utils/mcp_result_sanitizer";
-import { mcpManager } from "../utils/mcp_manager";
-import { buildMcpToolKey, sanitizeMcpName } from "../utils/mcp_tool_utils";
-import { buildBuiltinTools } from "../utils/agent_tools";
-import { ROLE_BUDGETS } from "../utils/agent_task_types";
+import { sanitizeMcpToolResult } from "../mcp/mcp_result_sanitizer";
+import { buildBuiltinTools } from "../agent/tools";
+import { createAgentOrchestrator } from "../agent/orchestrator";
 
 const clearPendingLocalAgentInputsForChat = (_id: any) => {};
 import { rememberUserInputSubscriber, userInputRegistry } from "../../user_input/main";
-import { uuidIdSource } from "../../state_machines/clock";
 
 import { safeSend, type SafeSender } from "../utils/safe_sender";
 import {
@@ -104,12 +100,12 @@ import {
 } from "../utils/mention_apps";
 import { parseMediaMentions, stripResolvedMediaMentions } from "@/shared/parse_media_mentions";
 import { prompts as promptsTable } from "../../db/schema";
-import { skills } from "../../db/schema";
+
 import { inArray } from "drizzle-orm";
 import { replacePromptReference } from "../utils/replacePromptReference";
 import { replaceSlashSkillReference } from "../utils/replaceSlashSkillReference";
 import { annotateSkillReferences } from "../utils/annotateSkillReferences";
-import { resolveMediaMentions } from "../utils/resolve_media_mentions";
+import { resolveMediaMentions } from "../media/resolve_media_mentions";
 import { parsePlanFile, validatePlanId } from "./planUtils";
 import { ensureOctopusStudioGitignored } from "./gitignoreUtils";
 import {
@@ -117,7 +113,7 @@ import {
   createUniqueAttachmentLogicalName,
   OCTOPUS_STUDIO_MEDIA_DIR_NAME,
   type AttachmentManifestEntryInput,
-} from "../utils/media_path_utils";
+} from "../media/media_path_utils";
 import {
   isBasicAgentMode,
   isOctopusStudioProEnabled,
@@ -135,7 +131,7 @@ import { acceptChatTurn } from "./chat_turn_acceptance";
 import { withChatQueueLock } from "@/chat_stream/queue_lock";
 import {} from "./free_agent_quota_handlers";
 import { AI_STREAMING_ERROR_MESSAGE_PREFIX } from "@/shared/texts";
-import { getCurrentCommitHash } from "../utils/git_utils";
+import { getCurrentCommitHash } from "../git/git_utils";
 import {
   processChatMessagesWithVersionedFiles as getVersionedFiles,
   VersionedFiles,
@@ -1177,16 +1173,14 @@ export function registerChatStreamHandlers() {
       // Annotate /name references that match a saved Skill with a hint to
       // call read_skill — additive only, never rewrites the prompt text.
       try {
-        const allSkills = db.select().from(skills).all();
-        const skillsByLowercaseName: Record<
-          string,
-          { name: string; description: string }
-        > = Object.fromEntries(
-          allSkills.map((s) => [
-            s.name.toLowerCase(),
-            { name: s.name, description: s.description },
-          ]),
-        );
+        const allSkills: any[] = [];
+        const skillsByLowercaseName: Record<string, { name: string; description: string }> =
+          Object.fromEntries(
+            allSkills.map((s) => [
+              s.name.toLowerCase(),
+              { name: s.name, description: s.description },
+            ]),
+          );
         userPrompt = annotateSkillReferences(userPrompt, skillsByLowercaseName);
       } catch (e) {
         logger.error("Failed to annotate skill references:", e);
@@ -1572,6 +1566,20 @@ ${componentSnippet}
         // which is why the model reached for OctoLimb's browser tools even for
         // non-browser tasks. Built only for agent-backed modes; build mode keeps
         // MCP tools only.
+        const { spawnSubAgent, planTaskGraph } = createAgentOrchestrator({
+          settings,
+          selectedModel,
+          modelClient,
+          economyMode,
+          getSystemPrompt: () => systemPrompt,
+          appPath,
+          appId: updatedChat.app.id,
+          chatId: req.chatId,
+          chatMode: selectedChatMode,
+          abortController,
+          event,
+        });
+
         const builtinTools = willUseLocalAgentStream
           ? buildBuiltinTools({
               appPath,
@@ -1594,94 +1602,9 @@ ${componentSnippet}
                     response?.kind === "questionnaire" ? response.answers : null,
                   );
               },
-              spawnSubAgent: async (spec) => {
-                const role = spec.role ?? "coder";
-                const budget = ROLE_BUDGETS[role] ?? ROLE_BUDGETS.coder;
-                const taskId = uuidIdSource.next("agent-task");
-                const description = spec.description;
 
-                await db.insert(agentTasks).values({
-                  id: taskId,
-                  chatId: req.chatId,
-                  description,
-                  role,
-                  dependencies: [],
-                  allowedFiles: spec.allowedFiles ?? null,
-                  allowedSymbols: null,
-                  contextBudget: budget.contextBudget,
-                  outputBudget: budget.outputBudget,
-                  executionBudget: budget.executionBudget,
-                  status: "running",
-                });
-                await db.insert(agentEvents).values({
-                  taskId,
-                  eventType: "started",
-                  payload: { role, description },
-                });
-
-                try {
-                  const subTools = buildBuiltinTools({
-                    appPath,
-                    appId: updatedChat.app.id,
-                    chatId: req.chatId,
-                    chatMode: selectedChatMode,
-                    agentToolConsents: settings.agentToolConsents,
-                    event,
-                    agentTaskContext: {
-                      taskId,
-                      allowedFiles: spec.allowedFiles ?? null,
-                      allowedSymbols: null,
-                    },
-                  });
-                  const result = streamText({
-                    headers: getAiHeaders({
-                      builtinProviderId: modelClient.builtinProviderId,
-                    }),
-                    maxOutputTokens: await getMaxOutputTokens(settings.selectedModel, economyMode),
-                    temperature: await getTemperature(settings.selectedModel),
-                    maxRetries: 1,
-                    model: modelClient.model,
-                    stopWhen: [stepCountIs(10)],
-                    system: [
-                      `You are a sub-agent (role: ${role}) in Octopus Studio, working on one bounded subtask.`,
-                      `Do only this task and do not expand its scope. Read only what you need.`,
-                      `Report your result compactly at the end.`,
-                    ].join("\n"),
-                    tools: subTools,
-                    messages: [
-                      {
-                        role: "user",
-                        content:
-                          description + (spec.context ? `\n\nContext:\n${spec.context}` : ""),
-                      },
-                    ],
-                    abortSignal: abortController.signal,
-                  });
-                  const text = await result.text;
-                  await db
-                    .update(agentTasks)
-                    .set({ status: "completed", updatedAt: new Date() })
-                    .where(eq(agentTasks.id, taskId));
-                  await db.insert(agentEvents).values({
-                    taskId,
-                    eventType: "completed",
-                    payload: {},
-                  });
-                  return text;
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : String(error);
-                  await db
-                    .update(agentTasks)
-                    .set({ status: "failed", updatedAt: new Date() })
-                    .where(eq(agentTasks.id, taskId));
-                  await db.insert(agentEvents).values({
-                    taskId,
-                    eventType: "failed",
-                    payload: { error: message },
-                  });
-                  return `Sub-agent failed: ${message}`;
-                }
-              },
+              spawnSubAgent,
+              planTaskGraph,
             })
           : {};
 
@@ -1769,8 +1692,18 @@ ${componentSnippet}
         // performCompaction inserts a summary message, so we re-read the
         // chat's messages afterward to pick it up.
         let chatMessagesForHistory = updatedChat.messages;
+        const userPromptLower = req.prompt.trim().toLowerCase();
+        const isContinuationPrompt =
+          userPromptLower === "continue" ||
+          userPromptLower === "proceed" ||
+          userPromptLower === "go on" ||
+          userPromptLower === "keep going" ||
+          userPromptLower.startsWith("continue") ||
+          userPromptLower.startsWith("proceed");
+
         if (
           settings.enableContextCompaction !== false &&
+          !isContinuationPrompt &&
           (await isChatPendingCompaction(req.chatId))
         ) {
           await performCompaction(event, req.chatId, appPath, octopusStudioRequestId ?? uuidv4());
@@ -1905,6 +1838,7 @@ ${componentSnippet}
           rebuildAppToolAvailable,
           chatProject: updatedChat.app?.type === "chat",
           economyMode,
+          appPath,
         });
 
         // Add information about mentioned apps for build mode only.
@@ -2119,6 +2053,7 @@ This conversation includes one or more image attachments. When the user uploads 
             } satisfies ModelMessage,
           ];
         }
+
         const simpleStreamText = async ({
           chatMessages,
           modelClient,
@@ -2178,9 +2113,24 @@ This conversation includes one or more image attachments. When the user uploads 
             system: systemPromptOverride,
             tools,
             messages: chatMessages.filter((m) => m.content),
-            onStepFinish: () => {
+            onStepFinish: (step) => {
               // One callback per LLM roundtrip in the SDK tool loop (doc §26 "Calls").
               accumulatedModelCalls += 1;
+              if (step.toolResults) {
+                for (const tr of step.toolResults) {
+                  if (tr.toolName === "spawn_subagent") {
+                    try {
+                      const env = JSON.parse(tr.output as string);
+                      if (typeof env.inputTokens === "number")
+                        accumulatedInputTokens += env.inputTokens;
+                      if (typeof env.outputTokens === "number")
+                        accumulatedOutputTokens += env.outputTokens;
+                    } catch (e) {
+                      // ignore
+                    }
+                  }
+                }
+              }
             },
             onFinish: async (response) => {
               const totalTokens = response.usage?.totalTokens;
@@ -2308,37 +2258,13 @@ This conversation includes one or more image attachments. When the user uploads 
 
         let modelRefused = false;
 
-        let mcpTools: Record<string, any> = {};
-        try {
-          const servers = await db.select().from(mcpServers).where(eq(mcpServers.enabled, true));
-          for (const server of servers) {
-            try {
-              const client = await mcpManager.getClient(server.id);
-              const tools = await client.tools();
-              if (tools) {
-                const safeServerName = sanitizeMcpName(server.name);
-                for (const [toolName, toolDef] of Object.entries(tools)) {
-                  mcpTools[buildMcpToolKey(safeServerName, toolName)] = toolDef;
-                }
-              }
-            } catch (e) {
-              logger.warn(`Failed to fetch MCP tools for server ${server.name}`, e);
-            }
-          }
-        } catch (e) {
-          logger.warn("Failed to fetch MCP servers", e);
-        }
-
-        // Built-in names take priority over any same-named MCP tool.
-        // NOTE (multi-agent guide §9): this merge is the seam where a per-call
-        // `allowed_files`/`allowed_symbols` wrapper would be applied to `mcpTools`
-        // (wrapping each `toolDef.execute` before merging). Built-in tools already
-        // enforce via `agent_tools.ts`; MCP wrapping lands with the orchestrator
-        // (Increment 2), which is the first place a task context is available.
+        // MCP tools are NOT loaded into the main agent's schema — that would
+        // bloat every turn with every enabled server's tool schemas. Instead the
+        // main agent discovers servers via `list_mcp_servers` and delegates to a
+        // sub-agent via `spawn_subagent(mcp_servers: [...])`, which loads only
+        // the requested servers' tools (see doSpawnSubAgent).
         const mergedTools: ToolSet | undefined =
-          Object.keys(builtinTools).length > 0 || Object.keys(mcpTools).length > 0
-            ? { ...builtinTools, ...mcpTools }
-            : undefined;
+          Object.keys(builtinTools).length > 0 ? builtinTools : undefined;
 
         // When calling streamText, the messages need to be properly formatted for mixed content
         const fullStream = modelRefused

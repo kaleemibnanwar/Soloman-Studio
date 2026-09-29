@@ -40,10 +40,7 @@ function buildStressManyWritesLarge(): string {
   return `Generating 10000 ~100-line files for stress test.
 
 ${Array.from({ length: 10000 }, (_, i) => {
-  const fields = Array.from(
-    { length: 20 },
-    (_, j) => `  field_${j}: ${i * 20 + j},`,
-  ).join("\n");
+  const fields = Array.from({ length: 20 }, (_, j) => `  field_${j}: ${i * 20 + j},`).join("\n");
   const helpers = Array.from(
     { length: 20 },
     (_, j) =>

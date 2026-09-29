@@ -32,18 +32,14 @@ export class AppManagement {
       return;
     }
 
-    const telemetryLaterButton = this.page.getByTestId(
-      "telemetry-later-button",
-    );
+    const telemetryLaterButton = this.page.getByTestId("telemetry-later-button");
     if (await telemetryLaterButton.isVisible().catch(() => false)) {
       await telemetryLaterButton.click({ timeout: Timeout.MEDIUM });
     }
 
     await this.page.getByRole("link", { name: "Apps" }).hover();
     const viewAllAppsButton = this.page.getByTestId("view-all-apps-button");
-    if (
-      await viewAllAppsButton.isVisible({ timeout: 1_000 }).catch(() => false)
-    ) {
+    if (await viewAllAppsButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
       await viewAllAppsButton.click();
     }
     await expect(appListContainer).toBeVisible({
@@ -53,38 +49,25 @@ export class AppManagement {
 
   async isCurrentAppNameNone() {
     await expect(async () => {
-      await expect(this.getTitleBarAppNameButton()).toHaveAttribute(
-        "data-app-name",
-        "",
-      );
+      await expect(this.getTitleBarAppNameButton()).toHaveAttribute("data-app-name", "");
     }).toPass();
   }
 
   async getCurrentAppName() {
     // Make sure to wait for the app to be set to avoid a race condition.
     await expect(async () => {
-      await expect(this.getTitleBarAppNameButton()).not.toHaveAttribute(
-        "data-app-name",
-        "",
-      );
+      await expect(this.getTitleBarAppNameButton()).not.toHaveAttribute("data-app-name", "");
     }).toPass();
-    return (
-      (await this.getTitleBarAppNameButton().getAttribute("data-app-name")) ??
-      undefined
-    );
+    return (await this.getTitleBarAppNameButton().getAttribute("data-app-name")) ?? undefined;
   }
 
   async getCurrentAppPath() {
     // Prefer data-app-path: after a template path-swap, the on-disk folder is
     // a slugified name that differs from the display name.
     await expect(async () => {
-      await expect(this.getTitleBarAppNameButton()).not.toHaveAttribute(
-        "data-app-path",
-        "",
-      );
+      await expect(this.getTitleBarAppNameButton()).not.toHaveAttribute("data-app-path", "");
     }).toPass();
-    const appPath =
-      await this.getTitleBarAppNameButton().getAttribute("data-app-path");
+    const appPath = await this.getTitleBarAppNameButton().getAttribute("data-app-path");
     if (!appPath) {
       throw new Error("No current app path found");
     }
@@ -118,11 +101,7 @@ export class AppManagement {
     await this.locateAppUpgradeButton({ upgradeId }).click();
   }
 
-  async expectAppUpgradeButtonIsNotVisible({
-    upgradeId,
-  }: {
-    upgradeId: string;
-  }) {
+  async expectAppUpgradeButtonIsNotVisible({ upgradeId }: { upgradeId: string }) {
     await expect(this.locateAppUpgradeButton({ upgradeId })).toBeHidden({
       timeout: Timeout.MEDIUM,
     });
@@ -169,10 +148,7 @@ export class AppManagement {
     await projectSelect.click();
     await this.page
       .getByRole("option", {
-        name: new RegExp(
-          `^${projectName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-          "i",
-        ),
+        name: new RegExp(`^${projectName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"),
       })
       .click();
     await expect(this.page.getByTestId("neon-branch-select")).toBeVisible({
@@ -186,10 +162,7 @@ export class AppManagement {
     await branchSelect.click();
     await this.page
       .getByRole("option", {
-        name: new RegExp(
-          `^${branchName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-          "i",
-        ),
+        name: new RegExp(`^${branchName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"),
       })
       .click();
   }
@@ -202,27 +175,17 @@ export class AppManagement {
       throw new Error("No current app to enable blueprint for");
     }
     await this.page.evaluate(async (appName) => {
-      await (window as any).electron.ipcRenderer.invoke(
-        "test:set-needs-app-blueprint",
-        { appName, value: true },
-      );
+      await (window as any).electron.ipcRenderer.invoke("test:set-needs-app-blueprint", {
+        appName,
+        value: true,
+      });
     }, appName);
   }
 
   async importApp(appDir: string) {
     await this.page.getByRole("button", { name: "Import App" }).click();
     await eph.stubDialog(this.electronApp, "showOpenDialog", {
-      filePaths: [
-        path.join(
-          __dirname,
-          "..",
-          "..",
-          "..",
-          "fixtures",
-          "import-app",
-          appDir,
-        ),
-      ],
+      filePaths: [path.join(__dirname, "..", "..", "..", "fixtures", "import-app", appDir)],
     });
     await this.page.getByRole("button", { name: "Select Folder" }).click();
     await this.page.getByRole("button", { name: "Import" }).click();
@@ -259,9 +222,7 @@ export class AppManagement {
     const retryIntervalMs = 15_000;
     const startTime = Date.now();
     let lastOutput = "";
-    const packageJson = JSON.parse(
-      readFileSync(path.join(appPath, "package.json"), "utf8"),
-    );
+    const packageJson = JSON.parse(readFileSync(path.join(appPath, "package.json"), "utf8"));
     const expectedDependencies = Object.keys({
       ...packageJson.dependencies,
       ...packageJson.devDependencies,
@@ -272,9 +233,7 @@ export class AppManagement {
         console.log(`Checking installed dependencies in ${appPath}...`);
         const missingDependencies = expectedDependencies.filter(
           (dependency) =>
-            !existsSync(
-              path.join(appPath, "node_modules", dependency, "package.json"),
-            ),
+            !existsSync(path.join(appPath, "node_modules", dependency, "package.json")),
         );
         lastOutput = missingDependencies.length
           ? `MISSING: ${missingDependencies.join(", ")}`
@@ -287,9 +246,7 @@ export class AppManagement {
         // Capture any error output to include in the final error if we time out
         const stdOut = error?.stdout ? error.stdout.toString() : "";
         const stdErr = error?.stderr ? error.stderr.toString() : "";
-        lastOutput = [stdOut, stdErr, error?.message]
-          .filter(Boolean)
-          .join("\n");
+        lastOutput = [stdOut, stdErr, error?.message].filter(Boolean).join("\n");
         console.error("Dependency check command failed:", lastOutput);
       }
 
@@ -346,9 +303,7 @@ export class AppManagement {
       } catch (error: any) {
         const stdOut = error?.stdout ? error.stdout.toString() : "";
         const stdErr = error?.stderr ? error.stderr.toString() : "";
-        lastOutput = [stdOut, stdErr, error?.message]
-          .filter(Boolean)
-          .join("\n");
+        lastOutput = [stdOut, stdErr, error?.message].filter(Boolean).join("\n");
       }
 
       const elapsed = Date.now() - startTime;

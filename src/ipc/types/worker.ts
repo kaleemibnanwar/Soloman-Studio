@@ -1,12 +1,7 @@
 import { z } from "zod";
 import { createClient, defineContract } from "../contracts/core";
 
-export const WorkerRunStepStatusSchema = z.enum([
-  "pending",
-  "running",
-  "completed",
-  "failed",
-]);
+export const WorkerRunStepStatusSchema = z.enum(["pending", "running", "completed", "failed"]);
 
 export const WorkerRunStepSchema = z.object({
   id: z.number(),
@@ -24,12 +19,7 @@ export const WorkerRunStepSchema = z.object({
 });
 export type WorkerRunStep = z.infer<typeof WorkerRunStepSchema>;
 
-export const WorkerRunStatusSchema = z.enum([
-  "running",
-  "completed",
-  "failed",
-  "cancelled",
-]);
+export const WorkerRunStatusSchema = z.enum(["running", "completed", "failed", "cancelled"]);
 
 export const WorkerRunModeSchema = z.enum(["propose", "execute"]);
 

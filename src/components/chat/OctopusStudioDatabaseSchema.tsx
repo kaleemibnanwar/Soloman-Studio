@@ -17,10 +17,7 @@ interface OctopusStudioDatabaseSchemaProps {
   children: React.ReactNode;
 }
 
-export function OctopusStudioDatabaseSchema({
-  node,
-  children,
-}: OctopusStudioDatabaseSchemaProps) {
+export function OctopusStudioDatabaseSchema({ node, children }: OctopusStudioDatabaseSchemaProps) {
   const { state } = node.properties;
   const isLoading = state === "pending";
   const content = typeof children === "string" ? children : "";

@@ -22,12 +22,9 @@ export function registerSettingsHandlers() {
     return updated;
   });
 
-  createTypedHandler(
-    settingsContracts.validateProviderApiKey,
-    async (_, params) => {
-      return validateProviderApiKey(params);
-    },
-  );
+  createTypedHandler(settingsContracts.validateProviderApiKey, async (_, params) => {
+    return validateProviderApiKey(params);
+  });
 
   createTypedHandler(settingsContracts.getOctoLimbBridgeStatus, async () => {
     return getOctoLimbBridgeStatus();

@@ -11,12 +11,7 @@ const ELECTRON_LOCALE_DIRS_TO_KEEP = new Set([
   "zh_CN.lproj",
 ]);
 
-const ELECTRON_LOCALE_PAKS_TO_KEEP = new Set([
-  "en-US.pak",
-  "es.pak",
-  "pt-BR.pak",
-  "zh-CN.pak",
-]);
+const ELECTRON_LOCALE_PAKS_TO_KEEP = new Set(["en-US.pak", "es.pak", "pt-BR.pak", "zh-CN.pak"]);
 
 const NODE_PTY_KEEP_PREBUILDS_BY_TARGET: Record<string, string | undefined> = {
   "darwin-arm64": "darwin-arm64",
@@ -110,9 +105,7 @@ async function removeRelativePaths(
   relativePaths: readonly string[],
 ): Promise<void> {
   await Promise.all(
-    relativePaths.map((relativePath) =>
-      rmIfExists(path.join(basePath, relativePath)),
-    ),
+    relativePaths.map((relativePath) => rmIfExists(path.join(basePath, relativePath))),
   );
 }
 
@@ -167,9 +160,7 @@ async function pruneNodePty(
   await removeFilesMatching(
     nodePtyPath,
     ({ name }) =>
-      hasNativeBuildArtifactExtension(name) ||
-      name.endsWith(".map") ||
-      name.includes(".test."),
+      hasNativeBuildArtifactExtension(name) || name.endsWith(".map") || name.includes(".test."),
   );
 
   const keepPrebuild = NODE_PTY_KEEP_PREBUILDS_BY_TARGET[`${platform}-${arch}`];
@@ -192,24 +183,16 @@ async function pruneNodePty(
 }
 
 async function pruneBetterSqlite3(betterSqlite3Path: string): Promise<void> {
-  await removeRelativePaths(
-    betterSqlite3Path,
-    BETTER_SQLITE3_REMOVE_RELATIVE_PATHS,
-  );
+  await removeRelativePaths(betterSqlite3Path, BETTER_SQLITE3_REMOVE_RELATIVE_PATHS);
 
   await removeFilesMatching(
     betterSqlite3Path,
-    ({ name }) =>
-      hasNativeBuildArtifactExtension(name) ||
-      name.startsWith("test_extension."),
+    ({ name }) => hasNativeBuildArtifactExtension(name) || name.startsWith("test_extension."),
   );
 }
 
 async function pruneKeychainReader(keychainReaderPath: string): Promise<void> {
-  await removeRelativePaths(
-    keychainReaderPath,
-    KEYCHAIN_READER_REMOVE_RELATIVE_PATHS,
-  );
+  await removeRelativePaths(keychainReaderPath, KEYCHAIN_READER_REMOVE_RELATIVE_PATHS);
 
   await removeFilesMatching(keychainReaderPath, ({ name }) =>
     hasNativeBuildArtifactExtension(name),
@@ -222,21 +205,13 @@ export async function removeUnusedAppPackageFiles(
   arch: PackagerArch,
 ): Promise<void> {
   await Promise.all([
-    pruneNodePty(
-      path.join(appPath, "node_modules", "node-pty"),
-      platform,
-      arch,
-    ),
+    pruneNodePty(path.join(appPath, "node_modules", "node-pty"), platform, arch),
     pruneBetterSqlite3(path.join(appPath, "node_modules", "better-sqlite3")),
-    pruneKeychainReader(
-      path.join(appPath, "node_modules", "octopus-studio-keychain-reader"),
-    ),
+    pruneKeychainReader(path.join(appPath, "node_modules", "octopus-studio-keychain-reader")),
   ]);
 }
 
-async function pruneElectronLocaleDirectories(
-  resourcesPath: string,
-): Promise<void> {
+async function pruneElectronLocaleDirectories(resourcesPath: string): Promise<void> {
   let entries: import("node:fs").Dirent[];
   try {
     entries = await fs.readdir(resourcesPath, { withFileTypes: true });
@@ -388,16 +363,13 @@ async function pruneGitCredentialManagerUnix(gitPath: string): Promise<void> {
   await removeEmptyDirectories(gitCorePath);
 }
 
-async function pruneGitCredentialManagerWindows(
-  gitPath: string,
-): Promise<void> {
+async function pruneGitCredentialManagerWindows(gitPath: string): Promise<void> {
   await Promise.all(
     WINDOWS_MINGW_SUBFOLDERS.map((subfolder) =>
       removeFilesMatching(
         path.join(gitPath, subfolder, "bin"),
         ({ name }) =>
-          name === "scalar.exe" ||
-          WINDOWS_GCM_FILE_PATTERNS.some((pattern) => pattern.test(name)),
+          name === "scalar.exe" || WINDOWS_GCM_FILE_PATTERNS.some((pattern) => pattern.test(name)),
       ),
     ),
   );
@@ -434,9 +406,7 @@ async function pruneGitDistribution(
     // git-lfs (unused by OctopusStudio; removed on Unix below)
     await Promise.all(
       WINDOWS_MINGW_SUBFOLDERS.map((subfolder) =>
-        rmIfExists(
-          path.join(gitPath, subfolder, "libexec", "git-core", "git-lfs.exe"),
-        ),
+        rmIfExists(path.join(gitPath, subfolder, "libexec", "git-core", "git-lfs.exe")),
       ),
     );
     return;
@@ -454,12 +424,7 @@ function getResourcePaths(
 } {
   if (platform === "darwin" || platform === "mas") {
     return {
-      appResourcesPath: path.join(
-        buildPath,
-        "Octopus Studio.app",
-        "Contents",
-        "Resources",
-      ),
+      appResourcesPath: path.join(buildPath, "Octopus Studio.app", "Contents", "Resources"),
       electronLocaleResourcePaths: [
         path.join(
           buildPath,
@@ -485,10 +450,7 @@ export async function removeUnusedCopiedResources(
   buildPath: string,
   platform: PackagerPlatform,
 ): Promise<void> {
-  const { appResourcesPath, electronLocaleResourcePaths } = getResourcePaths(
-    buildPath,
-    platform,
-  );
+  const { appResourcesPath, electronLocaleResourcePaths } = getResourcePaths(buildPath, platform);
 
   await Promise.all([
     pruneGitDistribution(appResourcesPath, platform),

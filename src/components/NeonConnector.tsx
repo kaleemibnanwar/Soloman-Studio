@@ -20,26 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadApp } from "@/hooks/useLoadApp";
 import { Switch } from "@/components/ui/switch";
-import {
-  ExternalLink,
-  Info,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { ExternalLink, Info, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNeon } from "@/hooks/useNeon";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,19 +55,15 @@ export function NeonConnector({ appId }: { appId: number }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [createProjectError, setCreateProjectError] = useState<string | null>(
-    null,
-  );
+  const [createProjectError, setCreateProjectError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSwitchingBranch, setIsSwitchingBranch] = useState(false);
-  const [isUpdatingEmailVerification, setIsUpdatingEmailVerification] =
-    useState(false);
+  const [isUpdatingEmailVerification, setIsUpdatingEmailVerification] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isDisconnectingAccount, setIsDisconnectingAccount] = useState(false);
   const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
   const [removeFromVercel, setRemoveFromVercel] = useState(true);
-  const [isDisconnectAccountDialogOpen, setIsDisconnectAccountDialogOpen] =
-    useState(false);
+  const [isDisconnectAccountDialogOpen, setIsDisconnectAccountDialogOpen] = useState(false);
   const formatToastError = (error: unknown) => getErrorMessage(error);
   const projectDateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
@@ -252,10 +235,7 @@ export function NeonConnector({ appId }: { appId: number }) {
             toast.warning(result.warning);
           }
         } catch (vercelError) {
-          console.error(
-            "Failed to remove Neon env vars from Vercel:",
-            vercelError,
-          );
+          console.error("Failed to remove Neon env vars from Vercel:", vercelError);
           toast.warning(t("integrations.neon.failedRemoveVercelEnvVars"));
         }
       }
@@ -310,8 +290,7 @@ export function NeonConnector({ appId }: { appId: number }) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.neon.emailPasswordConfig({
           appId,
-          branchId:
-            app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId ?? null,
+          branchId: app?.neonActiveBranchId ?? app?.neonDevelopmentBranchId ?? null,
         }),
       });
       toast.success(
@@ -367,9 +346,7 @@ export function NeonConnector({ appId }: { appId: number }) {
     return details.join(" • ");
   };
 
-  const getBranchBadgeVariant = (
-    type: string,
-  ): "default" | "secondary" | "outline" => {
+  const getBranchBadgeVariant = (type: string): "default" | "secondary" | "outline" => {
     switch (type) {
       case "production":
         return "default";
@@ -405,9 +382,7 @@ export function NeonConnector({ appId }: { appId: number }) {
       <Card className="mt-1">
         <CardHeader>
           <CardTitle>{t("integrations.neon.database")}</CardTitle>
-          <CardDescription>
-            {t("integrations.neon.unsupportedFramework")}
-          </CardDescription>
+          <CardDescription>{t("integrations.neon.unsupportedFramework")}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -453,9 +428,7 @@ export function NeonConnector({ appId }: { appId: number }) {
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="neon-branch-select">
-                {t("integrations.neon.activeBranch")}
-              </Label>
+              <Label htmlFor="neon-branch-select">{t("integrations.neon.activeBranch")}</Label>
               {branchesError ? (
                 <div className="text-sm text-red-500">
                   <p>
@@ -509,17 +482,11 @@ export function NeonConnector({ appId }: { appId: number }) {
                   onValueChange={(value) => value && handleBranchSelect(value)}
                   disabled={isSwitchingBranch}
                 >
-                  <SelectTrigger
-                    id="neon-branch-select"
-                    data-testid="neon-branch-select"
-                  >
-                    <SelectValue
-                      placeholder={t("integrations.neon.selectBranch")}
-                    >
+                  <SelectTrigger id="neon-branch-select" data-testid="neon-branch-select">
+                    <SelectValue placeholder={t("integrations.neon.selectBranch")}>
                       {app.neonActiveBranchId
-                        ? (branches.find(
-                            (b) => b.branchId === app.neonActiveBranchId,
-                          )?.branchName ?? app.neonActiveBranchId)
+                        ? (branches.find((b) => b.branchId === app.neonActiveBranchId)
+                            ?.branchName ?? app.neonActiveBranchId)
                         : undefined}
                     </SelectValue>
                   </SelectTrigger>
@@ -527,16 +494,10 @@ export function NeonConnector({ appId }: { appId: number }) {
                     {branches
                       .filter((branch) => branch.type !== "preview")
                       .map((branch) => (
-                        <SelectItem
-                          key={branch.branchId}
-                          value={branch.branchId}
-                        >
+                        <SelectItem key={branch.branchId} value={branch.branchId}>
                           <span className="flex items-center gap-2">
                             {branch.branchName}
-                            <Badge
-                              variant={getBranchBadgeVariant(branch.type)}
-                              className="text-xs"
-                            >
+                            <Badge variant={getBranchBadgeVariant(branch.type)} className="text-xs">
                               {t(`integrations.neon.${branch.type}`)}
                             </Badge>
                           </span>
@@ -589,17 +550,13 @@ export function NeonConnector({ appId }: { appId: number }) {
                 if (open) setRemoveFromVercel(true);
               }}
             >
-              <AlertDialogTrigger
-                className={buttonVariants({ variant: "destructive" })}
-              >
+              <AlertDialogTrigger className={buttonVariants({ variant: "destructive" })}>
                 <Trash2 className="h-4 w-4 mr-1" />
                 {t("integrations.neon.disconnectProject")}
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {t("integrations.neon.disconnectProject")}
-                  </AlertDialogTitle>
+                  <AlertDialogTitle>{t("integrations.neon.disconnectProject")}</AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("integrations.neon.disconnectConfirmation")}
                   </AlertDialogDescription>
@@ -608,9 +565,7 @@ export function NeonConnector({ appId }: { appId: number }) {
                   <label className="flex items-start gap-2 rounded-md border border-border p-3 text-sm">
                     <Checkbox
                       checked={removeFromVercel}
-                      onCheckedChange={(checked) =>
-                        setRemoveFromVercel(checked === true)
-                      }
+                      onCheckedChange={(checked) => setRemoveFromVercel(checked === true)}
                       disabled={isDisconnecting}
                       className="mt-0.5"
                     />
@@ -636,9 +591,7 @@ export function NeonConnector({ appId }: { appId: number }) {
                     disabled={isDisconnecting}
                     className="bg-destructive text-white hover:bg-destructive/90"
                   >
-                    {isDisconnecting && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
+                    {isDisconnecting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {t("integrations.neon.disconnectProject")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -661,8 +614,7 @@ export function NeonConnector({ appId }: { appId: number }) {
               <AlertDialog
                 open={isDisconnectAccountDialogOpen}
                 onOpenChange={(open) => {
-                  if (!isDisconnectingAccount)
-                    setIsDisconnectAccountDialogOpen(open);
+                  if (!isDisconnectingAccount) setIsDisconnectAccountDialogOpen(open);
                 }}
               >
                 <AlertDialogTrigger
@@ -672,9 +624,7 @@ export function NeonConnector({ appId }: { appId: number }) {
                   })}
                   disabled={isDisconnectingAccount}
                 >
-                  {isDisconnectingAccount && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
+                  {isDisconnectingAccount && <Loader2 className="h-4 w-4 animate-spin" />}
                   {t("integrations.neon.disconnect")}
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -698,9 +648,7 @@ export function NeonConnector({ appId }: { appId: number }) {
                       disabled={isDisconnectingAccount}
                       className="bg-destructive text-white hover:bg-destructive/90"
                     >
-                      {isDisconnectingAccount && (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
+                      {isDisconnectingAccount && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                       {t("integrations.neon.disconnect")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -715,15 +663,11 @@ export function NeonConnector({ appId }: { appId: number }) {
                 aria-label={t("integrations.neon.refreshProjects")}
                 aria-busy={isFetchingProjects}
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${isFetchingProjects ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`h-4 w-4 ${isFetchingProjects ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </div>
-          <CardDescription>
-            {t("integrations.neon.selectProjectDescription")}
-          </CardDescription>
+          <CardDescription>{t("integrations.neon.selectProjectDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoadingProjects ? (
@@ -736,19 +680,13 @@ export function NeonConnector({ appId }: { appId: number }) {
               {t("integrations.neon.errorLoadingProjects", {
                 message: formatToastError(projectsError),
               })}
-              <Button
-                variant="outline"
-                className="mt-2"
-                onClick={() => refetchProjects()}
-              >
+              <Button variant="outline" className="mt-2" onClick={() => refetchProjects()}>
                 {t("integrations.neon.retry")}
               </Button>
             </div>
           ) : showCreateForm ? (
             <div className="space-y-3">
-              <Label htmlFor="neon-new-project-name">
-                {t("integrations.neon.projectName")}
-              </Label>
+              <Label htmlFor="neon-new-project-name">{t("integrations.neon.projectName")}</Label>
               <Input
                 id="neon-new-project-name"
                 value={newProjectName}
@@ -776,9 +714,7 @@ export function NeonConnector({ appId }: { appId: number }) {
                   disabled={isCreating || !newProjectName.trim()}
                   size="sm"
                 >
-                  {isCreating
-                    ? t("integrations.neon.creating")
-                    : t("integrations.neon.create")}
+                  {isCreating ? t("integrations.neon.creating") : t("integrations.neon.create")}
                 </Button>
                 <Button
                   variant="outline"
@@ -797,41 +733,30 @@ export function NeonConnector({ appId }: { appId: number }) {
           ) : (
             <div className="space-y-4">
               {projects.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  {t("integrations.neon.noProjectsFound")}
-                </p>
+                <p className="text-sm text-gray-500">{t("integrations.neon.noProjectsFound")}</p>
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="neon-project-select">
-                    {t("integrations.neon.project")}
-                  </Label>
+                  <Label htmlFor="neon-project-select">{t("integrations.neon.project")}</Label>
                   <Select
                     value=""
                     onValueChange={(v) => v && handleProjectSelect(v)}
                     disabled={isConnecting}
                   >
-                    <SelectTrigger
-                      id="neon-project-select"
-                      data-testid="neon-project-select"
-                    >
+                    <SelectTrigger id="neon-project-select" data-testid="neon-project-select">
                       {isConnecting ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           {t("integrations.neon.connecting")}
                         </span>
                       ) : (
-                        <SelectValue
-                          placeholder={t("integrations.neon.selectAProject")}
-                        />
+                        <SelectValue placeholder={t("integrations.neon.selectAProject")} />
                       )}
                     </SelectTrigger>
                     <SelectContent>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           <div className="flex min-w-0 flex-col">
-                            <span className="truncate font-medium">
-                              {project.name}
-                            </span>
+                            <span className="truncate font-medium">{project.name}</span>
                             <span className="truncate text-xs text-muted-foreground">
                               {formatProjectDetails(project)}
                             </span>
@@ -842,11 +767,7 @@ export function NeonConnector({ appId }: { appId: number }) {
                   </Select>
                 </div>
               )}
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateForm(true)}
-                className="gap-1"
-              >
+              <Button variant="outline" onClick={() => setShowCreateForm(true)} className="gap-1">
                 <Plus className="h-4 w-4" />
                 {t("integrations.neon.createNewProject")}
               </Button>
@@ -906,13 +827,7 @@ export function NeonConnector({ appId }: { appId: number }) {
   );
 }
 
-function NeonSvg({
-  isDarkMode,
-  className,
-}: {
-  isDarkMode?: boolean;
-  className?: string;
-}) {
+function NeonSvg({ isDarkMode, className }: { isDarkMode?: boolean; className?: string }) {
   const textColor = isDarkMode ? "#fff" : "#000";
 
   return (

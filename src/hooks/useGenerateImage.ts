@@ -2,10 +2,7 @@ import { useCallback, useRef } from "react";
 import { useMachineMutation } from "@/distributed_machines/use_machine_mutation";
 import type { RequestId } from "@/distributed_machines/request_identity";
 import { showError } from "@/lib/toast";
-import {
-  useImageGenerationActor,
-  useImageGenerationRequestActor,
-} from "@/image_generation/hooks";
+import { useImageGenerationActor, useImageGenerationRequestActor } from "@/image_generation/hooks";
 import type {
   ImageGenerationJobView,
   ImageGenerationOperationOutcome,
@@ -51,9 +48,7 @@ export function useGenerateImage() {
   const remote = useImageGenerationActor();
   const requestActor = useImageGenerationRequestActor();
   const latestStart = useRef<ImagePreparedRequest | undefined>(undefined);
-  const latestCancellation = useRef<ImagePreparedRequest | undefined>(
-    undefined,
-  );
+  const latestCancellation = useRef<ImagePreparedRequest | undefined>(undefined);
 
   const startMutation = useMachineMutation({
     connection: remote.connection,
@@ -104,15 +99,13 @@ export function useGenerateImage() {
     async (params: StartImageGenerationParams): Promise<string | null> => {
       const input: StartMutationInput = {
         jobId: `image-generation-job:${globalThis.crypto.randomUUID()}`,
-        requestId:
-          `image-generation-request:${globalThis.crypto.randomUUID()}` as RequestId,
+        requestId: `image-generation-request:${globalThis.crypto.randomUUID()}` as RequestId,
         operationId: `image-generation-runtime:${globalThis.crypto.randomUUID()}`,
         params,
       };
       const settlement = startMutation.mutate(input);
       const prepared = latestStart.current;
-      if (!prepared)
-        throw new Error("Image generation request was not prepared");
+      if (!prepared) throw new Error("Image generation request was not prepared");
       void settlement.catch(() => undefined);
       try {
         const admission = await prepared.admission;
@@ -122,9 +115,7 @@ export function useGenerateImage() {
         prepared.detach();
         // The existing failure presentation below covers unexpected admission.
       }
-      showError(
-        "Image generation is temporarily unavailable. Please try again.",
-      );
+      showError("Image generation is temporarily unavailable. Please try again.");
       return null;
     },
     [startMutation.mutate],

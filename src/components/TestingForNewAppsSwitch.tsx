@@ -15,9 +15,7 @@ export function TestingForNewAppsSwitch() {
           updateSettings({ enableTestingForNewApps: checked });
         }}
       />
-      <Label htmlFor="enable-testing-for-new-apps">
-        Enable Testing for New Apps
-      </Label>
+      <Label htmlFor="enable-testing-for-new-apps">Enable Testing for New Apps</Label>
     </div>
   );
 }

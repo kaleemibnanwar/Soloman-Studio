@@ -10,9 +10,7 @@ export class Plugins {
 
   async openAddPluginDialog() {
     await this.page.getByRole("button", { name: "Add Plugin" }).click();
-    await expect(
-      this.page.getByRole("dialog", { name: "Add Plugin" }),
-    ).toBeVisible();
+    await expect(this.page.getByRole("dialog", { name: "Add Plugin" })).toBeVisible();
   }
 
   // The dialog's submit button; the header button that opens the

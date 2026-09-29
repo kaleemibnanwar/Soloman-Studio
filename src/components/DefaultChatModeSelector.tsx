@@ -9,10 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ChatMode } from "@/lib/schemas";
-import {
-  isOctopusStudioProEnabled,
-  getEffectiveDefaultChatMode,
-} from "@/lib/schemas";
+import { isOctopusStudioProEnabled, getEffectiveDefaultChatMode } from "@/lib/schemas";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import {
@@ -29,10 +26,7 @@ export function DefaultChatModeSelector() {
   useEffect(() => {
     if (
       settings &&
-      isFreeProBuildModeCombination(
-        settings.selectedModel,
-        settings.defaultChatMode,
-      )
+      isFreeProBuildModeCombination(settings.selectedModel, settings.defaultChatMode)
     ) {
       updateSettings({ defaultChatMode: FREE_PRO_MODEL_FALLBACK_CHAT_MODE });
     }
@@ -44,16 +38,9 @@ export function DefaultChatModeSelector() {
 
   const isProEnabled = isOctopusStudioProEnabled(settings);
   const isOctopusStudioFreeSelected = isFreeProModel(settings.selectedModel);
-  const freeAgentQuotaAvailable = quotaStatus
-    ? !quotaStatus.isQuotaExceeded
-    : undefined;
-  const effectiveDefault = getEffectiveDefaultChatMode(
-    settings,
-    envVars,
-    freeAgentQuotaAvailable,
-  );
-  const showBasicAgentOption =
-    isProEnabled || freeAgentQuotaAvailable !== false;
+  const freeAgentQuotaAvailable = quotaStatus ? !quotaStatus.isQuotaExceeded : undefined;
+  const effectiveDefault = getEffectiveDefaultChatMode(settings, envVars, freeAgentQuotaAvailable);
+  const showBasicAgentOption = isProEnabled || freeAgentQuotaAvailable !== false;
 
   const handleDefaultChatModeChange = (value: ChatMode) => {
     if (isFreeProBuildModeCombination(settings.selectedModel, value)) {
@@ -83,10 +70,7 @@ export function DefaultChatModeSelector() {
       label={t("workflow.defaultChatMode")}
       description={t("workflow.defaultChatModeDescription")}
     >
-      <Select
-        value={effectiveDefault}
-        onValueChange={(v) => v && handleDefaultChatModeChange(v)}
-      >
+      <Select value={effectiveDefault} onValueChange={(v) => v && handleDefaultChatModeChange(v)}>
         <SelectTrigger
           className="w-full sm:w-[240px]"
           id="default-chat-mode"
@@ -98,13 +82,9 @@ export function DefaultChatModeSelector() {
           {showBasicAgentOption && (
             <SelectItem value="local-agent">
               <div className="flex flex-col items-start">
-                <span className="font-medium">
-                  {isProEnabled ? "Agent" : "Basic Agent"}
-                </span>
+                <span className="font-medium">{isProEnabled ? "Agent" : "Basic Agent"}</span>
                 <span className="text-xs text-muted-foreground">
-                  {isProEnabled
-                    ? "Better at bigger tasks"
-                    : "Free tier (10 messages/day)"}
+                  {isProEnabled ? "Better at bigger tasks" : "Free tier (10 messages/day)"}
                 </span>
               </div>
             </SelectItem>

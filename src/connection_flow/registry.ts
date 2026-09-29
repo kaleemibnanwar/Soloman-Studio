@@ -29,10 +29,7 @@ import {
 } from "./state";
 import { transition, type IgnoreReason } from "./transition";
 
-export const DEFAULT_FLOW_TIMEOUTS_MS: Record<
-  ConnectionFlowProvider,
-  number | null
-> = {
+export const DEFAULT_FLOW_TIMEOUTS_MS: Record<ConnectionFlowProvider, number | null> = {
   neon: 5 * 60_000,
   supabase: 5 * 60_000,
   github: null,
@@ -50,12 +47,7 @@ export interface ConnectionFlowRegistryOptions {
     event: ConnectionFlowEvent,
     reason: IgnoreReason,
   ) => void;
-  observer?: TransitionObserver<
-    ConnectionFlowState,
-    ConnectionFlowEvent,
-    never,
-    IgnoreReason
-  >;
+  observer?: TransitionObserver<ConnectionFlowState, ConnectionFlowEvent, never, IgnoreReason>;
   timeoutsMs?: Partial<Record<ConnectionFlowProvider, number | null>>;
   clock?: Clock;
   ids?: IdSource;
@@ -86,13 +78,9 @@ export type ClaimReturnResult =
   | { claimed: true; invocationRef: ConnectionFlowInvocationRef }
   | { claimed: false };
 
-export type ConnectionFlowRegistry = ReturnType<
-  typeof createConnectionFlowRegistry
->;
+export type ConnectionFlowRegistry = ReturnType<typeof createConnectionFlowRegistry>;
 
-export function createConnectionFlowRegistry(
-  options: ConnectionFlowRegistryOptions = {},
-) {
+export function createConnectionFlowRegistry(options: ConnectionFlowRegistryOptions = {}) {
   const {
     onStateChange,
     onUnsolicitedReturn,
@@ -107,10 +95,7 @@ export function createConnectionFlowRegistry(
   };
   const states = new Map<ConnectionFlowProvider, ConnectionFlowState>();
   const invocations = new InvocationRegistry<ConnectionFlowProvider>();
-  const pendingTimeouts = new Map<
-    ConnectionFlowProvider,
-    ReturnType<Clock["schedule"]>
-  >();
+  const pendingTimeouts = new Map<ConnectionFlowProvider, ReturnType<Clock["schedule"]>>();
   let disposed = false;
 
   function notifyIgnored(
@@ -142,10 +127,7 @@ export function createConnectionFlowRegistry(
     clock.cancel(handle);
   }
 
-  function dispatch(
-    provider: ConnectionFlowProvider,
-    event: ConnectionFlowEvent,
-  ): boolean {
+  function dispatch(provider: ConnectionFlowProvider, event: ConnectionFlowEvent): boolean {
     if (disposed) return false;
     const previous = getState(provider);
     const result = transition(previous, event);
@@ -180,13 +162,9 @@ export function createConnectionFlowRegistry(
     return true;
   }
 
-  function start(
-    provider: ConnectionFlowProvider,
-    expectedRevision: number,
-  ): StartFlowResult {
+  function start(provider: ConnectionFlowProvider, expectedRevision: number): StartFlowResult {
     const current = getState(provider);
-    if (disposed)
-      return { admitted: false, reason: "disposed", state: current };
+    if (disposed) return { admitted: false, reason: "disposed", state: current };
     if (current.revision !== expectedRevision) {
       return { admitted: false, reason: "stale-revision", state: current };
     }
@@ -205,11 +183,7 @@ export function createConnectionFlowRegistry(
       };
     }
 
-    const invocationRef = createInvocationRef(
-      CONNECTION_FLOW_INVOCATION_KIND,
-      provider,
-      ids,
-    );
+    const invocationRef = createInvocationRef(CONNECTION_FLOW_INVOCATION_KIND, provider, ids);
     invocations.register(invocationRef, provider);
     const started = dispatch(provider, {
       type: "start",
@@ -243,14 +217,10 @@ export function createConnectionFlowRegistry(
     }
     const claim =
       expectedInvocationRef === undefined
-        ? invocations.claimStructurally(
-            CONNECTION_FLOW_INVOCATION_KIND,
-            provider,
-            {
-              structuralSafety:
-                "Supabase and Neon deep links cannot echo application state; one active flow per provider and no active-flow replacement makes the awaiting invocation the only possible claim.",
-            },
-          )
+        ? invocations.claimStructurally(CONNECTION_FLOW_INVOCATION_KIND, provider, {
+            structuralSafety:
+              "Supabase and Neon deep links cannot echo application state; one active flow per provider and no active-flow replacement makes the awaiting invocation the only possible claim.",
+          })
         : invocations.claim(expectedInvocationRef);
     if (claim.kind !== "claimed") {
       if (expectedInvocationRef !== undefined) {
@@ -317,8 +287,7 @@ export function createConnectionFlowRegistry(
     expectedRevision: number,
   ): RevisionedIntentResult {
     const current = getState(provider);
-    if (disposed)
-      return { admitted: false, reason: "disposed", state: current };
+    if (disposed) return { admitted: false, reason: "disposed", state: current };
     if (current.revision !== expectedRevision) {
       return { admitted: false, reason: "stale-revision", state: current };
     }

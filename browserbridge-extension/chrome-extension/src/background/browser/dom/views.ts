@@ -1,22 +1,22 @@
-import type { CoordinateSet, HashedDomElement, ViewportInfo } from './history/view';
-import { HistoryTreeProcessor } from './history/service';
-import { capTextLength } from '../util';
+import type { CoordinateSet, HashedDomElement, ViewportInfo } from "./history/view";
+import { HistoryTreeProcessor } from "./history/service";
+import { capTextLength } from "../util";
 
 export const DEFAULT_INCLUDE_ATTRIBUTES = [
-  'title',
-  'type',
-  'checked',
-  'name',
-  'role',
-  'value',
-  'placeholder',
-  'data-date-format',
-  'data-state',
-  'alt',
-  'aria-checked',
-  'aria-label',
-  'aria-expanded',
-  'href',
+  "title",
+  "type",
+  "checked",
+  "name",
+  "role",
+  "value",
+  "placeholder",
+  "data-date-format",
+  "data-state",
+  "alt",
+  "aria-checked",
+  "aria-label",
+  "aria-expanded",
+  "href",
 ];
 
 export abstract class DOMBaseNode {
@@ -31,7 +31,7 @@ export abstract class DOMBaseNode {
 }
 
 export class DOMTextNode extends DOMBaseNode {
-  type = 'TEXT_NODE' as const;
+  type = "TEXT_NODE" as const;
   text: string;
 
   constructor(text: string, isVisible: boolean, parent?: DOMElementNode | null) {
@@ -153,11 +153,11 @@ export class DOMElementNode extends DOMBaseNode {
           this._hashPromise = undefined;
 
           // Log the error for debugging
-          console.error('Error computing DOM element hash:', error);
+          console.error("Error computing DOM element hash:", error);
 
           // Create a more descriptive error
           const enhancedError = new Error(
-            `Failed to hash DOM element (${this.tagName || 'unknown'}): ${error.message}`,
+            `Failed to hash DOM element (${this.tagName || "unknown"}): ${error.message}`,
           );
 
           // Preserve the original stack trace if possible
@@ -204,7 +204,7 @@ export class DOMElementNode extends DOMBaseNode {
     };
 
     collectText(this, 0);
-    return textParts.join('\n').trim();
+    return textParts.join("\n").trim();
   }
 
   clickableElementsToString(includeAttributes: string[] | null = null): string {
@@ -219,7 +219,7 @@ export class DOMElementNode extends DOMBaseNode {
 
     const processNode = (node: DOMBaseNode, depth: number): void => {
       let nextDepth = depth;
-      const depthStr = '\t'.repeat(depth);
+      const depthStr = "\t".repeat(depth);
 
       if (node instanceof DOMElementNode) {
         // Add element with highlight_index
@@ -233,7 +233,7 @@ export class DOMElementNode extends DOMBaseNode {
             const attributesToInclude: Record<string, string> = {};
 
             for (const [key, value] of Object.entries(node.attributes)) {
-              if (includeAttributes.includes(key) && String(value).trim() !== '') {
+              if (includeAttributes.includes(key) && String(value).trim() !== "") {
                 attributesToInclude[key] = String(value).trim();
               }
             }
@@ -242,7 +242,7 @@ export class DOMElementNode extends DOMBaseNode {
             // WARNING: heavy vibes, but it seems good enough for saving tokens (it kicks in hard when it's long text)
 
             // Pre-compute ordered keys that exist in both lists (faster than repeated lookups)
-            const orderedKeys = includeAttributes.filter(key => key in attributesToInclude);
+            const orderedKeys = includeAttributes.filter((key) => key in attributesToInclude);
 
             if (orderedKeys.length > 1) {
               // Only process if we have multiple attributes
@@ -276,7 +276,7 @@ export class DOMElementNode extends DOMBaseNode {
             }
 
             // Remove attributes that duplicate the node's text content
-            const attrsToRemoveIfTextMatches = ['aria-label', 'placeholder', 'title'];
+            const attrsToRemoveIfTextMatches = ["aria-label", "placeholder", "title"];
             for (const attr of attrsToRemoveIfTextMatches) {
               if (
                 attributesToInclude[attr] &&
@@ -290,12 +290,14 @@ export class DOMElementNode extends DOMBaseNode {
               // Format as key1='value1' key2='value2'
               attributesHtmlStr = Object.entries(attributesToInclude)
                 .map(([key, value]) => `${key}=${capTextLength(value, 15)}`)
-                .join(' ');
+                .join(" ");
             }
           }
 
           // Build the line
-          const highlightIndicator = node.isNew ? `*[${node.highlightIndex}]` : `[${node.highlightIndex}]`;
+          const highlightIndicator = node.isNew
+            ? `*[${node.highlightIndex}]`
+            : `[${node.highlightIndex}]`;
 
           let line = `${depthStr}${highlightIndicator}<${node.tagName}`;
 
@@ -307,17 +309,17 @@ export class DOMElementNode extends DOMBaseNode {
             // Add space before >text only if there were NO attributes added before
             const trimmedText = text.trim();
             if (!attributesHtmlStr) {
-              line += ' ';
+              line += " ";
             }
             line += `>${trimmedText}`;
           }
           // Add space before /> only if neither attributes NOR text were added
           else if (!attributesHtmlStr) {
-            line += ' ';
+            line += " ";
           }
 
           // makes sense to have if the website has lots of text -> so the LLM knows which things are part of the same clickable element and which are not
-          line += ' />'; // 1 token
+          line += " />"; // 1 token
           formattedText.push(line);
         }
 
@@ -338,12 +340,12 @@ export class DOMElementNode extends DOMBaseNode {
     };
 
     processNode(this, 0);
-    return formattedText.join('\n');
+    return formattedText.join("\n");
   }
 
   getFileUploadElement(checkSiblings = true): DOMElementNode | null {
     // Check if current element is a file input
-    if (this.tagName === 'input' && this.attributes?.type === 'file') {
+    if (this.tagName === "input" && this.attributes?.type === "file") {
       return this;
     }
 
@@ -374,14 +376,14 @@ export class DOMElementNode extends DOMBaseNode {
 
   convertSimpleXPathToCssSelector(xpath: string): string {
     if (!xpath) {
-      return '';
+      return "";
     }
 
     // Remove leading slash if present
-    const cleanXpath = xpath.replace(/^\//, '');
+    const cleanXpath = xpath.replace(/^\//, "");
 
     // Split into parts
-    const parts = cleanXpath.split('/');
+    const parts = cleanXpath.split("/");
     const cssParts: string[] = [];
 
     for (const part of parts) {
@@ -390,29 +392,29 @@ export class DOMElementNode extends DOMBaseNode {
       }
 
       // Handle custom elements with colons by escaping them
-      if (part.includes(':') && !part.includes('[')) {
-        const basePart = part.replace(/:/g, '\\:');
+      if (part.includes(":") && !part.includes("[")) {
+        const basePart = part.replace(/:/g, "\\:");
         cssParts.push(basePart);
         continue;
       }
 
       // Handle index notation [n]
-      if (part.includes('[')) {
-        const bracketIndex = part.indexOf('[');
+      if (part.includes("[")) {
+        const bracketIndex = part.indexOf("[");
         let basePart = part.substring(0, bracketIndex);
 
         // Handle custom elements with colons in the base part
-        if (basePart.includes(':')) {
-          basePart = basePart.replace(/:/g, '\\:');
+        if (basePart.includes(":")) {
+          basePart = basePart.replace(/:/g, "\\:");
         }
 
         const indexPart = part.substring(bracketIndex);
 
         // Handle multiple indices
         const indices = indexPart
-          .split(']')
+          .split("]")
           .slice(0, -1)
-          .map(i => i.replace('[', ''));
+          .map((i) => i.replace("[", ""));
 
         for (const idx of indices) {
           // Handle numeric indices
@@ -425,13 +427,13 @@ export class DOMElementNode extends DOMBaseNode {
             }
           }
           // Handle last() function
-          else if (idx === 'last()') {
-            basePart += ':last-of-type';
+          else if (idx === "last()") {
+            basePart += ":last-of-type";
           }
           // Handle position() functions
-          else if (idx.includes('position()')) {
-            if (idx.includes('>1')) {
-              basePart += ':nth-of-type(n+2)';
+          else if (idx.includes("position()")) {
+            if (idx.includes(">1")) {
+              basePart += ":nth-of-type(n+2)";
             }
           }
         }
@@ -442,14 +444,14 @@ export class DOMElementNode extends DOMBaseNode {
       }
     }
 
-    const baseSelector = cssParts.join(' > ');
+    const baseSelector = cssParts.join(" > ");
     return baseSelector;
   }
 
   enhancedCssSelectorForElement(includeDynamicAttributes = true): string {
     try {
       if (!this.xpath) {
-        return '';
+        return "";
       }
 
       // Get base selector from XPath
@@ -480,41 +482,41 @@ export class DOMElementNode extends DOMBaseNode {
       // Expanded set of safe attributes that are stable and useful for selection
       const SAFE_ATTRIBUTES = new Set([
         // Data attributes (if they're stable in your application)
-        'id',
+        "id",
         // Standard HTML attributes
-        'name',
-        'type',
-        'placeholder',
+        "name",
+        "type",
+        "placeholder",
         // Accessibility attributes
-        'aria-label',
-        'aria-labelledby',
-        'aria-describedby',
-        'role',
+        "aria-label",
+        "aria-labelledby",
+        "aria-describedby",
+        "role",
         // Common form attributes
-        'for',
-        'autocomplete',
-        'required',
-        'readonly',
+        "for",
+        "autocomplete",
+        "required",
+        "readonly",
         // Media attributes
-        'alt',
-        'title',
-        'src',
+        "alt",
+        "title",
+        "src",
         // Custom stable attributes
-        'href',
-        'target',
+        "href",
+        "target",
       ]);
 
       // Handle other attributes
       if (includeDynamicAttributes) {
-        SAFE_ATTRIBUTES.add('data-id');
-        SAFE_ATTRIBUTES.add('data-qa');
-        SAFE_ATTRIBUTES.add('data-cy');
-        SAFE_ATTRIBUTES.add('data-testid');
+        SAFE_ATTRIBUTES.add("data-id");
+        SAFE_ATTRIBUTES.add("data-qa");
+        SAFE_ATTRIBUTES.add("data-cy");
+        SAFE_ATTRIBUTES.add("data-testid");
       }
 
       // Handle other attributes
       for (const [attribute, value] of Object.entries(this.attributes)) {
-        if (attribute === 'class') {
+        if (attribute === "class") {
           continue;
         }
 
@@ -528,15 +530,15 @@ export class DOMElementNode extends DOMBaseNode {
         }
 
         // Escape special characters in attribute names
-        const safeAttribute = attribute.replace(':', '\\:');
+        const safeAttribute = attribute.replace(":", "\\:");
 
         // Handle different value cases
-        if (value === '') {
+        if (value === "") {
           cssSelector += `[${safeAttribute}]`;
         } else if (/["'<>`\n\r\t]/.test(value)) {
           // Use contains for values with special characters
           // Regex-substitute any whitespace with a single space, then trim
-          const collapsedValue = value.replace(/\s+/g, ' ').trim();
+          const collapsedValue = value.replace(/\s+/g, " ").trim();
           // Escape embedded double-quotes
           const safeValue = collapsedValue.replace(/"/g, '\\"');
           cssSelector += `[${safeAttribute}*="${safeValue}"]`;
@@ -548,7 +550,7 @@ export class DOMElementNode extends DOMBaseNode {
       return cssSelector;
     } catch (error) {
       // Fallback to a more basic selector if something goes wrong
-      const tagName = this.tagName || '*';
+      const tagName = this.tagName || "*";
       return `${tagName}[highlightIndex='${this.highlightIndex}']`;
     }
   }
@@ -563,17 +565,17 @@ export function domElementNodeToDict(elementTree: DOMBaseNode): unknown {
   function nodeToDict(node: DOMBaseNode): unknown {
     if (node instanceof DOMTextNode) {
       return {
-        type: 'text',
+        type: "text",
         text: node.text,
       };
     }
     if (node instanceof DOMElementNode) {
       return {
-        type: 'element',
+        type: "element",
         tagName: node.tagName,
         attributes: node.attributes,
         highlightIndex: node.highlightIndex,
-        children: node.children.map(child => nodeToDict(child)),
+        children: node.children.map((child) => nodeToDict(child)),
       };
     }
 
@@ -585,7 +587,11 @@ export function domElementNodeToDict(elementTree: DOMBaseNode): unknown {
 
 export async function calcBranchPathHashSet(state: DOMState): Promise<Set<string>> {
   const pathHashes = new Set(
-    await Promise.all(Array.from(state.selectorMap.values()).map(async value => (await value.hash()).branchPathHash)),
+    await Promise.all(
+      Array.from(state.selectorMap.values()).map(
+        async (value) => (await value.hash()).branchPathHash,
+      ),
+    ),
   );
   return pathHashes;
 }

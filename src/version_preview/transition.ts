@@ -24,9 +24,7 @@ import {
   type TransitionResult as SharedTransitionResult,
 } from "@/state_machines/types";
 
-export type PreviewIgnoreReason = IgnoreReason<
-  "invalid-in-current-state" | "no-change"
->;
+export type PreviewIgnoreReason = IgnoreReason<"invalid-in-current-state" | "no-change">;
 export type TransitionResult = SharedTransitionResult<
   PreviewState,
   PreviewCommand,
@@ -37,20 +35,11 @@ export const BRANCH_UNAVAILABLE_MESSAGE =
   "Unable to determine the current Git branch. Version preview was cancelled to avoid switching branches.";
 
 /** Explicitly ignore an event: same state reference, no commands. */
-function ignore(
-  state: PreviewState,
-  reason: PreviewIgnoreReason,
-): TransitionResult {
-  return ignoreTransition<PreviewState, PreviewCommand, PreviewIgnoreReason>(
-    state,
-    reason,
-  );
+function ignore(state: PreviewState, reason: PreviewIgnoreReason): TransitionResult {
+  return ignoreTransition<PreviewState, PreviewCommand, PreviewIgnoreReason>(state, reason);
 }
 
-function ignoreEvent(
-  state: PreviewState,
-  event: PreviewEvent,
-): TransitionResult {
+function ignoreEvent(state: PreviewState, event: PreviewEvent): TransitionResult {
   switch (event.type) {
     case "OPEN":
     case "CLOSE":
@@ -94,10 +83,7 @@ function freshSession(appId: number): PreviewSession {
   };
 }
 
-type RestoreIntent = Extract<
-  PreviewEvent,
-  { type: "RESTORE" | "RESTORE_TO_MESSAGE" }
->;
+type RestoreIntent = Extract<PreviewEvent, { type: "RESTORE" | "RESTORE_TO_MESSAGE" }>;
 
 function beginRestore(
   session: PreviewSession,
@@ -106,13 +92,11 @@ function beginRestore(
 ): TransitionResult {
   const nextSession: PreviewSession = {
     ...session,
-    targetVersionId:
-      event.type === "RESTORE" ? event.versionId : session.targetVersionId,
+    targetVersionId: event.type === "RESTORE" ? event.versionId : session.targetVersionId,
     selectedDiffFile: null,
     isDiffVisible: false,
   };
-  const targetBranch =
-    nextSession.checkedOutVersionId === null ? null : nextSession.originBranch;
+  const targetBranch = nextSession.checkedOutVersionId === null ? null : nextSession.originBranch;
   const command: PreviewCommand =
     event.type === "RESTORE"
       ? {
@@ -151,10 +135,7 @@ function exitIntentFor(event: PreviewEvent): ExitIntent | null {
 
 function sameExitIntent(a: ExitIntent, b: ExitIntent): boolean {
   if (a.type !== b.type) return false;
-  return (
-    a.type !== "switch-app" ||
-    (b.type === "switch-app" && a.nextAppId === b.nextAppId)
-  );
+  return a.type !== "switch-app" || (b.type === "switch-app" && a.nextAppId === b.nextAppId);
 }
 
 function returnCommand(session: PreviewSession): PreviewCommand {
@@ -180,10 +161,7 @@ function beginBranchSwitch(
       branch: event.branch,
       fallback,
     },
-    commands: [
-      ...commands,
-      { type: "switch-branch", appId: event.appId, branch: event.branch },
-    ],
+    commands: [...commands, { type: "switch-branch", appId: event.appId, branch: event.branch }],
   };
 }
 
@@ -209,10 +187,7 @@ function settleWithExitIntent(
   };
 }
 
-export function transition(
-  state: PreviewState,
-  event: PreviewEvent,
-): TransitionResult {
+export function transition(state: PreviewState, event: PreviewEvent): TransitionResult {
   if (event.type === "CLOSE_VERSION_DIFF") {
     if (state.type === "closed" || state.type === "switching-branch") {
       return ignoreEvent(state, event);
@@ -346,8 +321,7 @@ export function transition(
       if (event.type === "SWITCH_BRANCH") {
         return beginBranchSwitch(state, event);
       }
-      if (exitIntentFor(event))
-        return { kind: "applied", state: CLOSED_STATE, commands: [] };
+      if (exitIntentFor(event)) return { kind: "applied", state: CLOSED_STATE, commands: [] };
       return ignoreEvent(state, event);
     }
 
@@ -443,8 +417,7 @@ export function transition(
         };
         // Reachable resolving-origin states never own a checkout, but stay
         // defensive: fall back to previewing rather than losing one.
-        const hasCheckout =
-          session.checkedOutVersionId !== null && session.originBranch !== null;
+        const hasCheckout = session.checkedOutVersionId !== null && session.originBranch !== null;
         return {
           kind: "applied",
           state: hasCheckout
@@ -455,9 +428,7 @@ export function transition(
                 // branch so the next selection re-captures the live one.
                 session: { ...session, originBranch: null },
               },
-          commands: [
-            { type: "notify-error", message: BRANCH_UNAVAILABLE_MESSAGE },
-          ],
+          commands: [{ type: "notify-error", message: BRANCH_UNAVAILABLE_MESSAGE }],
         };
       }
       const intent = exitIntentFor(event);
@@ -529,10 +500,7 @@ export function transition(
     case "previewing": {
       if (event.type === "SELECT_VERSION") {
         if (state.session.targetVersionId === event.versionId) {
-          if (
-            state.session.selectedDiffFile === null &&
-            state.session.isDiffVisible
-          ) {
+          if (state.session.selectedDiffFile === null && state.session.isDiffVisible) {
             return ignore(state, "no-change");
           }
           return {

@@ -1,11 +1,7 @@
 // UserProfile.tsx — class-based user profile component
 
 import React from "react";
-import {
-  fetchUser,
-  updateUser,
-  fetchUserActivity,
-} from "../services/userService";
+import { fetchUser, updateUser, fetchUserActivity } from "../services/userService";
 import type { User, ActivityEntry } from "../types";
 
 interface Props {
@@ -93,8 +89,7 @@ export class UserProfile extends React.Component<Props, State> {
       this.setState({ activity, activityLoading: false });
     } catch (err) {
       this.setState({
-        activityError:
-          err instanceof Error ? err.message : "Failed to load activity",
+        activityError: err instanceof Error ? err.message : "Failed to load activity",
         activityLoading: false,
       });
     }
@@ -129,8 +124,7 @@ export class UserProfile extends React.Component<Props, State> {
       this.props.onProfileUpdated?.(updated);
     } catch (err) {
       this.setState({
-        saveError:
-          err instanceof Error ? err.message : "Failed to save changes",
+        saveError: err instanceof Error ? err.message : "Failed to save changes",
         saving: false,
       });
     }
@@ -168,8 +162,7 @@ export class UserProfile extends React.Component<Props, State> {
       this.setState({ user: updated, uploadingAvatar: false });
     } catch (err) {
       this.setState({
-        avatarError:
-          err instanceof Error ? err.message : "Failed to upload avatar",
+        avatarError: err instanceof Error ? err.message : "Failed to upload avatar",
         uploadingAvatar: false,
       });
     }
@@ -192,9 +185,7 @@ export class UserProfile extends React.Component<Props, State> {
         {activity.map((entry) => (
           <li key={entry.id} className="activity-entry">
             <span className="activity-action">{entry.action}</span>
-            <span className="activity-time">
-              {new Date(entry.timestamp).toLocaleString()}
-            </span>
+            <span className="activity-time">{new Date(entry.timestamp).toLocaleString()}</span>
           </li>
         ))}
       </ul>
@@ -234,25 +225,14 @@ export class UserProfile extends React.Component<Props, State> {
     return (
       <div className="user-profile">
         <div className="profile-header">
-          <div
-            className="avatar-wrapper"
-            onClick={!readOnly ? this.handleAvatarClick : undefined}
-          >
+          <div className="avatar-wrapper" onClick={!readOnly ? this.handleAvatarClick : undefined}>
             {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={`${user.name}'s avatar`}
-                className="avatar"
-              />
+              <img src={user.avatarUrl} alt={`${user.name}'s avatar`} className="avatar" />
             ) : (
-              <div className="avatar-placeholder">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
+              <div className="avatar-placeholder">{user.name.charAt(0).toUpperCase()}</div>
             )}
             {!readOnly && (
-              <div className="avatar-overlay">
-                {uploadingAvatar ? "Uploading…" : "Change"}
-              </div>
+              <div className="avatar-overlay">{uploadingAvatar ? "Uploading…" : "Change"}</div>
             )}
           </div>
           {!readOnly && (
@@ -266,9 +246,7 @@ export class UserProfile extends React.Component<Props, State> {
           )}
           {avatarError && <p className="avatar-error">{avatarError}</p>}
           <h1>{user.name}</h1>
-          <span className={`role-badge role-badge--${user.role}`}>
-            {user.role}
-          </span>
+          <span className={`role-badge role-badge--${user.role}`}>{user.role}</span>
         </div>
 
         {editing ? (
@@ -307,11 +285,7 @@ export class UserProfile extends React.Component<Props, State> {
               <button type="submit" disabled={saving}>
                 {saving ? "Saving…" : "Save"}
               </button>
-              <button
-                type="button"
-                onClick={this.handleCancel}
-                disabled={saving}
-              >
+              <button type="button" onClick={this.handleCancel} disabled={saving}>
                 Cancel
               </button>
             </div>
@@ -330,20 +304,14 @@ export class UserProfile extends React.Component<Props, State> {
               </p>
             )}
             <p>
-              <strong>Member since:</strong>{" "}
-              {new Date(user.createdAt).toLocaleDateString()}
+              <strong>Member since:</strong> {new Date(user.createdAt).toLocaleDateString()}
             </p>
-            {!readOnly && (
-              <button onClick={this.handleEdit}>Edit Profile</button>
-            )}
+            {!readOnly && <button onClick={this.handleEdit}>Edit Profile</button>}
           </div>
         )}
 
         <div className="activity-section">
-          <button
-            className="toggle-activity"
-            onClick={this.handleToggleActivity}
-          >
+          <button className="toggle-activity" onClick={this.handleToggleActivity}>
             {showActivity ? "Hide activity" : "Show recent activity"}
           </button>
           {showActivity && this.renderActivityFeed()}

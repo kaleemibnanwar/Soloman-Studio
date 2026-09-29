@@ -13,9 +13,7 @@ import {
   selectPendingToolConsents,
 } from "./selectors";
 
-export function useUserInputReadModel(): ReturnType<
-  typeof getUserInputReadModel
-> {
+export function useUserInputReadModel(): ReturnType<typeof getUserInputReadModel> {
   return getUserInputReadModel({ store: useStore() });
 }
 

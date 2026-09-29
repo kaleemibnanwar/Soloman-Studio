@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Trash2,
   Edit2,
@@ -43,8 +39,8 @@ const AppCommandsTitle = () => (
       </TooltipTrigger>
       <TooltipContent>
         <p>
-          Configure custom install and start commands for your app, plus an
-          optional preview URL for non-Node backends.
+          Configure custom install and start commands for your app, plus an optional preview URL for
+          non-Node backends.
           <br />
           Leave empty to use the default pnpm commands.
         </p>
@@ -53,11 +49,7 @@ const AppCommandsTitle = () => (
   </div>
 );
 
-const AppCommandsSection = ({
-  selectedAppId,
-}: {
-  selectedAppId: number | null;
-}) => {
+const AppCommandsSection = ({ selectedAppId }: { selectedAppId: number | null }) => {
   const queryClient = useQueryClient();
   const [installCommand, setInstallCommand] = useState("");
   const [startCommand, setStartCommand] = useState("");
@@ -152,9 +144,7 @@ const AppCommandsSection = ({
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <div className="text-sm text-muted-foreground">
-              Loading app commands...
-            </div>
+            <div className="text-sm text-muted-foreground">Loading app commands...</div>
           </div>
         </CardContent>
       </Card>
@@ -167,8 +157,7 @@ const AppCommandsSection = ({
   const hasInstallCommand = installCommand.trim().length > 0;
   const hasStartCommand = startCommand.trim().length > 0;
   const commandsValid = hasInstallCommand === hasStartCommand;
-  const previewUrlValid =
-    !previewUrl.trim() || /^https?:\/\//.test(previewUrl.trim());
+  const previewUrlValid = !previewUrl.trim() || /^https?:\/\//.test(previewUrl.trim());
 
   return (
     <Card>
@@ -203,10 +192,7 @@ const AppCommandsSection = ({
             </div>
             <div className="space-y-2">
               <Label htmlFor="preview-url">
-                Preview URL{" "}
-                <span className="text-muted-foreground font-normal">
-                  (optional)
-                </span>
+                Preview URL <span className="text-muted-foreground font-normal">(optional)</span>
               </Label>
               <Input
                 id="preview-url"
@@ -216,14 +202,12 @@ const AppCommandsSection = ({
                 onChange={(e) => setPreviewUrl(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Use for non-Node backends (e.g. Django, Flask). Overrides the
-                auto-detected dev-server URL.
+                Use for non-Node backends (e.g. Django, Flask). Overrides the auto-detected
+                dev-server URL.
               </p>
             </div>
             {!commandsValid && (
-              <p className="text-sm text-red-500">
-                Both commands are required when customizing.
-              </p>
+              <p className="text-sm text-red-500">Both commands are required when customizing.</p>
             )}
             {!previewUrlValid && (
               <p className="text-sm text-red-500">
@@ -235,11 +219,7 @@ const AppCommandsSection = ({
                 data-testid="save-app-commands"
                 onClick={handleSave}
                 size="sm"
-                disabled={
-                  updateCommandsMutation.isPending ||
-                  !commandsValid ||
-                  !previewUrlValid
-                }
+                disabled={updateCommandsMutation.isPending || !commandsValid || !previewUrlValid}
               >
                 <Save size={14} />
                 {updateCommandsMutation.isPending ? "Saving..." : "Save"}
@@ -260,35 +240,20 @@ const AppCommandsSection = ({
             <div className="p-3 border rounded-md bg-muted/30">
               <div className="space-y-2">
                 <div>
-                  <span className="text-xs text-muted-foreground">
-                    Install Command
-                  </span>
-                  <p
-                    data-testid="current-install-command"
-                    className="font-mono text-sm truncate"
-                  >
+                  <span className="text-xs text-muted-foreground">Install Command</span>
+                  <p data-testid="current-install-command" className="font-mono text-sm truncate">
                     {app.installCommand || "—"}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">
-                    Start Command
-                  </span>
-                  <p
-                    data-testid="current-start-command"
-                    className="font-mono text-sm truncate"
-                  >
+                  <span className="text-xs text-muted-foreground">Start Command</span>
+                  <p data-testid="current-start-command" className="font-mono text-sm truncate">
                     {app.startCommand || "—"}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">
-                    Preview URL
-                  </span>
-                  <p
-                    data-testid="current-preview-url"
-                    className="font-mono text-sm truncate"
-                  >
+                  <span className="text-xs text-muted-foreground">Preview URL</span>
+                  <p data-testid="current-preview-url" className="font-mono text-sm truncate">
                     {app.previewUrl || "—"}
                   </p>
                 </div>
@@ -503,10 +468,7 @@ export const ConfigurePanel = () => {
       return;
     }
 
-    const newEnvVars = [
-      ...envVars,
-      { key: newKey.trim(), value: newValue.trim() },
-    ];
+    const newEnvVars = [...envVars, { key: newKey.trim(), value: newValue.trim() }];
     saveEnvVarsMutation.mutate(newEnvVars);
     setNewKey("");
     setNewValue("");
@@ -527,10 +489,7 @@ export const ConfigurePanel = () => {
 
     // Check for duplicate keys (excluding the current one being edited)
     if (
-      envVars.some(
-        (envVar) =>
-          envVar.key === editingKeyValue.trim() && envVar.key !== editingKey,
-      )
+      envVars.some((envVar) => envVar.key === editingKeyValue.trim() && envVar.key !== editingKey)
     ) {
       showError("Environment variable with this key already exists");
       return;
@@ -570,9 +529,7 @@ export const ConfigurePanel = () => {
   // Render env vars card content based on current state
   const envVarsCardContent = isLoading ? (
     <div className="text-center py-8">
-      <div className="text-sm text-muted-foreground">
-        Loading environment variables...
-      </div>
+      <div className="text-sm text-muted-foreground">Loading environment variables...</div>
     </div>
   ) : error ? (
     <div className="text-center py-8">
@@ -641,11 +598,7 @@ export const ConfigurePanel = () => {
                 />
               </div>
               <div className="flex gap-2">
-                <Button
-                  onClick={handleAdd}
-                  size="sm"
-                  disabled={saveEnvVarsMutation.isPending}
-                >
+                <Button onClick={handleAdd} size="sm" disabled={saveEnvVarsMutation.isPending}>
                   <Save size={14} />
                   {saveEnvVarsMutation.isPending ? "Saving..." : "Save"}
                 </Button>
@@ -656,11 +609,7 @@ export const ConfigurePanel = () => {
               </div>
             </div>
           ) : (
-            <Button
-              onClick={() => setIsAddingNew(true)}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={() => setIsAddingNew(true)} variant="outline" className="w-full">
               <Plus size={14} />
               Add Environment Variable
             </Button>
@@ -674,10 +623,7 @@ export const ConfigurePanel = () => {
               </p>
             ) : (
               envVars.map((envVar) => (
-                <div
-                  key={envVar.key}
-                  className="flex items-center space-x-2 p-2 border rounded-md"
-                >
+                <div key={envVar.key} className="flex items-center space-x-2 p-2 border rounded-md">
                   {editingKey === envVar.key ? (
                     <>
                       <div className="flex-1 space-y-2">
@@ -717,12 +663,8 @@ export const ConfigurePanel = () => {
                   ) : (
                     <>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">
-                          {envVar.key}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {envVar.value}
-                        </div>
+                        <div className="font-medium text-sm truncate">{envVar.key}</div>
+                        <div className="text-xs text-muted-foreground truncate">{envVar.value}</div>
                       </div>
                       <div className="flex gap-1">
                         <Button

@@ -1,34 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { apps, chats } from "@/db/schema";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import {
   getMediaThumbnailCacheDirectory,
   getMediaThumbnailCacheRoot,
-} from "@/ipc/utils/media_thumbnail";
+} from "@/ipc/media/media_thumbnail";
 
-const IMAGE_FIXTURE_PATH = path.join(
-  process.cwd(),
-  "e2e-tests",
-  "fixtures",
-  "images",
-  "logo.png",
-);
+const IMAGE_FIXTURE_PATH = path.join(process.cwd(), "e2e-tests", "fixtures", "images", "logo.png");
 
 type TestApp = {
   appId: number;
@@ -62,10 +47,7 @@ describe("media library actions (integration)", () => {
     await harness?.dispose();
   });
 
-  async function createAppWithMedia(
-    baseName: string,
-    fileNames: string[],
-  ): Promise<TestApp> {
+  async function createAppWithMedia(baseName: string, fileNames: string[]): Promise<TestApp> {
     appCounter += 1;
     const name = `${baseName}-${appCounter}`;
     const appDir = path.join(appsRoot, slug(name));
@@ -80,10 +62,7 @@ describe("media library actions (integration)", () => {
       fs.copyFileSync(IMAGE_FIXTURE_PATH, path.join(mediaDir, fileName));
     }
 
-    const [appRow] = await harness.db
-      .insert(apps)
-      .values({ name, path: appDir })
-      .returning();
+    const [appRow] = await harness.db.insert(apps).values({ name, path: appDir }).returning();
     await harness.db.insert(chats).values({ appId: appRow.id });
 
     return { appId: appRow.id, name, appDir, mediaDir };
@@ -109,9 +88,7 @@ describe("media library actions (integration)", () => {
     if (!container) {
       throw new Error(`No thumbnail container found for ${fileName}`);
     }
-    const trigger = within(container as HTMLElement).getByTestId(
-      "media-file-actions-trigger",
-    );
+    const trigger = within(container as HTMLElement).getByTestId("media-file-actions-trigger");
     fireEvent.pointerDown(trigger);
     fireEvent.pointerUp(trigger);
     fireEvent.click(trigger);
@@ -135,16 +112,10 @@ describe("media library actions (integration)", () => {
     fireEvent.change(screen.getByTestId("media-rename-input"), {
       target: { value: "renamed-image" },
     });
-    const sourceRenamedPath = path.join(
-      sourceApp.mediaDir,
-      "renamed-image.png",
-    );
+    const sourceRenamedPath = path.join(sourceApp.mediaDir, "renamed-image.png");
     const sourceOldPath = path.join(sourceApp.mediaDir, "move-image.png");
     const cacheRoot = getMediaThumbnailCacheRoot(harness.userDataDir);
-    const renamedSourceCache = getMediaThumbnailCacheDirectory(
-      cacheRoot,
-      sourceOldPath,
-    );
+    const renamedSourceCache = getMediaThumbnailCacheDirectory(cacheRoot, sourceOldPath);
     fs.mkdirSync(renamedSourceCache, { recursive: true });
     fs.writeFileSync(path.join(renamedSourceCache, "stale.png"), "stale");
     fireEvent.click(screen.getByTestId("media-rename-confirm-button"));
@@ -155,19 +126,14 @@ describe("media library actions (integration)", () => {
       expect(fs.existsSync(renamedSourceCache)).toBe(false);
     });
 
-    const movedSourceCache = getMediaThumbnailCacheDirectory(
-      cacheRoot,
-      sourceRenamedPath,
-    );
+    const movedSourceCache = getMediaThumbnailCacheDirectory(cacheRoot, sourceRenamedPath);
     fs.mkdirSync(movedSourceCache, { recursive: true });
     fs.writeFileSync(path.join(movedSourceCache, "stale.png"), "stale");
     await openActionsForFile("renamed-image.png");
     fireEvent.click(screen.getByTestId("media-move-to-submenu"));
     await screen.findByTestId("media-move-dialog");
     await harness.openPopover(screen.getByLabelText("Select target app"));
-    fireEvent.click(
-      await screen.findByRole("button", { name: targetApp.name }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: targetApp.name }));
     fireEvent.click(screen.getByTestId("media-move-confirm-button"));
 
     const targetMovedPath = path.join(targetApp.mediaDir, "renamed-image.png");
@@ -181,10 +147,7 @@ describe("media library actions (integration)", () => {
     await openMediaFolder(targetApp);
 
     await openActionsForFile("renamed-image.png");
-    const deletedSourceCache = getMediaThumbnailCacheDirectory(
-      cacheRoot,
-      targetMovedPath,
-    );
+    const deletedSourceCache = getMediaThumbnailCacheDirectory(cacheRoot, targetMovedPath);
     fs.mkdirSync(deletedSourceCache, { recursive: true });
     fs.writeFileSync(path.join(deletedSourceCache, "stale.png"), "stale");
     fireEvent.click(screen.getByTestId("media-delete-image"));
@@ -241,10 +204,8 @@ describe("media library actions (integration)", () => {
     });
     const previewImage = preview.querySelector("img");
     expect(previewImage).not.toBeNull();
-    expect(
-      new URL(previewImage?.getAttribute("src") ?? "").searchParams.has(
-        "thumbnail",
-      ),
-    ).toBe(false);
+    expect(new URL(previewImage?.getAttribute("src") ?? "").searchParams.has("thumbnail")).toBe(
+      false,
+    );
   }, 60_000);
 });

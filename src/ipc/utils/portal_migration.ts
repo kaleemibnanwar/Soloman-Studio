@@ -1,21 +1,17 @@
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   BufferedProcessSpawnError,
   DEFAULT_BUFFERED_PROCESS_TIMEOUT_MS,
   runBufferedProcess,
-} from "./buffered_process";
+} from "../process/buffered_process";
 import { getPackageManagerCommandEnv } from "./socket_firewall";
 
 const logger = log.scope("portal_migration");
 const MIGRATION_CREATED_MESSAGE = "Migration created at";
 const MIGRATION_RENAME_PROMPT = "created or renamed from another";
 const MIGRATION_SEARCH_TAIL_LENGTH =
-  Math.max(MIGRATION_CREATED_MESSAGE.length, MIGRATION_RENAME_PROMPT.length) -
-  1;
+  Math.max(MIGRATION_CREATED_MESSAGE.length, MIGRATION_RENAME_PROMPT.length) - 1;
 
 export async function runPortalMigrationCommand({
   appId,
@@ -41,9 +37,7 @@ export async function runPortalMigrationCommand({
       onStdout: (output, child) => {
         logger.info(`migrate:create stdout: ${output}`);
         const searchableOutput = stdoutSearchTail + output;
-        createdMigration ||= searchableOutput.includes(
-          MIGRATION_CREATED_MESSAGE,
-        );
+        createdMigration ||= searchableOutput.includes(MIGRATION_CREATED_MESSAGE);
 
         // Drizzle prompts once per ambiguous rename, so answer every
         // occurrence. Skip matches that end inside the carried-over tail:
@@ -57,15 +51,10 @@ export async function runPortalMigrationCommand({
               `App ${appId} (PID: ${child.pid}) wrote enter to stdin to automatically respond to drizzle migrate input`,
             );
           }
-          promptIndex = searchableOutput.indexOf(
-            MIGRATION_RENAME_PROMPT,
-            promptEnd,
-          );
+          promptIndex = searchableOutput.indexOf(MIGRATION_RENAME_PROMPT, promptEnd);
         }
 
-        stdoutSearchTail = searchableOutput.slice(
-          -MIGRATION_SEARCH_TAIL_LENGTH,
-        );
+        stdoutSearchTail = searchableOutput.slice(-MIGRATION_SEARCH_TAIL_LENGTH);
       },
       onStderr: (output) => {
         logger.warn(`migrate:create stderr: ${output}`);
@@ -84,8 +73,7 @@ export async function runPortalMigrationCommand({
   }
 
   const combinedOutput =
-    result.stdout +
-    (result.stderr ? `\n\nErrors/Warnings:\n${result.stderr}` : "");
+    result.stdout + (result.stderr ? `\n\nErrors/Warnings:\n${result.stderr}` : "");
 
   if (result.timedOut) {
     logger.error(`migrate:create timed out for app ${appId}`);
@@ -110,9 +98,7 @@ export async function runPortalMigrationCommand({
     );
   }
 
-  const failureReason = result.signal
-    ? `signal ${result.signal}`
-    : `exit code ${result.code}`;
+  const failureReason = result.signal ? `signal ${result.signal}` : `exit code ${result.code}`;
   logger.error(`migrate:create failed for app ${appId} with ${failureReason}`);
   throw new OctopusStudioError(
     `Migration creation failed (${failureReason})\n\n${combinedOutput}`,

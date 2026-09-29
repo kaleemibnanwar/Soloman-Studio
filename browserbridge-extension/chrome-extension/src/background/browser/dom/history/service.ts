@@ -1,5 +1,5 @@
-import { DOMElementNode } from '../views';
-import { DOMHistoryElement, HashedDomElement } from './view';
+import { DOMElementNode } from "../views";
+import { DOMHistoryElement, HashedDomElement } from "./view";
 
 /**
  * Convert a DOM element to a history element
@@ -8,8 +8,8 @@ export function convertDomElementToHistoryElement(domElement: DOMElementNode): D
   const parentBranchPath = _getParentBranchPath(domElement);
   const cssSelector = domElement.getEnhancedCssSelector();
   return new DOMHistoryElement(
-    domElement.tagName ?? '', // Provide empty string as fallback
-    domElement.xpath ?? '', // Provide empty string as fallback
+    domElement.tagName ?? "", // Provide empty string as fallback
+    domElement.xpath ?? "", // Provide empty string as fallback
     domElement.highlightIndex ?? null,
     parentBranchPath,
     domElement.attributes,
@@ -77,11 +77,13 @@ export async function compareHistoryElementAndDomElement(
 /**
  * Hash a DOM history element
  */
-async function hashDomHistoryElement(domHistoryElement: DOMHistoryElement): Promise<HashedDomElement> {
+async function hashDomHistoryElement(
+  domHistoryElement: DOMHistoryElement,
+): Promise<HashedDomElement> {
   const [branchPathHash, attributesHash, xpathHash] = await Promise.all([
     _parentBranchPathHash(domHistoryElement.entireParentBranchPath),
     _attributesHash(domHistoryElement.attributes),
-    _xpathHash(domHistoryElement.xpath ?? ''),
+    _xpathHash(domHistoryElement.xpath ?? ""),
   ]);
   return new HashedDomElement(branchPathHash, attributesHash, xpathHash);
 }
@@ -94,7 +96,7 @@ export async function hashDomElement(domElement: DOMElementNode): Promise<Hashed
   const [branchPathHash, attributesHash, xpathHash] = await Promise.all([
     _parentBranchPathHash(parentBranchPath),
     _attributesHash(domElement.attributes),
-    _xpathHash(domElement.xpath ?? ''),
+    _xpathHash(domElement.xpath ?? ""),
   ]);
   return new HashedDomElement(branchPathHash, attributesHash, xpathHash);
 }
@@ -112,15 +114,15 @@ export function _getParentBranchPath(domElement: DOMElementNode): string[] {
   }
 
   parents.reverse();
-  return parents.map(parent => parent.tagName ?? '');
+  return parents.map((parent) => parent.tagName ?? "");
 }
 
 /**
  * Create a hash from the parent branch path
  */
 async function _parentBranchPathHash(parentBranchPath: string[]): Promise<string> {
-  if (parentBranchPath.length === 0) return '';
-  return _createSHA256Hash(parentBranchPath.join('/'));
+  if (parentBranchPath.length === 0) return "";
+  return _createSHA256Hash(parentBranchPath.join("/"));
 }
 
 /**
@@ -129,7 +131,7 @@ async function _parentBranchPathHash(parentBranchPath: string[]): Promise<string
 async function _attributesHash(attributes: Record<string, string>): Promise<string> {
   const attributesString = Object.entries(attributes)
     .map(([key, value]) => `${key}=${value}`)
-    .join('');
+    .join("");
   return _createSHA256Hash(attributesString);
 }
 
@@ -154,9 +156,9 @@ async function _textHash(domElement: DOMElementNode): Promise<string> {
 async function _createSHA256Hash(input: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**

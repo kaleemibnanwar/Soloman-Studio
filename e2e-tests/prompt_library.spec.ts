@@ -14,23 +14,17 @@ test("create and edit prompt", async ({ po }) => {
   // Wait for prompt card to be fully rendered
   const promptCard = po.page.getByTestId("library-prompt-card");
   await expect(promptCard).toBeVisible();
-  await expect(
-    promptCard.getByRole("heading", { name: "title1" }),
-  ).toBeVisible();
+  await expect(promptCard.getByRole("heading", { name: "title1" })).toBeVisible();
   await expect(promptCard).toContainText("desc");
   await expect(promptCard).toContainText("prompt1content");
 
   await po.page.getByTestId("edit-prompt-button").click();
-  await po.page
-    .getByRole("textbox", { name: "Content" })
-    .fill("prompt1content-edited");
+  await po.page.getByRole("textbox", { name: "Content" }).fill("prompt1content-edited");
   await po.page.getByRole("button", { name: "Save" }).click();
 
   // Verify edited content is displayed
   await expect(promptCard).toBeVisible();
-  await expect(
-    promptCard.getByRole("heading", { name: "title1" }),
-  ).toBeVisible();
+  await expect(promptCard.getByRole("heading", { name: "title1" })).toBeVisible();
   await expect(promptCard).toContainText("desc");
   await expect(promptCard).toContainText("prompt1content-edited");
 });
@@ -71,9 +65,7 @@ test("use prompt", async ({ po }) => {
   await po.snapshotServerDump("last-message");
 });
 
-test("slash menu shows skills and selecting one inserts command", async ({
-  po,
-}) => {
+test("slash menu shows skills and selecting one inserts command", async ({ po }) => {
   await po.setUp();
   await po.navigation.goToLibraryTab();
   await po.page.getByRole("link", { name: "Prompts" }).click();
@@ -98,9 +90,7 @@ test("slash menu shows skills and selecting one inserts command", async ({
   await expect(chatInput).toContainText("/e2e-test-skill");
 });
 
-test("slash command is expanded to prompt content in message", async ({
-  po,
-}) => {
+test("slash command is expanded to prompt content in message", async ({ po }) => {
   await po.setUp();
   await po.navigation.goToLibraryTab();
   await po.page.getByRole("link", { name: "Prompts" }).click();

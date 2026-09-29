@@ -1,10 +1,10 @@
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { HumanMessage } from '@langchain/core/messages';
-import { createLogger } from '../log';
-import { type ProviderConfig, speechToTextModelStore } from '@extension/storage';
-import { t } from '@extension/i18n';
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage } from "@langchain/core/messages";
+import { createLogger } from "../log";
+import { type ProviderConfig, speechToTextModelStore } from "@extension/storage";
+import { t } from "@extension/i18n";
 
-const logger = createLogger('SpeechToText');
+const logger = createLogger("SpeechToText");
 
 export class SpeechToTextService {
   private llm: ChatGoogleGenerativeAI;
@@ -18,14 +18,14 @@ export class SpeechToTextService {
       const config = await speechToTextModelStore.getSpeechToTextModel();
 
       if (!config?.provider || !config?.modelName) {
-        throw new Error(t('chat_stt_model_notFound'));
+        throw new Error(t("chat_stt_model_notFound"));
       }
 
       const provider = providers[config.provider];
-      logger.info('Found provider for speech-to-text:', provider ? 'yes' : 'no', provider?.type);
+      logger.info("Found provider for speech-to-text:", provider ? "yes" : "no", provider?.type);
 
-      if (!provider || provider.type !== 'gemini') {
-        throw new Error(t('chat_stt_model_notFound'));
+      if (!provider || provider.type !== "gemini") {
+        throw new Error(t("chat_stt_model_notFound"));
       }
 
       const llm = new ChatGoogleGenerativeAI({
@@ -37,26 +37,26 @@ export class SpeechToTextService {
       logger.info(`Speech-to-text service created with model: ${config.modelName}`);
       return new SpeechToTextService(llm);
     } catch (error) {
-      logger.error('Failed to create speech-to-text service:', error);
+      logger.error("Failed to create speech-to-text service:", error);
       throw error;
     }
   }
 
   async transcribeAudio(base64Audio: string): Promise<string> {
     try {
-      logger.info('Starting audio transcription...');
+      logger.info("Starting audio transcription...");
 
       // Create transcription message with audio data
       const transcriptionMessage = new HumanMessage({
         content: [
           {
-            type: 'text',
-            text: 'Transcribe this audio. Return only the transcribed text without any additional formatting or explanations.',
+            type: "text",
+            text: "Transcribe this audio. Return only the transcribed text without any additional formatting or explanations.",
           },
           {
-            type: 'media',
+            type: "media",
             data: base64Audio,
-            mimeType: 'audio/webm',
+            mimeType: "audio/webm",
           },
         ],
       });
@@ -65,12 +65,14 @@ export class SpeechToTextService {
       const transcriptionResponse = await this.llm.invoke([transcriptionMessage]);
 
       const transcribedText = transcriptionResponse.content.toString().trim();
-      logger.info('Audio transcription completed:', transcribedText);
+      logger.info("Audio transcription completed:", transcribedText);
 
       return transcribedText;
     } catch (error) {
-      logger.error('Failed to transcribe audio:', error);
-      throw new Error(`Speech transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.error("Failed to transcribe audio:", error);
+      throw new Error(
+        `Speech transcription failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 }

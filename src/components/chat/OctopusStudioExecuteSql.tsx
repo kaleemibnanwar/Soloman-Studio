@@ -13,10 +13,7 @@ import {
   OctopusStudioStateIndicator,
   OctopusStudioCardContent,
 } from "./OctopusStudioCardPrimitives";
-import {
-  doesSqlDeleteData,
-  doesSqlMutateSchema,
-} from "@/lib/sqlSchemaMutation";
+import { doesSqlDeleteData, doesSqlMutateSchema } from "@/lib/sqlSchemaMutation";
 
 interface OctopusStudioExecuteSqlProps {
   children?: ReactNode;
@@ -31,9 +28,11 @@ function extractSqlText(children: ReactNode): string {
     .join("");
 }
 
-export const OctopusStudioExecuteSql: React.FC<
-  OctopusStudioExecuteSqlProps
-> = ({ children, node, description }) => {
+export const OctopusStudioExecuteSql: React.FC<OctopusStudioExecuteSqlProps> = ({
+  children,
+  node,
+  description,
+}) => {
   const { t } = useTranslation("chat");
   const [isContentVisible, setIsContentVisible] = useState(false);
   const state = node?.properties?.state as CustomTagState;
@@ -45,10 +44,7 @@ export const OctopusStudioExecuteSql: React.FC<
     () => (sqlText ? doesSqlMutateSchema(sqlText) : false),
     [sqlText],
   );
-  const sqlDeletesData = useMemo(
-    () => (sqlText ? doesSqlDeleteData(sqlText) : false),
-    [sqlText],
-  );
+  const sqlDeletesData = useMemo(() => (sqlText ? doesSqlDeleteData(sqlText) : false), [sqlText]);
 
   return (
     <OctopusStudioCard
@@ -72,22 +68,10 @@ export const OctopusStudioExecuteSql: React.FC<
           </span>
         )}
         {queryDescription && (
-          <span className="font-medium text-sm text-foreground truncate">
-            {queryDescription}
-          </span>
+          <span className="font-medium text-sm text-foreground truncate">{queryDescription}</span>
         )}
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Executing..."
-          />
-        )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Executing..." />}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
         <div className="ml-auto">
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
         </div>

@@ -2,10 +2,7 @@ import log from "electron-log";
 import { createTypedHandler } from "./base";
 import { languageModelContracts } from "../types/language-model";
 import type { LocalModel } from "../types/language-model";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("ollama_handler");
 
@@ -25,11 +22,7 @@ export function parseOllamaHost(host?: string): string {
   }
 
   // Check for regular host:port (but not plain IPv6)
-  if (
-    host.includes(":") &&
-    !host.includes("::") &&
-    host.split(":").length === 2
-  ) {
+  if (host.includes(":") && !host.includes("::") && host.split(":").length === 2) {
     return `http://${host}`;
   }
 
@@ -95,13 +88,9 @@ export async function fetchOllamaModels(): Promise<{ models: LocalModel[] }> {
     if (error instanceof OctopusStudioError) {
       throw error;
     }
-    if (
-      error instanceof TypeError &&
-      (error as Error).message.includes("fetch failed")
-    ) {
+    if (error instanceof TypeError && (error as Error).message.includes("fetch failed")) {
       throw new OctopusStudioError(
-        "Could not connect to Ollama. Make sure it's running at " +
-          getOllamaApiUrl(),
+        "Could not connect to Ollama. Make sure it's running at " + getOllamaApiUrl(),
         OctopusStudioErrorKind.Precondition,
       );
     }

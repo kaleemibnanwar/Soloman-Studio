@@ -7,14 +7,12 @@ export function OauthPlaintextStorageAlert() {
       <AlertDescription>
         Your OS keyring is unavailable (on Linux this usually means
         <code className="mx-1">libsecret</code>/<code>gnome-keyring</code>
-        is not installed), so plugin credentials are written to the local
-        database without encryption. That covers OAuth tokens, pre-registered
-        client secrets, request headers for HTTP servers, and environment
-        variables for command-based servers. Any process with read access to the
-        Octopus Studio data directory can decode them. API keys in headers and
-        environment variables are especially sensitive because they don't
-        expire. Install a keyring service, then reconnect and re-enter those
-        values to upgrade.
+        is not installed), so plugin credentials are written to the local database without
+        encryption. That covers OAuth tokens, pre-registered client secrets, request headers for
+        HTTP servers, and environment variables for command-based servers. Any process with read
+        access to the Octopus Studio data directory can decode them. API keys in headers and
+        environment variables are especially sensitive because they don't expire. Install a keyring
+        service, then reconnect and re-enter those values to upgrade.
       </AlertDescription>
     </Alert>
   );

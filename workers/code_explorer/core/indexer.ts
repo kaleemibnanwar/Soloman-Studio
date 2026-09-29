@@ -50,20 +50,15 @@ export function buildIndex(
       const fileNode = addNode(index, {
         kind: "file",
         name: normalizePath(path.relative(appPath, sourceFile.fileName)),
-        qualifiedName: normalizePath(
-          path.relative(appPath, sourceFile.fileName),
-        ),
+        qualifiedName: normalizePath(path.relative(appPath, sourceFile.fileName)),
         filePath: sourceFile.fileName,
         start: 0,
         end: sourceFile.end,
         startLine: 1,
-        endLine:
-          sourceFile.getLineAndCharacterOfPosition(sourceFile.end).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(sourceFile.end).line + 1,
       });
 
-      walkDeclarations(ts, checker, index, declarationToNode, sourceFile, [
-        fileNode.id,
-      ]);
+      walkDeclarations(ts, checker, index, declarationToNode, sourceFile, [fileNode.id]);
     }
   }
 
@@ -91,10 +86,7 @@ function walkDeclarations(
 
   if (maybeNode) {
     const graphNode = addNode(index, maybeNode);
-    declarationToNode.set(
-      declarationKey(maybeNode.filePath, maybeNode.start),
-      graphNode.id,
-    );
+    declarationToNode.set(declarationKey(maybeNode.filePath, maybeNode.start), graphNode.id);
     const container = containerStack[containerStack.length - 1];
     if (container) {
       addEdge(index, { from: container, to: graphNode.id, kind: "contains" });
@@ -122,15 +114,7 @@ function walkEdges(
 
   if (activeNodeId) {
     if (ts.isCallExpression(node)) {
-      addSymbolEdge(
-        ts,
-        checker,
-        index,
-        declarationToNode,
-        activeNodeId,
-        node.expression,
-        "calls",
-      );
+      addSymbolEdge(ts, checker, index, declarationToNode, activeNodeId, node.expression, "calls");
     } else if (ts.isImportDeclaration(node)) {
       const moduleSpecifier = node.moduleSpecifier;
       if (ts.isStringLiteral(moduleSpecifier)) {
@@ -147,29 +131,14 @@ function walkEdges(
           );
         }
       }
-    } else if (
-      ts.isIdentifier(node) &&
-      !isDeclarationName(ts, node) &&
-      node.text.length > 1
-    ) {
-      addSymbolEdge(
-        ts,
-        checker,
-        index,
-        declarationToNode,
-        activeNodeId,
-        node,
-        "references",
-      );
+    } else if (ts.isIdentifier(node) && !isDeclarationName(ts, node) && node.text.length > 1) {
+      addSymbolEdge(ts, checker, index, declarationToNode, activeNodeId, node, "references");
     } else if (
       (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) &&
       node.heritageClauses
     ) {
       for (const clause of node.heritageClauses) {
-        const kind =
-          clause.token === ts.SyntaxKind.ExtendsKeyword
-            ? "extends"
-            : "implements";
+        const kind = clause.token === ts.SyntaxKind.ExtendsKeyword ? "extends" : "implements";
         for (const typeNode of clause.types) {
           addSymbolEdge(
             ts,
@@ -201,15 +170,7 @@ function addSymbolEdge(
 ): void {
   const symbol = checker.getSymbolAtLocation(node);
   if (!symbol) return;
-  addResolvedSymbolEdge(
-    ts,
-    checker,
-    index,
-    declarationToNode,
-    from,
-    symbol,
-    kind,
-  );
+  addResolvedSymbolEdge(ts, checker, index, declarationToNode, from, symbol, kind);
 }
 
 function addResolvedSymbolEdge(
@@ -221,19 +182,13 @@ function addResolvedSymbolEdge(
   symbol: import("typescript").Symbol,
   kind: GraphEdge["kind"],
 ): void {
-  const resolved =
-    symbol.flags & ts.SymbolFlags.Alias
-      ? checker.getAliasedSymbol(symbol)
-      : symbol;
+  const resolved = symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
   const declaration = resolved.declarations?.find((decl) =>
     isInProjectSource(index.appPath, decl.getSourceFile().fileName),
   );
   if (!declaration) return;
   const to = declarationToNode.get(
-    declarationKey(
-      declaration.getSourceFile().fileName,
-      declaration.getStart(),
-    ),
+    declarationKey(declaration.getSourceFile().fileName, declaration.getStart()),
   );
   if (!to || to === from) return;
   addEdge(index, { from, to, kind });
@@ -275,35 +230,25 @@ function createGraphNode(
   };
 }
 
-function graphNodeKind(
-  ts: TypeScriptModule,
-  node: import("typescript").Node,
-): GraphNodeKind {
+function graphNodeKind(ts: TypeScriptModule, node: import("typescript").Node): GraphNodeKind {
   if (ts.isClassDeclaration(node)) return "class";
   if (ts.isInterfaceDeclaration(node)) return "interface";
   if (ts.isFunctionDeclaration(node)) return "function";
-  if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node))
-    return "method";
+  if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) return "method";
   if (ts.isVariableDeclaration(node)) return "variable";
-  if (ts.isPropertyDeclaration(node) || ts.isPropertySignature(node))
-    return "property";
+  if (ts.isPropertyDeclaration(node) || ts.isPropertySignature(node)) return "property";
   if (ts.isTypeAliasDeclaration(node)) return "type";
   if (ts.isEnumDeclaration(node)) return "enum";
   return "variable";
 }
 
-function hasName(
-  node: import("typescript").Node,
-): node is import("typescript").Node & {
+function hasName(node: import("typescript").Node): node is import("typescript").Node & {
   name: import("typescript").DeclarationName;
 } {
   return "name" in node && !!node.name;
 }
 
-function isDeclarationName(
-  ts: TypeScriptModule,
-  node: import("typescript").Identifier,
-): boolean {
+function isDeclarationName(ts: TypeScriptModule, node: import("typescript").Identifier): boolean {
   const parent = node.parent;
   return (
     (isNamedDeclarationParent(ts, parent) || ts.isImportSpecifier(parent)) &&
@@ -312,10 +257,7 @@ function isDeclarationName(
   );
 }
 
-function isNamedDeclarationParent(
-  ts: TypeScriptModule,
-  node: import("typescript").Node,
-): boolean {
+function isNamedDeclarationParent(ts: TypeScriptModule, node: import("typescript").Node): boolean {
   return (
     ts.isClassDeclaration(node) ||
     ts.isInterfaceDeclaration(node) ||
@@ -331,9 +273,7 @@ function isNamedDeclarationParent(
 }
 
 function addNode(index: GraphIndex, node: Omit<GraphNode, "id">): GraphNode {
-  const normalizedFile = normalizePath(
-    path.relative(index.appPath, node.filePath),
-  );
+  const normalizedFile = normalizePath(path.relative(index.appPath, node.filePath));
   const graphNode: GraphNode = {
     ...node,
     filePath: normalizedFile,
@@ -348,11 +288,7 @@ function addNode(index: GraphIndex, node: Omit<GraphNode, "id">): GraphNode {
 
 function addEdge(index: GraphIndex, edge: GraphEdge): void {
   const existing = index.edgesOut.get(edge.from) ?? [];
-  if (
-    existing.some(
-      (candidate) => candidate.to === edge.to && candidate.kind === edge.kind,
-    )
-  ) {
+  if (existing.some((candidate) => candidate.to === edge.to && candidate.kind === edge.kind)) {
     return;
   }
   addMapArray(index.edgesOut, edge.from, edge);

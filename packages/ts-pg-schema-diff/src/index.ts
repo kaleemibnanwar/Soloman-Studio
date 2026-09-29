@@ -4,15 +4,8 @@ import {
   type DatabaseClient,
 } from "./db/connect.js";
 import { getSchema, type GetSchemaOptions } from "./db/introspect.js";
-import {
-  buildSchemaSnapshotSql,
-  getSchemaFromSnapshot,
-} from "./db/snapshot.js";
-import {
-  generatePlan,
-  toSchemaDiffResult,
-  type GeneratePlanOptions,
-} from "./plan/generate.js";
+import { buildSchemaSnapshotSql, getSchemaFromSnapshot } from "./db/snapshot.js";
+import { generatePlan, toSchemaDiffResult, type GeneratePlanOptions } from "./plan/generate.js";
 import type { SchemaDiffResult, SchemaDiffStatement } from "./plan/types.js";
 import { PgSchemaDiffError } from "./errors.js";
 import { emptySchema, type Schema } from "./schema/model.js";
@@ -74,9 +67,7 @@ export async function generateSchemaDiff(
     options.noConcurrentIndexOperations === undefined
       ? {}
       : { noConcurrentIndexOperations: options.noConcurrentIndexOperations };
-  return toSchemaDiffResult(
-    generatePlan(currentSchema, desiredSchema, planOptions),
-  );
+  return toSchemaDiffResult(generatePlan(currentSchema, desiredSchema, planOptions));
 }
 
 async function readSchema(
@@ -85,15 +76,10 @@ async function readSchema(
   options: GenerateSchemaDiffOptions,
 ) {
   try {
-    return await withDatabaseClient(
-      databaseUrl,
-      options.connection ?? {},
-      (client) => getSchema(client, options),
+    return await withDatabaseClient(databaseUrl, options.connection ?? {}, (client) =>
+      getSchema(client, options),
     );
   } catch (error) {
-    throw new PgSchemaDiffError(
-      `Failed to introspect ${label} database schema`,
-      { cause: error },
-    );
+    throw new PgSchemaDiffError(`Failed to introspect ${label} database schema`, { cause: error });
   }
 }

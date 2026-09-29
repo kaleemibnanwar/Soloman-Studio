@@ -2,10 +2,7 @@ import log from "electron-log";
 import fetch from "node-fetch";
 import { createTypedHandler } from "./base";
 import { systemContracts } from "../types/system";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("upload_handlers");
 
@@ -40,9 +37,7 @@ export function registerUploadHandlers() {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Upload failed with status ${response.status}: ${response.statusText}`,
-      );
+      throw new Error(`Upload failed with status ${response.status}: ${response.statusText}`);
     }
 
     logger.debug("Successfully uploaded data to signed URL");

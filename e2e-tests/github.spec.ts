@@ -34,22 +34,17 @@ test("completes the GitHub publish happy paths", async ({ po }) => {
   await po.appManagement.getTitleBarAppNameButton().click();
 
   await po.githubConnector.connect();
-  await expect(po.githubConnector.getSetupRepo()).toContainText(
-    "Set up your GitHub repo",
-    { timeout: Timeout.MEDIUM },
-  );
+  await expect(po.githubConnector.getSetupRepo()).toContainText("Set up your GitHub repo", {
+    timeout: Timeout.MEDIUM,
+  });
   // The setup UI is only rendered after the device flow has exchanged the
   // token, refreshed settings, and acknowledged the completed flow.
-  await expect(
-    po.page.getByRole("button", { name: "Connect to GitHub" }),
-  ).toBeHidden();
+  await expect(po.page.getByRole("button", { name: "Connect to GitHub" })).toBeHidden();
   await expect(po.page.getByText("FAKE-CODE")).toBeHidden();
 
   const repoName = `github-e2e-${Date.now()}`;
   await po.githubConnector.createRepo(repoName);
-  await expect(po.page.getByTestId("github-connected-repo")).toContainText(
-    `testuser/${repoName}`,
-  );
+  await expect(po.page.getByTestId("github-connected-repo")).toContainText(`testuser/${repoName}`);
   await po.githubConnector.expectPushEvent({
     repo: repoName,
     branch: "main",
@@ -61,16 +56,14 @@ test("completes the GitHub publish happy paths", async ({ po }) => {
   const collaborator = "github-e2e-collaborator";
   await po.page.getByTestId("collaborator-invite-input").fill(collaborator);
   await po.page.getByTestId("collaborator-invite-button").click();
-  await expect(
-    po.page.getByTestId(`collaborator-item-${collaborator}`),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
-  await po.page
-    .getByTestId(`collaborator-remove-button-${collaborator}`)
-    .click();
+  await expect(po.page.getByTestId(`collaborator-item-${collaborator}`)).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
+  await po.page.getByTestId(`collaborator-remove-button-${collaborator}`).click();
   await po.page.getByTestId("confirm-remove-collaborator").click();
-  await expect(
-    po.page.getByTestId(`collaborator-item-${collaborator}`),
-  ).toBeHidden({ timeout: Timeout.MEDIUM });
+  await expect(po.page.getByTestId(`collaborator-item-${collaborator}`)).toBeHidden({
+    timeout: Timeout.MEDIUM,
+  });
 
   const branchMenu = po.page.getByTestId("branch-actions-menu-trigger");
   await expect(branchMenu).toBeVisible({ timeout: Timeout.MEDIUM });
@@ -78,10 +71,9 @@ test("completes the GitHub publish happy paths", async ({ po }) => {
   await po.page.getByTestId("create-branch-trigger").click();
   await po.page.getByTestId("new-branch-name-input").fill("feature-e2e");
   await po.page.getByTestId("create-branch-submit-button").click();
-  await expect(po.page.getByTestId("branch-select-trigger")).toContainText(
-    "feature-e2e",
-    { timeout: Timeout.MEDIUM },
-  );
+  await expect(po.page.getByTestId("branch-select-trigger")).toContainText("feature-e2e", {
+    timeout: Timeout.MEDIUM,
+  });
 
   const appPath = await po.appManagement.getCurrentAppPath();
   fs.writeFileSync(path.join(appPath, "github-e2e.txt"), "from feature branch");
@@ -90,9 +82,7 @@ test("completes the GitHub publish happy paths", async ({ po }) => {
 
   await po.page.getByTestId("branch-select-trigger").click();
   await po.page.getByRole("option", { name: "main" }).click();
-  await expect(po.page.getByTestId("branch-select-trigger")).toContainText(
-    "main",
-  );
+  await expect(po.page.getByTestId("branch-select-trigger")).toContainText("main");
   expect(fs.existsSync(path.join(appPath, "github-e2e.txt"))).toBe(false);
 
   await po.page.getByTestId("branches-header").click();
@@ -132,9 +122,7 @@ test("completes the GitHub publish happy paths", async ({ po }) => {
 
   await branchMenu.click();
   await po.page.getByTestId("git-pull-button").click();
-  await expect(
-    po.page.getByText("Pulled latest changes from remote"),
-  ).toBeVisible({
+  await expect(po.page.getByText("Pulled latest changes from remote")).toBeVisible({
     timeout: Timeout.MEDIUM,
   });
   await expect
@@ -145,7 +133,5 @@ test("completes the GitHub publish happy paths", async ({ po }) => {
 
   await po.githubConnector.disconnectRepo();
   await po.githubConnector.connectExistingRepo("testuser/existing-app", "main");
-  await expect(po.page.getByTestId("github-connected-repo")).toContainText(
-    "testuser/existing-app",
-  );
+  await expect(po.page.getByTestId("github-connected-repo")).toContainText("testuser/existing-app");
 });

@@ -1,8 +1,5 @@
 import type { IpcMainInvokeEvent } from "electron";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type { GithubOperation } from "@/github_ops/state";
 import {
   handleAbortRebase,
@@ -25,10 +22,7 @@ import {
   handleRenameBranch,
   handleSwitchBranch,
 } from "../handlers/git_branch_handlers";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "./app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "./app_operation_coordinator";
 
 // The extracted handler cores do not inspect the Electron event. Keeping the
 // placeholder confined to this compatibility seam lets the hosted actor call
@@ -55,9 +49,7 @@ export function getGithubOperationResources(op: GithubOperation) {
  * on screen saying why. `disconnect` takes only `metadata`, which no session
  * claims.
  */
-export function getGithubRecordingRefusal(
-  op: GithubOperation,
-): string | undefined {
+export function getGithubRecordingRefusal(op: GithubOperation): string | undefined {
   switch (op.type) {
     case "disconnect":
       return undefined;
@@ -140,10 +132,7 @@ export class GithubOpsService {
 
   assertAcceptingOperations(appId: number): void {
     if (this.resetFenceCount > 0 || this.deletionFences.has(appId)) {
-      throw new OctopusStudioError(
-        "The app is being deleted",
-        OctopusStudioErrorKind.Precondition,
-      );
+      throw new OctopusStudioError("The app is being deleted", OctopusStudioErrorKind.Precondition);
     }
   }
 
@@ -234,16 +223,10 @@ export class GithubOpsService {
     } catch (error) {
       return Promise.reject(error);
     }
-    return this.track(
-      appId,
-      handleGetMergeConflicts(MAIN_SERVICE_EVENT, { appId }),
-    );
+    return this.track(appId, handleGetMergeConflicts(MAIN_SERVICE_EVENT, { appId }));
   }
 
-  private track<Result>(
-    appId: number,
-    promise: Promise<Result>,
-  ): Promise<Result> {
+  private track<Result>(appId: number, promise: Promise<Result>): Promise<Result> {
     let pending = this.pendingByApp.get(appId);
     if (!pending) {
       pending = new Set();

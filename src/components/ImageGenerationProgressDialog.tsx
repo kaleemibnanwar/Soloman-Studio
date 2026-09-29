@@ -19,10 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useImageGenerationJobs } from "@/image_generation/hooks";
-import type {
-  ImageGenerationJobView,
-  ImageGenerationStatus,
-} from "@/image_generation/state";
+import type { ImageGenerationJobView, ImageGenerationStatus } from "@/image_generation/state";
 import { buildOctopusStudioMediaUrlForApp } from "@/lib/octopusStudioMediaUrl";
 import { useGenerateImage } from "@/hooks/useGenerateImage";
 import { ImageLightbox } from "@/components/chat/ImageLightbox";
@@ -39,9 +36,7 @@ function StatusIcon({ status }: { status: ImageGenerationStatus }) {
     case "pending":
       return <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />;
     case "cancelling":
-      return (
-        <Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />
-      );
+      return <Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />;
     case "success":
       return <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />;
     case "error":
@@ -109,8 +104,7 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
   const [imgError, setImgError] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const truncatedPrompt =
-    job.prompt.length > 60 ? job.prompt.slice(0, 60) + "…" : job.prompt;
+  const truncatedPrompt = job.prompt.length > 60 ? job.prompt.slice(0, 60) + "…" : job.prompt;
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
@@ -135,9 +129,7 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
         <div className="border-t border-border p-3 space-y-3">
           {/* Full prompt */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Prompt
-            </p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Prompt</p>
             <p className="text-sm whitespace-pre-wrap">{job.prompt}</p>
           </div>
 
@@ -147,9 +139,7 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
               <div className="w-full aspect-video max-w-xs rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-2 bg-muted/10">
                 <Loader2
                   className={`h-6 w-6 animate-spin ${
-                    job.status === "pending"
-                      ? "text-primary"
-                      : "text-muted-foreground"
+                    job.status === "pending" ? "text-primary" : "text-muted-foreground"
                   }`}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -168,10 +158,7 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
                   onClick={() => setLightboxOpen(true)}
                 >
                   <img
-                    src={buildOctopusStudioMediaUrlForApp(
-                      job.result.appId,
-                      job.result.fileName,
-                    )}
+                    src={buildOctopusStudioMediaUrlForApp(job.result.appId, job.result.fileName)}
                     alt="Generated image"
                     className="w-full max-w-xs rounded-lg border shadow-sm hover:opacity-90 transition-opacity"
                     onError={() => setImgError(true)}
@@ -185,9 +172,7 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
             ) : job.status === "cancelled" ? (
               <div className="w-full aspect-video max-w-xs rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-2 bg-muted/10">
                 <Ban className="h-6 w-6 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">
-                  Generation was cancelled
-                </p>
+                <p className="text-xs text-muted-foreground">Generation was cancelled</p>
               </div>
             ) : null}
           </div>
@@ -198,19 +183,12 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
             <Badge variant="outline" className="text-xs">
               {THEME_LABELS[job.themeMode] || job.themeMode}
             </Badge>
-            <span className="text-xs text-muted-foreground">
-              {job.targetAppName}
-            </span>
+            <span className="text-xs text-muted-foreground">{job.targetAppName}</span>
           </div>
 
           {/* Cancel button for pending jobs */}
           {job.status === "pending" && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs"
-              onClick={() => cancel(job.id)}
-            >
+            <Button size="sm" variant="outline" className="text-xs" onClick={() => cancel(job.id)}>
               Cancel
             </Button>
           )}
@@ -221,10 +199,7 @@ function ImageGenerationCard({ job }: { job: ImageGenerationJobView }) {
         job.result &&
         createPortal(
           <ImageLightbox
-            imageUrl={buildOctopusStudioMediaUrlForApp(
-              job.result.appId,
-              job.result.fileName,
-            )}
+            imageUrl={buildOctopusStudioMediaUrlForApp(job.result.appId, job.result.fileName)}
             alt={job.prompt}
             onClose={() => setLightboxOpen(false)}
             onError={() => setImgError(true)}
@@ -252,9 +227,7 @@ export function ImageGenerationProgressDialog({
             <ImageIcon className="h-5 w-5" />
             Image Generation
           </DialogTitle>
-          <DialogDescription>
-            Recent image generations from the last 30 minutes.
-          </DialogDescription>
+          <DialogDescription>Recent image generations from the last 30 minutes.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 py-2">

@@ -53,9 +53,7 @@ export function ImageGeneratingToast({
         <Loader2 className="w-5 h-5 text-primary animate-spin shrink-0" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">
-            {pendingCount > 1
-              ? `Generating ${pendingCount} images…`
-              : "Generating image…"}
+            {pendingCount > 1 ? `Generating ${pendingCount} images…` : "Generating image…"}
           </p>
         </div>
       </div>
@@ -73,10 +71,7 @@ export function ImageSuccessToast({
   getPendingCount: () => number;
 }) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const imageUrl = buildOctopusStudioMediaUrlForApp(
-    result.appId,
-    result.fileName,
-  );
+  const imageUrl = buildOctopusStudioMediaUrlForApp(result.appId, result.fileName);
 
   return (
     <>
@@ -89,9 +84,7 @@ export function ImageSuccessToast({
           <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">Image ready</p>
-            <p className="text-xs text-muted-foreground truncate">
-              Saved to {result.appName}
-            </p>
+            <p className="text-xs text-muted-foreground truncate">Saved to {result.appName}</p>
           </div>
           <Button
             size="sm"
@@ -124,15 +117,13 @@ export function ImageSuccessToast({
   );
 }
 
-export function showImageGeneratingToast(
-  pendingCount: number,
-): string | number {
+export function showImageGeneratingToast(pendingCount: number): string | number {
   // Dismiss any lingering success toast before showing progress
   toast.dismiss(SUCCESS_TOAST_ID);
-  return toast.custom(
-    (t) => <ImageGeneratingToast pendingCount={pendingCount} toastId={t} />,
-    { id: GENERATING_TOAST_ID, duration: Infinity },
-  );
+  return toast.custom((t) => <ImageGeneratingToast pendingCount={pendingCount} toastId={t} />, {
+    id: GENERATING_TOAST_ID,
+    duration: Infinity,
+  });
 }
 
 export function showImageSuccessToast(
@@ -142,13 +133,7 @@ export function showImageSuccessToast(
   // Dismiss the generating toast before showing success
   toast.dismiss(GENERATING_TOAST_ID);
   return toast.custom(
-    (t) => (
-      <ImageSuccessToast
-        result={result}
-        toastId={t}
-        getPendingCount={getPendingCount}
-      />
-    ),
+    (t) => <ImageSuccessToast result={result} toastId={t} getPendingCount={getPendingCount} />,
     {
       id: SUCCESS_TOAST_ID,
       duration: SUCCESS_AUTO_DISMISS_MS,

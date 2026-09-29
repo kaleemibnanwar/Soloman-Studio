@@ -3,22 +3,13 @@ import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const HANDLER_PATH = path.resolve(
-  process.cwd(),
-  "src/ipc/handlers/chat_stream_handlers.ts",
-);
+const HANDLER_PATH = path.resolve(process.cwd(), "src/ipc/handlers/chat_stream_handlers.ts");
 const HANDLER_SOURCE = fs.readFileSync(HANDLER_PATH, "utf8");
 const UPDATE_MESSAGE =
   "Update src/chat_stream/host_transition.ts and src/chat_stream/main_actor.test.ts in the same PR.";
 
 function parse(source: string): ts.SourceFile {
-  return ts.createSourceFile(
-    HANDLER_PATH,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
+  return ts.createSourceFile(HANDLER_PATH, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 }
 
 function descendants(node: ts.Node): ts.Node[] {
@@ -37,9 +28,7 @@ function assertAtomicAdmission(source: string): void {
   const appBarrierCheck = nodes.find(
     (node): node is ts.IfStatement =>
       ts.isIfStatement(node) &&
-      node.expression
-        .getText(file)
-        .includes("streamAdmissionBlockCounts.get(chat.appId)"),
+      node.expression.getText(file).includes("streamAdmissionBlockCounts.get(chat.appId)"),
   );
   const markerDelete = nodes.find(
     (node): node is ts.CallExpression =>
@@ -66,18 +55,11 @@ function assertAtomicAdmission(source: string): void {
 function assertSoleCancelledSender(source: string): void {
   const file = parse(source);
   const cancelledSites = descendants(file).filter((node) => {
-    if (
-      !ts.isCallExpression(node) ||
-      node.expression.getText(file) !== "safeSend"
-    ) {
+    if (!ts.isCallExpression(node) || node.expression.getText(file) !== "safeSend") {
       return false;
     }
     const channel = node.arguments[1];
-    if (
-      !channel ||
-      !ts.isStringLiteralLike(channel) ||
-      channel.text !== "chat:response:end"
-    ) {
+    if (!channel || !ts.isStringLiteralLike(channel) || channel.text !== "chat:response:end") {
       return false;
     }
     let payload: ts.Expression | undefined = node.arguments[2];
@@ -143,28 +125,16 @@ function assertGuardedFinalTransportEnd(source: string): void {
   }
 }
 
-function replaceLast(
-  source: string,
-  needle: string,
-  replacement: string,
-): string {
+function replaceLast(source: string, needle: string, replacement: string): string {
   const index = source.lastIndexOf(needle);
   if (index < 0) throw new Error(`Mutation anchor not found: ${needle}`);
-  return (
-    source.slice(0, index) + replacement + source.slice(index + needle.length)
-  );
+  return source.slice(0, index) + replacement + source.slice(index + needle.length);
 }
 
-function replaceOnce(
-  source: string,
-  needle: string,
-  replacement: string,
-): string {
+function replaceOnce(source: string, needle: string, replacement: string): string {
   const index = source.indexOf(needle);
   if (index < 0) throw new Error(`Mutation anchor not found: ${needle}`);
-  return (
-    source.slice(0, index) + replacement + source.slice(index + needle.length)
-  );
+  return source.slice(0, index) + replacement + source.slice(index + needle.length);
 }
 
 describe("chat stream protocol drift tripwire", () => {

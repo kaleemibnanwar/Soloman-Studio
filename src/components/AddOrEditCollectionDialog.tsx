@@ -10,11 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { showError, showSuccess } from "@/lib/toast";
 import { useAppCollections } from "@/hooks/useAppCollections";
 import { cn } from "@/lib/utils";
@@ -114,9 +110,7 @@ export function AddOrEditCollectionDialog({
     >
       <DialogContent className="max-w-md p-4">
         <DialogHeader className="pb-2">
-          <DialogTitle>
-            {isEdit ? "Edit collection" : "Add collection"}
-          </DialogTitle>
+          <DialogTitle>{isEdit ? "Edit collection" : "Add collection"}</DialogTitle>
           <DialogDescription className="text-xs">
             {isEdit
               ? "Rename this collection or change which apps belong to it."
@@ -155,9 +149,7 @@ export function AddOrEditCollectionDialog({
               >
                 <ul className="flex flex-wrap gap-1.5 items-center">
                   {selectedApps.length === 0 && (
-                    <li className="text-xs text-muted-foreground">
-                      No apps yet.
-                    </li>
+                    <li className="text-xs text-muted-foreground">No apps yet.</li>
                   )}
                   {selectedApps.map((app) => {
                     const inOther = collectionNameByAppId.get(app.id);
@@ -166,9 +158,7 @@ export function AddOrEditCollectionDialog({
                         key={app.id}
                         className="inline-flex items-center gap-1 rounded-full bg-(--background-lightest) border border-border px-2 py-0.5 text-xs"
                       >
-                        <span className="truncate max-w-[160px]">
-                          {app.name}
-                        </span>
+                        <span className="truncate max-w-[160px]">{app.name}</span>
                         {inOther && (
                           <span
                             className="text-[10px] text-muted-foreground italic"
@@ -193,9 +183,7 @@ export function AddOrEditCollectionDialog({
                     <PopoverTrigger
                       className={cn(
                         "inline-flex items-center justify-center h-6 w-6 rounded-full border bg-(--background-lightest) text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-50",
-                        selectedApps.length === 0
-                          ? "border-border"
-                          : "border-dashed border-border",
+                        selectedApps.length === 0 ? "border-border" : "border-dashed border-border",
                       )}
                       disabled={isSubmitting || pickableApps.length === 0}
                       data-testid="collection-add-apps-picker-trigger"
@@ -223,9 +211,7 @@ export function AddOrEditCollectionDialog({
                           className="w-full flex items-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
                           data-testid={`collection-picker-app-${app.id}`}
                         >
-                          <span className="flex-1 min-w-0 truncate">
-                            {app.name}
-                          </span>
+                          <span className="flex-1 min-w-0 truncate">{app.name}</span>
                           {inOther && (
                             <span className="text-[10px] text-muted-foreground italic shrink-0">
                               in "{inOther}"

@@ -18,11 +18,7 @@ export default function octopusStudioTagger(): Plugin {
     async transform(code: string, id: string) {
       try {
         // Ignore non-jsx files and files inside node_modules
-        if (
-          !VALID_EXTENSIONS.has(path.extname(id)) ||
-          id.includes("node_modules")
-        )
-          return null;
+        if (!VALID_EXTENSIONS.has(path.extname(id)) || id.includes("node_modules")) return null;
 
         const ast = parse(code, {
           sourceType: "module",
@@ -45,8 +41,7 @@ export default function octopusStudioTagger(): Plugin {
               // ── 2. Check whether the tag already has data-octopusStudio-id ───────────────
               const alreadyTagged = node.attributes?.some(
                 (attr: any) =>
-                  attr.type === "JSXAttribute" &&
-                  attr.name?.name === "data-octopusStudio-id",
+                  attr.type === "JSXAttribute" && attr.name?.name === "data-octopusStudio-id",
               );
               if (alreadyTagged) return;
 
@@ -79,10 +74,7 @@ export default function octopusStudioTagger(): Plugin {
           map: ms.generateMap({ hires: true }),
         };
       } catch (error) {
-        console.warn(
-          `[octopusStudio-tagger] Warning: Failed to transform ${id}:`,
-          error,
-        );
+        console.warn(`[octopusStudio-tagger] Warning: Failed to transform ${id}:`, error);
         return null;
       }
     },

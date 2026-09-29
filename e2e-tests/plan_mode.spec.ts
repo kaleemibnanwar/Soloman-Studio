@@ -9,114 +9,97 @@ async function finishPlanPresentation(po: any) {
   });
 }
 
-testSkipIfWindows(
-  "plan mode - add and review plan annotations",
-  async ({ po }) => {
-    await po.setUpOctopusStudioPro({ localAgent: true });
-    await po.importApp("minimal");
-    await po.chatActions.clickNewChat();
-    await po.chatActions.selectChatMode("plan");
+testSkipIfWindows("plan mode - add and review plan annotations", async ({ po }) => {
+  await po.setUpOctopusStudioPro({ localAgent: true });
+  await po.importApp("minimal");
+  await po.chatActions.clickNewChat();
+  await po.chatActions.selectChatMode("plan");
 
-    await po.sendPrompt("tc=local-agent/accept-plan");
-    await finishPlanPresentation(po);
+  await po.sendPrompt("tc=local-agent/accept-plan");
+  await finishPlanPresentation(po);
 
-    await po.previewPanel.selectTextInPlan("Step two");
+  await po.previewPanel.selectTextInPlan("Step two");
 
-    const addCommentButton = po.previewPanel.getPlanSelectionCommentButton();
-    await expect(addCommentButton).toBeVisible({ timeout: Timeout.MEDIUM });
-    await addCommentButton.click();
-    await expect(po.page.getByRole("button", { name: "Cancel" })).toBeVisible();
-    await po.page.getByRole("button", { name: "Cancel" }).click();
+  const addCommentButton = po.previewPanel.getPlanSelectionCommentButton();
+  await expect(addCommentButton).toBeVisible({ timeout: Timeout.MEDIUM });
+  await addCommentButton.click();
+  await expect(po.page.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await po.page.getByRole("button", { name: "Cancel" }).click();
 
-    await expect(po.page.getByPlaceholder("Add your comment...")).toBeHidden();
-    await expect(addCommentButton).toBeVisible({ timeout: Timeout.MEDIUM });
-    await addCommentButton.click();
+  await expect(po.page.getByPlaceholder("Add your comment...")).toBeHidden();
+  await expect(addCommentButton).toBeVisible({ timeout: Timeout.MEDIUM });
+  await addCommentButton.click();
 
-    await po.page
-      .getByPlaceholder("Add your comment...")
-      .fill("Add more detail for step two.");
+  await po.page.getByPlaceholder("Add your comment...").fill("Add more detail for step two.");
 
-    await po.previewPanel.getPlanContent().evaluate((container) => {
-      let scrollParent: HTMLElement | null = container.parentElement;
+  await po.previewPanel.getPlanContent().evaluate((container) => {
+    let scrollParent: HTMLElement | null = container.parentElement;
 
-      while (scrollParent) {
-        const { overflowY } = window.getComputedStyle(scrollParent);
-        const isScrollable =
-          overflowY === "auto" ||
-          overflowY === "scroll" ||
-          overflowY === "overlay";
-        if (isScrollable) {
-          scrollParent.scrollTop += 48;
-          scrollParent.dispatchEvent(new Event("scroll"));
-          return;
-        }
-
-        scrollParent = scrollParent.parentElement;
+    while (scrollParent) {
+      const { overflowY } = window.getComputedStyle(scrollParent);
+      const isScrollable =
+        overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
+      if (isScrollable) {
+        scrollParent.scrollTop += 48;
+        scrollParent.dispatchEvent(new Event("scroll"));
+        return;
       }
 
-      throw new Error("Could not find a scrollable plan container");
-    });
+      scrollParent = scrollParent.parentElement;
+    }
 
-    await expect(po.page.getByPlaceholder("Add your comment...")).toHaveValue(
-      "Add more detail for step two.",
-    );
-    await po.page.getByRole("button", { name: "Add Comment" }).click();
+    throw new Error("Could not find a scrollable plan container");
+  });
 
-    const commentsButton = po.previewPanel.getPlanCommentsButton();
-    await expect(commentsButton).toBeVisible({ timeout: Timeout.MEDIUM });
-    await expect(po.previewPanel.getPlanAnnotationMarks()).toHaveCount(1);
-    await expect(
-      po.previewPanel.getPlanAnnotationMarks().first(),
-    ).toContainText("Step two");
-    await expect(
-      po.previewPanel.getPlanAnnotationMarks().first(),
-    ).toHaveAttribute("role", "button");
+  await expect(po.page.getByPlaceholder("Add your comment...")).toHaveValue(
+    "Add more detail for step two.",
+  );
+  await po.page.getByRole("button", { name: "Add Comment" }).click();
 
-    await commentsButton.click();
-    await expect(po.page.getByText("Comments (1)")).toBeVisible({
-      timeout: Timeout.MEDIUM,
-    });
-    await expect(
-      po.page.getByText("Add more detail for step two."),
-    ).toBeVisible();
+  const commentsButton = po.previewPanel.getPlanCommentsButton();
+  await expect(commentsButton).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.previewPanel.getPlanAnnotationMarks()).toHaveCount(1);
+  await expect(po.previewPanel.getPlanAnnotationMarks().first()).toContainText("Step two");
+  await expect(po.previewPanel.getPlanAnnotationMarks().first()).toHaveAttribute("role", "button");
 
-    await commentsButton.click();
-    await expect(po.page.getByText("Comments (1)")).toBeHidden();
+  await commentsButton.click();
+  await expect(po.page.getByText("Comments (1)")).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
+  await expect(po.page.getByText("Add more detail for step two.")).toBeVisible();
 
-    await po.previewPanel.getPlanAnnotationMarks().first().press("Enter");
-    const commentDialog = po.page.getByRole("dialog", {
-      name: "Comment on selected text",
-    });
-    await expect(commentDialog).toBeVisible({ timeout: Timeout.MEDIUM });
-    await expect(
-      po.page.getByRole("button", { name: "Edit comment" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
-    await expect(
-      po.page.getByRole("button", { name: "Edit comment" }),
-    ).toBeFocused();
-    await expect(
-      po.page.getByText("Add more detail for step two."),
-    ).toBeVisible();
+  await commentsButton.click();
+  await expect(po.page.getByText("Comments (1)")).toBeHidden();
 
-    // Close the comment dialog and send the annotations
-    await po.page.keyboard.press("Escape");
-    await expect(commentDialog).toBeHidden();
+  await po.previewPanel.getPlanAnnotationMarks().first().press("Enter");
+  const commentDialog = po.page.getByRole("dialog", {
+    name: "Comment on selected text",
+  });
+  await expect(commentDialog).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.page.getByRole("button", { name: "Edit comment" })).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
+  await expect(po.page.getByRole("button", { name: "Edit comment" })).toBeFocused();
+  await expect(po.page.getByText("Add more detail for step two.")).toBeVisible();
 
-    await commentsButton.click();
-    await expect(po.page.getByText("Comments (1)")).toBeVisible({
-      timeout: Timeout.MEDIUM,
-    });
-    await po.page.getByRole("button", { name: "Send Comments" }).click();
+  // Close the comment dialog and send the annotations
+  await po.page.keyboard.press("Escape");
+  await expect(commentDialog).toBeHidden();
 
-    // Wait for annotations to be cleared (indicates send succeeded)
-    await expect(po.previewPanel.getPlanAnnotationMarks()).toHaveCount(0, {
-      timeout: Timeout.MEDIUM,
-    });
+  await commentsButton.click();
+  await expect(po.page.getByText("Comments (1)")).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
+  await po.page.getByRole("button", { name: "Send Comments" }).click();
 
-    // Verify the request sent to the server contains the correctly formatted comments
-    await po.snapshotServerDump("last-message");
-  },
-);
+  // Wait for annotations to be cleared (indicates send succeeded)
+  await expect(po.previewPanel.getPlanAnnotationMarks()).toHaveCount(0, {
+    timeout: Timeout.MEDIUM,
+  });
+
+  // Verify the request sent to the server contains the correctly formatted comments
+  await po.snapshotServerDump("last-message");
+});
 
 testSkipIfWindows(
   "plan mode - view plan button opens preview panel when collapsed",
@@ -133,9 +116,7 @@ testSkipIfWindows(
     await po.sendPrompt("tc=local-agent/accept-plan");
 
     // Wait for the "View Plan" button to appear
-    const viewPlanButton = po.page
-      .getByRole("button", { name: "View Plan" })
-      .last();
+    const viewPlanButton = po.page.getByRole("button", { name: "View Plan" }).last();
     await expect(viewPlanButton).toBeVisible({ timeout: Timeout.MEDIUM });
 
     // Verify plan content is visible

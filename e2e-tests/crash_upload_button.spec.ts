@@ -17,36 +17,25 @@ const SETTINGS = {
 
 function writeCrashScenario(userDataDir: string, sentinel: string) {
   fs.mkdirSync(userDataDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(userDataDir, "user-settings.json"),
-    JSON.stringify(SETTINGS, null, 2),
-  );
+  fs.writeFileSync(path.join(userDataDir, "user-settings.json"), JSON.stringify(SETTINGS, null, 2));
   fs.writeFileSync(path.join(userDataDir, "session.lock"), sentinel);
 }
 
 testWithConfig({
   preLaunchHook: async ({ userDataDir }) => {
     // Sentinel carries the chat that was streaming at crash time.
-    writeCrashScenario(
-      userDataDir,
-      JSON.stringify({ ts: Date.now(), activeChatId: 1 }),
-    );
+    writeCrashScenario(userDataDir, JSON.stringify({ ts: Date.now(), activeChatId: 1 }));
   },
-})(
-  "force-close dialog shows Upload Chat Session button when a chat was active",
-  async ({ po }) => {
-    await expect(po.chatActions.getHomeChatInputContainer()).toBeVisible({
-      timeout: Timeout.LONG,
-    });
-    await expect(
-      po.page.getByRole("heading", { name: "Force Close Detected" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+})("force-close dialog shows Upload Chat Session button when a chat was active", async ({ po }) => {
+  await expect(po.chatActions.getHomeChatInputContainer()).toBeVisible({
+    timeout: Timeout.LONG,
+  });
+  await expect(po.page.getByRole("heading", { name: "Force Close Detected" })).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 
-    await expect(
-      po.page.getByRole("button", { name: "Upload Chat Session" }),
-    ).toBeVisible();
-  },
-);
+  await expect(po.page.getByRole("button", { name: "Upload Chat Session" })).toBeVisible();
+});
 
 testWithConfig({
   preLaunchHook: async ({ userDataDir }) => {
@@ -59,12 +48,10 @@ testWithConfig({
     await expect(po.chatActions.getHomeChatInputContainer()).toBeVisible({
       timeout: Timeout.LONG,
     });
-    await expect(
-      po.page.getByRole("heading", { name: "Force Close Detected" }),
-    ).toBeVisible({ timeout: Timeout.MEDIUM });
+    await expect(po.page.getByRole("heading", { name: "Force Close Detected" })).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
 
-    await expect(
-      po.page.getByRole("button", { name: "Upload Chat Session" }),
-    ).not.toBeVisible();
+    await expect(po.page.getByRole("button", { name: "Upload Chat Session" })).not.toBeVisible();
   },
 );

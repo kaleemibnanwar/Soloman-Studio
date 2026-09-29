@@ -1,25 +1,31 @@
-import { type BaseMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
+import {
+  type BaseMessage,
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+  ToolMessage,
+} from "@langchain/core/messages";
 
-import { guardrails } from '@src/background/services/guardrails';
-import { ResponseParseError } from '../agents/errors';
+import { guardrails } from "@src/background/services/guardrails";
+import { ResponseParseError } from "../agents/errors";
 
 /**
  * Tag for untrusted content
  */
-export const UNTRUSTED_CONTENT_TAG_START = '<nano_untrusted_content>';
-export const UNTRUSTED_CONTENT_TAG_END = '</nano_untrusted_content>';
+export const UNTRUSTED_CONTENT_TAG_START = "<nano_untrusted_content>";
+export const UNTRUSTED_CONTENT_TAG_END = "</nano_untrusted_content>";
 
 /**
  * Tag for user request
  */
-export const USER_REQUEST_TAG_START = '<nano_user_request>';
-export const USER_REQUEST_TAG_END = '</nano_user_request>';
+export const USER_REQUEST_TAG_START = "<nano_user_request>";
+export const USER_REQUEST_TAG_END = "</nano_user_request>";
 
-export const ATTACHED_FILES_TAG_START = '<nano_attached_files>';
-export const ATTACHED_FILES_TAG_END = '</nano_attached_files>';
+export const ATTACHED_FILES_TAG_START = "<nano_attached_files>";
+export const ATTACHED_FILES_TAG_END = "</nano_attached_files>";
 
-export const FILE_CONTENT_TAG_START = '<nano_file_content>';
-export const FILE_CONTENT_TAG_END = '</nano_file_content>';
+export const FILE_CONTENT_TAG_START = "<nano_file_content>";
+export const FILE_CONTENT_TAG_END = "</nano_file_content>";
 
 /**
  * Remove think tags from model output
@@ -30,12 +36,12 @@ export const FILE_CONTENT_TAG_END = '</nano_file_content>';
 export function removeThinkTags(text: string): string {
   // Step 1: Remove well-formed <think>...</think>
   const thinkTagsRegex = /<think>[\s\S]*?<\/think>/g;
-  let result = text.replace(thinkTagsRegex, '');
+  let result = text.replace(thinkTagsRegex, "");
 
   // Step 2: If there's an unmatched closing tag </think>,
   // remove everything up to and including that.
   const strayCloseTagRegex = /[\s\S]*?<\/think>/g;
-  result = result.replace(strayCloseTagRegex, '');
+  result = result.replace(strayCloseTagRegex, "");
 
   return result.trim();
 }
@@ -51,10 +57,10 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
     let processedContent = content;
 
     // Handle Llama's tool call format first
-    if (processedContent.includes('<|tool_call_start_id|>')) {
+    if (processedContent.includes("<|tool_call_start_id|>")) {
       // Extract content between tool call tags
-      const startTag = '<|tool_call_start_id|>';
-      const endTag = '<|tool_call_end_id|>';
+      const startTag = "<|tool_call_start_id|>";
+      const endTag = "<|tool_call_end_id|>";
       const startIndex = processedContent.indexOf(startTag) + startTag.length;
       let endIndex = processedContent.indexOf(endTag);
 
@@ -75,14 +81,14 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
         return parametersJson;
       }
 
-      throw new Error('Tool call structure does not contain parameters');
+      throw new Error("Tool call structure does not contain parameters");
     }
 
     // Handle Llama's python tag format
-    if (processedContent.includes('<|python_tag|>')) {
+    if (processedContent.includes("<|python_tag|>")) {
       // Extract content between python tags
-      const startTag = '<|python_tag|>';
-      const endTag = '<|/python_tag|>';
+      const startTag = "<|python_tag|>";
+      const endTag = "<|/python_tag|>";
       const startIndex = processedContent.indexOf(startTag) + startTag.length;
       let endIndex = processedContent.indexOf(endTag);
 
@@ -99,7 +105,7 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
       // Extract the actual parameters (which contains the agent output)
       if (pythonCall.parameters && pythonCall.parameters.output) {
         // Try to parse the output if it's a JSON string
-        if (typeof pythonCall.parameters.output === 'string') {
+        if (typeof pythonCall.parameters.output === "string") {
           try {
             const outputJson = JSON.parse(pythonCall.parameters.output);
             return outputJson;
@@ -112,17 +118,17 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
         return pythonCall.parameters;
       }
 
-      throw new Error('Python tag structure does not contain valid parameters');
+      throw new Error("Python tag structure does not contain valid parameters");
     }
 
     // If content is wrapped in code blocks, extract just the JSON part
-    if (processedContent.includes('```')) {
+    if (processedContent.includes("```")) {
       // Find the JSON content between code blocks
-      const parts = processedContent.split('```');
+      const parts = processedContent.split("```");
       processedContent = parts[1];
 
       // Remove language identifier if present (e.g., 'json\n')
-      if (processedContent.startsWith('json')) {
+      if (processedContent.startsWith("json")) {
         processedContent = processedContent.substring(4).trim();
       }
     }
@@ -140,11 +146,14 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
  * @param modelName - Name of the model to convert messages for
  * @returns Converted list of messages
  */
-export function convertInputMessages(inputMessages: BaseMessage[], modelName: string | null): BaseMessage[] {
+export function convertInputMessages(
+  inputMessages: BaseMessage[],
+  modelName: string | null,
+): BaseMessage[] {
   if (modelName === null) {
     return inputMessages;
   }
-  if (modelName === 'deepseek-reasoner' || modelName.includes('deepseek-r1')) {
+  if (modelName === "deepseek-reasoner" || modelName.includes("deepseek-r1")) {
     const convertedInputMessages = convertMessagesForNonFunctionCallingModels(inputMessages);
     let mergedInputMessages = mergeSuccessiveMessages(convertedInputMessages, HumanMessage);
     mergedInputMessages = mergeSuccessiveMessages(mergedInputMessages, AIMessage);
@@ -202,17 +211,17 @@ function mergeSuccessiveMessages(
         const lastMessage = mergedMessages[mergedMessages.length - 1];
         if (Array.isArray(message.content)) {
           // Handle array content case
-          if (typeof lastMessage.content === 'string') {
+          if (typeof lastMessage.content === "string") {
             const textContent = message.content.find(
-              item => typeof item === 'object' && 'type' in item && item.type === 'text',
+              (item) => typeof item === "object" && "type" in item && item.type === "text",
             );
-            if (textContent && 'text' in textContent) {
+            if (textContent && "text" in textContent) {
               lastMessage.content += textContent.text;
             }
           }
         } else {
           // Handle string content case
-          if (typeof lastMessage.content === 'string' && typeof message.content === 'string') {
+          if (typeof lastMessage.content === "string" && typeof message.content === "string") {
             lastMessage.content += message.content;
           }
         }
@@ -234,18 +243,24 @@ function mergeSuccessiveMessages(
  * @param strict - If true, uses strict mode in guardrails (default: true)
  * @returns Filtered content string with malicious content removed
  */
-export function filterExternalContent(rawContent: string | undefined, strict: boolean = true): string {
-  if (!rawContent || rawContent.trim() === '') {
-    return '';
+export function filterExternalContent(
+  rawContent: string | undefined,
+  strict: boolean = true,
+): string {
+  if (!rawContent || rawContent.trim() === "") {
+    return "";
   }
 
   const result = guardrails.sanitize(rawContent, { strict });
   return result.sanitized;
 }
 
-export function filterExternalContentWithReport(rawContent: string | undefined, strict: boolean = true) {
-  if (!rawContent || rawContent.trim() === '') {
-    return { sanitized: '', threats: [], modified: false };
+export function filterExternalContentWithReport(
+  rawContent: string | undefined,
+  strict: boolean = true,
+) {
+  if (!rawContent || rawContent.trim() === "") {
+    return { sanitized: "", threats: [], modified: false };
   }
   return guardrails.sanitize(rawContent, { strict });
 }
@@ -290,7 +305,10 @@ export function wrapUserRequest(rawContent: string, filterFirst = true): string 
  * @param raw - The raw string containing user text and potentially attached files
  * @returns Object with userText and attachmentsInner (null if no attachments found)
  */
-export function splitUserTextAndAttachments(raw: string): { userText: string; attachmentsInner: string | null } {
+export function splitUserTextAndAttachments(raw: string): {
+  userText: string;
+  attachmentsInner: string | null;
+} {
   const firstStartIdx = raw.indexOf(ATTACHED_FILES_TAG_START);
   if (firstStartIdx === -1) {
     return { userText: raw, attachmentsInner: null };
@@ -309,7 +327,9 @@ export function splitUserTextAndAttachments(raw: string): { userText: string; at
     attachmentsInner = raw.slice(firstStartIdx + ATTACHED_FILES_TAG_START.length).trim();
   } else {
     // Normal case: we have both start and end tags (any text after end tag is ignored)
-    attachmentsInner = raw.slice(firstStartIdx + ATTACHED_FILES_TAG_START.length, lastEndIdx).trim();
+    attachmentsInner = raw
+      .slice(firstStartIdx + ATTACHED_FILES_TAG_START.length, lastEndIdx)
+      .trim();
   }
 
   return { userText, attachmentsInner };
@@ -322,8 +342,16 @@ export function splitUserTextAndAttachments(raw: string): { userText: string; at
  * @param untrust - Whether to wrap as untrusted content (default: true)
  * @returns Complete wrapped attachments block with tags
  */
-export function wrapAttachments(rawAttachmentsInner: string, filterFirst = true, trusted = false): string {
-  const filteredAttachments = filterFirst ? filterExternalContent(rawAttachmentsInner) : rawAttachmentsInner;
-  const innerContent = trusted ? filteredAttachments : wrapUntrustedContent(filteredAttachments, false);
+export function wrapAttachments(
+  rawAttachmentsInner: string,
+  filterFirst = true,
+  trusted = false,
+): string {
+  const filteredAttachments = filterFirst
+    ? filterExternalContent(rawAttachmentsInner)
+    : rawAttachmentsInner;
+  const innerContent = trusted
+    ? filteredAttachments
+    : wrapUntrustedContent(filteredAttachments, false);
   return `${ATTACHED_FILES_TAG_START}\n${innerContent}\n${ATTACHED_FILES_TAG_END}`;
 }

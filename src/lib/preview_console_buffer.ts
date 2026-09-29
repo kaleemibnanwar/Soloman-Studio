@@ -72,11 +72,9 @@ export function boundUtf8String(
         let suffixEnd = 0;
 
         for (let suffixIndex = 0; suffixIndex < truncationSuffix.length; ) {
-          const suffixCodePoint =
-            truncationSuffix.codePointAt(suffixIndex) ?? 0;
+          const suffixCodePoint = truncationSuffix.codePointAt(suffixIndex) ?? 0;
           const codeUnitLength = suffixCodePoint > 0xffff ? 2 : 1;
-          const nextByteLength =
-            boundedSuffixByteLength + utf8CodePointByteLength(suffixCodePoint);
+          const nextByteLength = boundedSuffixByteLength + utf8CodePointByteLength(suffixCodePoint);
           if (nextByteLength > maxBytes) break;
           boundedSuffixByteLength = nextByteLength;
           suffixIndex += codeUnitLength;
@@ -113,15 +111,11 @@ export function getUtf8ByteLength(value: string): number {
 
 export function getPreviewConsoleEntryByteLength(entry: ConsoleEntry): number {
   return (
-    getUtf8ByteLength(entry.message) +
-    (entry.sourceName ? getUtf8ByteLength(entry.sourceName) : 0)
+    getUtf8ByteLength(entry.message) + (entry.sourceName ? getUtf8ByteLength(entry.sourceName) : 0)
   );
 }
 
-export function boundPreviewConsoleEntry(
-  entry: ConsoleEntry,
-  appId = entry.appId,
-): ConsoleEntry {
+export function boundPreviewConsoleEntry(entry: ConsoleEntry, appId = entry.appId): ConsoleEntry {
   const message = boundUtf8String(
     entry.message,
     MAX_PREVIEW_CONSOLE_MESSAGE_BYTES,
@@ -135,21 +129,14 @@ export function boundPreviewConsoleEntry(
       ).value
     : undefined;
 
-  if (
-    message === entry.message &&
-    sourceName === entry.sourceName &&
-    appId === entry.appId
-  ) {
+  if (message === entry.message && sourceName === entry.sourceName && appId === entry.appId) {
     return entry;
   }
 
   return { ...entry, appId, message, sourceName };
 }
 
-export function formatPreviewConsoleMessage(
-  prefix: string,
-  values: readonly unknown[],
-): string {
+export function formatPreviewConsoleMessage(prefix: string, values: readonly unknown[]): string {
   const boundedPrefix = boundUtf8String(
     prefix,
     MAX_FORMATTED_ARGUMENT_BYTES,
@@ -158,8 +145,7 @@ export function formatPreviewConsoleMessage(
   const formattedValues: string[] = [];
   const lastValue = values.at(-1);
   const forwardedOmissionMarker =
-    typeof lastValue === "string" &&
-    FORWARDED_ARGUMENT_OMISSION_PATTERN.test(lastValue)
+    typeof lastValue === "string" && FORWARDED_ARGUMENT_OMISSION_PATTERN.test(lastValue)
       ? lastValue
       : undefined;
   const candidateValueCount = values.length - (forwardedOmissionMarker ? 1 : 0);
@@ -174,18 +160,12 @@ export function formatPreviewConsoleMessage(
       stringValue = "[unable to format console value]";
     }
     formattedValues.push(
-      boundUtf8String(
-        stringValue,
-        MAX_FORMATTED_ARGUMENT_BYTES,
-        MESSAGE_TRUNCATION_SUFFIX,
-      ).value,
+      boundUtf8String(stringValue, MAX_FORMATTED_ARGUMENT_BYTES, MESSAGE_TRUNCATION_SUFFIX).value,
     );
   }
 
   if (candidateValueCount > valueCount) {
-    formattedValues.push(
-      `… [${candidateValueCount - valueCount} values omitted]`,
-    );
+    formattedValues.push(`… [${candidateValueCount - valueCount} values omitted]`);
   } else if (forwardedOmissionMarker) {
     formattedValues.push(forwardedOmissionMarker);
   }
@@ -202,9 +182,7 @@ export function formatPreviewNetworkStatus(status: unknown): string {
 }
 
 function isOmissionMarker(entry: ConsoleEntry): boolean {
-  return (
-    (entry as BufferedConsoleEntry)[CONSOLE_OMISSION_MARKER_FIELD] === true
-  );
+  return (entry as BufferedConsoleEntry)[CONSOLE_OMISSION_MARKER_FIELD] === true;
 }
 
 function createOmissionMarker(
@@ -299,10 +277,7 @@ export function createPreviewConsoleTail(
       retainedBytes + markerBytes <= MAX_PREVIEW_CONSOLE_BYTES_PER_APP
     ) {
       retainedNewestFirst.push(
-        createOmissionMarker(
-          appId,
-          retainedNewestFirst[retainedNewestFirst.length - 1],
-        ),
+        createOmissionMarker(appId, retainedNewestFirst[retainedNewestFirst.length - 1]),
       );
     }
   }

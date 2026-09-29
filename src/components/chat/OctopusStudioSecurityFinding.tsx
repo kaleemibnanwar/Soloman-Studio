@@ -7,18 +7,10 @@ import {
   OctopusStudioCardContent,
   type OctopusStudioAccentColor,
 } from "./OctopusStudioCardPrimitives";
-import {
-  SeverityBadge,
-  type SecurityLevel,
-} from "@/components/security/severity";
+import { SeverityBadge, type SecurityLevel } from "@/components/security/severity";
 import { VanillaMarkdownParser } from "./OctopusStudioMarkdownParser";
 
-const VALID_LEVELS: readonly SecurityLevel[] = [
-  "critical",
-  "high",
-  "medium",
-  "low",
-];
+const VALID_LEVELS: readonly SecurityLevel[] = ["critical", "high", "medium", "low"];
 
 function isSecurityLevel(value: string | undefined): value is SecurityLevel {
   return value != null && (VALID_LEVELS as readonly string[]).includes(value);
@@ -47,9 +39,7 @@ export function OctopusStudioSecurityFinding({
   const [isExpanded, setIsExpanded] = useState(true);
 
   const validLevel = isSecurityLevel(level) ? level : undefined;
-  const accentColor: OctopusStudioAccentColor = validLevel
-    ? ACCENT_BY_LEVEL[validLevel]
-    : "slate";
+  const accentColor: OctopusStudioAccentColor = validLevel ? ACCENT_BY_LEVEL[validLevel] : "slate";
   const content = typeof children === "string" ? children : "";
 
   return (
@@ -60,10 +50,7 @@ export function OctopusStudioSecurityFinding({
       onClick={() => setIsExpanded(!isExpanded)}
       data-testid="security-finding"
     >
-      <OctopusStudioCardHeader
-        icon={<ShieldAlert size={15} />}
-        accentColor={accentColor}
-      >
+      <OctopusStudioCardHeader icon={<ShieldAlert size={15} />} accentColor={accentColor}>
         {validLevel && <SeverityBadge level={validLevel} />}
         <span className="font-medium text-sm text-foreground truncate">
           {title || "Security finding"}

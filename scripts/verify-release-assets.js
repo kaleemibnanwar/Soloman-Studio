@@ -21,10 +21,7 @@ function assetDigest(asset) {
 }
 
 function isProvenanceAsset(name) {
-  return (
-    name.startsWith(PROVENANCE_ASSET_PREFIX) &&
-    name.endsWith(PROVENANCE_ASSET_SUFFIX)
-  );
+  return name.startsWith(PROVENANCE_ASSET_PREFIX) && name.endsWith(PROVENANCE_ASSET_SUFFIX);
 }
 
 function verifyReleaseAssetProvenance(assets, provenanceDirectory) {
@@ -33,18 +30,13 @@ function verifyReleaseAssetProvenance(assets, provenanceDirectory) {
     .map((asset) => asset.name)
     .filter(isProvenanceAsset)
     .sort();
-  const localManifestNames = fs
-    .readdirSync(provenanceDirectory)
-    .filter(isProvenanceAsset)
-    .sort();
+  const localManifestNames = fs.readdirSync(provenanceDirectory).filter(isProvenanceAsset).sort();
 
   if (
     manifestNames.length !== localManifestNames.length ||
     manifestNames.some((name, index) => name !== localManifestNames[index])
   ) {
-    throw new Error(
-      "Uploaded provenance manifests do not match the locally generated manifests",
-    );
+    throw new Error("Uploaded provenance manifests do not match the locally generated manifests");
   }
 
   const provenArtifacts = new Map();
@@ -63,10 +55,7 @@ function verifyReleaseAssetProvenance(assets, provenanceDirectory) {
     }
 
     const provenance = JSON.parse(bytes.toString("utf8"));
-    if (
-      !Array.isArray(provenance.artifacts) ||
-      provenance.artifacts.length === 0
-    ) {
+    if (!Array.isArray(provenance.artifacts) || provenance.artifacts.length === 0) {
       throw new Error(`${manifestName} does not contain release artifacts`);
     }
     for (const artifact of provenance.artifacts) {
@@ -79,9 +68,7 @@ function verifyReleaseAssetProvenance(assets, provenanceDirectory) {
     }
   }
 
-  const releaseArtifacts = assets.filter(
-    (asset) => !isProvenanceAsset(asset.name),
-  );
+  const releaseArtifacts = assets.filter((asset) => !isProvenanceAsset(asset.name));
   if (releaseArtifacts.length !== provenArtifacts.size) {
     throw new Error("Release asset set does not match provenance");
   }
@@ -134,9 +121,7 @@ async function verifyReleaseAssets() {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `GitHub API error: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
 
     const allReleases = await response.json();
@@ -208,35 +193,27 @@ async function verifyReleaseAssets() {
     console.log("");
 
     // Check for missing assets
-    const missingAssets = expectedAssets.filter(
-      (expected) => !actualAssets.includes(expected),
-    );
+    const missingAssets = expectedAssets.filter((expected) => !actualAssets.includes(expected));
 
     if (missingAssets.length > 0) {
       console.error("❌ VERIFICATION FAILED!");
       console.error("📭 Missing assets:");
       missingAssets.forEach((asset) => console.error(`  - ${asset}`));
       console.error("");
-      console.error(
-        "Please ensure all platforms have completed their builds and uploads.",
-      );
+      console.error("Please ensure all platforms have completed their builds and uploads.");
       process.exit(1);
     }
 
     // Extra assets are not covered by provenance and would make downstream
     // trusted-release verification reject the release.
-    const unexpectedAssets = actualAssets.filter(
-      (actual) => !expectedAssets.includes(actual),
-    );
+    const unexpectedAssets = actualAssets.filter((actual) => !expectedAssets.includes(actual));
 
     if (unexpectedAssets.length > 0) {
       console.error("❌ VERIFICATION FAILED!");
       console.error("📦 Unexpected assets:");
       unexpectedAssets.forEach((asset) => console.error(`  - ${asset}`));
       console.error("");
-      console.error(
-        "Remove stale assets from the draft and rerun the release.",
-      );
+      console.error("Remove stale assets from the draft and rerun the release.");
       process.exit(1);
     }
 

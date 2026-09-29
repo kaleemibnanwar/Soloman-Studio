@@ -11,9 +11,7 @@ test("configure app commands", async ({ po }) => {
   await po.previewPanel.selectPreviewMode("configure");
 
   // Verify default state - no custom commands
-  await expect(
-    po.page.getByText("Using default install and start commands"),
-  ).toBeVisible();
+  await expect(po.page.getByText("Using default install and start commands")).toBeVisible();
 
   // --- Validation: both commands are required ---
 
@@ -24,9 +22,7 @@ test("configure app commands", async ({ po }) => {
   await po.page.getByTestId("install-command-input").fill("npm install");
 
   // Verify validation message appears
-  await expect(
-    po.page.getByText("Both commands are required when customizing."),
-  ).toBeVisible();
+  await expect(po.page.getByText("Both commands are required when customizing.")).toBeVisible();
 
   // Verify save button is disabled
   const saveButton = po.page.getByTestId("save-app-commands");
@@ -36,9 +32,7 @@ test("configure app commands", async ({ po }) => {
   await po.page.getByTestId("start-command-input").fill("npm run dev");
 
   // Validation message should disappear
-  await expect(
-    po.page.getByText("Both commands are required when customizing."),
-  ).not.toBeVisible();
+  await expect(po.page.getByText("Both commands are required when customizing.")).not.toBeVisible();
 
   // Save button should be enabled
   await expect(saveButton).toBeEnabled();
@@ -49,9 +43,7 @@ test("configure app commands", async ({ po }) => {
   await po.page.getByTestId("cancel-edit-app-commands").click();
 
   // Verify we're back to default state (commands were not saved)
-  await expect(
-    po.page.getByText("Using default install and start commands"),
-  ).toBeVisible();
+  await expect(po.page.getByText("Using default install and start commands")).toBeVisible();
 
   // --- Configure, edit, and clear commands ---
 
@@ -73,12 +65,8 @@ test("configure app commands", async ({ po }) => {
   await po.toastNotifications.waitForToastWithText("App commands saved");
 
   // Verify the commands are displayed
-  await expect(po.page.getByTestId("current-install-command")).toHaveText(
-    "npm install",
-  );
-  await expect(po.page.getByTestId("current-start-command")).toHaveText(
-    "npm run dev",
-  );
+  await expect(po.page.getByTestId("current-install-command")).toHaveText("npm install");
+  await expect(po.page.getByTestId("current-start-command")).toHaveText("npm run dev");
 
   // Test editing existing commands
   await po.page.getByTestId("edit-app-commands").click();
@@ -92,19 +80,13 @@ test("configure app commands", async ({ po }) => {
   await po.toastNotifications.waitForToastWithText("App commands saved");
 
   // Verify the updated commands are displayed
-  await expect(po.page.getByTestId("current-install-command")).toHaveText(
-    "pnpm install",
-  );
-  await expect(po.page.getByTestId("current-start-command")).toHaveText(
-    "pnpm dev --port 3001",
-  );
+  await expect(po.page.getByTestId("current-install-command")).toHaveText("pnpm install");
+  await expect(po.page.getByTestId("current-start-command")).toHaveText("pnpm dev --port 3001");
 
   // Test clearing commands
   await po.page.getByTestId("clear-app-commands").dispatchEvent("click");
   await po.toastNotifications.waitForToastWithText("App commands saved");
 
   // Verify commands are cleared and default message is shown again
-  await expect(
-    po.page.getByText("Using default install and start commands"),
-  ).toBeVisible();
+  await expect(po.page.getByText("Using default install and start commands")).toBeVisible();
 });

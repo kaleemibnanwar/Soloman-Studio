@@ -18,10 +18,7 @@ export interface CompatibilityBoundaryEntry extends BoundaryOwnership {
   readonly removalOwner: string;
 }
 
-const owned = (
-  exactFile: string,
-  expectedCount: number,
-): BoundaryOwnership => ({
+const owned = (exactFile: string, expectedCount: number): BoundaryOwnership => ({
   exactFile,
   expectedCount,
 });
@@ -224,10 +221,7 @@ export const unsafeEscapeHatchInventory = {
   initiatorRoutingMaps: compatibilityBoundaryInventory.filter(
     ({ mechanism }) => mechanism === "initiatorRoutingMaps",
   ),
-} satisfies Record<
-  CompatibilityMechanism,
-  readonly CompatibilityBoundaryEntry[]
->;
+} satisfies Record<CompatibilityMechanism, readonly CompatibilityBoundaryEntry[]>;
 
 /**
  * Framework-owned ingress and accounting. New calls within these exact
@@ -264,9 +258,7 @@ export const migratedSurfaceBoundaryInventory = {
     owned("ipc/services/image_generation_actor_service.ts", 2),
   ],
   deletionResetFences: [owned("ipc/services/image_generation_service.ts", 8)],
-  initiatorRoutingMaps: [
-    owned("ipc/services/image_generation_presentation_service.ts", 6),
-  ],
+  initiatorRoutingMaps: [owned("ipc/services/image_generation_presentation_service.ts", 6)],
 } as const;
 
 /**

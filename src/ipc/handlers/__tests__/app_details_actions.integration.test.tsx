@@ -13,10 +13,7 @@ import {
   getOctopusStudioAppPath,
   invalidateOctopusStudioAppsBaseDirectoryCache,
 } from "@/paths/paths";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 type TestApp = {
@@ -27,13 +24,7 @@ type TestApp = {
   appDir: string;
 };
 
-const fixtureAppDir = path.join(
-  process.cwd(),
-  "e2e-tests",
-  "fixtures",
-  "import-app",
-  "minimal",
-);
+const fixtureAppDir = path.join(process.cwd(), "e2e-tests", "fixtures", "import-app", "minimal");
 
 function git(appDir: string, ...args: string[]): string {
   return execFileSync(
@@ -86,14 +77,8 @@ describe("app details actions (integration)", () => {
     git(appDir, "add", "-A");
     git(appDir, "commit", "-m", "init");
 
-    const [appRow] = await harness.db
-      .insert(apps)
-      .values({ name, path: dbPath })
-      .returning();
-    const [chatRow] = await harness.db
-      .insert(chats)
-      .values({ appId: appRow.id })
-      .returning();
+    const [appRow] = await harness.db.insert(apps).values({ name, path: dbPath }).returning();
+    const [chatRow] = await harness.db.insert(chats).values({ appId: appRow.id }).returning();
 
     return { appId: appRow.id, chatId: chatRow.id, name, dbPath, appDir };
   }
@@ -109,9 +94,7 @@ describe("app details actions (integration)", () => {
   }
 
   async function openMoreOptions() {
-    await harness.openPopover(
-      await screen.findByTestId("app-details-more-options-button"),
-    );
+    await harness.openPopover(await screen.findByTestId("app-details-more-options-button"));
   }
 
   async function getAppByName(name: string) {
@@ -130,9 +113,7 @@ describe("app details actions (integration)", () => {
     await harness.clickMenuItem("Copy app");
 
     const copiedName = "copied-app-with-history";
-    const dialog = await harness.findDialog(
-      new RegExp(`Copy "${source.name}"`),
-    );
+    const dialog = await harness.findDialog(new RegExp(`Copy "${source.name}"`));
     fireEvent.change(screen.getByLabelText("New app name"), {
       target: { value: copiedName },
     });
@@ -217,10 +198,7 @@ describe("app details actions (integration)", () => {
     expect(harness.hasAppRuntimeResidue(app.appId)).toBe(true);
     await openMoreOptions();
     await harness.clickMenuItem("Delete");
-    await harness.confirmDialog(
-      new RegExp(`Delete "${app.name}"`),
-      "Delete App",
-    );
+    await harness.confirmDialog(new RegExp(`Delete "${app.name}"`), "Delete App");
 
     await waitFor(async () => {
       const row = await harness.db.query.apps.findFirst({
@@ -270,11 +248,9 @@ describe("app details actions (integration)", () => {
     expect(fs.existsSync(newPath)).toBe(true);
     await screen.findByText(newPath);
     await waitFor(() => {
-      expect(
-        screen
-          .getByTestId("title-bar-app-name-button")
-          .getAttribute("data-app-name"),
-      ).toBe(newName);
+      expect(screen.getByTestId("title-bar-app-name-button").getAttribute("data-app-name")).toBe(
+        newName,
+      );
     });
   }, 60_000);
 
@@ -379,11 +355,9 @@ describe("app details actions (integration)", () => {
       withAppList: true,
     });
     await screen.findByTestId("app-list-container");
-    expect(
-      screen
-        .getByTestId("title-bar-app-name-button")
-        .getAttribute("data-app-name"),
-    ).toBe(first.name);
+    expect(screen.getByTestId("title-bar-app-name-button").getAttribute("data-app-name")).toBe(
+      first.name,
+    );
 
     fireEvent.click(await screen.findByTestId(`app-list-item-${second.name}`));
 
@@ -391,11 +365,9 @@ describe("app details actions (integration)", () => {
       const location = harness.currentLocation();
       expect(location.pathname).toBe("/app-details");
       expect(Number(location.search.appId)).toBe(second.appId);
-      expect(
-        screen
-          .getByTestId("title-bar-app-name-button")
-          .getAttribute("data-app-name"),
-      ).toBe(second.name);
+      expect(screen.getByTestId("title-bar-app-name-button").getAttribute("data-app-name")).toBe(
+        second.name,
+      );
     });
     await screen.findByRole("heading", { name: second.name });
   }, 60_000);

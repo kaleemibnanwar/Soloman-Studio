@@ -28,11 +28,7 @@ interface EditThemeDialogProps {
   trigger?: React.ReactNode;
 }
 
-export function EditThemeDialog({
-  theme,
-  onUpdateTheme,
-  trigger,
-}: EditThemeDialogProps) {
+export function EditThemeDialog({ theme, onUpdateTheme, trigger }: EditThemeDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [draft, setDraft] = useState({
@@ -129,9 +125,7 @@ export function EditThemeDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Theme</DialogTitle>
-          <DialogDescription>
-            Modify your custom theme settings and prompt.
-          </DialogDescription>
+          <DialogDescription>Modify your custom theme settings and prompt.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -142,25 +136,18 @@ export function EditThemeDialog({
               id="edit-theme-name"
               placeholder="Theme name"
               value={draft.name}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, name: e.target.value }))
-              }
+              onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
             />
           </div>
           <div className="space-y-2">
-            <label
-              htmlFor="edit-theme-description"
-              className="text-sm font-medium"
-            >
+            <label htmlFor="edit-theme-description" className="text-sm font-medium">
               Description (optional)
             </label>
             <Input
               id="edit-theme-description"
               placeholder="A brief description of your theme"
               value={draft.description}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, description: e.target.value }))
-              }
+              onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
             />
           </div>
           <div className="space-y-2">

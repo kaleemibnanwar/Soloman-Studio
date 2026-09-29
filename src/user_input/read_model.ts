@@ -12,10 +12,7 @@
  */
 import type { createStore } from "jotai";
 
-import {
-  OctopusStudioErrorKind,
-  isOctopusStudioError,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioErrorKind, isOctopusStudioError } from "@/errors/octopus_studio_error";
 import type {
   PendingUserInputPayload,
   UserInputDescriptorPayload,
@@ -78,10 +75,7 @@ export interface UserInputReadModel {
   getSnapshot(): UserInputReadModelSnapshot;
   subscribe(listener: () => void): () => void;
   start(): () => void;
-  respond(
-    requestId: string,
-    response: UserInputResponsePayload,
-  ): Promise<boolean>;
+  respond(requestId: string, response: UserInputResponsePayload): Promise<boolean>;
 }
 
 interface AdapterOptions {
@@ -94,9 +88,7 @@ type JotaiStore = ReturnType<typeof createStore>;
 
 const readModels = new WeakMap<JotaiStore, UserInputReadModel>();
 
-function snapshotToReadModel(
-  snapshot: PendingUserInputPayload,
-): LiveUserInputRequest {
+function snapshotToReadModel(snapshot: PendingUserInputPayload): LiveUserInputRequest {
   return {
     status: snapshot.status,
     descriptor: snapshot.descriptor,
@@ -119,22 +111,11 @@ export function getUserInputReadModel({
   let activeTasks: TaskScope<string> | undefined;
   let hydrationGeneration = 0;
   const revisions = new Map<string, number>();
-  const pendingClassifications = new Map<
-    string,
-    { reason?: string; revision: number }
-  >();
-  const pendingArmed = new Map<
-    string,
-    { followUpPrompt: string; revision: number }
-  >();
-  const pendingFollowUps = new Map<
-    string,
-    { prompt: string; revision: number }
-  >();
+  const pendingClassifications = new Map<string, { reason?: string; revision: number }>();
+  const pendingArmed = new Map<string, { followUpPrompt: string; revision: number }>();
+  const pendingFollowUps = new Map<string, { prompt: string; revision: number }>();
   const pendingResponses = new Map<string, UserInputResponsePayload>();
-  const readModelStore = new SnapshotStore<UserInputReadModelSnapshot>(
-    EMPTY_READ_MODEL,
-  );
+  const readModelStore = new SnapshotStore<UserInputReadModelSnapshot>(EMPTY_READ_MODEL);
 
   const markChanged = (requestId: string): number => {
     const revision = (revisions.get(requestId) ?? 0) + 1;
@@ -142,9 +123,7 @@ export function getUserInputReadModel({
     return revision;
   };
 
-  const updateRequests = (
-    update: (current: UserInputRequests) => UserInputRequests,
-  ) => {
+  const updateRequests = (update: (current: UserInputRequests) => UserInputRequests) => {
     const current = readModelStore.getSnapshot();
     const requests = update(current.requests);
     if (requests === current.requests) return;
@@ -197,10 +176,7 @@ export function getUserInputReadModel({
     });
 
     if (Number.isFinite(nextExpiry)) {
-      const timer = setTimeout(
-        scheduleSettledCleanup,
-        Math.max(0, nextExpiry - Date.now()),
-      );
+      const timer = setTimeout(scheduleSettledCleanup, Math.max(0, nextExpiry - Date.now()));
       tasks.replace("settled-cleanup", () => clearTimeout(timer));
     }
   };
@@ -218,8 +194,7 @@ export function getUserInputReadModel({
       // main's authoritative snapshot below.
       for (const [requestId, entry] of current) {
         const changedDuringHydration =
-          (revisions.get(requestId) ?? 0) !==
-          (baselineRevisions.get(requestId) ?? 0);
+          (revisions.get(requestId) ?? 0) !== (baselineRevisions.get(requestId) ?? 0);
         if (entry.status === "settled" || changedDuringHydration) {
           next.set(requestId, entry);
         }
@@ -228,14 +203,10 @@ export function getUserInputReadModel({
       for (const snapshot of snapshots) {
         const requestId = snapshot.descriptor.requestId;
         const changedDuringHydration =
-          (revisions.get(requestId) ?? 0) !==
-          (baselineRevisions.get(requestId) ?? 0);
+          (revisions.get(requestId) ?? 0) !== (baselineRevisions.get(requestId) ?? 0);
         const eventEntry = next.get(requestId);
         if (changedDuringHydration && eventEntry) {
-          if (
-            eventEntry.status === "settled" &&
-            eventEntry.descriptor === undefined
-          ) {
+          if (eventEntry.status === "settled" && eventEntry.descriptor === undefined) {
             next.set(requestId, {
               ...eventEntry,
               descriptor: snapshot.descriptor,
@@ -319,29 +290,27 @@ export function getUserInputReadModel({
         ],
         [
           "armed",
-          ipcClient.events.userInput.onArmed(
-            ({ requestId, followUpPrompt }) => {
-              const revision = markChanged(requestId);
-              pendingArmed.set(requestId, { followUpPrompt, revision });
-              updateRequestsAndRemoveResponding(requestId, (current) => {
-                const entry = current.get(requestId);
-                if (
-                  !entry ||
-                  entry.status !== "awaiting" ||
-                  entry.descriptor.kind !== "integration"
-                ) {
-                  return current;
-                }
-                const next = new Map(current);
-                next.set(requestId, {
-                  ...entry,
-                  status: "armed",
-                  followUpPrompt,
-                });
-                return next;
+          ipcClient.events.userInput.onArmed(({ requestId, followUpPrompt }) => {
+            const revision = markChanged(requestId);
+            pendingArmed.set(requestId, { followUpPrompt, revision });
+            updateRequestsAndRemoveResponding(requestId, (current) => {
+              const entry = current.get(requestId);
+              if (
+                !entry ||
+                entry.status !== "awaiting" ||
+                entry.descriptor.kind !== "integration"
+              ) {
+                return current;
+              }
+              const next = new Map(current);
+              next.set(requestId, {
+                ...entry,
+                status: "armed",
+                followUpPrompt,
               });
-            },
-          ),
+              return next;
+            });
+          }),
         ],
         [
           "classified",
@@ -391,11 +360,7 @@ export function getUserInputReadModel({
               const tombstones = Array.from(next.entries()).filter(
                 ([, entry]) => entry.status === "settled",
               );
-              for (
-                let index = 0;
-                index < tombstones.length - MAX_SETTLED_TOMBSTONES;
-                index++
-              ) {
+              for (let index = 0; index < tombstones.length - MAX_SETTLED_TOMBSTONES; index++) {
                 next.delete(tombstones[index][0]);
               }
               return next;
@@ -453,10 +418,7 @@ export function getUserInputReadModel({
         return true;
       } catch (error) {
         pendingResponses.delete(requestId);
-        if (
-          isOctopusStudioError(error) &&
-          error.kind === OctopusStudioErrorKind.NotFound
-        ) {
+        if (isOctopusStudioError(error) && error.kind === OctopusStudioErrorKind.NotFound) {
           // Never expose a request main has already rejected as stale, even if
           // the best-effort authoritative refresh also fails.
           markChanged(requestId);

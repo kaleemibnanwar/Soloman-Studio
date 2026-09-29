@@ -10,9 +10,7 @@ import type { ChatAttachment, FileAttachment } from "@/ipc/types";
  * recognizable data-URL we fall back to treating the whole string as the
  * base64 payload.
  */
-export function chatAttachmentToFileAttachment(
-  attachment: ChatAttachment,
-): FileAttachment {
+export function chatAttachmentToFileAttachment(attachment: ChatAttachment): FileAttachment {
   const base64 = extractBase64Payload(attachment.data);
   const bytes = base64ToBytes(base64);
   const file = new File([bytes], attachment.name, { type: attachment.type });

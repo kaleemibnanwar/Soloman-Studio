@@ -1,13 +1,7 @@
 import { setDatabaseForTesting } from "@/db";
 import { getRegisteredHandlerForTesting } from "@/ipc/handlers/base";
-import {
-  type HandlerContext,
-  setHandlerContextForTesting,
-} from "@/ipc/handlers/handler_context";
-import type {
-  GitService,
-  RemoveFileAndCommitResult,
-} from "@/ipc/services/git_service";
+import { type HandlerContext, setHandlerContextForTesting } from "@/ipc/handlers/handler_context";
+import type { GitService, RemoveFileAndCommitResult } from "@/ipc/services/git_service";
 import { DEFAULT_SETTINGS } from "@/main/settings";
 import type { UserSettings } from "@/lib/schemas";
 import { createInMemoryTestDb, type TestDb } from "./test_db";
@@ -17,8 +11,7 @@ import { createInMemoryTestDb, type TestDb } from "./test_db";
  * records every call for assertions.
  */
 export class FakeGitService implements GitService {
-  calls: Array<{ method: keyof GitService; args: Record<string, unknown> }> =
-    [];
+  calls: Array<{ method: keyof GitService; args: Record<string, unknown> }> = [];
   /** Controls whether stageAllAndCommitIfChanged reports staged changes. */
   hasChangesToCommit = true;
   private commitCount = 0;
@@ -37,10 +30,7 @@ export class FakeGitService implements GitService {
     return this.record("initRepoWithInitialCommit", args);
   }
 
-  async stageAllAndCommit(args: {
-    path: string;
-    message: string;
-  }): Promise<string> {
+  async stageAllAndCommit(args: { path: string; message: string }): Promise<string> {
     return this.record("stageAllAndCommit", args);
   }
 
@@ -55,11 +45,7 @@ export class FakeGitService implements GitService {
     return this.record("stageAllAndCommitIfChanged", args);
   }
 
-  async commitFile(args: {
-    path: string;
-    filepath: string;
-    message: string;
-  }): Promise<string> {
+  async commitFile(args: { path: string; filepath: string; message: string }): Promise<string> {
     return this.record("commitFile", args);
   }
 
@@ -159,11 +145,7 @@ export function setupHandlerTestHarness(options?: {
     sentMessages,
     readSettings: () => settings,
     writeSettings: ctx.writeSettings,
-    invokeHandler: async <TOutput>(
-      channel: string,
-      input?: unknown,
-      event: unknown = {},
-    ) => {
+    invokeHandler: async <TOutput>(channel: string, input?: unknown, event: unknown = {}) => {
       const handler = getRegisteredHandlerForTesting(channel);
       return (await handler(event as any, input)) as TOutput;
     },

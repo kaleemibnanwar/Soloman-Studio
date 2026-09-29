@@ -13,18 +13,13 @@ if (!expectedContextSha) throw new Error("EXPECTED_CONTEXT_SHA is required");
 
 const contextRaw = fs.readFileSync(contextPath, "utf8");
 const context = JSON.parse(contextRaw);
-const actualContextSha = crypto
-  .createHash("sha256")
-  .update(contextRaw)
-  .digest("hex");
+const actualContextSha = crypto.createHash("sha256").update(contextRaw).digest("hex");
 if (actualContextSha !== expectedContextSha) {
   throw new Error("PR review context changed after generation");
 }
 
 const summary = fs.readFileSync(reviewPath, "utf8").trim();
-const recMatch = summary.match(
-  /\*\*Recommendation:\s*(auto-fix|human-review|ready)\s*\*\*/,
-);
+const recMatch = summary.match(/\*\*Recommendation:\s*(auto-fix|human-review|ready)\s*\*\*/);
 if (!summary) {
   throw new Error("Review output file is empty");
 }
@@ -32,9 +27,7 @@ if (!fs.existsSync(findingsPath)) {
   throw new Error("Findings output file is missing");
 }
 
-const filesByPath = new Map(
-  (context.files ?? []).map((file) => [file.path, file]),
-);
+const filesByPath = new Map((context.files ?? []).map((file) => [file.path, file]));
 
 const lineInRanges = (line, ranges) =>
   Array.isArray(ranges) &&
@@ -116,9 +109,7 @@ for (const [index, finding] of rawFindings.entries()) {
 
   const severity = `${finding.severity ?? ""}`.trim().toUpperCase();
   if (severity !== "HIGH" && severity !== "MEDIUM") {
-    warning(
-      `Skipping finding ${index}: invalid severity "${finding.severity}"`,
-    );
+    warning(`Skipping finding ${index}: invalid severity "${finding.severity}"`);
     continue;
   }
 
@@ -136,16 +127,13 @@ for (const [index, finding] of rawFindings.entries()) {
     continue;
   }
   if (!lineInRanges(line, file.commentableLineRanges)) {
-    warning(
-      `Skipping finding ${index}: non-commentable line ${line} in ${path}`,
-    );
+    warning(`Skipping finding ${index}: non-commentable line ${line} in ${path}`);
     continue;
   }
 
   const title = `${finding.title ?? ""}`.trim();
   const body = `${finding.body ?? ""}`.trim();
-  const suggestion =
-    typeof finding.suggestion === "string" ? finding.suggestion.trim() : "";
+  const suggestion = typeof finding.suggestion === "string" ? finding.suggestion.trim() : "";
 
   if (!title) {
     warning(`Skipping finding ${index}: missing title`);
@@ -175,9 +163,7 @@ for (const [index, finding] of rawFindings.entries()) {
 
 const hasExplicitRecommendation = Boolean(recMatch);
 const recommendation = recMatch?.[1] ?? "human-review";
-const highFindings = normalizedFindings.filter(
-  (finding) => finding.severity === "HIGH",
-);
+const highFindings = normalizedFindings.filter((finding) => finding.severity === "HIGH");
 if (recommendation === "ready" && highFindings.length > 0) {
   throw new Error("Review summary says ready but findings include HIGH issues");
 }
@@ -186,17 +172,13 @@ if (
   (recommendation === "auto-fix" || recommendation === "human-review") &&
   highFindings.length === 0
 ) {
-  throw new Error(
-    `Review summary says ${recommendation} but findings do not include HIGH issues`,
-  );
+  throw new Error(`Review summary says ${recommendation} but findings do not include HIGH issues`);
 }
 if (
   normalizedFindings.length > 0 &&
   summary.includes(":white_check_mark: No significant issues found.")
 ) {
-  throw new Error(
-    "Review summary says no significant issues found but findings were emitted",
-  );
+  throw new Error("Review summary says no significant issues found but findings were emitted");
 }
 
 const summaryIssues = parseSummaryIssues(summary);
@@ -208,37 +190,27 @@ if (normalizedFindings.length > 0 && summaryIssues.length === 0) {
 
 if (summaryIssues.length > 0) {
   const summaryKeys = new Set(
-    summaryIssues.map(
-      (issue) => `${issue.severity}:${issue.path}:${issue.line}:${issue.title}`,
-    ),
+    summaryIssues.map((issue) => `${issue.severity}:${issue.path}:${issue.line}:${issue.title}`),
   );
   const findingKeys = new Set(
     normalizedFindings.map(
-      (finding) =>
-        `${finding.severity}:${finding.path}:${finding.line}:${finding.title}`,
+      (finding) => `${finding.severity}:${finding.path}:${finding.line}:${finding.title}`,
     ),
   );
 
   for (const finding of normalizedFindings) {
     const key = `${finding.severity}:${finding.path}:${finding.line}:${finding.title}`;
     if (!summaryKeys.has(key)) {
-      throw new Error(
-        `Review summary is missing Issues Summary row for finding ${key}`,
-      );
+      throw new Error(`Review summary is missing Issues Summary row for finding ${key}`);
     }
   }
 
   for (const issue of summaryIssues) {
     const key = `${issue.severity}:${issue.path}:${issue.line}:${issue.title}`;
     if (!findingKeys.has(key)) {
-      throw new Error(
-        `Findings JSON is missing entry for Issues Summary row ${key}`,
-      );
+      throw new Error(`Findings JSON is missing entry for Issues Summary row ${key}`);
     }
   }
 }
 
-fs.writeFileSync(
-  findingsPath,
-  JSON.stringify({ findings: normalizedFindings }, null, 2) + "\n",
-);
+fs.writeFileSync(findingsPath, JSON.stringify({ findings: normalizedFindings }, null, 2) + "\n");

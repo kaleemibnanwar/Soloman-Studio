@@ -5,10 +5,7 @@ import type { GitCommit } from "../git_types";
 import fs from "node:fs";
 import path from "node:path";
 import { getOctopusStudioAppPath } from "../../paths/paths";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import log from "electron-log";
 import { createTypedHandler } from "./base";
 import { versionContracts } from "../types/version";
@@ -37,7 +34,7 @@ import {
   getChangedFilesForCommit,
   getFileAtCommit,
   getOldFileContent,
-} from "../utils/git_utils";
+} from "../git/git_utils";
 
 import {
   getNeonClient,
@@ -46,21 +43,12 @@ import {
   isRetentionWindowError,
 } from "../../neon_admin/neon_management_client";
 import { getConnectionUri } from "../../neon_admin/neon_context";
-import {
-  updatePostgresUrlEnvVar,
-  updateDbPushEnvVar,
-} from "../utils/app_env_var_utils";
-import { storeDbTimestampAtCurrentVersion } from "../utils/neon_timestamp_utils";
+import { updatePostgresUrlEnvVar, updateDbPushEnvVar } from "../utils/app_env_var_utils";
+import { storeDbTimestampAtCurrentVersion } from "../neon/neon_timestamp_utils";
 import { retryOnLocked } from "../utils/retryOnLocked";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { syncCloudSandboxSnapshot } from "../utils/cloud_sandbox_provider";
-import {
-  DIFF_BINARY_PLACEHOLDER,
-  DIFF_TOO_LARGE_PLACEHOLDER,
-} from "@/shared/diff_placeholders";
+import { DIFF_BINARY_PLACEHOLDER, DIFF_TOO_LARGE_PLACEHOLDER } from "@/shared/diff_placeholders";
 import {
   blockNewStreamsForApp,
   blockNewStreamsForChat,
@@ -90,9 +78,7 @@ interface VersionPreviewHandlerBridge {
     sender?: SafeSender,
     onRestoreProgress?: (progress: RestoreRecovery) => void,
   ) => Promise<VersionCommandResult>;
-  checkoutVersion?: (
-    params: CheckoutVersionParams,
-  ) => Promise<VersionCommandResult>;
+  checkoutVersion?: (params: CheckoutVersionParams) => Promise<VersionCommandResult>;
 }
 
 const versionPreviewHandlerBridge: VersionPreviewHandlerBridge = {};
@@ -120,11 +106,7 @@ export const versionPreviewHandlerService = {
     if (!versionPreviewHandlerBridge.restoreToMessage) {
       throw new Error("Version handlers are not registered");
     }
-    return versionPreviewHandlerBridge.restoreToMessage(
-      params,
-      sender,
-      onRestoreProgress,
-    );
+    return versionPreviewHandlerBridge.restoreToMessage(params, sender, onRestoreProgress);
   },
   checkoutVersion(params: CheckoutVersionParams) {
     if (!versionPreviewHandlerBridge.checkoutVersion) {
@@ -168,16 +150,12 @@ function getDatabaseRestoreWarning(error: unknown): string {
     const window = getRetentionWindowFromError(error);
     return (
       "Restored your code to this version, but the database could not be restored: " +
-      `this version is older than your database's restore window${
-        window ? ` (${window})` : ""
-      }. ` +
+      `this version is older than your database's restore window${window ? ` (${window})` : ""}. ` +
       "Neon's free plan only keeps a limited window of database history, so this " +
       "snapshot has expired. Your current database was left unchanged."
     );
   }
-  return `Could not restore the database because of an error: ${getNeonErrorMessage(
-    error,
-  )}`;
+  return `Could not restore the database because of an error: ${getNeonErrorMessage(error)}`;
 }
 
 function appendWarning(existing: string, addition: string): string {
@@ -192,9 +170,7 @@ function versionRuntimeAction(
   changedCodebase: boolean,
 ): "none" | "restart" {
   if (!changedCodebase) return "none";
-  return readSettings().runtimeMode2 === "cloud" || app.neonProjectId
-    ? "restart"
-    : "none";
+  return readSettings().runtimeMode2 === "cloud" || app.neonProjectId ? "restart" : "none";
 }
 
 function versionCommandResult({
@@ -300,10 +276,7 @@ async function syncCloudSandboxSnapshotBestEffort(appId: number) {
   try {
     await syncCloudSandboxSnapshot({ appId });
   } catch (error) {
-    logger.warn(
-      `Cloud sandbox sync failed after version operation for app ${appId}:`,
-      error,
-    );
+    logger.warn(`Cloud sandbox sync failed after version operation for app ${appId}:`, error);
   }
 }
 
@@ -318,39 +291,24 @@ async function getVersionAppPath(appId: number): Promise<string> {
   });
 
   if (!app) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
 
   const appPath = getOctopusStudioAppPath(app.path);
   if (!fs.existsSync(path.join(appPath, ".git"))) {
-    throw new OctopusStudioError(
-      "Not a git repository",
-      OctopusStudioErrorKind.External,
-    );
+    throw new OctopusStudioError("Not a git repository", OctopusStudioErrorKind.External);
   }
 
   return appPath;
 }
 
-async function assertVersionExists({
-  appPath,
-  versionId,
-}: {
-  appPath: string;
-  versionId: string;
-}) {
+async function assertVersionExists({ appPath, versionId }: { appPath: string; versionId: string }) {
   const exists = await gitCommitExists({
     path: appPath,
     commitHash: versionId,
   });
   if (!exists) {
-    throw new OctopusStudioError(
-      "Version not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("Version not found", OctopusStudioErrorKind.NotFound);
   }
 }
 
@@ -368,8 +326,7 @@ async function upsertVersionMetadata({
   const appPath = await getVersionAppPath(appId);
   await assertVersionExists({ appPath, versionId });
 
-  const normalizedNote =
-    note === undefined ? undefined : normalizeVersionNote(note);
+  const normalizedNote = note === undefined ? undefined : normalizeVersionNote(note);
 
   const [versionMetadata] = await db
     .insert(versions)
@@ -449,19 +406,17 @@ async function revertCodebaseToVersion({
 }): Promise<{
   successMessage: string;
   warningMessage: string;
-  restoreCompletion: Extract<
-    RestoreRecovery,
-    { repositoryOutcome: "target-applied" }
-  > & { nextStep: "chat-mutation" };
+  restoreCompletion: Extract<RestoreRecovery, { repositoryOutcome: "target-applied" }> & {
+    nextStep: "chat-mutation";
+  };
 }> {
   let successMessage = "Restored version";
   let warningMessage = "";
 
-  const { currentBranch, revertRef, currentCommitHash } =
-    await resolveRestoreRef({
-      appPath,
-      targetBranchName,
-    });
+  const { currentBranch, revertRef, currentCommitHash } = await resolveRestoreRef({
+    appPath,
+    targetBranchName,
+  });
   const restoreFacts = {
     preRestoreHead: currentCommitHash,
     preRestoreBranch: targetBranchName ?? currentBranch,
@@ -505,9 +460,7 @@ async function revertCodebaseToVersion({
     const preservedFiles = await getGitUncommittedFilesWithStatus({
       path: appPath,
     });
-    const preservedUserVisibleFiles = preservedFiles
-      .map((f) => `${f.status} ${f.path}`)
-      .join(", ");
+    const preservedUserVisibleFiles = preservedFiles.map((f) => `${f.status} ${f.path}`).join(", ");
     logger.log(
       `Preserving dirty tree in a checkpoint commit before restoring app ${appId}. ` +
         `User-visible uncommitted file(s): ${preservedFiles.length}` +
@@ -575,10 +528,7 @@ async function revertCodebaseToVersion({
 
   if (app.neonProjectId && app.neonDevelopmentBranchId) {
     const version = await db.query.versions.findFirst({
-      where: and(
-        eq(versions.appId, appId),
-        eq(versions.commitHash, previousVersionId),
-      ),
+      where: and(eq(versions.appId, appId), eq(versions.commitHash, previousVersionId)),
     });
     if (version && version.neonDbTimestamp) {
       try {
@@ -586,15 +536,11 @@ async function revertCodebaseToVersion({
         const neonClient = await getNeonClient();
         const response = await retryOnLocked(
           () =>
-            neonClient.restoreProjectBranch(
-              app.neonProjectId!,
-              app.neonDevelopmentBranchId!,
-              {
-                source_branch_id: app.neonDevelopmentBranchId!,
-                source_timestamp: version.neonDbTimestamp!,
-                preserve_under_name: preserveBranchName,
-              },
-            ),
+            neonClient.restoreProjectBranch(app.neonProjectId!, app.neonDevelopmentBranchId!, {
+              source_branch_id: app.neonDevelopmentBranchId!,
+              source_timestamp: version.neonDbTimestamp!,
+              preserve_under_name: preserveBranchName,
+            }),
           `Restore development branch ${app.neonDevelopmentBranchId} for app ${appId}`,
         );
         // Update all versions which have a newer DB timestamp than the version we're restoring to
@@ -603,10 +549,7 @@ async function revertCodebaseToVersion({
           .update(versions)
           .set({ neonDbTimestamp: null })
           .where(
-            and(
-              eq(versions.appId, appId),
-              gt(versions.neonDbTimestamp, version.neonDbTimestamp),
-            ),
+            and(eq(versions.appId, appId), gt(versions.neonDbTimestamp, version.neonDbTimestamp)),
           );
 
         const preserveBranchId = response.data.branch.parent_id;
@@ -616,9 +559,7 @@ async function revertCodebaseToVersion({
             OctopusStudioErrorKind.NotFound,
           );
         }
-        logger.info(
-          `Deleting preserve branch ${preserveBranchId} for app ${appId}`,
-        );
+        logger.info(`Deleting preserve branch ${preserveBranchId} for app ${appId}`);
         // Intentionally do not await this because it's not
         // critical for the restore operation, it's to clean up branches
         // so the user doesn't hit the branch limit later. The error is
@@ -626,11 +567,7 @@ async function revertCodebaseToVersion({
         // because, without an `await`, a try/catch would not catch the
         // promise rejection and it would surface as an unhandled rejection.
         retryOnLocked(
-          () =>
-            neonClient.deleteProjectBranch(
-              app.neonProjectId!,
-              preserveBranchId,
-            ),
+          () => neonClient.deleteProjectBranch(app.neonProjectId!, preserveBranchId),
           `Delete preserve branch ${preserveBranchId} for app ${appId}`,
           { retryBranchWithChildError: true },
         ).catch((error) => {
@@ -641,8 +578,7 @@ async function revertCodebaseToVersion({
         // succeeded. Setting this after the catch would wrongly report
         // "(including database)" even when the Neon restore failed and
         // `warningMessage` was set.
-        successMessage =
-          "Successfully restored to version (including database)";
+        successMessage = "Successfully restored to version (including database)";
       } catch (error) {
         logger.error(
           "Error restoring Neon development branch during revert:",
@@ -683,9 +619,7 @@ async function revertCodebaseToVersion({
   // Re-deploy all Supabase edge functions after reverting
   if (app.supabaseProjectId) {
     try {
-      logger.info(
-        `Re-deploying all Supabase edge functions for app ${appId} after revert`,
-      );
+      logger.info(`Re-deploying all Supabase edge functions for app ${appId} after revert`);
       const settings = readSettings();
       const deployErrors = await deployAllSupabaseFunctions({
         appPath,
@@ -703,9 +637,7 @@ async function revertCodebaseToVersion({
         // Note: We don't fail the revert operation if function deployment fails
         // The code has been successfully reverted, but functions may be out of sync
       } else {
-        logger.info(
-          `Successfully re-deployed all Supabase edge functions for app ${appId}`,
-        );
+        logger.info(`Successfully re-deployed all Supabase edge functions for app ${appId}`);
       }
     } catch (error) {
       warningMessage = appendWarning(
@@ -806,10 +738,7 @@ export function registerVersionHandlers() {
     });
 
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = getOctopusStudioAppPath(app.path);
@@ -841,19 +770,13 @@ export function registerVersionHandlers() {
     });
 
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
     }
 
     const appPath = getOctopusStudioAppPath(app.path);
 
     if (!fs.existsSync(path.join(appPath, ".git"))) {
-      throw new OctopusStudioError(
-        "Not a git repository",
-        OctopusStudioErrorKind.External,
-      );
+      throw new OctopusStudioError("Not a git repository", OctopusStudioErrorKind.External);
     }
 
     try {
@@ -903,10 +826,7 @@ export function registerVersionHandlers() {
       if (error instanceof OctopusStudioError) {
         throw error;
       }
-      logger.error(
-        `Error getting version changes for app ${appId} version ${versionId}:`,
-        error,
-      );
+      logger.error(`Error getting version changes for app ${appId} version ${versionId}:`, error);
       throw new OctopusStudioError(
         `Failed to get version changes: ${error.message}`,
         OctopusStudioErrorKind.External,
@@ -919,13 +839,8 @@ export function registerVersionHandlers() {
     params: RevertVersionParams,
     onRestoreProgress?: (progress: RestoreRecovery) => void,
   ) => {
-    const {
-      appId,
-      previousVersionId,
-      expectedHeadOid,
-      currentChatMessageId,
-      targetBranchName,
-    } = params;
+    const { appId, previousVersionId, expectedHeadOid, currentChatMessageId, targetBranchName } =
+      params;
     // A recording holds repository, provider and runtime-config for its whole
     // session, so this would queue invisibly behind it for up to the 30-minute
     // cap. It is also rewriting the tree the recording is capturing against.
@@ -948,10 +863,7 @@ export function registerVersionHandlers() {
         });
 
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
 
         const appPath = getOctopusStudioAppPath(app.path);
@@ -969,15 +881,16 @@ export function registerVersionHandlers() {
           }
         }
 
-        const { successMessage, warningMessage, restoreCompletion } =
-          await revertCodebaseToVersion({
+        const { successMessage, warningMessage, restoreCompletion } = await revertCodebaseToVersion(
+          {
             appId,
             app,
             appPath,
             previousVersionId,
             targetBranchName,
             onRestoreProgress,
-          });
+          },
+        );
 
         let affectedChatId: number | null = null;
 
@@ -988,10 +901,7 @@ export function registerVersionHandlers() {
           affectedChatId = chatId;
 
           const messagesToDelete = await db.query.messages.findMany({
-            where: and(
-              eq(messages.chatId, chatId),
-              gte(messages.id, messageId),
-            ),
+            where: and(eq(messages.chatId, chatId), gte(messages.id, messageId)),
             orderBy: desc(messages.id),
           });
 
@@ -1002,9 +912,7 @@ export function registerVersionHandlers() {
           if (messagesToDelete.length > 0) {
             await db
               .delete(messages)
-              .where(
-                and(eq(messages.chatId, chatId), gte(messages.id, messageId)),
-              );
+              .where(and(eq(messages.chatId, chatId), gte(messages.id, messageId)));
           }
         } else {
           // Find the chat and message associated with the commit hash
@@ -1022,10 +930,7 @@ export function registerVersionHandlers() {
 
             // Find all messages in this chat with IDs > the one with our commit hash
             const messagesToDelete = await db.query.messages.findMany({
-              where: and(
-                eq(messages.chatId, chatId),
-                gt(messages.id, messageWithCommit.id),
-              ),
+              where: and(eq(messages.chatId, chatId), gt(messages.id, messageWithCommit.id)),
               orderBy: desc(messages.id),
             });
 
@@ -1037,12 +942,7 @@ export function registerVersionHandlers() {
             if (messagesToDelete.length > 0) {
               await db
                 .delete(messages)
-                .where(
-                  and(
-                    eq(messages.chatId, chatId),
-                    gt(messages.id, messageWithCommit.id),
-                  ),
-                );
+                .where(and(eq(messages.chatId, chatId), gt(messages.id, messageWithCommit.id)));
             }
           }
         }
@@ -1073,13 +973,7 @@ export function registerVersionHandlers() {
     params: RestoreToMessageParams,
     onRestoreProgress?: (progress: RestoreRecovery) => void,
   ) => {
-    const {
-      appId,
-      chatId,
-      messageId,
-      restoreCodebase = true,
-      targetBranchName,
-    } = params;
+    const { appId, chatId, messageId, restoreCodebase = true, targetBranchName } = params;
 
     // Phase 1: validate the request and resolve the restore target under the
     // app lock WITHOUT cancelling any streams. Chat/message deletion endpoints
@@ -1105,10 +999,7 @@ export function registerVersionHandlers() {
           where: eq(apps.id, appId),
         });
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
         const appPath = getOctopusStudioAppPath(app.path);
         if (restoreCodebase) {
@@ -1122,18 +1013,12 @@ export function registerVersionHandlers() {
           where: eq(chats.id, chatId),
           with: {
             messages: {
-              orderBy: (messages, { asc }) => [
-                asc(messages.createdAt),
-                asc(messages.id),
-              ],
+              orderBy: (messages, { asc }) => [asc(messages.createdAt), asc(messages.id)],
             },
           },
         });
         if (!chat) {
-          throw new OctopusStudioError(
-            "Chat not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Chat not found", OctopusStudioErrorKind.NotFound);
         }
         // Defense in depth: make sure the chat actually belongs to this app so
         // a mismatched (appId, chatId) from the renderer can't create a chat
@@ -1147,18 +1032,12 @@ export function registerVersionHandlers() {
 
         const targetIndex = chat.messages.findIndex((m) => m.id === messageId);
         if (targetIndex === -1) {
-          throw new OctopusStudioError(
-            "Message not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("Message not found", OctopusStudioErrorKind.NotFound);
         }
 
         const messagesBefore = chat.messages
           .slice(0, targetIndex)
-          .filter(
-            (message) =>
-              !(message.isCompactionSummary && message.id > messageId),
-          );
+          .filter((message) => !(message.isCompactionSummary && message.id > messageId));
 
         // Restoring to the very first message is allowed: "version 1" is the
         // commit that existed before the first message's changes were applied,
@@ -1178,8 +1057,7 @@ export function registerVersionHandlers() {
             // of "navigating" to the same one (which would look like a no-op).
             return {
               status: "warn" as const,
-              warningMessage:
-                "Could not determine a version to restore to for this message.",
+              warningMessage: "Could not determine a version to restore to for this message.",
             };
           }
           // The hash was resolved from stored DB fields, so a garbage-collected
@@ -1255,8 +1133,7 @@ export function registerVersionHandlers() {
       // after the user's in-flight generations were already gone, so they lost
       // the generation and got the refusal. Holding the app first means the
       // refusal costs nothing.
-      releaseRecordingBlock =
-        blockRecordingStart(appId, "restore a version") ?? undefined;
+      releaseRecordingBlock = blockRecordingStart(appId, "restore a version") ?? undefined;
       if (!releaseRecordingBlock) {
         throw new OctopusStudioError(
           "Stop the recording session before you restore this version — it's holding this app while it records.",
@@ -1275,8 +1152,7 @@ export function registerVersionHandlers() {
       // Awaiting completion while holding the app lock would deadlock, so
       // cancellation must run before we re-acquire it.
       const didCancelActor =
-        restoreCodebase &&
-        (await waitForAppChatActorsIdle(appId, { cancelActive: true }));
+        restoreCodebase && (await waitForAppChatActorsIdle(appId, { cancelActive: true }));
       const didCancelTransport = restoreCodebase
         ? await cancelActiveStreamsForApp(appId, event.sender)
         : false;
@@ -1320,10 +1196,7 @@ export function registerVersionHandlers() {
             where: eq(apps.id, appId),
           });
           if (!latestApp) {
-            throw new OctopusStudioError(
-              "App not found",
-              OctopusStudioErrorKind.NotFound,
-            );
+            throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
           }
           // The app directory can be renamed while phase 2 awaits stream
           // cancellation without holding the app lock. Re-resolve it from the
@@ -1335,18 +1208,12 @@ export function registerVersionHandlers() {
             where: eq(chats.id, chatId),
             with: {
               messages: {
-                orderBy: (messages, { asc }) => [
-                  asc(messages.createdAt),
-                  asc(messages.id),
-                ],
+                orderBy: (messages, { asc }) => [asc(messages.createdAt), asc(messages.id)],
               },
             },
           });
           if (!latestChat) {
-            throw new OctopusStudioError(
-              "Chat not found",
-              OctopusStudioErrorKind.NotFound,
-            );
+            throw new OctopusStudioError("Chat not found", OctopusStudioErrorKind.NotFound);
           }
           if (latestChat.appId !== appId) {
             throw new OctopusStudioError(
@@ -1355,22 +1222,14 @@ export function registerVersionHandlers() {
             );
           }
 
-          const latestTargetIndex = latestChat.messages.findIndex(
-            (m) => m.id === messageId,
-          );
+          const latestTargetIndex = latestChat.messages.findIndex((m) => m.id === messageId);
           if (latestTargetIndex === -1) {
-            throw new OctopusStudioError(
-              "Message not found",
-              OctopusStudioErrorKind.NotFound,
-            );
+            throw new OctopusStudioError("Message not found", OctopusStudioErrorKind.NotFound);
           }
 
           const latestMessagesBefore = latestChat.messages
             .slice(0, latestTargetIndex)
-            .filter(
-              (message) =>
-                !(message.isCompactionSummary && message.id > messageId),
-            );
+            .filter((message) => !(message.isCompactionSummary && message.id > messageId));
 
           const latestTargetCommitHash = resolveTargetCommitHash({
             chatMessages: latestChat.messages,
@@ -1427,10 +1286,9 @@ export function registerVersionHandlers() {
           let warningMessage = "";
 
           let restoreCompletion:
-            | (Extract<
-                RestoreRecovery,
-                { repositoryOutcome: "target-applied" }
-              > & { nextStep: "chat-mutation" })
+            | (Extract<RestoreRecovery, { repositoryOutcome: "target-applied" }> & {
+                nextStep: "chat-mutation";
+              })
             | undefined;
           if (restoreCodebase && latestTargetCommitHash) {
             const result = await revertCodebaseToVersion({
@@ -1455,9 +1313,7 @@ export function registerVersionHandlers() {
 
           // Keep `null` (rather than `[]`) when there is nothing to carry over so
           // forked chats match the shape of freshly created ones.
-          const storedReferencedAppIds = readStoredReferencedAppIds(
-            latestChat.referencedAppIds,
-          );
+          const storedReferencedAppIds = readStoredReferencedAppIds(latestChat.referencedAppIds);
           const forkReferencedAppIds =
             storedReferencedAppIds.length > 0 ? storedReferencedAppIds : null;
 
@@ -1480,9 +1336,7 @@ export function registerVersionHandlers() {
                   path: latestAppPath,
                   ref: forkRef,
                 });
-              })().catch(
-                () => latestChat.initialCommitHash ?? latestTargetCommitHash,
-              );
+              })().catch(() => latestChat.initialCommitHash ?? latestTargetCommitHash);
 
           // Compile-time guard so a new column added to the `messages` schema in
           // db/schema.ts isn't silently dropped when copying messages into the
@@ -1525,9 +1379,7 @@ export function registerVersionHandlers() {
             : never = true;
           void _assertAllMessageColumnsHandled;
 
-          const messagesBeforeInInsertOrder = [...latestMessagesBefore].sort(
-            (a, b) => a.id - b.id,
-          );
+          const messagesBeforeInInsertOrder = [...latestMessagesBefore].sort((a, b) => a.id - b.id);
 
           // Create the new chat pointing at that version and copy over the earlier
           // messages atomically. We insert directly (instead of using the
@@ -1639,11 +1491,7 @@ export function registerVersionHandlers() {
       releaseRecordingBlock?.();
     }
   };
-  versionPreviewHandlerBridge.restoreToMessage = (
-    params,
-    sender,
-    onRestoreProgress,
-  ) =>
+  versionPreviewHandlerBridge.restoreToMessage = (params, sender, onRestoreProgress) =>
     restoreToMessageHandler(
       { sender } as unknown as Electron.IpcMainInvokeEvent,
       params,
@@ -1655,18 +1503,12 @@ export function registerVersionHandlers() {
     params: CheckoutVersionParams,
   ) => {
     const { appId } = params;
-    const gitRef =
-      params.purpose === "preview" ? params.versionId : params.branch;
+    const gitRef = params.purpose === "preview" ? params.versionId : params.branch;
     return appOperationCoordinator.run(
       {
         appId,
         operation: `checkout-version:${params.purpose}`,
-        resources: [
-          readAppResource("app-path"),
-          "provider",
-          "repository",
-          "runtime-config",
-        ],
+        resources: [readAppResource("app-path"), "provider", "repository", "runtime-config"],
         refuseWhenRecording: "check out this version",
       },
       async () => {
@@ -1676,30 +1518,19 @@ export function registerVersionHandlers() {
         });
 
         if (!app) {
-          throw new OctopusStudioError(
-            "App not found",
-            OctopusStudioErrorKind.NotFound,
-          );
+          throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
         }
 
-        if (
-          app.neonProjectId &&
-          app.neonDevelopmentBranchId &&
-          app.neonPreviewBranchId
-        ) {
+        if (app.neonProjectId && app.neonDevelopmentBranchId && app.neonPreviewBranchId) {
           if (params.purpose === "return") {
-            logger.info(
-              `Switching Postgres to development branch for app ${appId}`,
-            );
+            logger.info(`Switching Postgres to development branch for app ${appId}`);
             await switchPostgresToDevelopmentBranch({
               neonProjectId: app.neonProjectId,
               neonDevelopmentBranchId: app.neonDevelopmentBranchId,
               appPath: app.path,
             });
           } else {
-            logger.info(
-              `Switching Postgres to preview branch for app ${appId}`,
-            );
+            logger.info(`Switching Postgres to preview branch for app ${appId}`);
 
             // Regardless of whether we have a timestamp or not, we want to disable DB push
             // while we're checking out an earlier version
@@ -1709,10 +1540,7 @@ export function registerVersionHandlers() {
             });
 
             const version = await db.query.versions.findFirst({
-              where: and(
-                eq(versions.appId, appId),
-                eq(versions.commitHash, gitRef),
-              ),
+              where: and(eq(versions.appId, appId), eq(versions.commitHash, gitRef)),
             });
 
             if (version && version.neonDbTimestamp) {
@@ -1786,19 +1614,14 @@ export function registerVersionHandlers() {
         });
         await syncCloudSandboxSnapshotBestEffort(appId);
         return versionCommandResult({
-          notification: warningMessage
-            ? { kind: "warning", message: warningMessage }
-            : null,
+          notification: warningMessage ? { kind: "warning", message: warningMessage } : null,
           runtimeAction: versionRuntimeAction(app, true),
         });
       },
     );
   };
   versionPreviewHandlerBridge.checkoutVersion = (params) =>
-    checkoutVersionHandler(
-      undefined as unknown as Electron.IpcMainInvokeEvent,
-      params,
-    );
+    checkoutVersionHandler(undefined as unknown as Electron.IpcMainInvokeEvent, params);
 }
 
 async function switchPostgresToDevelopmentBranch({

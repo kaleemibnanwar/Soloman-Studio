@@ -42,6 +42,8 @@ export default defineConfig({
         // Ship it in node_modules and load it at runtime instead.
         /^office-open(\/|$)/,
         /^@office-open\//,
+        "fflate",
+        /^@noble\//,
       ],
     },
   },

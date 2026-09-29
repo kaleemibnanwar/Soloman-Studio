@@ -29,34 +29,23 @@ test("opens an app in a second product window and survives closing the initiator
   await expect(secondWindow).toHaveURL(/app-details/, {
     timeout: Timeout.MEDIUM,
   });
-  await expect(
-    secondWindow.getByText(appName, { exact: true }).first(),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(secondWindow.getByText(appName, { exact: true }).first()).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 
   await expect
-    .poll(
-      () =>
-        electronApp.evaluate(
-          ({ BrowserWindow }) => BrowserWindow.getAllWindows().length,
-        ),
-      { timeout: Timeout.MEDIUM },
-    )
+    .poll(() => electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length), {
+      timeout: Timeout.MEDIUM,
+    })
     .toBe(2);
 
   await po.page.close();
 
-  await expect(
-    secondWindow.getByText(appName, { exact: true }).first(),
-  ).toBeVisible();
-  await expect
-    .poll(() => electronApp.windows().length, { timeout: Timeout.MEDIUM })
-    .toBe(1);
+  await expect(secondWindow.getByText(appName, { exact: true }).first()).toBeVisible();
+  await expect.poll(() => electronApp.windows().length, { timeout: Timeout.MEDIUM }).toBe(1);
 
   const appPath = await electronApp.evaluate(({ app }) => app.getAppPath());
-  const rendererIndexPath = path.join(
-    appPath,
-    ".vite/renderer/main_window/index.html",
-  );
+  const rendererIndexPath = path.join(appPath, ".vite/renderer/main_window/index.html");
   await electronApp.evaluate(async ({ BrowserWindow }, rendererPath) => {
     try {
       await BrowserWindow.getAllWindows()[0].loadFile(rendererPath);
@@ -70,9 +59,9 @@ test("opens an app in a second product window and survives closing the initiator
   await expect(secondWindow).toHaveURL(/app-details/, {
     timeout: Timeout.MEDIUM,
   });
-  await expect(
-    secondWindow.getByText(appName, { exact: true }).first(),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(secondWindow.getByText(appName, { exact: true }).first()).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 });
 
 test("moves a chat tab to another window only after destination adoption", async ({
@@ -81,9 +70,7 @@ test("moves a chat tab to another window only after destination adoption", async
 }) => {
   await po.setUp({ autoApprove: true });
   await po.navigation.goToSettingsTab();
-  await po.page
-    .getByRole("switch", { name: "Enable multiple windows" })
-    .click();
+  await po.page.getByRole("switch", { name: "Enable multiple windows" }).click();
   await po.navigation.goToAppsTab();
   await po.importApp("minimal");
   await expect(po.page).toHaveURL(/chat/, { timeout: Timeout.MEDIUM });
@@ -122,28 +109,21 @@ test("moves a chat tab to another window only after destination adoption", async
         dataTransfer,
       }),
     );
-    return dataTransfer.getData(
-      "application/x-octopusStudio-chat-tab-transfer",
-    );
+    return dataTransfer.getData("application/x-octopusStudio-chat-tab-transfer");
   });
   expect(dragPayload).not.toBe("");
 
-  await destination
-    .getByTestId("chat-tab-drop-zone")
-    .evaluate((dropZone, payload) => {
-      const dataTransfer = new DataTransfer();
-      dataTransfer.setData(
-        "application/x-octopusStudio-chat-tab-transfer",
-        payload,
-      );
-      dropZone.dispatchEvent(
-        new DragEvent("drop", {
-          bubbles: true,
-          cancelable: true,
-          dataTransfer,
-        }),
-      );
-    }, dragPayload);
+  await destination.getByTestId("chat-tab-drop-zone").evaluate((dropZone, payload) => {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData("application/x-octopusStudio-chat-tab-transfer", payload);
+    dropZone.dispatchEvent(
+      new DragEvent("drop", {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+      }),
+    );
+  }, dragPayload);
 
   await expect(destination.getByTestId(`chat-tab-${chatId}`)).toBeVisible({
     timeout: Timeout.MEDIUM,
@@ -163,7 +143,5 @@ test("moves a chat tab to another window only after destination adoption", async
       '[data-testid="chat-input-container"]:visible [data-lexical-editor="true"]',
     ),
   ).toContainText("transfer this unfinished draft");
-  await expect
-    .poll(() => electronApp.windows().length, { timeout: Timeout.MEDIUM })
-    .toBe(1);
+  await expect.poll(() => electronApp.windows().length, { timeout: Timeout.MEDIUM }).toBe(1);
 });

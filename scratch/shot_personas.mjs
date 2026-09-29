@@ -3,7 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 const EXE = "/home/kalim/dyad/out/Octopus Studio-linux-x64/octopus-studio";
-const SHOT_DIR = "/tmp/claude-1000/-home-kalim-dyad/d75bdbf7-398c-4c40-a35f-b47f793fbc67/scratchpad/shots";
+const SHOT_DIR =
+  "/tmp/claude-1000/-home-kalim-dyad/d75bdbf7-398c-4c40-a35f-b47f793fbc67/scratchpad/shots";
 const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "octopus-personas-"));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function main() {
@@ -23,7 +24,9 @@ async function main() {
   });
   await sleep(2000);
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Team Personas");
+    const btn = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === "Team Personas",
+    );
     btn?.click();
   });
   await sleep(1500);
@@ -31,4 +34,7 @@ async function main() {
   console.log("shot done");
   await app.close().catch(() => {});
 }
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

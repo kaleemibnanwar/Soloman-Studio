@@ -58,8 +58,7 @@ export async function readTestScreenshotDataUrl(
     return null;
   }
   const rel = path.relative(realAppPath, realPath);
-  const insideApp =
-    rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  const insideApp = rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
   if (!insideApp) {
     return null;
   }
@@ -97,12 +96,7 @@ export async function readTestScreenshotDataUrl(
     const buf = Buffer.alloc(size);
     let offset = 0;
     while (offset < size) {
-      const { bytesRead } = await handle.read(
-        buf,
-        offset,
-        size - offset,
-        offset,
-      );
+      const { bytesRead } = await handle.read(buf, offset, size - offset, offset);
       if (bytesRead === 0) break;
       offset += bytesRead;
     }

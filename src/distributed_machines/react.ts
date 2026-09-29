@@ -1,8 +1,5 @@
 import { createElement, useMemo, type PropsWithChildren } from "react";
-import {
-  createMachineProvider,
-  useMachineSelector,
-} from "@/state_machines/react";
+import { createMachineProvider, useMachineSelector } from "@/state_machines/react";
 import type { IdSource } from "@/state_machines/clock";
 import type { IgnoreReason } from "@/state_machines/types";
 import type { LocalActorRef } from "./definition";
@@ -37,10 +34,7 @@ const remoteMachineBinding = createMachineProvider<
 >({
   name: "RemoteMachine",
   useOwnedManager: ({ connection, ids }) => {
-    return useMemo(
-      () => new RemoteMachineClient(connection, ids),
-      [connection, ids],
-    );
+    return useMemo(() => new RemoteMachineClient(connection, ids), [connection, ids]);
   },
 });
 
@@ -51,11 +45,7 @@ export type RemoteMachineProviderProps = PropsWithChildren<
 /** Owns exactly one remote client for the current renderer window. */
 export function RemoteMachineProvider(props: RemoteMachineProviderProps) {
   if ("client" in props) {
-    return createElement(
-      remoteMachineBinding.Provider,
-      { manager: props.client },
-      props.children,
-    );
+    return createElement(remoteMachineBinding.Provider, { manager: props.client }, props.children);
   }
   return createElement(
     remoteMachineBinding.Provider,
@@ -92,8 +82,7 @@ export function useDistributedMachine<
 } {
   const client = useRemoteMachineClient();
   const actor = client.actor(definition, key);
-  const projector =
-    selectProjection ?? (identity as (state: State) => Projection);
+  const projector = selectProjection ?? (identity as (state: State) => Projection);
   const source = useMemo(
     () => ({
       subscribe: actor.subscribe,

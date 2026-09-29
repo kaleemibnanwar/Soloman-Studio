@@ -187,9 +187,7 @@ function listModules(dump) {
 // Both values come from the dump, which may be untrusted, and both are
 // used as path segments. Only allow plain file names.
 function safePathSegment(segment) {
-  return (
-    /^[A-Za-z0-9()., _-]+$/.test(segment) && segment !== "." && segment !== ".."
-  );
+  return /^[A-Za-z0-9()., _-]+$/.test(segment) && segment !== "." && segment !== "..";
 }
 
 // Installed builds rename Electron's binaries, which breaks by-name
@@ -203,12 +201,7 @@ async function stageAliasedSymbols(dump) {
     if (!safePathSegment(debug_file) || !safePathSegment(debug_id)) {
       continue;
     }
-    const staged = path.join(
-      aliasedDir,
-      debug_file,
-      debug_id,
-      `${debug_file}.sym`,
-    );
+    const staged = path.join(aliasedDir, debug_file, debug_id, `${debug_file}.sym`);
     if (fs.existsSync(staged)) {
       continue;
     }
@@ -238,10 +231,7 @@ async function stageAliasedSymbols(dump) {
         fs.mkdirSync(path.dirname(staged), { recursive: true });
         // Download to a partial file and rename after success, so an
         // interrupted download is never cached as complete.
-        await pipeline(
-          Readable.fromWeb(response.body),
-          fs.createWriteStream(partial),
-        );
+        await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(partial));
         fs.renameSync(partial, staged);
         break;
       }

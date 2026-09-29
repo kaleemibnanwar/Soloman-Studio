@@ -61,28 +61,12 @@ export const OctopusStudioWrite: React.FC<OctopusStudioWriteProps> = ({
       <OctopusStudioCardHeader icon={<Pencil size={15} />} accentColor="blue">
         <div className="min-w-0 truncate">
           {fileName && (
-            <span className="font-medium text-sm text-foreground truncate block">
-              {fileName}
-            </span>
+            <span className="font-medium text-sm text-foreground truncate block">{fileName}</span>
           )}
-          {path && (
-            <span className="text-[11px] text-muted-foreground truncate block">
-              {path}
-            </span>
-          )}
+          {path && <span className="text-[11px] text-muted-foreground truncate block">{path}</span>}
         </div>
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Writing..."
-          />
-        )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Writing..." />}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
         <div className="ml-auto flex items-center gap-1">
           {!inProgress && (
             <>
@@ -123,18 +107,13 @@ export const OctopusStudioWrite: React.FC<OctopusStudioWriteProps> = ({
         </OctopusStudioDescription>
       )}
       <OctopusStudioCardContent isExpanded={isContentVisible}>
-        <div
-          className="text-xs cursor-text"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="text-xs cursor-text" onClick={(e) => e.stopPropagation()}>
           {isEditing ? (
             <div className="h-96 min-h-96 border border-border rounded-lg overflow-hidden">
               <FileEditor appId={appId ?? null} filePath={path} />
             </div>
           ) : (
-            <CodeHighlight className="language-typescript">
-              {children}
-            </CodeHighlight>
+            <CodeHighlight className="language-typescript">{children}</CodeHighlight>
           )}
         </div>
       </OctopusStudioCardContent>

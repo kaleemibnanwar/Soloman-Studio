@@ -6,11 +6,8 @@ import {
   listStoredAttachments,
   resolveAttachmentLogicalPath,
   toAttachmentLogicalPath,
-} from "@/ipc/utils/media_path_utils";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+} from "@/ipc/media/media_path_utils";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { readContainedTextFile } from "@/ipc/utils/bounded_text_file";
 import { isDotenvFilePath, redactDotenvValues } from "@/utils/dotenv_redaction";
 import { SANDBOX_READ_FILE_LIMIT_BYTES } from "./limits";
@@ -61,13 +58,9 @@ const DENIED_PATH_PATTERNS = [
   /\.key$/i,
   /\.pem$/i,
 ];
-const DOTENV_DENIED_PATH_PATTERN =
-  /(^|[/\\])(?:\.env(?:\.[^/\\]+)*|\.envrc)(?:[/\\]|$)/i;
+const DOTENV_DENIED_PATH_PATTERN = /(^|[/\\])(?:\.env(?:\.[^/\\]+)*|\.envrc)(?:[/\\]|$)/i;
 
-function isDeniedSandboxPath(
-  filePath: string,
-  options?: { allowDotenvFile?: boolean },
-): boolean {
+function isDeniedSandboxPath(filePath: string, options?: { allowDotenvFile?: boolean }): boolean {
   if (DENIED_PATH_PATTERNS.some((pattern) => pattern.test(filePath))) {
     return true;
   }
@@ -103,21 +96,13 @@ function isStructuredObject(value: unknown): value is StructuredObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function isNodeErrorWithCode(
-  error: unknown,
-  code: string,
-): error is NodeJS.ErrnoException {
+function isNodeErrorWithCode(error: unknown, code: string): error is NodeJS.ErrnoException {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    (error as NodeJS.ErrnoException).code === code
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === code
   );
 }
 
-function parseOptionalNonNegativeInteger(
-  value: unknown,
-  name: string,
-): number | undefined {
+function parseOptionalNonNegativeInteger(value: unknown, name: string): number | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -159,15 +144,9 @@ function parseReadOptions(value: unknown): SandboxReadFileOptions {
   };
 }
 
-function assertSandboxGuestPath(
-  guestPath: string,
-  options?: { allowDotenvFile?: boolean },
-): void {
+function assertSandboxGuestPath(guestPath: string, options?: { allowDotenvFile?: boolean }): void {
   if (!guestPath || typeof guestPath !== "string") {
-    throw new OctopusStudioError(
-      "File path is required.",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("File path is required.", OctopusStudioErrorKind.Validation);
   }
   if (path.isAbsolute(guestPath) || /^[A-Za-z]:[/\\]/.test(guestPath)) {
     throw new OctopusStudioError(
@@ -226,10 +205,7 @@ async function resolveSandboxPath(params: {
   allowDotenvRead?: boolean;
 }): Promise<{ filePath: string; displayPath: string }> {
   if (params.guestPath.startsWith("attachments:")) {
-    const attachment = await resolveAttachmentLogicalPath(
-      params.appPath,
-      params.guestPath,
-    );
+    const attachment = await resolveAttachmentLogicalPath(params.appPath, params.guestPath);
     if (!attachment) {
       throw new OctopusStudioError(
         `Attachment not found: ${params.guestPath}`,
@@ -280,9 +256,7 @@ async function assertResolvedPathAllowed(params: {
     );
   }
   if (params.displayPath.startsWith("attachments:")) {
-    const realMediaPath = await fs.realpath(
-      getOctopusStudioMediaDir(params.appPath),
-    );
+    const realMediaPath = await fs.realpath(getOctopusStudioMediaDir(params.appPath));
     const mediaRelative = path.relative(realMediaPath, realFilePath);
     if (mediaRelative.startsWith("..") || path.isAbsolute(mediaRelative)) {
       throw new OctopusStudioError(
@@ -303,8 +277,7 @@ async function assertResolvedPathAllowed(params: {
       OctopusStudioErrorKind.Precondition,
     );
   }
-  const isDotenv =
-    isDotenvFilePath(params.displayPath) || isDotenvFilePath(normalized);
+  const isDotenv = isDotenvFilePath(params.displayPath) || isDotenvFilePath(normalized);
   return { realFilePath, isDotenv };
 }
 
@@ -325,10 +298,7 @@ export async function sandboxReadFile(
     allowDotenvRead: true,
   });
 
-  if (
-    options.length !== undefined &&
-    options.length > SANDBOX_READ_FILE_LIMIT_BYTES
-  ) {
+  if (options.length !== undefined && options.length > SANDBOX_READ_FILE_LIMIT_BYTES) {
     throw new OctopusStudioError(
       `read_file length ${options.length} exceeds the ${SANDBOX_READ_FILE_LIMIT_BYTES} byte limit. Read the file in chunks with start and length instead.`,
       OctopusStudioErrorKind.Validation,
@@ -427,16 +397,11 @@ export async function sandboxFileStats(
   };
 }
 
-export async function sandboxListFiles(
-  appPath: string,
-  guestDir?: string,
-): Promise<string[]> {
+export async function sandboxListFiles(appPath: string, guestDir?: string): Promise<string[]> {
   const dir = guestDir ?? ".";
   if (dir === "attachments:" || dir === "attachments") {
     const attachments = await listStoredAttachments(appPath);
-    return attachments.map((attachment) =>
-      toAttachmentLogicalPath(attachment.logicalName),
-    );
+    return attachments.map((attachment) => toAttachmentLogicalPath(attachment.logicalName));
   }
 
   assertAllowedGuestPath(dir);
@@ -447,10 +412,7 @@ export async function sandboxListFiles(
     realDirPath = await fs.realpath(dirPath);
   } catch (error) {
     if (isNodeErrorWithCode(error, "ENOENT")) {
-      throw new OctopusStudioError(
-        `Directory not found: ${dir}`,
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError(`Directory not found: ${dir}`, OctopusStudioErrorKind.NotFound);
     }
     throw error;
   }
@@ -465,10 +427,7 @@ export async function sandboxListFiles(
   return entries
     .filter((entry) => !isDeniedSandboxPath(entry.name))
     .map((entry) => {
-      const relativePath = path
-        .join(relative, entry.name)
-        .split(path.sep)
-        .join("/");
+      const relativePath = path.join(relative, entry.name).split(path.sep).join("/");
       return entry.isDirectory() ? `${relativePath}/` : relativePath;
     })
     .sort();

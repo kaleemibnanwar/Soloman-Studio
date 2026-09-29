@@ -7,11 +7,7 @@ export const FALLBACK_EFFORT_SETTINGS = {
 } as const;
 
 export function getModelPreferenceKey(model: LargeLanguageModel): string {
-  return JSON.stringify([
-    model.provider,
-    model.name,
-    model.customModelId ?? null,
-  ]);
+  return JSON.stringify([model.provider, model.name, model.customModelId ?? null]);
 }
 
 export function getEffortSettings(model?: LanguageModel | null): {
@@ -35,8 +31,7 @@ export function resolveEffortLevel({
     return preferredEffortLevel ?? FALLBACK_EFFORT_SETTINGS.defaultEffortLevel;
   }
   const settings = getEffortSettings(catalogModel);
-  return preferredEffortLevel &&
-    settings.possibleEffortLevels.includes(preferredEffortLevel)
+  return preferredEffortLevel && settings.possibleEffortLevels.includes(preferredEffortLevel)
     ? preferredEffortLevel
     : settings.defaultEffortLevel;
 }

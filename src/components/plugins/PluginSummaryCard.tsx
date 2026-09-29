@@ -65,8 +65,7 @@ export function PluginSummaryCard({
             </span>
           ) : feedback ? (
             <span className="text-xs font-medium px-2 py-1 rounded-full text-red-600 bg-red-50 border border-red-500/50 dark:bg-red-900/30 dark:text-red-300 shrink-0">
-              {feedback.kind === "unauthorized" ||
-              feedback.kind === "credentials"
+              {feedback.kind === "unauthorized" || feedback.kind === "credentials"
                 ? "Needs auth"
                 : "Connection error"}
             </span>
@@ -100,11 +99,7 @@ export function PluginSummaryCard({
           <div className="flex items-center gap-2">
             <div className="relative z-10 flex items-center gap-2">
               {s.oauthEnabled && !s.oauthConnected && !setupLocked && (
-                <Button
-                  size="sm"
-                  onClick={() => onConnect(s.id)}
-                  disabled={connectDisabled}
-                >
+                <Button size="sm" onClick={() => onConnect(s.id)} disabled={connectDisabled}>
                   {isConnecting ? "Connecting…" : "Connect"}
                 </Button>
               )}
@@ -122,10 +117,7 @@ export function PluginSummaryCard({
                 onCheckedChange={() => onToggleEnabled(s.id, !!s.enabled)}
               />
             </div>
-            <ChevronRight
-              aria-hidden="true"
-              className="w-4 h-4 text-muted-foreground shrink-0"
-            />
+            <ChevronRight aria-hidden="true" className="w-4 h-4 text-muted-foreground shrink-0" />
           </div>
         </div>
       </CardHeader>

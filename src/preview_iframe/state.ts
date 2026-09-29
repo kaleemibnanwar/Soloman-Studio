@@ -152,15 +152,13 @@ export type PreviewIframeIgnoreReason =
   | "same-preview-error"
   | "no-preview-error";
 
-export const selectCanGoBack = (state: PreviewIframeState): boolean =>
-  state.position > 0;
+export const selectCanGoBack = (state: PreviewIframeState): boolean => state.position > 0;
 
 export const selectCanGoForward = (state: PreviewIframeState): boolean =>
   state.position < state.history.length - 1;
 
-export const selectPreviewError = (
-  state: PreviewIframeState,
-): PreviewError | undefined => state.error;
+export const selectPreviewError = (state: PreviewIframeState): PreviewError | undefined =>
+  state.error;
 
 export const selectIframeSrc = (
   state: PreviewIframeState,
@@ -169,9 +167,7 @@ export const selectIframeSrc = (
   if (!appUrl) return undefined;
   const candidate = state.preservedUrl ?? state.currentUrl ?? appUrl;
   try {
-    return new URL(candidate).origin === new URL(appUrl).origin
-      ? candidate
-      : appUrl;
+    return new URL(candidate).origin === new URL(appUrl).origin ? candidate : appUrl;
   } catch {
     return appUrl;
   }

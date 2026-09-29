@@ -22,9 +22,7 @@ test.describe("Favorite App Tests", () => {
     await expect(appDetailsPage).toBeVisible({ timeout: Timeout.MEDIUM });
 
     // Click the favorite button in app details
-    const favoriteButton = appDetailsPage.locator(
-      '[data-testid="favorite-button"]',
-    );
+    const favoriteButton = appDetailsPage.locator('[data-testid="favorite-button"]');
     await expect(favoriteButton).toBeVisible();
     await favoriteButton.click();
 
@@ -55,9 +53,7 @@ test.describe("Favorite App Tests", () => {
     await expect(appDetailsPage).toBeVisible({ timeout: Timeout.MEDIUM });
 
     // First, add to favorite
-    const favoriteButton = appDetailsPage.locator(
-      '[data-testid="favorite-button"]',
-    );
+    const favoriteButton = appDetailsPage.locator('[data-testid="favorite-button"]');
     await favoriteButton.click();
 
     // Check that the star is filled (favorited)

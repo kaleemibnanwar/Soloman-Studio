@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 import { TestIsolationSchema } from "./tests";
 // Relative import: this module is pulled into the preload bundle, which cannot
 // resolve the "@/" alias.
@@ -133,9 +128,7 @@ export const RecordingSetupProgressPayloadSchema = z.object({
   appId: z.number(),
   message: z.string(),
 });
-export type RecordingSetupProgressPayload = z.infer<
-  typeof RecordingSetupProgressPayloadSchema
->;
+export type RecordingSetupProgressPayload = z.infer<typeof RecordingSetupProgressPayloadSchema>;
 
 export const RecordingEndedPayloadSchema = z.object({
   appId: z.number(),
@@ -165,9 +158,7 @@ export const RecordingDraftConsumedPayloadSchema = z.object({
   draftId: z.string(),
   specPath: z.string(),
 });
-export type RecordingDraftConsumedPayload = z.infer<
-  typeof RecordingDraftConsumedPayloadSchema
->;
+export type RecordingDraftConsumedPayload = z.infer<typeof RecordingDraftConsumedPayloadSchema>;
 
 /**
  * The AI named the recording while proposing a test for it.
@@ -184,9 +175,7 @@ export const RecordingDraftNamedPayloadSchema = z.object({
   draftId: z.string(),
   testName: z.string(),
 });
-export type RecordingDraftNamedPayload = z.infer<
-  typeof RecordingDraftNamedPayloadSchema
->;
+export type RecordingDraftNamedPayload = z.infer<typeof RecordingDraftNamedPayloadSchema>;
 
 export const recordingEvents = {
   draftNamed: defineEvent({

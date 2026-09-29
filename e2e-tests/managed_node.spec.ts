@@ -76,13 +76,9 @@ function createManagedNodeFixtureArchive(userDataDir: string) {
     fs.chmodSync(pnpmPath, 0o755);
   }
 
-  const archivePath = path.join(
-    fixtureDir,
-    isWindows ? "managed-node.zip" : "managed-node.tar.gz",
-  );
+  const archivePath = path.join(fixtureDir, isWindows ? "managed-node.zip" : "managed-node.tar.gz");
   if (isWindows) {
-    const quotePowerShellString = (value: string) =>
-      `'${value.replace(/'/g, "''")}'`;
+    const quotePowerShellString = (value: string) => `'${value.replace(/'/g, "''")}'`;
     execFileSync("powershell.exe", [
       "-NoProfile",
       "-ExecutionPolicy",
@@ -91,21 +87,11 @@ function createManagedNodeFixtureArchive(userDataDir: string) {
       `Compress-Archive -LiteralPath ${quotePowerShellString(rootDir)} -DestinationPath ${quotePowerShellString(archivePath)} -Force`,
     ]);
   } else {
-    execFileSync("tar", [
-      "-czf",
-      archivePath,
-      "-C",
-      fixtureDir,
-      path.basename(rootDir),
-    ]);
+    execFileSync("tar", ["-czf", archivePath, "-C", fixtureDir, path.basename(rootDir)]);
   }
-  const sha256 = crypto
-    .createHash("sha256")
-    .update(fs.readFileSync(archivePath))
-    .digest("hex");
+  const sha256 = crypto.createHash("sha256").update(fs.readFileSync(archivePath)).digest("hex");
 
-  process.env.OCTOPUS_STUDIO_TEST_MANAGED_NODE_ARCHIVE_URL =
-    pathToFileURL(archivePath).toString();
+  process.env.OCTOPUS_STUDIO_TEST_MANAGED_NODE_ARCHIVE_URL = pathToFileURL(archivePath).toString();
   process.env.OCTOPUS_STUDIO_TEST_MANAGED_NODE_SHA256 = sha256;
   process.env.OCTOPUS_STUDIO_TEST_MANAGED_NODE_EXPECTED_VERSION = isWindows
     ? process.version
@@ -150,15 +136,11 @@ test("managed Node exposes install, preference, and removal controls in Settings
   await po.navigation.goToSettingsTab();
   const runtimeSettings = po.page.getByTestId("node-runtime-settings");
 
-  await expect(
-    runtimeSettings.getByText("No usable Node.js found"),
-  ).toBeVisible({
+  await expect(runtimeSettings.getByText("No usable Node.js found")).toBeVisible({
     timeout: Timeout.LONG,
   });
 
-  await runtimeSettings
-    .getByRole("button", { name: "Install managed Node.js" })
-    .click();
+  await runtimeSettings.getByRole("button", { name: "Install managed Node.js" }).click();
   await expect
     .poll(() => po.settings.recordSettings().nodeRuntimePreference, {
       timeout: Timeout.LONG,
@@ -168,27 +150,21 @@ test("managed Node exposes install, preference, and removal controls in Settings
     timeout: Timeout.LONG,
   });
 
-  await runtimeSettings
-    .getByRole("button", { name: "System", exact: true })
-    .click();
+  await runtimeSettings.getByRole("button", { name: "System", exact: true }).click();
   await expect
     .poll(() => po.settings.recordSettings().nodeRuntimePreference, {
       timeout: Timeout.MEDIUM,
     })
     .toBe("system");
 
-  await runtimeSettings
-    .getByRole("button", { name: "Managed", exact: true })
-    .click();
+  await runtimeSettings.getByRole("button", { name: "Managed", exact: true }).click();
   await expect
     .poll(() => po.settings.recordSettings().nodeRuntimePreference, {
       timeout: Timeout.MEDIUM,
     })
     .toBe("managed");
 
-  await runtimeSettings
-    .getByRole("button", { name: "Remove managed Node.js" })
-    .click();
+  await runtimeSettings.getByRole("button", { name: "Remove managed Node.js" }).click();
   await expect
     .poll(() => po.settings.recordSettings().nodeRuntimePreference, {
       timeout: Timeout.MEDIUM,
@@ -199,32 +175,25 @@ test("managed Node exposes install, preference, and removal controls in Settings
   ).toBeVisible();
 });
 
-test("managed Node install persists after a renderer reload", async ({
-  po,
-  electronApp,
-}) => {
+test("managed Node install persists after a renderer reload", async ({ po, electronApp }) => {
   await po.setUp();
   await po.setNodeMock(false);
   await po.navigation.goToSettingsTab();
   let runtimeSettings = po.page.getByTestId("node-runtime-settings");
 
-  await expect(
-    runtimeSettings.getByText("No usable Node.js found"),
-  ).toBeVisible({
+  await expect(runtimeSettings.getByText("No usable Node.js found")).toBeVisible({
     timeout: Timeout.LONG,
   });
 
-  await runtimeSettings
-    .getByRole("button", { name: "Install managed Node.js" })
-    .click();
+  await runtimeSettings.getByRole("button", { name: "Install managed Node.js" }).click();
   await expect
     .poll(() => po.settings.recordSettings().nodeRuntimePreference, {
       timeout: Timeout.LONG,
     })
     .toBe("managed");
-  await expect(
-    runtimeSettings.getByRole("button", { name: "Remove managed Node.js" }),
-  ).toBeVisible({ timeout: Timeout.LONG });
+  await expect(runtimeSettings.getByRole("button", { name: "Remove managed Node.js" })).toBeVisible(
+    { timeout: Timeout.LONG },
+  );
 
   await reloadRenderer(electronApp);
   await po.page.waitForLoadState("domcontentloaded");
@@ -246,10 +215,7 @@ test("managed Node install persists after a renderer reload", async ({
 
 async function reloadRenderer(electronApp: ElectronApplication) {
   const appPath = await electronApp.evaluate(({ app }) => app.getAppPath());
-  const rendererIndexPath = path.join(
-    appPath,
-    ".vite/renderer/main_window/index.html",
-  );
+  const rendererIndexPath = path.join(appPath, ".vite/renderer/main_window/index.html");
   await electronApp.evaluate(async ({ BrowserWindow }, rendererIndexPath) => {
     const window = BrowserWindow.getAllWindows()[0];
     await window.loadFile(rendererIndexPath);

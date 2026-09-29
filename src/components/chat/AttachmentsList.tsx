@@ -28,11 +28,7 @@ function ImageAttachmentThumbnail({ file }: { file: File }) {
   return (
     <Tooltip>
       <TooltipTrigger render={<div className="flex" />}>
-        <img
-          src={objectUrl}
-          alt={file.name}
-          className="w-12 h-12 object-cover rounded-md"
-        />
+        <img src={objectUrl} alt={file.name} className="w-12 h-12 object-cover rounded-md" />
       </TooltipTrigger>
       <TooltipContent className="bg-transparent p-0 [&_[data-slot=tooltip-arrow]]:hidden">
         <img
@@ -45,10 +41,7 @@ function ImageAttachmentThumbnail({ file }: { file: File }) {
   );
 }
 
-export function AttachmentsList({
-  attachments,
-  onRemove,
-}: AttachmentsListProps) {
+export function AttachmentsList({ attachments, onRemove }: AttachmentsListProps) {
   const { t } = useTranslation("chat");
 
   if (attachments.length === 0) return null;

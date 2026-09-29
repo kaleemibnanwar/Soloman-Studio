@@ -29,8 +29,7 @@ export function useCommitMessage(
   const [generatedMessage, setGeneratedMessage] = useState<string | null>(null);
   // A dialog belongs to an app as well as a source, so an open dialog left over
   // from another app is not this one.
-  const isDialogOpen =
-    openCommitDialog?.source === source && openCommitDialog.appId === appId;
+  const isDialogOpen = openCommitDialog?.source === source && openCommitDialog.appId === appId;
   // Read only at the moment the dialog opens, so the freeze above is against a
   // ref rather than a render-time dependency that would refresh with polling.
   const uncommittedFilesRef = useRef(uncommittedFiles);
@@ -41,9 +40,7 @@ export function useCommitMessage(
   // handler, so freezing it there would commit a file list the user never saw.
   useEffect(() => {
     setGeneratedMessage(
-      isDialogOpen
-        ? generateDefaultCommitMessage(uncommittedFilesRef.current)
-        : null,
+      isDialogOpen ? generateDefaultCommitMessage(uncommittedFilesRef.current) : null,
     );
   }, [isDialogOpen]);
 
@@ -57,8 +54,7 @@ export function useCommitMessage(
     [uncommittedFiles],
   );
 
-  const commitMessage =
-    commitMessageDraft ?? generatedMessage ?? defaultMessage;
+  const commitMessage = commitMessageDraft ?? generatedMessage ?? defaultMessage;
 
   return { isDialogOpen, commitMessage, setCommitMessage };
 }

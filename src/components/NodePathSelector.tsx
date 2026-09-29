@@ -26,9 +26,9 @@ export function NodePathSelector() {
   const [isInstallingManagedNode, setIsInstallingManagedNode] = useState(false);
   const [isRemovingManagedNode, setIsRemovingManagedNode] = useState(false);
   const [installProgress, setInstallProgress] = useState(0);
-  const [installPhase, setInstallPhase] = useState<
-    ManagedNodeInstallProgress["phase"] | null
-  >(null);
+  const [installPhase, setInstallPhase] = useState<ManagedNodeInstallProgress["phase"] | null>(
+    null,
+  );
   const [nodeStatus, setNodeStatus] = useState<{
     version: string | null;
     isValid: boolean;
@@ -39,9 +39,7 @@ export function NodePathSelector() {
     info: null,
   });
   const [isCheckingNode, setIsCheckingNode] = useState(false);
-  const [systemPath, setSystemPath] = useState<string>(() =>
-    t("general.loading"),
-  );
+  const [systemPath, setSystemPath] = useState<string>(() => t("general.loading"));
 
   // Check Node.js status when settings load or path changes.
   useEffect(() => {
@@ -133,13 +131,8 @@ export function NodePathSelector() {
     await checkNodeStatus();
   };
 
-  const handlePreferenceChange = async (
-    nodeRuntimePreference: "system" | "managed",
-  ) => {
-    if (
-      nodeRuntimePreference === "managed" &&
-      nodeStatus.info?.managedNodeSupported !== true
-    ) {
+  const handlePreferenceChange = async (nodeRuntimePreference: "system" | "managed") => {
+    if (nodeRuntimePreference === "managed" && nodeStatus.info?.managedNodeSupported !== true) {
       return;
     }
     try {
@@ -217,9 +210,7 @@ export function NodePathSelector() {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          {t("general.nodeRuntime")}
-        </Label>
+        <Label className="text-sm font-medium">{t("general.nodeRuntime")}</Label>
         <div
           data-testid="node-runtime-settings"
           className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800"
@@ -276,11 +267,7 @@ export function NodePathSelector() {
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               onClick={handleInstallManagedNode}
-              disabled={
-                isInstallingManagedNode ||
-                isRemovingManagedNode ||
-                !managedSupported
-              }
+              disabled={isInstallingManagedNode || isRemovingManagedNode || !managedSupported}
               variant={managedInstalled ? "outline" : "default"}
               size="sm"
             >
@@ -341,9 +328,7 @@ export function NodePathSelector() {
             className="flex items-center gap-2"
           >
             <FolderOpen className="w-4 h-4" />
-            {isSelectingPath
-              ? t("general.selecting")
-              : t("general.browseForNode")}
+            {isSelectingPath ? t("general.selecting") : t("general.browseForNode")}
           </Button>
 
           {isCustomPath && (
@@ -363,9 +348,7 @@ export function NodePathSelector() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {isCustomPath
-                    ? t("general.customPath")
-                    : t("general.systemPath")}
+                  {isCustomPath ? t("general.customPath") : t("general.systemPath")}
                 </span>
                 {isCustomPath && (
                   <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">

@@ -4,11 +4,7 @@ import type {
   QueryInvalidationScope,
 } from "../types";
 import { queryInvalidationScopeKey } from "../types";
-import {
-  windowRegistry,
-  type WindowEndpoint,
-  type WindowRegistry,
-} from "./window_registry";
+import { windowRegistry, type WindowEndpoint, type WindowRegistry } from "./window_registry";
 
 const QUERY_INVALIDATION_CHANNEL = "window:query-invalidations";
 
@@ -64,10 +60,7 @@ export class QueryInvalidationBus {
     if (this.journal.length > this.journalLimit) this.journal.shift();
     for (const scope of event.scopes) {
       const recoveryScope = this.compactRecoveryScope(scope);
-      this.recoveryScopes.set(
-        queryInvalidationScopeKey(recoveryScope),
-        recoveryScope,
-      );
+      this.recoveryScopes.set(queryInvalidationScopeKey(recoveryScope), recoveryScope);
     }
     this.pending.push(event);
     this.flushTimer ??= setTimeout(() => this.flush(), this.flushDelayMs);
@@ -109,9 +102,7 @@ export class QueryInvalidationBus {
     }
     return {
       currentEpoch: this.epoch,
-      invalidations: this.journal.filter(
-        (event) => event.epoch > lastSeenEpoch,
-      ),
+      invalidations: this.journal.filter((event) => event.epoch > lastSeenEpoch),
       recoveryScopes: [],
     };
   }
@@ -120,19 +111,11 @@ export class QueryInvalidationBus {
     return this.epoch;
   }
 
-  private dedupeScopes(
-    scopes: readonly QueryInvalidationScope[],
-  ): QueryInvalidationScope[] {
-    return [
-      ...new Map(
-        scopes.map((scope) => [queryInvalidationScopeKey(scope), scope]),
-      ).values(),
-    ];
+  private dedupeScopes(scopes: readonly QueryInvalidationScope[]): QueryInvalidationScope[] {
+    return [...new Map(scopes.map((scope) => [queryInvalidationScopeKey(scope), scope])).values()];
   }
 
-  private compactRecoveryScope(
-    scope: QueryInvalidationScope,
-  ): QueryInvalidationScope {
+  private compactRecoveryScope(scope: QueryInvalidationScope): QueryInvalidationScope {
     switch (scope.family) {
       case "app":
         return { family: "apps" };

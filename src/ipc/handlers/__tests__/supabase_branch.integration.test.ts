@@ -23,10 +23,7 @@ vi.hoisted(() => {
 
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 import { isIpcInvokeEnvelope, unwrapIpcEnvelope } from "@/ipc/contracts/core";
 import { db } from "@/db";
@@ -45,18 +42,13 @@ function makeEvent(sink: SentEvent[] = []) {
       mainFrame: frame,
       isDestroyed: () => false,
       isCrashed: () => false,
-      send: (channel: string, payload: unknown) =>
-        sink.push({ channel, payload }),
+      send: (channel: string, payload: unknown) => sink.push({ channel, payload }),
     },
     senderFrame: frame,
   };
 }
 
-async function invoke(
-  channel: string,
-  params?: unknown,
-  sink?: SentEvent[],
-): Promise<any> {
+async function invoke(channel: string, params?: unknown, sink?: SentEvent[]): Promise<any> {
   const handler = h.ipcHandlers.get(channel);
   if (!handler) {
     throw new Error(`No handler registered for ${channel}`);
@@ -68,8 +60,7 @@ async function invoke(
 describe("supabase branch selection (integration)", () => {
   let harness: HybridChatHarness;
 
-  const countTokens = () =>
-    invoke("chat:count-tokens", { chatId: harness.chatId, input: "" });
+  const countTokens = () => invoke("chat:count-tokens", { chatId: harness.chatId, input: "" });
 
   /**
    * Reads the percentage the REAL TokenBar renders ("Tokens: N", "X%",
@@ -131,9 +122,7 @@ describe("supabase branch selection (integration)", () => {
     send();
     await harness.waitForStreamEnd(harness.chatId);
     expect(
-      harness.bridge.sentEvents.filter(
-        (e) => e.channel === "chat:response:error",
-      ),
+      harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error"),
     ).toHaveLength(0);
 
     // Connect Supabase (the connect button's test path): stores fake org

@@ -3,10 +3,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { detectIsMac } from "@/hooks/useChatModeToggle";
 
 function sendTestNotification() {
-  if (
-    typeof window.Notification !== "undefined" &&
-    window.Notification.permission === "granted"
-  ) {
+  if (typeof window.Notification !== "undefined" && window.Notification.permission === "granted") {
     new window.Notification("Octopus Studio", {
       body: "Notifications are working! You'll be notified when responses finish or input is needed.",
     });

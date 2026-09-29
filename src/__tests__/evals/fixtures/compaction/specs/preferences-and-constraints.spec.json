@@ -44,9 +44,7 @@
         "src/i18n/es.json"
       ],
       "factIds": ["F7", "F8", "F13"],
-      "bulk": [
-        { "asset": "locale-json", "path": "src/i18n/es.json", "count": 400 }
-      ]
+      "bulk": [{ "asset": "locale-json", "path": "src/i18n/es.json", "count": 400 }]
     },
     {
       "id": "p4",
@@ -72,10 +70,7 @@
       "id": "p5",
       "goal": "Mid-task on a brand new page where two of the kickoff rules are about to matter. The user requests a Client Resources page at src/pages/resources.astro with an FAQ section about fees and engagement. Assistant scaffolds the page and, honoring the dependency rule, states the resources page FAQ will use native details elements, no accordion library (plant F10), styled purely with Tailwind utilities per the styling rule. The user pastes rough FAQ text from an intake email; assistant flags that the draft FAQ answers still contain contractions and need a formal rewrite (plant F11) before they can ship under the copy rule. The user confirms the roadmap: after resources we still owe the disclaimer page and Spanish strings (plant F12) for the newer pages. The session ends mid-task: resources.astro is scaffolded with evergreen styling and the disclaimer footer, but the FAQ answers are not yet rewritten and the details markup is only half wired up.",
       "turns": 5,
-      "activeFiles": [
-        "src/pages/resources.astro",
-        "src/layouts/BaseLayout.astro"
-      ],
+      "activeFiles": ["src/pages/resources.astro", "src/layouts/BaseLayout.astro"],
       "factIds": ["F10", "F11", "F12"]
     }
   ],

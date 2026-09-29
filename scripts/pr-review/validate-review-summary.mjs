@@ -10,10 +10,7 @@ if (!reviewPath) throw new Error("REVIEW_PATH is required");
 if (!expectedContextSha) throw new Error("EXPECTED_CONTEXT_SHA is required");
 
 const contextRaw = fs.readFileSync(contextPath, "utf8");
-const actualContextSha = crypto
-  .createHash("sha256")
-  .update(contextRaw)
-  .digest("hex");
+const actualContextSha = crypto.createHash("sha256").update(contextRaw).digest("hex");
 if (actualContextSha !== expectedContextSha) {
   throw new Error("PR review context changed after generation");
 }
@@ -24,9 +21,7 @@ if (!summary) {
 }
 
 // Gracefully handle older summaries that predate the Recommendation line.
-const recMatch = summary.match(
-  /\*\*Recommendation:\s*(auto-fix|human-review|ready)\s*\*\*/,
-);
+const recMatch = summary.match(/\*\*Recommendation:\s*(auto-fix|human-review|ready)\s*\*\*/);
 let finalSummary = summary;
 if (!recMatch) {
   console.warn(

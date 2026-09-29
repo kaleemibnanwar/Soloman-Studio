@@ -145,9 +145,7 @@ interface ChatSearchProjection {
   truncated: boolean;
 }
 
-function projectChatMessageForSearch(
-  input: ChatSearchProjectionInput,
-): ChatSearchProjection;
+function projectChatMessageForSearch(input: ChatSearchProjectionInput): ChatSearchProjection;
 ```
 
 ### User messages

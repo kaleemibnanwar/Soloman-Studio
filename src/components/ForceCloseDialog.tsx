@@ -31,14 +31,12 @@ export function ForceCloseDialog() {
   const { t } = useTranslation(["home", "common"]);
   const setHelpDialog = useSetAtom(helpDialogAtom);
   const [isOpen, setIsOpen] = useState(false);
-  const [performanceData, setPerformanceData] = useState<
-    ForceClosePerformanceData | undefined
-  >(undefined);
-  // The chat that was streaming at crash time (from the crash sentinel). When
-  // present, we offer a one-click upload of that session.
-  const [activeChatId, setActiveChatId] = useState<number | undefined>(
+  const [performanceData, setPerformanceData] = useState<ForceClosePerformanceData | undefined>(
     undefined,
   );
+  // The chat that was streaming at crash time (from the crash sentinel). When
+  // present, we offer a one-click upload of that session.
+  const [activeChatId, setActiveChatId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const unsubscribe = earlyForceCloseEvents.subscribe((data) => {
@@ -91,26 +89,16 @@ export function ForceCloseDialog() {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {/* Process Metrics */}
                     <div className="space-y-2">
-                      <div className="font-medium text-foreground">
-                        {t("home:processMetrics")}
-                      </div>
+                      <div className="font-medium text-foreground">{t("home:processMetrics")}</div>
                       <div className="space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            {t("home:memory")}
-                          </span>
-                          <span className="font-mono">
-                            {performanceData.memoryUsageMB} MB
-                          </span>
+                          <span className="text-muted-foreground">{t("home:memory")}</span>
+                          <span className="font-mono">{performanceData.memoryUsageMB} MB</span>
                         </div>
                         {performanceData.cpuUsagePercent !== undefined && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              {t("home:cpu")}
-                            </span>
-                            <span className="font-mono">
-                              {performanceData.cpuUsagePercent}%
-                            </span>
+                            <span className="text-muted-foreground">{t("home:cpu")}</span>
+                            <span className="font-mono">{performanceData.cpuUsagePercent}%</span>
                           </div>
                         )}
                       </div>
@@ -120,17 +108,12 @@ export function ForceCloseDialog() {
                     {(performanceData.systemMemoryUsageMB !== undefined ||
                       performanceData.systemCpuPercent !== undefined) && (
                       <div className="space-y-2">
-                        <div className="font-medium text-foreground">
-                          {t("home:systemMetrics")}
-                        </div>
+                        <div className="font-medium text-foreground">{t("home:systemMetrics")}</div>
                         <div className="space-y-1">
                           {performanceData.systemMemoryUsageMB !== undefined &&
-                            performanceData.systemMemoryTotalMB !==
-                              undefined && (
+                            performanceData.systemMemoryTotalMB !== undefined && (
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">
-                                  {t("home:memory")}
-                                </span>
+                                <span className="text-muted-foreground">{t("home:memory")}</span>
                                 <span className="font-mono">
                                   {performanceData.systemMemoryUsageMB} /{" "}
                                   {performanceData.systemMemoryTotalMB} MB
@@ -139,12 +122,8 @@ export function ForceCloseDialog() {
                             )}
                           {performanceData.systemCpuPercent !== undefined && (
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                {t("home:cpu")}
-                              </span>
-                              <span className="font-mono">
-                                {performanceData.systemCpuPercent}%
-                              </span>
+                              <span className="text-muted-foreground">{t("home:cpu")}</span>
+                              <span className="font-mono">{performanceData.systemCpuPercent}%</span>
                             </div>
                           )}
                         </div>
@@ -163,9 +142,7 @@ export function ForceCloseDialog() {
               {t("home:help.uploadChatSession")}
             </Button>
           )}
-          <AlertDialogAction onClick={onClose}>
-            {t("common:ok")}
-          </AlertDialogAction>
+          <AlertDialogAction onClick={onClose}>{t("common:ok")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

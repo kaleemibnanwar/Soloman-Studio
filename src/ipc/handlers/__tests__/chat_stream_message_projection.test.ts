@@ -12,10 +12,7 @@ vi.mock("electron", async () => {
 });
 
 import { messages } from "@/db/schema";
-import {
-  setupChatFlowHarness,
-  type ChatFlowHarness,
-} from "@/testing/chat_flow_harness";
+import { setupChatFlowHarness, type ChatFlowHarness } from "@/testing/chat_flow_harness";
 
 describe("legacy chat stream message projection", () => {
   let harness: ChatFlowHarness;
@@ -40,9 +37,7 @@ describe("legacy chat stream message projection", () => {
       },
     });
 
-    const { eventsFor } = await harness.streamChat(
-      "tc=octopus-studio-write-angle",
-    );
+    const { eventsFor } = await harness.streamChat("tc=octopus-studio-write-angle");
     const fullChunks = eventsFor("chat:response:chunk")
       .map((event) => event.payload)
       .filter(
@@ -57,9 +52,7 @@ describe("legacy chat stream message projection", () => {
     expect(fullChunks).toHaveLength(2);
     for (const chunk of fullChunks) {
       expect(JSON.stringify(chunk)).not.toContain(mainOnlyPayload);
-      expect(
-        chunk.messages.every((message) => !("aiMessagesJson" in message)),
-      ).toBe(true);
+      expect(chunk.messages.every((message) => !("aiMessagesJson" in message))).toBe(true);
     }
   }, 30_000);
 });

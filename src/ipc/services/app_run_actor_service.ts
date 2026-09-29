@@ -10,19 +10,13 @@ import { MainAppRuntimeOutput } from "./main_app_runtime_output";
 import type { AppRunInvocationRef } from "@/app_run/state";
 import { appRuntimeService } from "./app_runtime_service";
 import { remoteMachineHost } from "./distributed_machine_actor_host";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import {
   finalizeOperationAdmission,
   type OperationTicket,
 } from "@/distributed_machines/operation_registry";
 import type { RequestId } from "@/distributed_machines/request_identity";
-import {
-  appRunOperationRegistry,
-  type AppRunOperationOutcome,
-} from "@/app_run/operations";
+import { appRunOperationRegistry, type AppRunOperationOutcome } from "@/app_run/operations";
 import type { FenceHandle } from "@/distributed_machines/keyed_admission_gate";
 import type { ActorMachineFenceHandle } from "@/distributed_machines/actor_host";
 import { uuidIdSource, type IdSource } from "@/state_machines/clock";
@@ -64,10 +58,7 @@ export class AppRunActorService {
     return this.actor(appId).getSnapshot().runState;
   }
 
-  outputFor(
-    appId: number,
-    invocationRef: AppRunInvocationRef,
-  ): MainAppRuntimeOutput {
+  outputFor(appId: number, invocationRef: AppRunInvocationRef): MainAppRuntimeOutput {
     const key = appRunKey(appId);
     const actor = this.host.peek(appRunDefinition.id, key);
     if (!actor) {
@@ -90,8 +81,7 @@ export class AppRunActorService {
     const state = this.actor(appId).getSnapshot().runState;
     const invocationRef =
       state.type === "idle"
-        ? (fallbackInvocationRef ??
-          appRuntimeService.createExternalLifecycleRef(appId))
+        ? (fallbackInvocationRef ?? appRuntimeService.createExternalLifecycleRef(appId))
         : state.invocationRef;
     return this.outputFor(appId, invocationRef);
   }
@@ -166,9 +156,7 @@ export class AppRunActorService {
     await requireExistingApp(options.appId);
     const actor = this.actor(options.appId);
     const sink = actor.captureSink({ revisionPolicy: "allow-advance" });
-    const invocationRef = appRuntimeService.createExternalLifecycleRef(
-      options.appId,
-    );
+    const invocationRef = appRuntimeService.createExternalLifecycleRef(options.appId);
     await actor.trackCaptured(sink, () =>
       appRuntimeService.executeExternalLifecycle({
         ...options,
@@ -237,8 +225,7 @@ export class AppRunActorService {
 
   beginReset(): ActorMachineFenceHandle {
     return this.host.beginMachineFence(appRunDefinition, {
-      allowDuringDrain: (event) =>
-        isAppRunDrainEvent(event as AppRunActorEvent),
+      allowDuringDrain: (event) => isAppRunDrainEvent(event as AppRunActorEvent),
     });
   }
 
@@ -248,18 +235,11 @@ export class AppRunActorService {
       appRunDefinition.id,
       String(appId),
     );
-    await this.host.disposeKey(
-      appRunDefinition.id,
-      appRunKey(appId),
-      "entity-deletion",
-    );
+    await this.host.disposeKey(appRunDefinition.id, appRunKey(appId), "entity-deletion");
   }
 
   disposeAllApps(): Promise<void> {
-    appRunOperationRegistry.settleMachine(
-      "main-remote-machine-host",
-      appRunDefinition.id,
-    );
+    appRunOperationRegistry.settleMachine("main-remote-machine-host", appRunDefinition.id);
     return this.host.disposeMachine(appRunDefinition.id);
   }
 
@@ -324,11 +304,7 @@ export class AppRunActorService {
       const dispatch = await admission.enqueueResult.settled;
       if (dispatch.kind === "failed") {
         void ticket.settled.catch(() => undefined);
-        appRunOperationRegistry.rollbackAdmission(
-          requestId,
-          invocationRef,
-          dispatch.error,
-        );
+        appRunOperationRegistry.rollbackAdmission(requestId, invocationRef, dispatch.error);
         throw dispatch.error;
       }
       if (dispatch.kind === "disposed" || dispatch.kind === "ignored") {

@@ -83,6 +83,7 @@ export const CreateAppResultSchema = z.object({
  */
 export const DeleteAppParamsSchema = z.object({
   appId: z.number(),
+  keepProjectFiles: z.boolean().optional(),
 });
 
 /**
@@ -90,6 +91,7 @@ export const DeleteAppParamsSchema = z.object({
  */
 export const DeleteAppsParamsSchema = z.object({
   appIds: z.array(z.number()).min(1),
+  keepProjectFiles: z.boolean().optional(),
 });
 
 /**
@@ -166,12 +168,11 @@ export const AppIdParamsSchema = z.object({
   appId: z.number(),
 });
 
-export const AppRunInvocationRefSchema: z.ZodType<AppRunInvocationRef> =
-  z.object({
-    kind: z.literal("app-run"),
-    entityKey: z.number(),
-    operationId: z.string().min(1),
-  });
+export const AppRunInvocationRefSchema: z.ZodType<AppRunInvocationRef> = z.object({
+  kind: z.literal("app-run"),
+  entityKey: z.number(),
+  operationId: z.string().min(1),
+});
 
 export const RunAppParamsSchema = AppIdParamsSchema.extend({
   invocationRef: AppRunInvocationRefSchema.optional(),
@@ -201,12 +202,7 @@ export const CloudSandboxStatusSchema = z.object({
   lastActiveAt: z.string(),
   lastSuccessfulSyncAt: z.string().nullable(),
   expiresAt: z.string(),
-  billingState: z.enum([
-    "active",
-    "charging",
-    "terminated",
-    "billing_unavailable",
-  ]),
+  billingState: z.enum(["active", "charging", "terminated", "billing_unavailable"]),
   billingStartedAt: z.string(),
   billingLockedAt: z.string().nullable(),
   lastChargedAt: z.string().nullable(),
@@ -214,12 +210,7 @@ export const CloudSandboxStatusSchema = z.object({
   billingSlicesCharged: z.number().int().nonnegative(),
   creditsCharged: z.number().nonnegative(),
   terminationReason: z
-    .enum([
-      "manual",
-      "idle_timeout",
-      "credits_exhausted",
-      "billing_unavailable",
-    ])
+    .enum(["manual", "idle_timeout", "credits_exhausted", "billing_unavailable"])
     .nullable(),
   lastErrorCode: z.string().nullable(),
   lastErrorMessage: z.string().nullable(),
@@ -260,6 +251,40 @@ export const EditAppFileResultSchema = z.object({
 export const ReadAppFileParamsSchema = z.object({
   appId: z.number(),
   filePath: z.string(),
+});
+
+/**
+ * Schema for opening an app file with the OS default application.
+ */
+export const OpenAppFileParamsSchema = z.object({
+  appId: z.number(),
+  filePath: z.string(),
+});
+
+/**
+ * A single entry in an archive (zip/tar) preview.
+ */
+export const ArchiveEntrySchema = z.object({
+  name: z.string(),
+  isDirectory: z.boolean(),
+  uncompressedSize: z.number(),
+  compressedSize: z.number(),
+});
+
+/**
+ * Schema for listing archive entries.
+ */
+export const ListArchiveEntriesParamsSchema = z.object({
+  appId: z.number(),
+  filePath: z.string(),
+});
+
+/**
+ * Schema for the archive entries result.
+ */
+export const ListArchiveEntriesResultSchema = z.object({
+  entries: z.array(ArchiveEntrySchema),
+  truncated: z.boolean(),
 });
 
 /**
@@ -436,11 +461,7 @@ export const appContracts = {
     channel: "delete-app",
     input: DeleteAppParamsSchema,
     output: z.void(),
-    invalidates: () => [
-      { family: "apps" },
-      { family: "chats" },
-      { family: "app-collections" },
-    ],
+    invalidates: () => [{ family: "apps" }, { family: "chats" }, { family: "app-collections" }],
     originHandles: () => [{ family: "apps" }, { family: "app-collections" }],
   }),
 
@@ -450,11 +471,7 @@ export const appContracts = {
     output: DeleteAppsResultSchema,
     invalidates: (_input, output) =>
       output.results.some((result) => result.success)
-        ? [
-            { family: "apps" },
-            { family: "chats" },
-            { family: "app-collections" },
-          ]
+        ? [{ family: "apps" }, { family: "chats" }, { family: "app-collections" }]
         : [],
     originHandles: (_input, output) =>
       output.results.some((result) => result.success)
@@ -473,10 +490,7 @@ export const appContracts = {
     channel: "rename-app",
     input: RenameAppParamsSchema,
     output: RenameAppResultSchema,
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
     originHandles: () => [{ family: "apps" }],
   }),
 
@@ -529,6 +543,18 @@ export const appContracts = {
     output: z.string(),
   }),
 
+  listArchiveEntries: defineContract({
+    channel: "list-archive-entries",
+    input: ListArchiveEntriesParamsSchema,
+    output: ListArchiveEntriesResultSchema,
+  }),
+
+  openFileExternally: defineContract({
+    channel: "open-app-file-externally",
+    input: OpenAppFileParamsSchema,
+    output: z.void(),
+  }),
+
   respondToAppInput: defineContract({
     channel: "respond-to-app-input",
     input: RespondToAppInputParamsSchema,
@@ -545,10 +571,7 @@ export const appContracts = {
     channel: "change-app-location",
     input: ChangeAppLocationParamsSchema,
     output: ChangeAppLocationResultSchema,
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
   }),
 
   renameBranch: defineContract({
@@ -565,10 +588,7 @@ export const appContracts = {
     channel: "add-to-favorite",
     input: AppIdParamsSchema,
     output: AddToFavoriteResultSchema,
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
     originHandles: () => [{ family: "apps" }],
   }),
 
@@ -576,10 +596,7 @@ export const appContracts = {
     channel: "set-testing-enabled",
     input: SetTestingEnabledParamsSchema,
     output: SetTestingEnabledResultSchema,
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
     originHandles: (input) => [{ family: "app", appId: input.appId }],
   }),
 
@@ -641,9 +658,7 @@ export const appContracts = {
     channel: "app:list-screenshots",
     input: z.object({ appId: z.number() }),
     output: z.object({
-      screenshots: z.array(
-        z.object({ commitHash: z.string(), url: z.string() }),
-      ),
+      screenshots: z.array(z.object({ commitHash: z.string(), url: z.string() })),
     }),
   }),
 
@@ -683,20 +698,12 @@ export type CreateAppParams = z.infer<typeof CreateAppParamsSchema>;
 export type CreateAppResult = z.infer<typeof CreateAppResultSchema>;
 export type CopyAppParams = z.infer<typeof CopyAppParamsSchema>;
 export type EditAppFileReturnType = z.infer<typeof EditAppFileResultSchema>;
-export type RespondToAppInputParams = z.infer<
-  typeof RespondToAppInputParamsSchema
->;
+export type RespondToAppInputParams = z.infer<typeof RespondToAppInputParamsSchema>;
 export type AppFileSearchResult = z.infer<typeof AppFileSearchResultSchema>;
-export type ChangeAppLocationParams = z.infer<
-  typeof ChangeAppLocationParamsSchema
->;
-export type ChangeAppLocationResult = z.infer<
-  typeof ChangeAppLocationResultSchema
->;
+export type ChangeAppLocationParams = z.infer<typeof ChangeAppLocationParamsSchema>;
+export type ChangeAppLocationResult = z.infer<typeof ChangeAppLocationResultSchema>;
 export type ListAppsResponse = z.infer<typeof ListAppsResponseSchema>;
 export type RenameBranchParams = z.infer<typeof RenameBranchParamsSchema>;
 export type AppSearchResult = z.infer<typeof AppSearchResultSchema>;
-export type UpdateAppCommandsParams = z.infer<
-  typeof UpdateAppCommandsParamsSchema
->;
+export type UpdateAppCommandsParams = z.infer<typeof UpdateAppCommandsParamsSchema>;
 export type CloudSandboxStatus = z.infer<typeof CloudSandboxStatusSchema>;

@@ -1,4 +1,4 @@
-import { commonSecurityRules } from './common';
+import { commonSecurityRules } from "./common";
 
 export const navigatorSystemPromptTemplate = `
 <system_instructions>

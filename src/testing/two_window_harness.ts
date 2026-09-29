@@ -1,17 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { QueryKey } from "@tanstack/react-query";
-import {
-  adoptThenRemoveTab,
-  type TransferableTab,
-} from "@/window_infrastructure/tab_transfer";
+import { adoptThenRemoveTab, type TransferableTab } from "@/window_infrastructure/tab_transfer";
 import {
   QueryInvalidationBus,
   queryInvalidationChannel,
 } from "@/window_infrastructure/main/query_invalidation_bus";
-import {
-  WindowRegistry,
-  type WindowEndpoint,
-} from "@/window_infrastructure/main/window_registry";
+import { WindowRegistry, type WindowEndpoint } from "@/window_infrastructure/main/window_registry";
 import { HighVolumeWindowInterests } from "@/window_infrastructure/main/high_volume_interests";
 import { RendererQueryInvalidationConsumer } from "@/window_infrastructure/renderer_query_invalidation";
 import { EntityDisposalRegistry } from "@/state_machines/entity_disposal";
@@ -47,9 +41,7 @@ class HarnessEndpoint implements WindowEndpoint {
   private destroyed = false;
   private readonly destroyedListeners = new Set<() => void>();
   readonly received: Array<{ channel: string; payload: unknown }> = [];
-  private readonly receiveListeners = new Set<
-    (channel: string, payload: unknown) => void
-  >();
+  private readonly receiveListeners = new Set<(channel: string, payload: unknown) => void>();
 
   constructor(
     readonly id: number,
@@ -90,39 +82,27 @@ export class TwoWindowHarness {
   readonly registry = new WindowRegistry();
   readonly invalidations = new QueryInvalidationBus(this.registry, 0, 8);
   readonly mainEntityDisposals = new EntityDisposalRegistry();
-  readonly entityDisposals = new EntityDisposalBus(
-    this.registry,
-    this.mainEntityDisposals,
-  );
-  readonly interests = new HighVolumeWindowInterests<string>(
-    this.registry,
-    "test:high-volume",
-    0,
-  );
+  readonly entityDisposals = new EntityDisposalBus(this.registry, this.mainEntityDisposals);
+  readonly interests = new HighVolumeWindowInterests<string>(this.registry, "test:high-volume", 0);
   private readonly windows = new Map<WindowSessionId, HarnessWindow>();
   private nextWebContentsId = 1;
 
-  createTrustedRendererWindow(
-    sessionId = randomUUID() as WindowSessionId,
-  ): WindowSessionId {
+  createTrustedRendererWindow(sessionId = randomUUID() as WindowSessionId): WindowSessionId {
     const invalidatedKeys: QueryKey[] = [];
     const entityDisposals = new EntityDisposalRegistry();
     let consumer!: RendererQueryInvalidationConsumer;
-    const endpoint = new HarnessEndpoint(
-      this.nextWebContentsId++,
-      (channel, payload) => {
-        if (channel === queryInvalidationChannel()) {
-          consumer.consume(payload as QueryInvalidationBatch);
-        } else if (channel === entityDisposalChannel()) {
-          const event = payload as EntityDisposalEvent;
-          if (event.entity.kind === "app") {
-            entityDisposals.disposeForApp(event.entity.id);
-          } else {
-            entityDisposals.disposeForChat(event.entity.id);
-          }
+    const endpoint = new HarnessEndpoint(this.nextWebContentsId++, (channel, payload) => {
+      if (channel === queryInvalidationChannel()) {
+        consumer.consume(payload as QueryInvalidationBatch);
+      } else if (channel === entityDisposalChannel()) {
+        const event = payload as EntityDisposalEvent;
+        if (event.entity.kind === "app") {
+          entityDisposals.disposeForApp(event.entity.id);
+        } else {
+          entityDisposals.disposeForChat(event.entity.id);
         }
-      },
-    );
+      }
+    });
     const mainFrame = {
       url: "http://localhost:5173/chat",
       processId: endpoint.id,
@@ -151,10 +131,7 @@ export class TwoWindowHarness {
   }
 
   createPair(): readonly [WindowSessionId, WindowSessionId] {
-    return [
-      this.createTrustedRendererWindow(),
-      this.createTrustedRendererWindow(),
-    ];
+    return [this.createTrustedRendererWindow(), this.createTrustedRendererWindow()];
   }
 
   reload(sessionId: WindowSessionId): void {
@@ -211,11 +188,7 @@ export class TwoWindowHarness {
     interest: WindowInterest,
     bootstrap: () => readonly string[] | Promise<readonly string[]>,
   ): Promise<void> {
-    await this.interests.attach(
-      this.webContentsId(sessionId),
-      interest,
-      bootstrap,
-    );
+    await this.interests.attach(this.webContentsId(sessionId), interest, bootstrap);
   }
 
   received(sessionId: WindowSessionId, channel: string): readonly unknown[] {
@@ -228,10 +201,7 @@ export class TwoWindowHarness {
     return this.interests.inspect(this.webContentsId(sessionId));
   }
 
-  setVisibleEntities(
-    sessionId: WindowSessionId,
-    entities: readonly VisibleEntity[],
-  ): void {
+  setVisibleEntities(sessionId: WindowSessionId, entities: readonly VisibleEntity[]): void {
     this.registry.setVisibleEntities(sessionId, entities);
   }
 
@@ -271,18 +241,10 @@ export class TwoWindowHarness {
   ) {
     this.requireWindow(tab.ownerWindowSessionId);
     this.requireWindow(destinationWindowSessionId);
-    return adoptThenRemoveTab(
-      tab,
-      destinationWindowSessionId,
-      adopt,
-      removeSource,
-    );
+    return adoptThenRemoveTab(tab, destinationWindowSessionId, adopt, removeSource);
   }
 
-  tab(
-    ownerWindowSessionId: WindowSessionId,
-    state: string,
-  ): TransferableTab<string> {
+  tab(ownerWindowSessionId: WindowSessionId, state: string): TransferableTab<string> {
     return {
       tabInstanceId: randomUUID() as TabInstanceId,
       ownerWindowSessionId,

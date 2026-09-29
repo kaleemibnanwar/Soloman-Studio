@@ -8,10 +8,7 @@ import { queryKeys } from "@/lib/queryKeys";
  *
  * Commit content is immutable, so results are cached indefinitely.
  */
-export function useVersionChanges(
-  appId: number | null,
-  versionId: string | null,
-) {
+export function useVersionChanges(appId: number | null, versionId: string | null) {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.versions.changes({ appId, versionId }),
     queryFn: async () => {

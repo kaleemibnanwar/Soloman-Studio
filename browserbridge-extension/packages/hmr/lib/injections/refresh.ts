@@ -1,4 +1,4 @@
-import initClient from '../initializers/initClient';
+import initClient from "../initializers/initClient";
 
 function addRefresh() {
   let pendingReload = false;
@@ -27,7 +27,7 @@ function addRefresh() {
     !document.hidden && pendingReload && reload();
   }
 
-  document.addEventListener('visibilitychange', reloadWhenTabIsVisible);
+  document.addEventListener("visibilitychange", reloadWhenTabIsVisible);
 }
 
 addRefresh();

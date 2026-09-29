@@ -2,14 +2,11 @@ import path from "path";
 import fs from "fs-extra";
 import { app } from "electron";
 import { copyDirectoryRecursive } from "../utils/file_utils";
-import { gitClone, getCurrentCommitHash } from "../utils/git_utils";
+import { gitClone, getCurrentCommitHash } from "../git/git_utils";
 import { readSettings } from "@/main/settings";
 import { getTemplateOrThrow } from "../utils/template_utils";
 import log from "electron-log";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("createFromTemplate");
 
@@ -47,10 +44,7 @@ export async function createFromTemplate({
 async function cloneRepo(repoUrl: string): Promise<string> {
   const url = new URL(repoUrl);
   if (url.protocol !== "https:") {
-    throw new OctopusStudioError(
-      "Repository URL must use HTTPS.",
-      OctopusStudioErrorKind.External,
-    );
+    throw new OctopusStudioError("Repository URL must use HTTPS.", OctopusStudioErrorKind.External);
   }
   if (url.hostname !== "github.com") {
     throw new OctopusStudioError(
@@ -63,9 +57,7 @@ async function cloneRepo(repoUrl: string): Promise<string> {
   const pathParts = url.pathname.split("/").filter((part) => part.length > 0);
 
   if (pathParts.length !== 2) {
-    throw new Error(
-      "Invalid repository URL format. Expected 'https://github.com/org/repo'",
-    );
+    throw new Error("Invalid repository URL format. Expected 'https://github.com/org/repo'");
   }
 
   const orgName = pathParts[0];
@@ -73,18 +65,11 @@ async function cloneRepo(repoUrl: string): Promise<string> {
 
   if (!orgName || !repoName) {
     // This case should ideally be caught by pathParts.length !== 2
-    throw new Error(
-      "Failed to parse organization or repository name from URL.",
-    );
+    throw new Error("Failed to parse organization or repository name from URL.");
   }
   logger.info(`Parsed org: ${orgName}, repo: ${repoName} from ${repoUrl}`);
 
-  const cachePath = path.join(
-    app.getPath("userData"),
-    "templates",
-    orgName,
-    repoName,
-  );
+  const cachePath = path.join(app.getPath("userData"), "templates", orgName, repoName);
 
   if (fs.existsSync(cachePath)) {
     try {
@@ -175,10 +160,7 @@ async function copyRepoToApp(repoCachePath: string, appPath: string) {
     });
     logger.info("Finished copying repository contents.");
   } catch (err) {
-    logger.error(
-      `Error copying repository from ${repoCachePath} to ${appPath}: `,
-      err,
-    );
+    logger.error(`Error copying repository from ${repoCachePath} to ${appPath}: `, err);
     throw err; // Re-throw the error after logging
   }
 }

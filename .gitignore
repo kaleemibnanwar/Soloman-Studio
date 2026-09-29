@@ -28,3 +28,9 @@ userData/
 
 # Logs
 *.log
+
+# Build artifacts and binaries
+release/
+out/
+dist/
+

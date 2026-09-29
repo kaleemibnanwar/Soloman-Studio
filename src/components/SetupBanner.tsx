@@ -32,8 +32,7 @@ export function SetupBanner({
   const posthog = usePostHog();
   const navigate = useNavigate();
   const { hasArmedPayload: hasPendingPrompt } = useFirstPromptSaga();
-  const { isAnyProviderSetup, isLoading: loading } =
-    useLanguageModelProviders();
+  const { isAnyProviderSetup, isLoading: loading } = useLanguageModelProviders();
 
   const settingsScrollAndNavigateTo = useScrollAndNavigateTo("/settings", {
     behavior: "smooth",
@@ -104,10 +103,7 @@ export function SetupBanner({
           </h2>
           {variant === "dialog" && hasPendingPrompt && !hasProviderSetup ? (
             <p className="mt-2 flex items-center justify-center gap-1.5 text-sm leading-6 text-muted-foreground">
-              <CircleCheck
-                aria-hidden="true"
-                className="size-4 shrink-0 text-primary"
-              />
+              <CircleCheck aria-hidden="true" className="size-4 shrink-0 text-primary" />
               Your prompt is saved — it'll send as soon as you're connected.
             </p>
           ) : (
@@ -143,9 +139,7 @@ export function SetupBanner({
         </button>
 
         <div className="mt-4">
-          <p className="mb-2 text-sm font-medium text-muted-foreground">
-            Or use your own API key
-          </p>
+          <p className="mb-2 text-sm font-medium text-muted-foreground">Or use your own API key</p>
           <div className="grid gap-2 sm:grid-cols-3">
             <ProviderOptionButton
               label="Google"
@@ -157,13 +151,7 @@ export function SetupBanner({
               label="OpenRouter"
               chip="Free"
               onClick={handleOpenRouterSetupClick}
-              icon={
-                <img
-                  src={openrouterLogo}
-                  alt="OpenRouter"
-                  className="size-4 dark:invert"
-                />
-              }
+              icon={<img src={openrouterLogo} alt="OpenRouter" className="size-4 dark:invert" />}
             />
             <ProviderOptionButton
               label="Other providers"
@@ -215,11 +203,7 @@ function ProviderOptionButton({
   );
 }
 
-export const OpenRouterSetupBanner = ({
-  className,
-}: {
-  className?: string;
-}) => {
+export const OpenRouterSetupBanner = ({ className }: { className?: string }) => {
   const posthog = usePostHog();
   const navigate = useNavigate();
   return (
@@ -234,13 +218,7 @@ export const OpenRouterSetupBanner = ({
         });
       }}
       tabIndex={0}
-      leadingIcon={
-        <img
-          src={openrouterLogo}
-          alt="OpenRouter"
-          className="w-4 h-4 dark:invert"
-        />
-      }
+      leadingIcon={<img src={openrouterLogo} alt="OpenRouter" className="w-4 h-4 dark:invert" />}
       title="Setup OpenRouter API Key"
       chip={
         <>

@@ -66,11 +66,7 @@ export function useSupabase(options: UseSupabaseOptions = {}) {
   });
 
   // Mutation: Delete a Supabase organization connection
-  const deleteOrganizationMutation = useMutation<
-    void,
-    Error,
-    DeleteSupabaseOrganizationParams
-  >({
+  const deleteOrganizationMutation = useMutation<void, Error, DeleteSupabaseOrganizationParams>({
     mutationFn: async (params) => {
       await ipc.supabase.deleteOrganization(params);
     },
@@ -84,11 +80,7 @@ export function useSupabase(options: UseSupabaseOptions = {}) {
   });
 
   // Mutation: Associate a Supabase project with an app
-  const setAppProjectMutation = useMutation<
-    void,
-    Error,
-    SetSupabaseAppProjectParams
-  >({
+  const setAppProjectMutation = useMutation<void, Error, SetSupabaseAppProjectParams>({
     mutationFn: async (params) => {
       await ipc.supabase.setAppProject(params);
     },
@@ -126,17 +118,10 @@ export function useSupabase(options: UseSupabaseOptions = {}) {
   lastLogTimestampRef.current = lastLogTimestamp;
 
   const edgeLogsActiveAppId =
-    edgeLogsAppId !== null && edgeLogsAppId !== undefined
-      ? edgeLogsAppId
-      : null;
+    edgeLogsAppId !== null && edgeLogsAppId !== undefined ? edgeLogsAppId : null;
   const edgeLogsEnabled =
-    !!edgeLogsProjectId &&
-    edgeLogsActiveAppId !== null &&
-    edgeLogsActiveAppId === selectedAppId;
-  const edgeLogsQuery = useQuery<
-    { appId: number; logs: ConsoleEntry[] },
-    Error
-  >({
+    !!edgeLogsProjectId && edgeLogsActiveAppId !== null && edgeLogsActiveAppId === selectedAppId;
+  const edgeLogsQuery = useQuery<{ appId: number; logs: ConsoleEntry[] }, Error>({
     queryKey: edgeLogsEnabled
       ? queryKeys.supabase.edgeLogs({
           projectId: edgeLogsProjectId!,
@@ -193,9 +178,7 @@ export function useSupabase(options: UseSupabaseOptions = {}) {
     // data on remount with a non-zero dataUpdatedAt, which would otherwise
     // re-fire this effect and duplicate entries that were appended during
     // the original fetch. Also defends against StrictMode double-invoke.
-    const newLogs = lastTimestamp
-      ? logs.filter((log) => log.timestamp > lastTimestamp)
-      : logs;
+    const newLogs = lastTimestamp ? logs.filter((log) => log.timestamp > lastTimestamp) : logs;
     if (newLogs.length === 0) return;
 
     newLogs.forEach((log) => {

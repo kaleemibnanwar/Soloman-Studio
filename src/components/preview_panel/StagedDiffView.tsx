@@ -4,10 +4,7 @@ import { cn } from "@/lib/utils";
 import { stagedDiffFileAtom } from "@/atoms/viewAtoms";
 import { useUncommittedFiles } from "@/hooks/useUncommittedFiles";
 import { useUncommittedFileDiff } from "@/hooks/useUncommittedFileDiff";
-import {
-  getStatusIcon,
-  LineStats,
-} from "@/components/chat/uncommittedFileStatus";
+import { getStatusIcon, LineStats } from "@/components/chat/uncommittedFileStatus";
 import { FileDiffEditor } from "./FileDiffEditor";
 import { getDisplayedStagedDiffPath } from "./diffSelection";
 
@@ -27,12 +24,8 @@ export function StagedDiffView({ appId }: StagedDiffViewProps) {
   // Derive the displayed file from the user's selection, falling back to the
   // first staged file so a valid selection shows even if the clicked file was
   // just committed away.
-  const displayedPath = getDisplayedStagedDiffPath(
-    uncommittedFiles,
-    selectedPath,
-  );
-  const selected =
-    uncommittedFiles.find((file) => file.path === displayedPath) ?? null;
+  const displayedPath = getDisplayedStagedDiffPath(uncommittedFiles, selectedPath);
+  const selected = uncommittedFiles.find((file) => file.path === displayedPath) ?? null;
 
   const {
     diff,
@@ -100,9 +93,7 @@ export function StagedDiffView({ appId }: StagedDiffViewProps) {
           // Show an error instead of a perpetual "loading" state so the user can
           // pick another file or retry.
           <div className="flex h-full items-center justify-center text-gray-500">
-            {diffError
-              ? t("preview.failedToLoadChanges")
-              : t("preview.noChangesToDisplay")}
+            {diffError ? t("preview.failedToLoadChanges") : t("preview.noChangesToDisplay")}
           </div>
         )}
       </div>

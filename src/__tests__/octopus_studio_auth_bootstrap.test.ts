@@ -71,9 +71,7 @@ function setup({
       currentPathname = new URL(target, location.href).pathname;
     }),
   };
-  const fetchMock = vi.fn(
-    fetchImpl ?? (async () => ({ ok: true, json: async () => ({}) })),
-  );
+  const fetchMock = vi.fn(fetchImpl ?? (async () => ({ ok: true, json: async () => ({}) })));
 
   const win: any = {
     parent,
@@ -132,11 +130,7 @@ function setup({
      * that's what tells this document's marker apart from one an earlier,
      * abandoned attempt left behind.
      */
-    sendLogin: (
-      auth: Record<string, unknown>,
-      nonce = "attempt-1",
-      token = authBootstrapToken,
-    ) =>
+    sendLogin: (auth: Record<string, unknown>, nonce = "attempt-1", token = authBootstrapToken) =>
       messageHandler?.({
         source: parent,
         data: { type: "octopus-studio-auth-login", auth, nonce, token },
@@ -188,9 +182,7 @@ describe("octopus-studio auth bootstrap", () => {
     );
     const stored = h.localStorage.getItem("sb-ref123-auth-token");
     expect(stored).toContain("access_token");
-    const marker = JSON.parse(
-      h.sessionStorage.getItem("__octopus_studio_auth_pending__")!,
-    );
+    const marker = JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!);
     expect(marker).toMatchObject({
       mode: "supabase-password",
       ref: "ref123",
@@ -218,9 +210,7 @@ describe("octopus-studio auth bootstrap", () => {
 
   it("announces bootstrap-ready on a fresh (pre-login) load", () => {
     const h = setup();
-    expect(
-      h.posts.some((p) => p.type === "octopus-studio-auth-bootstrap-ready"),
-    ).toBe(true);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-bootstrap-ready")).toBe(true);
   });
 
   it("ignores login messages from a framing parent without the proxy capability", () => {
@@ -231,9 +221,7 @@ describe("octopus-studio auth bootstrap", () => {
     expect(h.fetchMock).not.toHaveBeenCalled();
     expect(h.replace).not.toHaveBeenCalled();
     expect(h.localStorage.getItem("sb-ref123-auth-token")).toBeNull();
-    expect(
-      h.sessionStorage.getItem("__octopus_studio_auth_pending__"),
-    ).toBeNull();
+    expect(h.sessionStorage.getItem("__octopus_studio_auth_pending__")).toBeNull();
   });
 
   it("reports failure (and does not navigate) when sign-in fails", async () => {
@@ -247,11 +235,9 @@ describe("octopus-studio auth bootstrap", () => {
     });
 
     await vi.waitFor(() =>
-      expect(
-        h.posts.some(
-          (p) => p.type === "octopus-studio-auth-ready" && p.ok === false,
-        ),
-      ).toBe(true),
+      expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === false)).toBe(
+        true,
+      ),
     );
     expect(h.replace).not.toHaveBeenCalled();
   });
@@ -280,19 +266,13 @@ describe("octopus-studio auth bootstrap", () => {
     h.sendLogin(SUPABASE_AUTH, "attempt-1");
 
     await vi.waitFor(() => expect(h.pendingTimerCount()).toBe(1));
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === true,
-      ),
-    ).toBe(false);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === true)).toBe(
+      false,
+    );
 
     h.flushTimers();
 
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === true,
-      ),
-    ).toBe(true);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === true)).toBe(true);
     expect(h.posts).toContainEqual(
       expect.objectContaining({
         type: "replaceState",
@@ -311,9 +291,7 @@ describe("octopus-studio auth bootstrap", () => {
       }),
     );
     // The pending marker is consumed so a later reload doesn't re-verify.
-    expect(
-      h.sessionStorage.getItem("__octopus_studio_auth_pending__"),
-    ).toBeNull();
+    expect(h.sessionStorage.getItem("__octopus_studio_auth_pending__")).toBeNull();
   });
 
   // Newer supabase-js re-saves the session under a `base64-` encoding once its
@@ -339,11 +317,7 @@ describe("octopus-studio auth bootstrap", () => {
 
     await vi.waitFor(() => expect(h.pendingTimerCount()).toBe(1));
     h.flushTimers();
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === true,
-      ),
-    ).toBe(true);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === true)).toBe(true);
   });
 
   // The seeded write always succeeds; only Supabase can say whether the app's
@@ -367,15 +341,11 @@ describe("octopus-studio auth bootstrap", () => {
     h.sendLogin(SUPABASE_AUTH, "attempt-1");
 
     await vi.waitFor(() =>
-      expect(
-        h.posts.some(
-          (p) => p.type === "octopus-studio-auth-ready" && p.ok === false,
-        ),
-      ).toBe(true),
+      expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === false)).toBe(
+        true,
+      ),
     );
-    expect(
-      h.sessionStorage.getItem("__octopus_studio_auth_pending__"),
-    ).toBeNull();
+    expect(h.sessionStorage.getItem("__octopus_studio_auth_pending__")).toBeNull();
   });
 
   it("verifies a pending Neon session via get-session", async () => {
@@ -391,11 +361,7 @@ describe("octopus-studio auth bootstrap", () => {
 
     await vi.waitFor(() => expect(h.pendingTimerCount()).toBe(1));
     h.flushTimers();
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === true,
-      ),
-    ).toBe(true);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === true)).toBe(true);
     expect(h.fetchMock).toHaveBeenCalledWith(
       "/api/auth/get-session",
       expect.objectContaining({ credentials: "include" }),
@@ -426,14 +392,10 @@ describe("octopus-studio auth bootstrap", () => {
     h.flushTimers();
 
     expect(h.replace).toHaveBeenCalledWith("/");
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === true,
-      ),
-    ).toBe(false);
-    expect(
-      JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!),
-    ).toMatchObject({
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === true)).toBe(
+      false,
+    );
+    expect(JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!)).toMatchObject({
       mode: "supabase-password",
       ref: "ref123",
       homeRedirects: 1,
@@ -479,9 +441,7 @@ describe("octopus-studio auth bootstrap", () => {
       type: "replaceState",
       payload: { newUrl: "http://localhost:42100/dashboard" },
     });
-    expect(
-      h.sessionStorage.getItem("__octopus_studio_auth_pending__"),
-    ).toBeNull();
+    expect(h.sessionStorage.getItem("__octopus_studio_auth_pending__")).toBeNull();
   });
 
   it("gives up when the app never comes to rest after sign-in", async () => {
@@ -504,9 +464,9 @@ describe("octopus-studio auth bootstrap", () => {
     }
 
     expect(h.replace).toHaveBeenCalledWith("/");
-    expect(
-      JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!),
-    ).toMatchObject({ homeRedirects: 1 });
+    expect(JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!)).toMatchObject({
+      homeRedirects: 1,
+    });
   });
 
   it("signs in fresh when the marker belongs to an abandoned attempt", async () => {
@@ -533,15 +493,14 @@ describe("octopus-studio auth bootstrap", () => {
       "/api/auth/sign-in/email",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === false,
-      ),
-    ).toBe(false);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === false)).toBe(
+      false,
+    );
     // The abandoned marker was replaced by this attempt's own.
-    expect(
-      JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!),
-    ).toMatchObject({ mode: "neon-better-auth", nonce: "attempt-1" });
+    expect(JSON.parse(h.sessionStorage.getItem("__octopus_studio_auth_pending__")!)).toMatchObject({
+      mode: "neon-better-auth",
+      nonce: "attempt-1",
+    });
   });
 
   it("ignores a stale pending marker left by a previous session", () => {
@@ -556,17 +515,11 @@ describe("octopus-studio auth bootstrap", () => {
 
     // Rather than verifying the (non-existent) session and reporting failure,
     // the bootstrap drops the marker and announces readiness for a fresh login.
-    expect(
-      h.posts.some((p) => p.type === "octopus-studio-auth-bootstrap-ready"),
-    ).toBe(true);
-    expect(
-      h.posts.some(
-        (p) => p.type === "octopus-studio-auth-ready" && p.ok === false,
-      ),
-    ).toBe(false);
-    expect(
-      h.sessionStorage.getItem("__octopus_studio_auth_pending__"),
-    ).toBeNull();
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-bootstrap-ready")).toBe(true);
+    expect(h.posts.some((p) => p.type === "octopus-studio-auth-ready" && p.ok === false)).toBe(
+      false,
+    );
+    expect(h.sessionStorage.getItem("__octopus_studio_auth_pending__")).toBeNull();
     expect(h.fetchMock).not.toHaveBeenCalled();
   });
 });

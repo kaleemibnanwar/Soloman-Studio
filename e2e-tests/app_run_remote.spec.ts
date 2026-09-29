@@ -11,10 +11,7 @@ const address = (appId: number) => ({
 async function subscribe(page: import("@playwright/test").Page, appId: number) {
   return page.evaluate(
     async (input) =>
-      (window as any).electron.ipcRenderer.invoke(
-        "distributed-machine:subscribe",
-        input,
-      ),
+      (window as any).electron.ipcRenderer.invoke("distributed-machine:subscribe", input),
     address(appId),
   );
 }
@@ -42,10 +39,7 @@ testSkipIfWindows(
       expect(snapshot.encodedState.phase).toBe("ready");
     }).toPass({ timeout: Timeout.EXTRA_LONG });
     const appPath = await electronApp.evaluate(({ app }) => app.getAppPath());
-    const rendererIndexPath = path.join(
-      appPath,
-      ".vite/renderer/main_window/index.html",
-    );
+    const rendererIndexPath = path.join(appPath, ".vite/renderer/main_window/index.html");
     const preloadPath = path.join(appPath, ".vite/build/preload.js");
     const secondWindow = electronApp.waitForEvent("window");
     const secondWindowId = await electronApp.evaluate(

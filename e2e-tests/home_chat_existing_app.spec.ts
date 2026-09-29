@@ -26,9 +26,7 @@ test("home chat - start new chat in existing app", async ({ po }) => {
   await firstApp.click();
 
   // Dialog should close after selection
-  await po.page
-    .getByTestId("app-search-dialog")
-    .waitFor({ state: "hidden", timeout: 5000 });
+  await po.page.getByTestId("app-search-dialog").waitFor({ state: "hidden", timeout: 5000 });
 
   // The app selector should now show the selected app name
   await expect(appSelector).toContainText(appName!.trim());
@@ -72,9 +70,7 @@ test("home chat - clear selected app", async ({ po }) => {
     .getByTestId(/^app-search-item-/)
     .first()
     .click();
-  await po.page
-    .getByTestId("app-search-dialog")
-    .waitFor({ state: "hidden", timeout: 5000 });
+  await po.page.getByTestId("app-search-dialog").waitFor({ state: "hidden", timeout: 5000 });
 
   // The app selector should show the selected app
   await expect(appSelector).not.toContainText("No app selected");

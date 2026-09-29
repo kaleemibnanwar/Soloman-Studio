@@ -28,11 +28,7 @@ interface ReferencedAppsBarProps {
  * detach them. Without this the stickiness would be invisible — the user could
  * not tell which apps the agent can still read, or stop it reading one.
  */
-export function ReferencedAppsBar({
-  chatId,
-  isEnabled,
-  isStreaming,
-}: ReferencedAppsBarProps) {
+export function ReferencedAppsBar({ chatId, isEnabled, isStreaming }: ReferencedAppsBarProps) {
   const { t } = useTranslation("chat");
   const queryClient = useQueryClient();
 
@@ -65,15 +61,10 @@ export function ReferencedAppsBar({
   }
 
   return (
-    <div
-      className="px-2 pt-2 flex flex-wrap items-center gap-1"
-      data-testid="referenced-apps-bar"
-    >
+    <div className="px-2 pt-2 flex flex-wrap items-center gap-1" data-testid="referenced-apps-bar">
       <Tooltip>
         <TooltipTrigger
-          render={
-            <span className="flex items-center gap-1 text-xs text-muted-foreground" />
-          }
+          render={<span className="flex items-center gap-1 text-xs text-muted-foreground" />}
         >
           <Boxes size={12} />
           <span>{t("referencedApps.label")}</span>
@@ -93,10 +84,7 @@ export function ReferencedAppsBar({
             <TooltipTrigger
               render={
                 <span
-                  className={cn(
-                    "flex items-center",
-                    isDetachDisabled && "cursor-not-allowed",
-                  )}
+                  className={cn("flex items-center", isDetachDisabled && "cursor-not-allowed")}
                 />
               }
             >

@@ -10,9 +10,7 @@ interface StreamingLoadingAnimationProps {
  * - "initial" variant: Shown when waiting for the first response (no content yet)
  * - "streaming" variant: Shown inline when content is being streamed
  */
-export function StreamingLoadingAnimation({
-  variant,
-}: StreamingLoadingAnimationProps) {
+export function StreamingLoadingAnimation({ variant }: StreamingLoadingAnimationProps) {
   if (variant === "initial") {
     return <InitialLoadingAnimation />;
   }
@@ -72,9 +70,7 @@ const SCRAMBLE_SPEED_MS = 30;
 const REVEAL_STAGGER_MS = 60;
 
 function useRotatingVerb(verbs: string[]) {
-  const [index, setIndex] = useState(() =>
-    Math.floor(Math.random() * verbs.length),
-  );
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * verbs.length));
   useEffect(() => {
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % verbs.length);
@@ -133,10 +129,7 @@ export function useScrambleText(text: string) {
 function ScrambleVerb({ verb }: { verb: string }) {
   const display = useScrambleText(verb);
   return (
-    <span
-      className="inline-block text-sm text-muted-foreground"
-      aria-hidden="true"
-    >
+    <span className="inline-block text-sm text-muted-foreground" aria-hidden="true">
       {display}
     </span>
   );
@@ -191,8 +184,7 @@ function InitialLoadingAnimation() {
             <motion.div
               className="h-2 w-2 rounded-full bg-primary"
               style={{
-                boxShadow:
-                  "0 0 6px color-mix(in srgb, var(--primary) 30%, transparent)",
+                boxShadow: "0 0 6px color-mix(in srgb, var(--primary) 30%, transparent)",
               }}
               animate={{
                 scale: [1, 1.3, 0.9, 1],
@@ -238,13 +230,7 @@ function StreamingIndicator() {
             key={i}
             className="w-[3px] rounded-full bg-primary"
             animate={{
-              height: [
-                bar.minH,
-                bar.maxH,
-                bar.minH * 1.3,
-                bar.maxH * 0.8,
-                bar.minH,
-              ],
+              height: [bar.minH, bar.maxH, bar.minH * 1.3, bar.maxH * 0.8, bar.minH],
               opacity: [0.45, 1, 0.6, 0.9, 0.45],
             }}
             transition={{

@@ -3,12 +3,9 @@ import { app } from "electron";
 import { writeSettings } from "../main/settings";
 import os from "node:os";
 import v8 from "node:v8";
-import {
-  isExtractCodebaseActive,
-  type ActivitySnapshot,
-} from "./memory_activity";
+import { isExtractCodebaseActive, type ActivitySnapshot } from "./memory_activity";
 import { getActiveStreamCount } from "../ipc/handlers/chat_stream_handlers";
-import { runningApps } from "../ipc/utils/process_manager";
+import { runningApps } from "../ipc/process/process_manager";
 import { typescriptUtilityProcessScheduler } from "../ipc/processors/typescript_utility_process_scheduler";
 
 const logger = log.scope("performance-monitor");
@@ -116,9 +113,7 @@ function getCpuUsagePercent(): number | null {
 
   // Calculate CPU time used (user + system) in microseconds
   const cpuTimeMicros =
-    currentCpuUsage.user -
-    lastCpuUsage.user +
-    (currentCpuUsage.system - lastCpuUsage.system);
+    currentCpuUsage.user - lastCpuUsage.user + (currentCpuUsage.system - lastCpuUsage.system);
 
   // CPU percentage = (CPU time / wall clock time) * 100
   // This gives percentage across all cores (can exceed 100% on multi-core systems)
@@ -225,10 +220,7 @@ function capturePerformanceMetrics() {
     }
 
     const { heapUsedMB, heapLimitMB } = getHeapStatsMB();
-    const heapPct =
-      heapLimitMB > 0
-        ? Math.round((heapUsedMB / heapLimitMB) * 10000) / 100
-        : 0;
+    const heapPct = heapLimitMB > 0 ? Math.round((heapUsedMB / heapLimitMB) * 10000) / 100 : 0;
     const kernelPeakRssMB = getKernelPeakRssMB();
     const activity = snapshotActivity();
 

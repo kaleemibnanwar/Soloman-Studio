@@ -11,10 +11,7 @@ import { versionPreviewPersistence } from "./version_preview_persistence";
 import { versionPreviewPresentationService } from "./version_preview_presentation_service";
 import { versionPreviewWindowInterestService } from "./version_preview_window_interest";
 
-type Host = Pick<
-  typeof remoteMachineHost,
-  "ensure" | "peek" | "disposeKey" | "disposeMachine"
->;
+type Host = Pick<typeof remoteMachineHost, "ensure" | "peek" | "disposeKey" | "disposeMachine">;
 
 export class VersionPreviewActorService {
   constructor(
@@ -51,18 +48,12 @@ export class VersionPreviewActorService {
       // Create/hydrate the actor before relinquishing the final interest.
       // Subscription admission can otherwise create persisted preview state
       // immediately after a release that observed no actor.
-      actor = this.host.ensure(
-        versionPreviewDefinition,
-        versionPreviewKey(appId),
-      );
+      actor = this.host.ensure(versionPreviewDefinition, versionPreviewKey(appId));
       // Reserve routing before relinquishing the final interest. A capacity
       // rejection must leave the pane's ownership intact so the user can retry.
       this.presentation.recordInitiator(operationId, windowSessionId);
     }
-    if (
-      this.windowInterests.release(appId, webContentsId) !==
-      "last-owner-released"
-    ) {
+    if (this.windowInterests.release(appId, webContentsId) !== "last-owner-released") {
       return false;
     }
     const state = actor?.getSnapshot().state;
@@ -138,15 +129,11 @@ export class VersionPreviewActorService {
   }
 
   private actor(appId: number) {
-    return this.host.peek(
-      versionPreviewDefinition.id,
-      versionPreviewKey(appId),
-    ) as
+    return this.host.peek(versionPreviewDefinition.id, versionPreviewKey(appId)) as
       | HostedActorRef<
           VersionPreviewActorState,
           VersionPreviewWireEvent,
-          | import("@/version_preview/transition").PreviewIgnoreReason
-          | "stale-operation"
+          import("@/version_preview/transition").PreviewIgnoreReason | "stale-operation"
         >
       | undefined;
   }

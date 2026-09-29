@@ -78,20 +78,13 @@ const FORCED_SMART_EXCLUDE_PATHS = ["a.ts", "exclude/exclude.tsx"];
 
 async function readDump(po: PageObject, dumpIndex = -1): Promise<DumpJson> {
   await po.chatActions.waitForChatCompletion();
-  await expect(po.page.getByTestId("messages-list")).toContainText(
-    "[[octopusStudio-dump-path=",
-  );
+  await expect(po.page.getByTestId("messages-list")).toContainText("[[octopusStudio-dump-path=");
 
-  const messagesListText = await po.page
-    .getByTestId("messages-list")
-    .textContent();
+  const messagesListText = await po.page.getByTestId("messages-list").textContent();
   const dumpPathMatches = [
-    ...(messagesListText?.matchAll(
-      /\[\[octopusStudio-dump-path=([^\]]+)\]\]/g,
-    ) ?? []),
+    ...(messagesListText?.matchAll(/\[\[octopusStudio-dump-path=([^\]]+)\]\]/g) ?? []),
   ];
-  const selectedIndex =
-    dumpIndex < 0 ? dumpPathMatches.length + dumpIndex : dumpIndex;
+  const selectedIndex = dumpIndex < 0 ? dumpPathMatches.length + dumpIndex : dumpIndex;
   const dumpMatch = dumpPathMatches[selectedIndex];
 
   expect(dumpMatch?.[1]).toBeTruthy();
@@ -108,8 +101,7 @@ function getMessageText(content: DumpMessage["content"]): string {
 }
 
 function getIncludedFiles(dump: DumpJson): DumpFileReference[] {
-  const versionedFiles =
-    dump.body.octopus_studio_options?.versioned_files?.fileReferences;
+  const versionedFiles = dump.body.octopus_studio_options?.versioned_files?.fileReferences;
   if (versionedFiles?.length) {
     return versionedFiles;
   }
@@ -121,11 +113,9 @@ function getIncludedFiles(dump: DumpJson): DumpFileReference[] {
 
   const messages = dump.body.input ?? dump.body.messages ?? [];
   const messagePaths = messages.flatMap(({ content }) =>
-    [
-      ...getMessageText(content).matchAll(
-        /<octopusStudio-file path="([^"]+)">/g,
-      ),
-    ].map((match) => match[1]),
+    [...getMessageText(content).matchAll(/<octopusStudio-file path="([^"]+)">/g)].map(
+      (match) => match[1],
+    ),
   );
 
   return [...new Set(messagePaths)].map((path) => ({ path, force: false }));
@@ -166,11 +156,7 @@ async function expectAbsentPaths(po: PageObject, paths: string[]) {
   }
 }
 
-async function addPathAndWait(
-  po: PageObject,
-  addPath: () => Promise<void>,
-  path: string,
-) {
+async function addPathAndWait(po: PageObject, addPath: () => Promise<void>, path: string) {
   await addPath();
   await expectVisiblePaths(po, [path]);
 }
@@ -198,27 +184,13 @@ test("manage context - default", async ({ po }) => {
   await expect(po.page.getByRole("dialog")).toContainText(
     "OctopusStudio will use the entire codebase as context.",
   );
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("DELETETHIS"),
-    "DELETETHIS",
-  );
+  await addPathAndWait(po, () => dialog.addManualContextFile("DELETETHIS"), "DELETETHIS");
   await removeFirstPath(po, "manual-context-files-remove-button");
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("src/**/*.ts"),
-    "src/**/*.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("src/sub/**"),
-    "src/sub/**",
-  );
+  await addPathAndWait(po, () => dialog.addManualContextFile("src/**/*.ts"), "src/**/*.ts");
+  await addPathAndWait(po, () => dialog.addManualContextFile("src/sub/**"), "src/sub/**");
   await expectVisiblePaths(po, ["src/**/*.ts", "src/sub/**"]);
   await expectAbsentPaths(po, ["DELETETHIS"]);
-  await expect(
-    po.page.getByTestId("manual-context-files-remove-button"),
-  ).toHaveCount(2);
+  await expect(po.page.getByTestId("manual-context-files-remove-button")).toHaveCount(2);
   await dialog.close();
 
   await po.sendPrompt("[dump]");
@@ -238,53 +210,22 @@ test("manage context - smart context", async ({ po }) => {
   await expect(po.page.getByRole("dialog")).toContainText(
     "OctopusStudio will use Smart Context to automatically find the most relevant files to use as context.",
   );
-  await expect(po.page.getByRole("dialog")).toContainText(
-    "Smart Context Auto-includes",
-  );
+  await expect(po.page.getByRole("dialog")).toContainText("Smart Context Auto-includes");
 
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("src/**/*.ts"),
-    "src/**/*.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("src/sub/**"),
-    "src/sub/**",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addAutoIncludeContextFile("a.ts"),
-    "a.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addAutoIncludeContextFile("manual/**"),
-    "manual/**",
-  );
-  await expectVisiblePaths(po, [
-    "src/**/*.ts",
-    "src/sub/**",
-    "a.ts",
-    "manual/**",
-  ]);
-  await expect(
-    po.page.getByTestId("manual-context-files-remove-button"),
-  ).toHaveCount(2);
-  await expect(
-    po.page.getByTestId("auto-include-context-files-remove-button"),
-  ).toHaveCount(2);
+  await addPathAndWait(po, () => dialog.addManualContextFile("src/**/*.ts"), "src/**/*.ts");
+  await addPathAndWait(po, () => dialog.addManualContextFile("src/sub/**"), "src/sub/**");
+  await addPathAndWait(po, () => dialog.addAutoIncludeContextFile("a.ts"), "a.ts");
+  await addPathAndWait(po, () => dialog.addAutoIncludeContextFile("manual/**"), "manual/**");
+  await expectVisiblePaths(po, ["src/**/*.ts", "src/sub/**", "a.ts", "manual/**"]);
+  await expect(po.page.getByTestId("manual-context-files-remove-button")).toHaveCount(2);
+  await expect(po.page.getByTestId("auto-include-context-files-remove-button")).toHaveCount(2);
   await dialog.close();
 
   await po.sendPrompt("[dump]");
 
   const smartContextDump = await readDump(po);
-  expect(
-    smartContextDump.body.octopus_studio_options?.enable_smart_files_context,
-  ).toBe(true);
-  expect(smartContextDump.body.octopus_studio_options?.smart_context_mode).toBe(
-    "deep",
-  );
+  expect(smartContextDump.body.octopus_studio_options?.enable_smart_files_context).toBe(true);
+  expect(smartContextDump.body.octopus_studio_options?.smart_context_mode).toBe("deep");
   expectIncludedPaths(smartContextDump, MANUAL_AND_SMART_CONTEXT_PATHS);
   expectForcedPaths(smartContextDump, FORCED_AUTO_INCLUDE_PATHS);
 
@@ -292,37 +233,25 @@ test("manage context - smart context", async ({ po }) => {
   // the auto-includes.
   const proModesDialog = await po.openProModesDialog();
   await proModesDialog.setSmartContextMode("off");
-  await expect
-    .poll(() => po.settings.recordSettings().enableProSmartFilesContextMode)
-    .toBe(false);
+  await expect.poll(() => po.settings.recordSettings().enableProSmartFilesContextMode).toBe(false);
   await proModesDialog.close();
 
   await po.sendPrompt("[dump]");
   const balancedDump = await readDump(po);
-  expect(
-    balancedDump.body.octopus_studio_options?.enable_smart_files_context,
-  ).toBe(false);
-  expect(balancedDump.body.octopus_studio_options?.smart_context_mode).toBe(
-    "balanced",
-  );
+  expect(balancedDump.body.octopus_studio_options?.enable_smart_files_context).toBe(false);
+  expect(balancedDump.body.octopus_studio_options?.smart_context_mode).toBe("balanced");
   expectIncludedPaths(balancedDump, MANUAL_SRC_CONTEXT_PATHS);
 
   // Removing manual context files will result in all files being included.
   dialog = await po.openContextFilesPicker();
   await removeAllPaths(po, "manual-context-files-remove-button");
-  await expect(
-    po.page.getByTestId("manual-context-files-remove-button"),
-  ).toHaveCount(0);
-  await expect(
-    po.page.getByTestId("auto-include-context-files-remove-button"),
-  ).toHaveCount(0);
+  await expect(po.page.getByTestId("manual-context-files-remove-button")).toHaveCount(0);
+  await expect(po.page.getByTestId("auto-include-context-files-remove-button")).toHaveCount(0);
   await dialog.close();
 
   await po.sendPrompt("[dump]");
   const fullCodebaseDump = await readDump(po);
-  expect(
-    fullCodebaseDump.body.octopus_studio_options?.enable_smart_files_context,
-  ).toBe(false);
+  expect(fullCodebaseDump.body.octopus_studio_options?.enable_smart_files_context).toBe(false);
   expectIncludedPaths(fullCodebaseDump, FULL_CODEBASE_PATHS);
 });
 
@@ -335,32 +264,18 @@ test("manage context - smart context - auto-includes only", async ({ po }) => {
   await po.importApp("context-manage");
 
   const dialog = await po.openContextFilesPicker();
-  await expect(po.page.getByRole("dialog")).toContainText(
-    "Smart Context Auto-includes",
-  );
+  await expect(po.page.getByRole("dialog")).toContainText("Smart Context Auto-includes");
 
-  await addPathAndWait(
-    po,
-    () => dialog.addAutoIncludeContextFile("a.ts"),
-    "a.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addAutoIncludeContextFile("manual/**"),
-    "manual/**",
-  );
+  await addPathAndWait(po, () => dialog.addAutoIncludeContextFile("a.ts"), "a.ts");
+  await addPathAndWait(po, () => dialog.addAutoIncludeContextFile("manual/**"), "manual/**");
   await expectVisiblePaths(po, ["a.ts", "manual/**"]);
-  await expect(
-    po.page.getByTestId("auto-include-context-files-remove-button"),
-  ).toHaveCount(2);
+  await expect(po.page.getByTestId("auto-include-context-files-remove-button")).toHaveCount(2);
   await dialog.close();
 
   await po.sendPrompt("[dump]");
 
   const dump = await readDump(po);
-  expect(dump.body.octopus_studio_options?.enable_smart_files_context).toBe(
-    true,
-  );
+  expect(dump.body.octopus_studio_options?.enable_smart_files_context).toBe(true);
   expect(dump.body.octopus_studio_options?.smart_context_mode).toBe("deep");
   expectForcedPaths(dump, FORCED_AUTO_INCLUDE_PATHS);
 });
@@ -373,16 +288,8 @@ test("manage context - exclude paths", async ({ po }) => {
   await expect(po.page.getByRole("dialog")).toContainText("Exclude Paths");
 
   // Add some include paths first
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("src/**/*.ts"),
-    "src/**/*.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("manual/**"),
-    "manual/**",
-  );
+  await addPathAndWait(po, () => dialog.addManualContextFile("src/**/*.ts"), "src/**/*.ts");
+  await addPathAndWait(po, () => dialog.addManualContextFile("manual/**"), "manual/**");
 
   // Add exclude paths
   await addPathAndWait(
@@ -401,12 +308,8 @@ test("manage context - exclude paths", async ({ po }) => {
     "src/components/**",
     "manual/exclude/**",
   ]);
-  await expect(
-    po.page.getByTestId("manual-context-files-remove-button"),
-  ).toHaveCount(2);
-  await expect(
-    po.page.getByTestId("exclude-context-files-remove-button"),
-  ).toHaveCount(2);
+  await expect(po.page.getByTestId("manual-context-files-remove-button")).toHaveCount(2);
+  await expect(po.page.getByTestId("exclude-context-files-remove-button")).toHaveCount(2);
   await dialog.close();
 
   await po.sendPrompt("[dump]");
@@ -422,11 +325,7 @@ test("manage context - exclude paths", async ({ po }) => {
   // Test that exclude paths take precedence over include paths
   const dialog2 = await po.openContextFilesPicker();
   await removeFirstPath(po, "exclude-context-files-remove-button"); // Remove src/components/**
-  await addPathAndWait(
-    po,
-    () => dialog2.addExcludeContextFile("src/**"),
-    "src/**",
-  ); // This should exclude everything from src
+  await addPathAndWait(po, () => dialog2.addExcludeContextFile("src/**"), "src/**"); // This should exclude everything from src
   await expectVisiblePaths(po, ["manual/**", "manual/exclude/**", "src/**"]);
   await expectAbsentPaths(po, ["src/components/**"]);
   await dialog2.close();
@@ -451,28 +350,12 @@ test("manage context - exclude paths with smart context", async ({ po }) => {
   await expect(po.page.getByRole("dialog")).toContainText("Exclude Paths");
 
   // Add manual context files
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("src/**/*.ts"),
-    "src/**/*.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addManualContextFile("manual/**"),
-    "manual/**",
-  );
+  await addPathAndWait(po, () => dialog.addManualContextFile("src/**/*.ts"), "src/**/*.ts");
+  await addPathAndWait(po, () => dialog.addManualContextFile("manual/**"), "manual/**");
 
   // Add smart context auto-includes
-  await addPathAndWait(
-    po,
-    () => dialog.addAutoIncludeContextFile("a.ts"),
-    "a.ts",
-  );
-  await addPathAndWait(
-    po,
-    () => dialog.addAutoIncludeContextFile("exclude/**"),
-    "exclude/**",
-  );
+  await addPathAndWait(po, () => dialog.addAutoIncludeContextFile("a.ts"), "a.ts");
+  await addPathAndWait(po, () => dialog.addAutoIncludeContextFile("exclude/**"), "exclude/**");
 
   // Add exclude paths that should filter out some of the above
   await addPathAndWait(
@@ -499,9 +382,7 @@ test("manage context - exclude paths with smart context", async ({ po }) => {
   const dump = await readDump(po);
   const includedPaths = getIncludedPaths(dump);
 
-  expect(dump.body.octopus_studio_options?.enable_smart_files_context).toBe(
-    true,
-  );
+  expect(dump.body.octopus_studio_options?.enable_smart_files_context).toBe(true);
   expect(includedPaths).toEqual(
     expect.arrayContaining([
       "a.ts",
@@ -514,9 +395,7 @@ test("manage context - exclude paths with smart context", async ({ po }) => {
       "src/very-large-file.ts",
     ]),
   );
-  expect(getForcedPaths(dump)).toEqual(
-    expect.arrayContaining(FORCED_SMART_EXCLUDE_PATHS),
-  );
+  expect(getForcedPaths(dump)).toEqual(expect.arrayContaining(FORCED_SMART_EXCLUDE_PATHS));
   expect(includedPaths).not.toContain("exclude/exclude.ts");
   expect(includedPaths).not.toContain("src/components/ui/helper.ts");
 });

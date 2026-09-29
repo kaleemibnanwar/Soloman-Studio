@@ -26,9 +26,7 @@ export class RateLimitError extends Error {
  * in milliseconds, or undefined if the header is missing or unparseable.
  * Negative dates (in the past) clamp to 0.
  */
-export function parseRetryAfter(
-  headerValue: string | null,
-): number | undefined {
+export function parseRetryAfter(headerValue: string | null): number | undefined {
   if (!headerValue) return undefined;
   const trimmed = headerValue.trim();
   if (/^\d+$/.test(trimmed)) {
@@ -111,9 +109,7 @@ export async function retryWithRateLimit<T>(
 
       // Don't retry if we've exhausted all attempts
       if (attempt === maxRetries) {
-        logger.error(
-          `${context}: Failed after ${maxRetries + 1} attempts due to rate limit`,
-        );
+        logger.error(`${context}: Failed after ${maxRetries + 1} attempts due to rate limit`);
         throw error;
       }
 
@@ -121,8 +117,7 @@ export async function retryWithRateLimit<T>(
 
       // Honor server-supplied Retry-After when present. It can legitimately
       // exceed maxDelay — the server knows best; clamping would just 429 again.
-      const retryAfterMs =
-        error instanceof RateLimitError ? error.retryAfterMs : undefined;
+      const retryAfterMs = error instanceof RateLimitError ? error.retryAfterMs : undefined;
       if (retryAfterMs !== undefined) {
         // Clamp to the 32-bit signed int max (~24.8 days) that setTimeout
         // accepts. In practice Retry-After from Supabase is seconds to
@@ -135,8 +130,7 @@ export async function retryWithRateLimit<T>(
       } else {
         // Exponential backoff with jitter
         const exponentialDelay = baseDelay * Math.pow(2, attempt);
-        const jitter =
-          exponentialDelay * RETRY_CONFIG.jitterFactor * Math.random();
+        const jitter = exponentialDelay * RETRY_CONFIG.jitterFactor * Math.random();
         delay = Math.min(exponentialDelay + jitter, maxDelay);
         logger.warn(
           `${context}: Rate limited (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${Math.round(delay)}ms`,
@@ -170,9 +164,7 @@ export async function fetchWithRetry(
     async () => {
       const response = await fetch(input, init);
       if (response.status === 429) {
-        const retryAfterMs = parseRetryAfter(
-          response.headers.get("Retry-After"),
-        );
+        const retryAfterMs = parseRetryAfter(response.headers.get("Retry-After"));
         throw new RateLimitError(
           `Rate limited (429): ${response.statusText}`,
           response,

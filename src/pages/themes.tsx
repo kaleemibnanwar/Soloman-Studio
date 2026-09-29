@@ -17,10 +17,7 @@ export default function ThemesPage() {
             <Palette className="mr-2 h-7 w-7 sm:h-8 sm:w-8" />
             Themes
           </h1>
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => setCreateDialogOpen(true)}
-          >
+          <Button className="w-full sm:w-auto" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> New Theme
           </Button>
         </div>
@@ -34,18 +31,12 @@ export default function ThemesPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {customThemes.map((theme) => (
-              <LibraryCard
-                key={theme.id}
-                item={{ type: "theme", data: theme }}
-              />
+              <LibraryCard key={theme.id} item={{ type: "theme", data: theme }} />
             ))}
           </div>
         )}
 
-        <CustomThemeDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
+        <CustomThemeDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
       </div>
     </div>
   );

@@ -11,12 +11,9 @@ import { useSettings } from "./useSettings";
 export function useSyncDefaultChatMode(): void {
   const { settings, envVars, updateSettings } = useSettings();
   const { quotaStatus } = useFreeAgentQuota();
-  const { isAnyProviderSetup, isLoading: providersLoading } =
-    useLanguageModelProviders();
+  const { isAnyProviderSetup, isLoading: providersLoading } = useLanguageModelProviders();
   const hasConfiguredProvider = !providersLoading && isAnyProviderSetup();
-  const hasManuallySelectedChatMode = useAtomValue(
-    hasManuallySelectedChatModeAtom,
-  );
+  const hasManuallySelectedChatMode = useAtomValue(hasManuallySelectedChatModeAtom);
   const updateInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -31,11 +28,7 @@ export function useSyncDefaultChatMode(): void {
 
     const isPro = isOctopusStudioProEnabled(settings);
     const hasResolvedQuota = isPro || quotaStatus !== undefined;
-    if (
-      !hasConfiguredProvider ||
-      !hasResolvedQuota ||
-      updateInFlightRef.current
-    ) {
+    if (!hasConfiguredProvider || !hasResolvedQuota || updateInFlightRef.current) {
       return;
     }
 

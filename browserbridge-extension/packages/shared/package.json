@@ -1,14 +1,14 @@
 {
   "name": "@extension/shared",
   "version": "0.1.13",
-  "description": "chrome extension - shared code",
   "private": true,
-  "sideEffects": false,
+  "description": "chrome extension - shared code",
   "files": [
     "dist/**"
   ],
-  "types": "index.ts",
+  "sideEffects": false,
   "main": "./dist/index.js",
+  "types": "index.ts",
   "scripts": {
     "clean:bundle": "rimraf dist",
     "clean:node_modules": "pnpx rimraf node_modules",

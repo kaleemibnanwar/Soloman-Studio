@@ -1,11 +1,5 @@
-import type {
-  ImageGenerationActorState,
-  ImageGenerationJob,
-} from "@/image_generation/state";
-import {
-  windowRegistry,
-  type WindowRegistry,
-} from "@/window_infrastructure/main/window_registry";
+import type { ImageGenerationActorState, ImageGenerationJob } from "@/image_generation/state";
+import { windowRegistry, type WindowRegistry } from "@/window_infrastructure/main/window_registry";
 import type { WindowSessionId } from "@/window_infrastructure/types";
 
 const PRESENTATION_CHANNEL = "image-generation:presentation";
@@ -30,13 +24,10 @@ export class ImageGenerationPresentationService {
     const target = this.routeForJob(entry.job);
     if (target) {
       const pendingCount = state.jobs.filter(
-        ({ job }) =>
-          job.status === "pending" && this.routeForJob(job) === target,
+        ({ job }) => job.status === "pending" && this.routeForJob(job) === target,
       ).length;
       const payload = presentationPayload(entry.job, pendingCount);
-      this.windows
-        .endpointForSession(target)
-        ?.send(PRESENTATION_CHANNEL, payload);
+      this.windows.endpointForSession(target)?.send(PRESENTATION_CHANNEL, payload);
     }
     if (isTerminal(entry.job)) this.initiatorByJobId.delete(jobId);
   }
@@ -51,9 +42,7 @@ export class ImageGenerationPresentationService {
     for (const target of targets) {
       const pendingCount = state.jobs.filter(
         ({ job }) =>
-          job.targetAppId !== appId &&
-          job.status === "pending" &&
-          this.routeForJob(job) === target,
+          job.targetAppId !== appId && job.status === "pending" && this.routeForJob(job) === target,
       ).length;
       this.windows.endpointForSession(target)?.send(PRESENTATION_CHANNEL, {
         type: "progress",
@@ -103,12 +92,7 @@ function presentationPayload(job: ImageGenerationJob, pendingCount: number) {
 }
 
 function isTerminal(job: ImageGenerationJob): boolean {
-  return (
-    job.status === "success" ||
-    job.status === "error" ||
-    job.status === "cancelled"
-  );
+  return job.status === "success" || job.status === "error" || job.status === "cancelled";
 }
 
-export const imageGenerationPresentationService =
-  new ImageGenerationPresentationService();
+export const imageGenerationPresentationService = new ImageGenerationPresentationService();

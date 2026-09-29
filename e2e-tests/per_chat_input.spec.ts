@@ -103,9 +103,7 @@ test("closing a chat tab clears its stored input", async ({ po }) => {
   }).toPass({ timeout: Timeout.MEDIUM });
 });
 
-test("input preserved when switching back and forth multiple times", async ({
-  po,
-}) => {
+test("input preserved when switching back and forth multiple times", async ({ po }) => {
   await po.setUp({ autoApprove: true });
 
   const chatInput = po.chatActions.getChatInput();

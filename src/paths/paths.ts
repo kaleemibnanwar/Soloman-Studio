@@ -18,10 +18,7 @@ let projectsDirCreated = false;
 export function getDefaultOctopusStudioAppsDirectory(): string {
   if (IS_TEST_BUILD) {
     const electron = getElectron();
-    return path.join(
-      electron!.app.getPath("userData"),
-      "octopusstudio-projects/apps",
-    );
+    return path.join(electron!.app.getPath("userData"), "octopusstudio-projects/apps");
   }
   return path.join(os.homedir(), "octopusstudio-projects/apps");
 }
@@ -34,10 +31,7 @@ export function getDefaultOctopusStudioAppsDirectory(): string {
  */
 export function getOctopusStudioProjectsBaseDirectory(): string {
   const base = IS_TEST_BUILD
-    ? path.join(
-        getElectron()!.app.getPath("userData"),
-        "octopusstudio-projects/general",
-      )
+    ? path.join(getElectron()!.app.getPath("userData"), "octopusstudio-projects/general")
     : path.join(os.homedir(), "octopusstudio-projects/general");
   if (!projectsDirCreated) {
     try {
@@ -131,11 +125,7 @@ export function getChatProjectRootPath(
   directory: string | null | undefined,
   projectId: number,
 ): string {
-  if (
-    directory &&
-    fs.existsSync(directory) &&
-    fs.statSync(directory).isDirectory()
-  ) {
+  if (directory && fs.existsSync(directory) && fs.statSync(directory).isDirectory()) {
     return path.resolve(directory);
   }
   return path.join(getUserDataPath(), "chat-projects", String(projectId));

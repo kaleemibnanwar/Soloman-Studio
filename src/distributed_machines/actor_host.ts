@@ -10,11 +10,7 @@ import { TaskScope, collectDisposalError } from "@/state_machines/task_scope";
 import { TimerLeaseScope } from "@/state_machines/timer_lease";
 import { createTraceObserver } from "@/state_machines/trace";
 import type { Clock, ClockHandle, IdSource } from "@/state_machines/clock";
-import type {
-  DispatchContext,
-  IgnoreReason,
-  TransitionObserver,
-} from "@/state_machines/types";
+import type { DispatchContext, IgnoreReason, TransitionObserver } from "@/state_machines/types";
 import type {
   ActorDisposalCause,
   ActorDispatchTicket,
@@ -103,10 +99,7 @@ function settledTicket<State, Reason extends IgnoreReason>(
 }
 
 function composeObservers<State, Event, Command, Reason extends IgnoreReason>(
-  observers: readonly (
-    | TransitionObserver<State, Event, Command, Reason>
-    | undefined
-  )[],
+  observers: readonly (TransitionObserver<State, Event, Command, Reason> | undefined)[],
 ): TransitionObserver<State, Event, Command, Reason> {
   return {
     onTransitionApplied(args) {
@@ -145,9 +138,7 @@ interface EventContinuation {
   observeSchedulerFailure(): void;
 }
 
-function createEventContinuation(
-  generation: KeyedAdmissionGeneration,
-): EventContinuation {
+function createEventContinuation(generation: KeyedAdmissionGeneration): EventContinuation {
   let resolve!: () => void;
   const settled = new Promise<void>((resolvePromise) => {
     resolve = resolvePromise;
@@ -198,11 +189,7 @@ interface HostedActorAdmission<Event> {
   capture(): KeyedAdmissionGeneration;
   isCreateAllowed(generation: KeyedAdmissionGeneration): boolean;
   markUntrackedCommandCompletion(): void;
-  assertDispatch(
-    event: Event,
-    generation: KeyedAdmissionGeneration,
-    captured: boolean,
-  ): void;
+  assertDispatch(event: Event, generation: KeyedAdmissionGeneration, captured: boolean): void;
   track<Result>(
     generation: KeyedAdmissionGeneration,
     start: () => Promise<Result>,
@@ -225,13 +212,7 @@ class HostedActor<
   readonly actorInstanceId: ActorInstanceId;
   private readonly tasks = new TaskScope<PropertyKey>();
   private readonly timers: TimerLeaseScope<PropertyKey, unknown, Event>;
-  private readonly dispatcher: TransactionalDispatcher<
-    State,
-    Event,
-    Command,
-    Reason,
-    Outcome
-  >;
+  private readonly dispatcher: TransactionalDispatcher<State, Event, Command, Reason, Outcome>;
   private revision = 0;
   private transactionSequence = 0;
   private subscriberCount = 0;
@@ -275,9 +256,7 @@ class HostedActor<
     this.lastProjectedSnapshot = initialState;
     this.timers = new TimerLeaseScope(options.clock);
 
-    let dispatcher:
-      | TransactionalDispatcher<State, Event, Command, Reason, Outcome>
-      | undefined;
+    let dispatcher: TransactionalDispatcher<State, Event, Command, Reason, Outcome> | undefined;
     const context: MachineHostContext<Key, State, Event> = {
       key,
       actorInstanceId: this.actorInstanceId,
@@ -293,8 +272,7 @@ class HostedActor<
           this.bufferedEvents.push({ event });
         }
       },
-      captureSink: (options) =>
-        this.captureSinkForGeneration(undefined, options?.revisionPolicy),
+      captureSink: (options) => this.captureSinkForGeneration(undefined, options?.revisionPolicy),
     };
     try {
       const domainObserver = definition.createObserver?.(context);
@@ -316,8 +294,7 @@ class HostedActor<
         },
         scheduler: this.trackScheduler(scheduler),
         runCommand: (command) => {
-          const generation =
-            this.startingCommandGeneration ?? this.admission.capture();
+          const generation = this.startingCommandGeneration ?? this.admission.capture();
           const sink = this.captureSinkForGeneration(
             generation,
             definition.commandSinkRevisionPolicy,
@@ -399,16 +376,8 @@ class HostedActor<
     void this.enqueue(event, dispatchContext);
   };
 
-  enqueue = (
-    event: Event,
-    dispatchContext?: DispatchContext,
-  ): ActorDispatchTicket<State, Reason> =>
-    this.enqueueWithAdmission(
-      event,
-      dispatchContext,
-      this.admission.capture(),
-      false,
-    );
+  enqueue = (event: Event, dispatchContext?: DispatchContext): ActorDispatchTicket<State, Reason> =>
+    this.enqueueWithAdmission(event, dispatchContext, this.admission.capture(), false);
 
   private enqueueWithAdmission(
     event: Event,
@@ -426,9 +395,7 @@ class HostedActor<
         kind: "failed",
         stage: "before-admission",
         error: new ActorAdmissionError(
-          error.code === "stale-generation"
-            ? "stale-admission-generation"
-            : "key-fenced",
+          error.code === "stale-generation" ? "stale-admission-generation" : "key-fenced",
           error.message,
         ),
       });
@@ -464,9 +431,7 @@ class HostedActor<
         kind: "failed",
         stage: "before-admission",
         error: new ActorAdmissionError(
-          error.code === "stale-generation"
-            ? "stale-admission-generation"
-            : "key-fenced",
+          error.code === "stale-generation" ? "stale-admission-generation" : "key-fenced",
           error.message,
         ),
       });
@@ -483,9 +448,7 @@ class HostedActor<
     void ticket.settled
       .then((outcome) => {
         this.removePendingContinuation(continuation);
-        continuation.observeTicket(
-          outcome as DispatchTicketOutcome<unknown, IgnoreReason>,
-        );
+        continuation.observeTicket(outcome as DispatchTicketOutcome<unknown, IgnoreReason>);
         if (outcome.kind !== "disposed") this.reconcileRetention();
       })
       .catch((failure) => this.reportFailure(failure));
@@ -524,8 +487,7 @@ class HostedActor<
         }
         const advanceExpectedActor = (settled?: ActorRuntimeMetadata) => {
           if (
-            settled?.actorInstanceId ===
-              sinkState.expectedActor.actorInstanceId &&
+            settled?.actorInstanceId === sinkState.expectedActor.actorInstanceId &&
             settled.snapshotRevision >= sinkState.expectedActor.snapshotRevision
           ) {
             sinkState.expectedActor = settled;
@@ -547,9 +509,7 @@ class HostedActor<
         // The dispatcher normally settles synchronously. The Promise path also
         // covers a producer emission queued behind hostile synchronous reentry.
         advanceExpectedActor(ticket.getSettledMetadata());
-        void ticket.settled.then(() =>
-          advanceExpectedActor(ticket.getSettledMetadata()),
-        );
+        void ticket.settled.then(() => advanceExpectedActor(ticket.getSettledMetadata()));
       },
     });
   }
@@ -575,14 +535,9 @@ class HostedActor<
     return this.admission.track(sink.admissionGeneration, start);
   }
 
-  private trackScheduler(
-    scheduler: CommandScheduler<Command>,
-  ): CommandScheduler<Command> {
+  private trackScheduler(scheduler: CommandScheduler<Command>): CommandScheduler<Command> {
     return {
-      schedule: (
-        batch: ReservedCommandBatch<Command>,
-        execute: CommandExecutor<Command>,
-      ) => {
+      schedule: (batch: ReservedCommandBatch<Command>, execute: CommandExecutor<Command>) => {
         const continuation = this.currentContinuation;
         if (!continuation) return scheduler.schedule(batch, execute);
         continuation.observeBatch(batch.commands.length);
@@ -630,10 +585,7 @@ class HostedActor<
     expectedActorInstanceId?: ActorInstanceId,
     dispatchContext?: DispatchContext,
   ): ActorDispatchTicket<State, Reason> {
-    if (
-      expectedActorInstanceId !== undefined &&
-      expectedActorInstanceId !== this.actorInstanceId
-    ) {
+    if (expectedActorInstanceId !== undefined && expectedActorInstanceId !== this.actorInstanceId) {
       return settledTicket({
         kind: "failed",
         stage: "before-admission",
@@ -662,20 +614,12 @@ class HostedActor<
         ),
       });
     }
-    return this.enqueueWithAdmission(
-      event,
-      dispatchContext,
-      generation,
-      true,
-      expectedActor,
-    );
+    return this.enqueueWithAdmission(event, dispatchContext, generation, true, expectedActor);
   }
 
   stopAdmission(): void {
     this.dispatcher.stopAdmission();
-    this.cancelRetentionTimers((failure) =>
-      this.admissionStopErrors.push(failure),
-    );
+    this.cancelRetentionTimers((failure) => this.admissionStopErrors.push(failure));
   }
 
   activate(constructionGeneration: KeyedAdmissionGeneration): void {
@@ -689,10 +633,8 @@ class HostedActor<
         const advanceExpectedActor = (settled: ActorRuntimeMetadata) => {
           if (
             buffered.sinkState &&
-            settled.actorInstanceId ===
-              buffered.sinkState.expectedActor.actorInstanceId &&
-            settled.snapshotRevision >=
-              buffered.sinkState.expectedActor.snapshotRevision
+            settled.actorInstanceId === buffered.sinkState.expectedActor.actorInstanceId &&
+            settled.snapshotRevision >= buffered.sinkState.expectedActor.snapshotRevision
           ) {
             buffered.sinkState.expectedActor = settled;
           }
@@ -741,30 +683,17 @@ class HostedActor<
     return this.disposal;
   }
 
-  private async finishDisposal(
-    context: ActorDisposalContext<Key, State>,
-  ): Promise<void> {
+  private async finishDisposal(context: ActorDisposalContext<Key, State>): Promise<void> {
     const errors: unknown[] = [...this.admissionStopErrors];
-    await this.runDisposalStep(errors, () =>
-      this.definition.lifecycle.settleWaiters?.(context),
-    );
-    await this.runDisposalStep(errors, () =>
-      this.definition.lifecycle.projectTerminal?.(context),
-    );
+    await this.runDisposalStep(errors, () => this.definition.lifecycle.settleWaiters?.(context));
+    await this.runDisposalStep(errors, () => this.definition.lifecycle.projectTerminal?.(context));
     collectDisposalError(errors, () => this.timers.dispose());
     collectDisposalError(errors, () => this.tasks.dispose());
-    if (
-      context.cause !== "shutdown" ||
-      this.definition.lifecycle.flushOnShutdown
-    ) {
-      await this.runDisposalStep(errors, () =>
-        this.definition.lifecycle.flush?.(context),
-      );
+    if (context.cause !== "shutdown" || this.definition.lifecycle.flushOnShutdown) {
+      await this.runDisposalStep(errors, () => this.definition.lifecycle.flush?.(context));
     }
     this.dispatcher.dispose();
-    await this.runDisposalStep(errors, () =>
-      this.definition.lifecycle.onDisposed?.(context),
-    );
+    await this.runDisposalStep(errors, () => this.definition.lifecycle.onDisposed?.(context));
     try {
       this.notifyDisposed({
         machineId: this.definition.id,
@@ -777,10 +706,7 @@ class HostedActor<
       errors.push(error);
     }
     if (errors.length > 0) {
-      throw new AggregateError(
-        errors,
-        `Actor ${this.definition.id} disposal failed`,
-      );
+      throw new AggregateError(errors, `Actor ${this.definition.id} disposal failed`);
     }
   }
 
@@ -797,11 +723,7 @@ class HostedActor<
 
   private scheduleIdleEviction(): void {
     const policy = this.definition.lifecycle.idleEviction;
-    if (
-      policy.kind === "retain" ||
-      this.disposing ||
-      this.idleTimer !== undefined
-    ) {
+    if (policy.kind === "retain" || this.disposing || this.idleTimer !== undefined) {
       return;
     }
     const lease: RetentionTimerLease = {};
@@ -812,9 +734,7 @@ class HostedActor<
         if (this.idleTimer !== lease) return;
         this.idleTimer = undefined;
         if (this.subscriberCount === 0) {
-          void this.dispose("idle").catch((failure) =>
-            this.reportFailure(failure),
-          );
+          void this.dispose("idle").catch((failure) => this.reportFailure(failure));
         }
       }, policy.delayMs);
     } catch (failure) {
@@ -849,9 +769,7 @@ class HostedActor<
           this.reportFailure(failure);
           return;
         }
-        void this.dispose("terminal").catch((failure) =>
-          this.reportFailure(failure),
-        );
+        void this.dispose("terminal").catch((failure) => this.reportFailure(failure));
       }, policy.delayMs);
     } catch (failure) {
       if (this.terminalTimer === lease) this.terminalTimer = undefined;
@@ -875,8 +793,7 @@ class HostedActor<
   }
 
   private cancelIdleEviction(
-    onError: (failure: unknown) => void = (failure) =>
-      this.reportFailure(failure),
+    onError: (failure: unknown) => void = (failure) => this.reportFailure(failure),
   ): void {
     if (this.idleTimer === undefined) return;
     const { handle } = this.idleTimer;
@@ -890,16 +807,14 @@ class HostedActor<
   }
 
   private cancelRetentionTimers(
-    onError: (failure: unknown) => void = (failure) =>
-      this.reportFailure(failure),
+    onError: (failure: unknown) => void = (failure) => this.reportFailure(failure),
   ): void {
     this.cancelIdleEviction(onError);
     this.cancelTerminalDisposal(onError);
   }
 
   private cancelTerminalDisposal(
-    onError: (failure: unknown) => void = (failure) =>
-      this.reportFailure(failure),
+    onError: (failure: unknown) => void = (failure) => this.reportFailure(failure),
   ): void {
     if (this.terminalTimer === undefined) return;
     const { handle } = this.terminalTimer;
@@ -939,10 +854,7 @@ class HostedActor<
 
 export class ActorHost {
   private readonly definitions = new Map<string, AnyDefinition>();
-  private readonly admissionGates = new Map<
-    string,
-    KeyedAdmissionGate<unknown, unknown>
-  >();
+  private readonly admissionGates = new Map<string, KeyedAdmissionGate<unknown, unknown>>();
   private readonly untrackedCommandKeys = new Map<string, Set<unknown>>();
   private readonly registeredDefinitions = new WeakSet<object>();
   private readonly constructing = new Map<string, Set<unknown>>();
@@ -950,10 +862,7 @@ export class ActorHost {
     string,
     Map<unknown, ConstructionDisposalBarrier>
   >();
-  private readonly actors = new Map<
-    string,
-    Map<unknown, HostedActor<any, any, any, any, any>>
-  >();
+  private readonly actors = new Map<string, Map<unknown, HostedActor<any, any, any, any, any>>>();
   private readonly machineDisposals = new Map<string, Promise<void>>();
   private readonly machineAdmissionFences = new Map<
     string,
@@ -962,18 +871,13 @@ export class ActorHost {
       phase: "draining" | "sealed" | "committed";
     }
   >();
-  private readonly machineConstructionDisposals = new Map<
-    string,
-    Promise<void>[]
-  >();
+  private readonly machineConstructionDisposals = new Map<string, Promise<void>[]>();
   private readonly hostConstructionDisposals: Promise<void>[] = [];
   private readonly machineLifecycleGenerations = new Map<string, number>();
   private hostLifecycleGeneration = 0;
   private disposed = false;
   private disposal: Promise<void> | undefined;
-  private readonly disposalListeners = new Set<
-    (event: ActorDisposedEvent) => void
-  >();
+  private readonly disposalListeners = new Set<(event: ActorDisposedEvent) => void>();
 
   constructor(private readonly options: ActorHostOptions) {}
 
@@ -1028,10 +932,7 @@ export class ActorHost {
     this.registeredDefinitions.add(definition);
   }
 
-  captureAdmissionGeneration(
-    machineId: string,
-    key: unknown,
-  ): ActorHostAdmissionGeneration {
+  captureAdmissionGeneration(machineId: string, key: unknown): ActorHostAdmissionGeneration {
     if (this.disposed) {
       throw new ActorAdmissionError("host-disposed", "ActorHost is disposed");
     }
@@ -1061,12 +962,8 @@ export class ActorHost {
       !this.machineDisposals.has(machineId) &&
       definition !== undefined &&
       generation.host === this.hostLifecycleGeneration &&
-      generation.machine ===
-        (this.machineLifecycleGenerations.get(machineId) ?? 0) &&
-      this.gate(machineId).isGenerationCurrent(
-        this.admissionKey(definition, key),
-        generation.gate,
-      )
+      generation.machine === (this.machineLifecycleGenerations.get(machineId) ?? 0) &&
+      this.gate(machineId).isGenerationCurrent(this.admissionKey(definition, key), generation.gate)
     );
   }
 
@@ -1194,9 +1091,7 @@ export class ActorHost {
         record.handles.push(
           this.gate(definition.id).beginFence({
             key: admissionKey,
-            allowDuringDrain: options.allowDuringDrain as (
-              event: unknown,
-            ) => boolean,
+            allowDuringDrain: options.allowDuringDrain as (event: unknown) => boolean,
           }),
         );
       }
@@ -1403,10 +1298,7 @@ export class ActorHost {
       return settledTicket({
         kind: "failed",
         stage: "before-admission",
-        error: new ActorAdmissionError(
-          "host-disposed",
-          "ActorHost is disposed",
-        ),
+        error: new ActorAdmissionError("host-disposed", "ActorHost is disposed"),
       });
     }
     if (this.machineDisposals.has(definition.id)) {
@@ -1423,10 +1315,7 @@ export class ActorHost {
       return settledTicket({
         kind: "failed",
         stage: "before-admission",
-        error: new ActorAdmissionError(
-          "actor-disposing",
-          `Actor ${definition.id} is disposing`,
-        ),
+        error: new ActorAdmissionError("actor-disposing", `Actor ${definition.id} is disposing`),
       });
     }
     let actor = this.actors.get(definition.id)?.get(key) as
@@ -1436,10 +1325,7 @@ export class ActorHost {
       return settledTicket({
         kind: "failed",
         stage: "before-admission",
-        error: new ActorAdmissionError(
-          "actor-disposing",
-          `Actor ${definition.id} is disposing`,
-        ),
+        error: new ActorAdmissionError("actor-disposing", `Actor ${definition.id} is disposing`),
       });
     }
     if (this.isConstructing(definition.id, key)) {
@@ -1484,11 +1370,7 @@ export class ActorHost {
         });
       }
     }
-    return actor.enqueueExpected(
-      event,
-      expectedActorInstanceId,
-      dispatchContext,
-    );
+    return actor.enqueueExpected(event, expectedActorInstanceId, dispatchContext);
   }
 
   /**
@@ -1547,12 +1429,7 @@ export class ActorHost {
         ),
       });
     }
-    return actor.enqueueExpectedCaptured(
-      event,
-      generation.gate,
-      expectedActor,
-      dispatchContext,
-    );
+    return actor.enqueueExpectedCaptured(event, generation.gate, expectedActor, dispatchContext);
   }
 
   async disposeKey(
@@ -1592,9 +1469,7 @@ export class ActorHost {
     const constructionDisposals: Promise<void>[] = [];
     let disposal!: Promise<void>;
     disposal = Promise.resolve()
-      .then(() =>
-        this.disposeActors(actors, "machine-disposal", constructionDisposals),
-      )
+      .then(() => this.disposeActors(actors, "machine-disposal", constructionDisposals))
       .finally(() => {
         if (this.machineDisposals.get(machineId) === disposal) {
           this.machineDisposals.delete(machineId);
@@ -1614,9 +1489,7 @@ export class ActorHost {
     this.disposed = true;
     this.hostLifecycleGeneration += 1;
     let actors!: readonly HostedActor<any, any, any, any, any>[];
-    this.disposal = Promise.resolve().then(() =>
-      this.finishHostDisposal(actors),
-    );
+    this.disposal = Promise.resolve().then(() => this.finishHostDisposal(actors));
     actors = [...this.actors.values()].flatMap((keyed) => [...keyed.values()]);
     for (const actor of actors) actor.reserveDisposal("shutdown");
     for (const actor of actors) actor.stopAdmission();
@@ -1627,11 +1500,7 @@ export class ActorHost {
     actors: readonly HostedActor<any, any, any, any, any>[],
   ): Promise<void> {
     try {
-      await this.disposeActors(
-        actors,
-        "shutdown",
-        this.hostConstructionDisposals,
-      );
+      await this.disposeActors(actors, "shutdown", this.hostConstructionDisposals);
     } finally {
       this.definitions.clear();
       this.machineLifecycleGenerations.clear();
@@ -1671,10 +1540,7 @@ export class ActorHost {
       this.throwMachineDisposing(definition.id);
     }
     if (this.machineAdmissionFences.has(definition.id)) {
-      throw new ActorAdmissionError(
-        "key-fenced",
-        `Actor machine ${definition.id} is fenced`,
-      );
+      throw new ActorAdmissionError("key-fenced", `Actor machine ${definition.id} is fenced`);
     }
     if (this.isConstructionDisposing(definition.id, key)) {
       this.throwActorDisposing(definition.id);
@@ -1692,15 +1558,11 @@ export class ActorHost {
       return existing;
     }
     if (this.isConstructing(definition.id, key)) {
-      throw new ActorAdmissionError(
-        "actor-constructing",
-        `Actor ${definition.id} is constructing`,
-      );
+      throw new ActorAdmissionError("actor-constructing", `Actor ${definition.id} is constructing`);
     }
     const admissionGate = this.gate(definition.id);
     const admissionKey = this.admissionKey(definition, key);
-    const constructionGeneration =
-      admissionGate.captureGeneration(admissionKey);
+    const constructionGeneration = admissionGate.captureGeneration(admissionKey);
     try {
       admissionGate.assertCreateAllowed(admissionKey, constructionGeneration);
     } catch (error) {
@@ -1711,11 +1573,7 @@ export class ActorHost {
       settleConstruction = resolve;
     });
     void admissionGate
-      .trackCaptured(
-        admissionKey,
-        constructionGeneration,
-        () => constructionSettled,
-      )
+      .trackCaptured(admissionKey, constructionGeneration, () => constructionSettled)
       .catch((failure) => this.reportFailure(definition.id, key, failure));
     let constructing = this.constructing.get(definition.id);
     if (!constructing) {
@@ -1750,17 +1608,9 @@ export class ActorHost {
           },
           assertDispatch: (event, generation, captured) => {
             if (captured) {
-              admissionGate.assertCapturedDispatchAllowed(
-                admissionKey,
-                event,
-                generation,
-              );
+              admissionGate.assertCapturedDispatchAllowed(admissionKey, event, generation);
             } else {
-              admissionGate.assertDispatchAllowed(
-                admissionKey,
-                event,
-                generation,
-              );
+              admissionGate.assertDispatchAllowed(admissionKey, event, generation);
             }
           },
           track: (generation, start) =>
@@ -1785,17 +1635,9 @@ export class ActorHost {
         },
       );
     } catch (error) {
-      const constructionDisposal = this.constructionDisposals
-        .get(definition.id)
-        ?.get(key);
+      const constructionDisposal = this.constructionDisposals.get(definition.id)?.get(key);
       if (constructionDisposal) {
-        this.settleConstructionDisposal(
-          definition.id,
-          key,
-          constructionDisposal,
-          error,
-          true,
-        );
+        this.settleConstructionDisposal(definition.id, key, constructionDisposal, error, true);
       }
       if (keyed.size === 0) this.actors.delete(definition.id);
       settleConstruction();
@@ -1804,12 +1646,8 @@ export class ActorHost {
       constructing.delete(key);
       if (constructing.size === 0) this.constructing.delete(definition.id);
     }
-    const machineConstructionDisposals = this.machineConstructionDisposals.get(
-      definition.id,
-    );
-    const constructionDisposal = this.constructionDisposals
-      .get(definition.id)
-      ?.get(key);
+    const machineConstructionDisposals = this.machineConstructionDisposals.get(definition.id);
+    const constructionDisposal = this.constructionDisposals.get(definition.id)?.get(key);
     if (this.disposed || machineConstructionDisposals || constructionDisposal) {
       const cleanup = actor.dispose(
         this.disposed
@@ -1822,12 +1660,7 @@ export class ActorHost {
       machineConstructionDisposals?.push(cleanup);
       if (constructionDisposal) {
         void cleanup.then(
-          () =>
-            this.settleConstructionDisposal(
-              definition.id,
-              key,
-              constructionDisposal,
-            ),
+          () => this.settleConstructionDisposal(definition.id, key, constructionDisposal),
           (failure) =>
             this.settleConstructionDisposal(
               definition.id,
@@ -1871,10 +1704,7 @@ export class ActorHost {
       settleConstruction();
       this.throwMachineDisposing(definition.id);
     }
-    if (
-      actor.isDisposing() ||
-      this.isConstructionDisposing(definition.id, key)
-    ) {
+    if (actor.isDisposing() || this.isConstructionDisposing(definition.id, key)) {
       settleConstruction();
       this.throwActorDisposing(definition.id);
     }
@@ -1892,25 +1722,17 @@ export class ActorHost {
   }
 
   private throwActorDisposing(machineId: string): never {
-    throw new ActorAdmissionError(
-      "actor-disposing",
-      `Actor ${machineId} is disposing`,
-    );
+    throw new ActorAdmissionError("actor-disposing", `Actor ${machineId} is disposing`);
   }
 
   private throwMachineDisposing(machineId: string): never {
-    throw new ActorAdmissionError(
-      "machine-disposing",
-      `Machine ${machineId} is disposing`,
-    );
+    throw new ActorAdmissionError("machine-disposing", `Machine ${machineId} is disposing`);
   }
 
   private throwGateAdmission(error: unknown): never {
     if (!(error instanceof KeyedAdmissionGateError)) throw error;
     throw new ActorAdmissionError(
-      error.code === "stale-generation"
-        ? "stale-admission-generation"
-        : "key-fenced",
+      error.code === "stale-generation" ? "stale-admission-generation" : "key-fenced",
       error.message,
     );
   }
@@ -1921,10 +1743,7 @@ export class ActorHost {
     return gate;
   }
 
-  private hasUntrackedCommandCompletion(
-    machineId: string,
-    admissionKey: unknown,
-  ): boolean {
+  private hasUntrackedCommandCompletion(machineId: string, admissionKey: unknown): boolean {
     return this.untrackedCommandKeys.get(machineId)?.has(admissionKey) === true;
   }
 
@@ -1935,8 +1754,7 @@ export class ActorHost {
     },
     key: Key,
   ): unknown {
-    const keyToString =
-      definition.remoteIntent?.keyToString ?? definition.remote?.keyToString;
+    const keyToString = definition.remoteIntent?.keyToString ?? definition.remote?.keyToString;
     return keyToString ? keyToString(key) : key;
   }
 

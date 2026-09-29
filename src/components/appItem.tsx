@@ -20,12 +20,7 @@ type AppItemProps = {
   enableMultiWindow: boolean;
 };
 
-export function AppItem({
-  app,
-  handleAppClick,
-  selectedAppId,
-  enableMultiWindow,
-}: AppItemProps) {
+export function AppItem({ app, handleAppClick, selectedAppId, enableMultiWindow }: AppItemProps) {
   const { t } = useTranslation("home");
   const appButton = (
     <div className="flex w-full items-center" title={app.name}>
@@ -39,12 +34,8 @@ export function AppItem({
         }`}
         data-testid={`app-list-item-${app.name}`}
       >
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-          {app.name}
-        </span>
-        {app.isFavorite && (
-          <Star size={12} className="fill-primary text-primary shrink-0" />
-        )}
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{app.name}</span>
+        {app.isFavorite && <Star size={12} className="fill-primary text-primary shrink-0" />}
         <span className="shrink-0 text-[11px] whitespace-nowrap text-sidebar-foreground/40">
           {formatDistanceToNow(new Date(app.createdAt), {
             addSuffix: true,

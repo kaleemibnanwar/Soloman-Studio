@@ -87,9 +87,7 @@ export function actionToCodeLine(action: RecordedAction): string {
       return `await ${target}.uncheck();`;
     case "select": {
       const arg =
-        action.values.length === 1
-          ? q(action.values[0])
-          : `[${action.values.map(q).join(", ")}]`;
+        action.values.length === 1 ? q(action.values[0]) : `[${action.values.map(q).join(", ")}]`;
       return `await ${target}.selectOption(${arg});`;
     }
   }

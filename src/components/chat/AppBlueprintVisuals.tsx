@@ -1,14 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import {
-  Image,
-  ChevronDown,
-  ChevronUp,
-  Pencil,
-  Check,
-  X,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Image, ChevronDown, ChevronUp, Pencil, Check, X, Plus, Trash2 } from "lucide-react";
 import {
   APP_BLUEPRINT_VISUAL_TYPES,
   type AppBlueprintVisual,
@@ -22,11 +13,7 @@ interface AppBlueprintVisualsProps {
   visuals: AppBlueprintVisual[];
   state?: CustomTagState;
   isApproved?: boolean;
-  onEditVisual?: (
-    visualId: string,
-    field: AppBlueprintVisualEditableField,
-    value: string,
-  ) => void;
+  onEditVisual?: (visualId: string, field: AppBlueprintVisualEditableField, value: string) => void;
   onAddVisual?: (visual: Omit<AppBlueprintVisual, "id">) => void;
   onRemoveVisual?: (visualId: string) => void;
 }
@@ -34,8 +21,7 @@ interface AppBlueprintVisualsProps {
 const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   logo: {
     label: "Logo",
-    color:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+    color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   },
   photo: {
     label: "Photo",
@@ -43,13 +29,11 @@ const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   },
   illustration: {
     label: "Illustration",
-    color:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
   },
   icon: {
     label: "Icon",
-    color:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   },
   background: {
     label: "Background",
@@ -57,8 +41,7 @@ const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   },
   other: {
     label: "Other",
-    color:
-      "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300",
+    color: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300",
   },
 };
 
@@ -67,11 +50,7 @@ interface EditableTextProps {
   visualId: string;
   field: AppBlueprintVisualEditableField;
   canEdit: boolean;
-  onEdit?: (
-    visualId: string,
-    field: AppBlueprintVisualEditableField,
-    value: string,
-  ) => void;
+  onEdit?: (visualId: string, field: AppBlueprintVisualEditableField, value: string) => void;
   multiline?: boolean;
   className?: string;
 }
@@ -200,11 +179,7 @@ const EditableText: React.FC<EditableTextProps> = ({
 const VisualEntry: React.FC<{
   visual: AppBlueprintVisual;
   isApproved?: boolean;
-  onEdit?: (
-    visualId: string,
-    field: AppBlueprintVisualEditableField,
-    value: string,
-  ) => void;
+  onEdit?: (visualId: string, field: AppBlueprintVisualEditableField, value: string) => void;
   onRemove?: (visualId: string) => void;
 }> = ({ visual, isApproved, onEdit, onRemove }) => {
   const [showPrompt, setShowPrompt] = useState(false);

@@ -42,8 +42,7 @@ export function useLegacySupabaseKey({
 export function useSwitchToPublishableKey() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: { appId: number }) =>
-      ipc.supabase.switchAppToPublishableKey(params),
+    mutationFn: (params: { appId: number }) => ipc.supabase.switchAppToPublishableKey(params),
     onSuccess: (_result, { appId }) => {
       // App-scoped prefix: clears the verdict for every project this app has
       // been pointed at, since only the app's own file was rewritten.

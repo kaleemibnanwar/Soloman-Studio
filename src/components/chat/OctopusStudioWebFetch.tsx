@@ -17,10 +17,7 @@ interface OctopusStudioWebFetchProps {
   };
 }
 
-export const OctopusStudioWebFetch: FC<OctopusStudioWebFetchProps> = ({
-  children,
-  node,
-}) => {
+export const OctopusStudioWebFetch: FC<OctopusStudioWebFetchProps> = ({ children, node }) => {
   const state = node?.properties?.state as CustomTagState;
 
   return (
@@ -36,11 +33,7 @@ export const OctopusStudioWebFetch: FC<OctopusStudioWebFetchProps> = ({
           />
         )}
       </OctopusStudioCardHeader>
-      {children && (
-        <div className="px-3 pb-2 text-sm italic text-muted-foreground">
-          {children}
-        </div>
-      )}
+      {children && <div className="px-3 pb-2 text-sm italic text-muted-foreground">{children}</div>}
     </OctopusStudioCard>
   );
 };

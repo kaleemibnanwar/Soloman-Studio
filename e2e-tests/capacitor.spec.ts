@@ -52,9 +52,7 @@ testSkipIfWindows("capacitor upgrade and sync works", async ({ po }) => {
 
   // Helper to wait for sync operation to complete and dismiss error dialog if it appears
   // The sync operation may fail in E2E environment due to missing CocoaPods/Xcode
-  const waitForSyncCompletionAndDismissErrorIfNeeded = async (
-    buttonText: string,
-  ) => {
+  const waitForSyncCompletionAndDismissErrorIfNeeded = async (buttonText: string) => {
     // Wait for either the button to return to idle state OR an error dialog to appear
     const idleButton = po.page.getByRole("button", {
       name: new RegExp(buttonText, "i"),
@@ -74,10 +72,7 @@ testSkipIfWindows("capacitor upgrade and sync works", async ({ po }) => {
     // If error dialog appeared, dismiss it
     if (await errorDialog.isVisible()) {
       // Click the Close button within the dialog
-      await errorDialog
-        .getByRole("button", { name: "Close" })
-        .last()
-        .dispatchEvent("click");
+      await errorDialog.getByRole("button", { name: "Close" }).last().dispatchEvent("click");
       // Wait for dialog to close
       await expect(errorDialog).toBeHidden({ timeout: Timeout.SHORT });
     }
@@ -91,9 +86,9 @@ testSkipIfWindows("capacitor upgrade and sync works", async ({ po }) => {
   await waitForSyncCompletionAndDismissErrorIfNeeded("Sync & Open iOS");
 
   // Verify the button is back to idle state
-  await expect(
-    po.page.getByRole("button", { name: /Sync & Open iOS/i }),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.page.getByRole("button", { name: /Sync & Open iOS/i })).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 
   // Test sync & open Android functionality - the button contains "Sync & Open Android"
   const androidButton = po.page.getByRole("button", {
@@ -105,7 +100,7 @@ testSkipIfWindows("capacitor upgrade and sync works", async ({ po }) => {
   await waitForSyncCompletionAndDismissErrorIfNeeded("Sync & Open Android");
 
   // Verify the button is back to idle state
-  await expect(
-    po.page.getByRole("button", { name: /Sync & Open Android/i }),
-  ).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.page.getByRole("button", { name: /Sync & Open Android/i })).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
 });

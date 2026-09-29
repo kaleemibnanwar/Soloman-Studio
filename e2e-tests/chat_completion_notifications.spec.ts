@@ -10,10 +10,7 @@ import { Timeout } from "./helpers/constants";
 // Type definitions for page objects
 interface ChatActionsPageObject {
   clickNewChat(): Promise<void>;
-  sendPrompt(
-    text: string,
-    options?: { skipWaitForCompletion?: boolean },
-  ): Promise<void>;
+  sendPrompt(text: string, options?: { skipWaitForCompletion?: boolean }): Promise<void>;
   waitForChatCompletion(options?: { timeout?: number }): Promise<void>;
 }
 
@@ -31,10 +28,7 @@ const testWithNotificationsEnabled = testWithConfig({
   },
 });
 
-async function enableNotifications(po: {
-  navigation: any;
-  settings: any;
-}): Promise<void> {
+async function enableNotifications(po: { navigation: any; settings: any }): Promise<void> {
   await po.navigation.goToSettingsTab();
   await po.settings.enableChatEventNotifications();
   await po.navigation.goToChatTab();
@@ -68,10 +62,7 @@ async function triggerDifferentChat(
   return switchToDifferentChat(po, currentChatId);
 }
 
-async function expectNavigatedToChat(
-  po: { page: Page },
-  chatId: number,
-): Promise<void> {
+async function expectNavigatedToChat(po: { page: Page }, chatId: number): Promise<void> {
   await expect
     .poll(
       async () => {
@@ -87,10 +78,7 @@ function getChatIdFromUrl(po: { page: Page }): number {
   return Number(po.page.url().match(/\?id=(\d+)/)?.[1]);
 }
 
-async function createChat(po: {
-  chatActions: ChatActionsPageObject;
-  page: Page;
-}): Promise<number> {
+async function createChat(po: { chatActions: ChatActionsPageObject; page: Page }): Promise<number> {
   await po.chatActions.clickNewChat();
   const chatId = getChatIdFromUrl(po);
   expect(chatId).toBeTruthy();
@@ -111,37 +99,33 @@ async function switchToDifferentChat(
 }
 
 // Completion (app hidden): tag, title/body, non-sticky
-testWithNotificationsEnabled(
-  "chat completion notification when app hidden",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    await po.importApp("minimal");
+testWithNotificationsEnabled("chat completion notification when app hidden", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.importApp("minimal");
 
-    // Wait for the initial stream triggered by importing the app to finish
-    await po.chatActions.waitForChatCompletion({ timeout: Timeout.LONG });
+  // Wait for the initial stream triggered by importing the app to finish
+  await po.chatActions.waitForChatCompletion({ timeout: Timeout.LONG });
 
-    await enableNotifications(po);
+  await enableNotifications(po);
 
-    // Create a fresh chat for the notification test
-    const chatId = await createChat(po);
+  // Create a fresh chat for the notification test
+  const chatId = await createChat(po);
 
-    // Inject notifications AFTER page is fully loaded
-    await po.browserNotifications.injectFakeNotifications();
+  // Inject notifications AFTER page is fully loaded
+  await po.browserNotifications.injectFakeNotifications();
 
-    await po.chatActions.sendPrompt("hello", { skipWaitForCompletion: true });
-    await triggerHidden(po);
+  await po.chatActions.sendPrompt("hello", { skipWaitForCompletion: true });
+  await triggerHidden(po);
 
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(
-        `octopusStudio-chat-complete-${chatId}`,
-      );
+  const notification = await po.browserNotifications.waitForNotificationWithTag(
+    `octopusStudio-chat-complete-${chatId}`,
+  );
 
-    expect(notification.title).toBe("minimal");
-    expect(notification.body).toContain("Chat response completed");
-    expect(notification.requireInteraction).toBeFalsy();
-    expect(notification.closed).toBe(false);
-  },
-);
+  expect(notification.title).toBe("minimal");
+  expect(notification.body).toContain("Chat response completed");
+  expect(notification.requireInteraction).toBeFalsy();
+  expect(notification.closed).toBe(false);
+});
 
 // Completion (different chat): tag, title/body, non-sticky
 testWithNotificationsEnabled(
@@ -160,10 +144,9 @@ testWithNotificationsEnabled(
     });
     await triggerDifferentChat(po, chatId);
 
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(
-        `octopusStudio-chat-complete-${chatId}`,
-      );
+    const notification = await po.browserNotifications.waitForNotificationWithTag(
+      `octopusStudio-chat-complete-${chatId}`,
+    );
 
     expect(notification.title).toBe("minimal");
     expect(notification.body).toContain("Chat response completed");
@@ -173,80 +156,72 @@ testWithNotificationsEnabled(
 );
 
 // Completion auto-close on focus (app hidden)
-testWithNotificationsEnabled(
-  "notification auto-closes when user focuses chat",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    await po.importApp("minimal");
+testWithNotificationsEnabled("notification auto-closes when user focuses chat", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.importApp("minimal");
 
-    // Wait for the initial stream triggered by importing the app to finish
-    await po.chatActions.waitForChatCompletion({ timeout: Timeout.LONG });
+  // Wait for the initial stream triggered by importing the app to finish
+  await po.chatActions.waitForChatCompletion({ timeout: Timeout.LONG });
 
-    await enableNotifications(po);
+  await enableNotifications(po);
 
-    // Create a fresh chat for the notification test
-    const chatId = await createChat(po);
+  // Create a fresh chat for the notification test
+  const chatId = await createChat(po);
 
-    await po.browserNotifications.injectFakeNotifications();
+  await po.browserNotifications.injectFakeNotifications();
 
-    await po.chatActions.sendPrompt("hello", { skipWaitForCompletion: true });
-    await triggerHidden(po);
+  await po.chatActions.sendPrompt("hello", { skipWaitForCompletion: true });
+  await triggerHidden(po);
 
-    const tag = `octopusStudio-chat-complete-${chatId}`;
-    let notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
-    expect(notification.closed).toBe(false);
+  const tag = `octopusStudio-chat-complete-${chatId}`;
+  let notification = await po.browserNotifications.waitForNotificationWithTag(tag);
+  expect(notification.closed).toBe(false);
 
-    // Simulate window focus (which triggers handleFocus in useNotificationHandler)
-    await po.page.evaluate(() => {
-      window.dispatchEvent(new Event("focus"));
-    });
+  // Simulate window focus (which triggers handleFocus in useNotificationHandler)
+  await po.page.evaluate(() => {
+    window.dispatchEvent(new Event("focus"));
+  });
 
-    // Wait for notification to auto-close
-    await expect
-      .poll(
-        async () => {
-          const n =
-            await po.browserNotifications.waitForNotificationWithTag(tag);
-          return n.closed;
-        },
-        { timeout: Timeout.MEDIUM },
-      )
-      .toBe(true);
-  },
-);
+  // Wait for notification to auto-close
+  await expect
+    .poll(
+      async () => {
+        const n = await po.browserNotifications.waitForNotificationWithTag(tag);
+        return n.closed;
+      },
+      { timeout: Timeout.MEDIUM },
+    )
+    .toBe(true);
+});
 
 // Completion click navigates back to chat (different chat)
-testWithNotificationsEnabled(
-  "notification click navigates to the chat",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    await po.importApp("minimal");
+testWithNotificationsEnabled("notification click navigates to the chat", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.importApp("minimal");
 
-    // Wait for the initial stream triggered by importing the app to finish
-    await po.chatActions.waitForChatCompletion({ timeout: Timeout.LONG });
+  // Wait for the initial stream triggered by importing the app to finish
+  await po.chatActions.waitForChatCompletion({ timeout: Timeout.LONG });
 
-    await enableNotifications(po);
+  await enableNotifications(po);
 
-    // Create a fresh chat for the notification test
-    const initialChatId = await createChat(po);
+  // Create a fresh chat for the notification test
+  const initialChatId = await createChat(po);
 
-    await po.browserNotifications.injectFakeNotifications();
+  await po.browserNotifications.injectFakeNotifications();
 
-    await po.chatActions.sendPrompt(SLOW_COMPLETION_PROMPT, {
-      skipWaitForCompletion: true,
-    });
-    await triggerDifferentChat(po, initialChatId);
+  await po.chatActions.sendPrompt(SLOW_COMPLETION_PROMPT, {
+    skipWaitForCompletion: true,
+  });
+  await triggerDifferentChat(po, initialChatId);
 
-    const tag = `octopusStudio-chat-complete-${initialChatId}`;
-    await po.browserNotifications.waitForNotificationWithTag(tag);
+  const tag = `octopusStudio-chat-complete-${initialChatId}`;
+  await po.browserNotifications.waitForNotificationWithTag(tag);
 
-    // Click notification to navigate back
-    await po.browserNotifications.clickNotificationWithTag(tag);
+  // Click notification to navigate back
+  await po.browserNotifications.clickNotificationWithTag(tag);
 
-    await expectNavigatedToChat(po, initialChatId);
-  },
-);
+  await expectNavigatedToChat(po, initialChatId);
+});
 
 // Completion dedupe by tag (app hidden)
 testWithNotificationsEnabled(
@@ -308,8 +283,7 @@ test("notification not created when notifications disabled", async ({ po }) => {
   await po.chatActions.waitForChatCompletion();
 
   // Still no notifications
-  const notificationsAfter =
-    await po.browserNotifications.getCreatedNotifications();
+  const notificationsAfter = await po.browserNotifications.getCreatedNotifications();
   expect(notificationsAfter).toHaveLength(0);
 });
 
@@ -335,14 +309,11 @@ testWithNotificationsEnabled(
     await triggerHidden(po);
 
     // Should show fallback toast instead of notification
-    const notifications =
-      await po.browserNotifications.getCreatedNotifications();
+    const notifications = await po.browserNotifications.getCreatedNotifications();
     expect(notifications).toHaveLength(0);
 
     // Check for warning toast
-    await po.toastNotifications.waitForToastWithText(
-      "Enable notifications for OctopusStudio",
-    );
+    await po.toastNotifications.waitForToastWithText("Enable notifications for OctopusStudio");
   },
 );
 
@@ -375,8 +346,7 @@ testWithNotificationsEnabled(
     );
 
     const tag = "octopusStudio-agent-consent-test-request";
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
+    const notification = await po.browserNotifications.waitForNotificationWithTag(tag);
     expect(notification.requireInteraction).toBe(true);
   },
 );
@@ -409,8 +379,7 @@ testWithNotificationsEnabled(
     );
 
     const agentTag = "octopusStudio-agent-consent-agent-resolved-request";
-    const agentNotification =
-      await po.browserNotifications.waitForNotificationWithTag(agentTag);
+    const agentNotification = await po.browserNotifications.waitForNotificationWithTag(agentTag);
     expect(agentNotification.closed).toBe(false);
 
     await electronApp.evaluate(({ BrowserWindow }) => {
@@ -423,8 +392,7 @@ testWithNotificationsEnabled(
 
     await expect
       .poll(async () => {
-        const notifications =
-          await po.browserNotifications.getCreatedNotifications();
+        const notifications = await po.browserNotifications.getCreatedNotifications();
         return notifications.find((item) => item.tag === agentTag)?.closed;
       })
       .toBe(true);
@@ -474,13 +442,9 @@ testWithNotificationsEnabled(
     );
 
     await po.page.waitForTimeout(500);
-    const notifications =
-      await po.browserNotifications.getCreatedNotifications();
+    const notifications = await po.browserNotifications.getCreatedNotifications();
     expect(
-      notifications.some(
-        (item) =>
-          item.tag === "octopusStudio-mcp-consent-mcp-in-flight-request",
-      ),
+      notifications.some((item) => item.tag === "octopusStudio-mcp-consent-mcp-in-flight-request"),
     ).toBe(false);
   },
 );
@@ -514,8 +478,7 @@ testWithNotificationsEnabled(
     );
 
     const tag = "octopusStudio-agent-consent-test-request";
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
+    const notification = await po.browserNotifications.waitForNotificationWithTag(tag);
     expect(notification.requireInteraction).toBe(true);
   },
 );
@@ -587,8 +550,7 @@ testWithNotificationsEnabled(
     );
 
     const tag = "octopusStudio-mcp-consent-mcp-request";
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
+    const notification = await po.browserNotifications.waitForNotificationWithTag(tag);
     expect(notification.body).toContain("mcp_tool");
     expect(notification.requireInteraction).toBe(true);
   },
@@ -625,8 +587,7 @@ testWithNotificationsEnabled(
     );
 
     const tag = "octopusStudio-mcp-consent-mcp-request";
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
+    const notification = await po.browserNotifications.waitForNotificationWithTag(tag);
     expect(notification.body).toContain("mcp_tool");
     expect(notification.requireInteraction).toBe(true);
   },
@@ -705,8 +666,7 @@ testWithNotificationsEnabled(
     );
 
     const tag = "octopusStudio-plan-questionnaire-plan-request";
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
+    const notification = await po.browserNotifications.waitForNotificationWithTag(tag);
     expect(notification.body).toContain("Planning Questions");
     expect(notification.requireInteraction).toBe(true);
   },
@@ -747,8 +707,7 @@ testWithNotificationsEnabled(
     );
 
     const tag = "octopusStudio-plan-questionnaire-plan-request";
-    const notification =
-      await po.browserNotifications.waitForNotificationWithTag(tag);
+    const notification = await po.browserNotifications.waitForNotificationWithTag(tag);
     expect(notification.body).toContain("Planning Questions");
     expect(notification.requireInteraction).toBe(true);
   },

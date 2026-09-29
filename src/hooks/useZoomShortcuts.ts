@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useSettings } from "@/hooks/useSettings";
-import {
-  type ZoomLevel,
-  ZoomLevelSchema,
-  ZOOM_LEVELS,
-  DEFAULT_ZOOM_LEVEL,
-} from "@/lib/schemas";
+import { type ZoomLevel, ZoomLevelSchema, ZOOM_LEVELS, DEFAULT_ZOOM_LEVEL } from "@/lib/schemas";
 import { useIsMac } from "@/hooks/useChatModeToggle";
 
 export function useZoomShortcuts() {
@@ -14,9 +9,7 @@ export function useZoomShortcuts() {
 
   const currentZoomLevel: ZoomLevel = useMemo(() => {
     const value = settings?.zoomLevel ?? DEFAULT_ZOOM_LEVEL;
-    return ZoomLevelSchema.safeParse(value).success
-      ? (value as ZoomLevel)
-      : DEFAULT_ZOOM_LEVEL;
+    return ZoomLevelSchema.safeParse(value).success ? (value as ZoomLevel) : DEFAULT_ZOOM_LEVEL;
   }, [settings?.zoomLevel]);
 
   const zoomIn = useCallback(() => {

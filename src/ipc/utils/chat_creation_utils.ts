@@ -3,18 +3,12 @@ import { apps, chats } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import log from "electron-log";
 import type { ChatMode } from "../../lib/schemas";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { getOctopusStudioAppPath } from "../../paths/paths";
-import { getCurrentCommitHash } from "./git_utils";
+import { getCurrentCommitHash } from "../git/git_utils";
 import { getInitialChatModeForNewChat } from "../handlers/chat_mode_resolution";
 import { assertAppChatCreationOpen } from "../services/app_chat_creation_fence";
-import {
-  appOperationCoordinator,
-  readAppResource,
-} from "../services/app_operation_coordinator";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 
 const logger = log.scope("chat_creation_utils");
 
@@ -32,11 +26,7 @@ export async function createChatForApp({
     {
       appId,
       operation: "create-chat",
-      resources: [
-        readAppResource("app-path"),
-        "chat-membership",
-        readAppResource("repository"),
-      ],
+      resources: [readAppResource("app-path"), "chat-membership", readAppResource("repository")],
       // A recording holds `repository` as a write claim for its whole session,
       // and a read conflicts with it, so every New Chat entry point would sit
       // unresponsive until the session ends or hits the 30-minute cap.
@@ -52,10 +42,7 @@ export async function createChatForApp({
         columns: { path: true, type: true },
       });
       if (!app) {
-        throw new OctopusStudioError(
-          "App not found",
-          OctopusStudioErrorKind.NotFound,
-        );
+        throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
       }
 
       let initialCommitHash = null;

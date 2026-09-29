@@ -6,12 +6,7 @@ import { expect } from "@playwright/test";
 import { testSkipIfWindows } from "./helpers/test_helper";
 import type { PageObject } from "./helpers/test_helper";
 
-const IMAGE_FIXTURE_PATH = path.join(
-  __dirname,
-  "fixtures",
-  "images",
-  "logo.png",
-);
+const IMAGE_FIXTURE_PATH = path.join(__dirname, "fixtures", "images", "logo.png");
 
 async function importAppAndSeedMedia({
   po,
@@ -61,38 +56,30 @@ async function openMediaFolderByAppName(po: PageObject, appName: string) {
 }
 
 async function openMediaActionsForFile(po: PageObject, fileName: string) {
-  const thumbnail = po.page
-    .getByTestId("media-thumbnail")
-    .filter({ hasText: fileName })
-    .first();
+  const thumbnail = po.page.getByTestId("media-thumbnail").filter({ hasText: fileName }).first();
 
   await expect(thumbnail).toBeVisible();
   await thumbnail.getByTestId("media-file-actions-trigger").click();
 }
 
-testSkipIfWindows(
-  "media library - start a new chat with image reference",
-  async ({ po }) => {
-    await po.setUp();
+testSkipIfWindows("media library - start a new chat with image reference", async ({ po }) => {
+  await po.setUp();
 
-    const sourceApp = await importAppAndSeedMedia({
-      po,
-      fixtureName: "minimal",
-      files: ["chat-image.png"],
-    });
+  const sourceApp = await importAppAndSeedMedia({
+    po,
+    fixtureName: "minimal",
+    files: ["chat-image.png"],
+  });
 
-    await po.navigation.goToLibraryTab();
-    await po.page.getByRole("link", { name: "Media" }).click();
+  await po.navigation.goToLibraryTab();
+  await po.page.getByRole("link", { name: "Media" }).click();
 
-    await openMediaFolderByAppName(po, sourceApp.appName);
+  await openMediaFolderByAppName(po, sourceApp.appName);
 
-    await openMediaActionsForFile(po, "chat-image.png");
-    await po.page.getByTestId("media-start-chat-with-image").click();
+  await openMediaActionsForFile(po, "chat-image.png");
+  await po.page.getByTestId("media-start-chat-with-image").click();
 
-    await expect(po.chatActions.getChatInput()).toBeVisible();
-    await expect(po.chatActions.getChatInput()).toContainText(
-      `@chat-image.png`,
-    );
-    expect(await po.appManagement.getCurrentAppName()).toBe(sourceApp.appName);
-  },
-);
+  await expect(po.chatActions.getChatInput()).toBeVisible();
+  await expect(po.chatActions.getChatInput()).toContainText(`@chat-image.png`);
+  expect(await po.appManagement.getCurrentAppName()).toBe(sourceApp.appName);
+});

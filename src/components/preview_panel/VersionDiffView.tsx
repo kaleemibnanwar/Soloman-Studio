@@ -40,11 +40,9 @@ export function VersionDiffView({ appId, versionId }: VersionDiffViewProps) {
   // selection is scoped to a version, so it is only applied when it belongs to
   // the version being shown (see below); this avoids a stale path from another
   // version leaking in without needing an effect to reconcile it.
-  const { state: previewState, send: sendPreviewEvent } =
-    useVersionPreview(appId);
+  const { state: previewState, send: sendPreviewEvent } = useVersionPreview(appId);
   const selectedDiffFile = selectedDiffFileForState(previewState);
-  const selectedDiffPath =
-    selectedDiffFile?.versionId === versionId ? selectedDiffFile.path : null;
+  const selectedDiffPath = selectedDiffFile?.versionId === versionId ? selectedDiffFile.path : null;
 
   if (loading) {
     return (
@@ -82,10 +80,7 @@ export function VersionDiffView({ appId, versionId }: VersionDiffViewProps) {
   const selected = changes.find((file) => file.path === selectedPath)!;
 
   return (
-    <div
-      className="flex flex-1 overflow-hidden"
-      data-testid="version-diff-view"
-    >
+    <div className="flex flex-1 overflow-hidden" data-testid="version-diff-view">
       <div className="w-1/3 border-r overflow-auto min-h-0">
         {changes.map((file) => (
           <button

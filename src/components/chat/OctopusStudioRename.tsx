@@ -37,22 +37,15 @@ export const OctopusStudioRename: React.FC<OctopusStudioRenameProps> = ({
 
   return (
     <OctopusStudioCard accentColor="amber" state={state}>
-      <OctopusStudioCardHeader
-        icon={<FileEdit size={15} />}
-        accentColor="amber"
-      >
+      <OctopusStudioCardHeader icon={<FileEdit size={15} />} accentColor="amber">
         {displayTitle && (
-          <span className="font-medium text-sm text-foreground truncate">
-            {displayTitle}
-          </span>
+          <span className="font-medium text-sm text-foreground truncate">{displayTitle}</span>
         )}
         <OctopusStudioBadge color="amber">Rename</OctopusStudioBadge>
       </OctopusStudioCardHeader>
       {from && <OctopusStudioFilePath path={`From: ${from}`} />}
       {to && <OctopusStudioFilePath path={`To: ${to}`} />}
-      {children && (
-        <OctopusStudioDescription>{children}</OctopusStudioDescription>
-      )}
+      {children && <OctopusStudioDescription>{children}</OctopusStudioDescription>}
     </OctopusStudioCard>
   );
 };

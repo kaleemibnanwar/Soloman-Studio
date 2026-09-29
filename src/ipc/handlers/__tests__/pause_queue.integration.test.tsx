@@ -1,17 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 function queuedCountText(count: number) {
@@ -26,17 +17,11 @@ async function startMediumStream(harness: HybridChatHarness, chatId: number) {
   await screen.findByRole("button", { name: /cancel generation/i });
 }
 
-async function queueMessages(
-  harness: HybridChatHarness,
-  chatId: number,
-  messages: string[],
-) {
+async function queueMessages(harness: HybridChatHarness, chatId: number, messages: string[]) {
   for (const [index, message] of messages.entries()) {
     await harness.pressEnterInChat(message, { chatId });
     await waitFor(() =>
-      expect(screen.getByTestId("queue-header").textContent).toMatch(
-        queuedCountText(index + 1),
-      ),
+      expect(screen.getByTestId("queue-header").textContent).toMatch(queuedCountText(index + 1)),
     );
   }
 }
@@ -52,10 +37,7 @@ describe("pause queue (integration)", () => {
    */
   async function waitForStreamTermination() {
     await waitFor(
-      () =>
-        expect(
-          screen.queryByRole("button", { name: /cancel generation/i }),
-        ).toBeNull(),
+      () => expect(screen.queryByRole("button", { name: /cancel generation/i })).toBeNull(),
       { timeout: 20_000 },
     );
     await harness.bridge.settleInFlight();
@@ -129,9 +111,7 @@ describe("pause queue (integration)", () => {
     await screen.findByLabelText(/^(sendMessage|Send message)$/, undefined, {
       timeout: 15_000,
     });
-    await waitFor(() =>
-      expect(queueHeader.textContent).toMatch(queuedCountText(4)),
-    );
+    await waitFor(() => expect(queueHeader.textContent).toMatch(queuedCountText(4)));
 
     const resumedStreamEnded = harness.waitForEvent(
       "chat:stream:end",
@@ -208,14 +188,11 @@ describe("pause queue (integration)", () => {
     // Resuming clears the pause latch but dispatches only the first item, so
     // the remaining prompts are unprotected until the next stop re-parks them.
     fireEvent.click(screen.getByRole("button", { name: /resume queue/i }));
-    await waitFor(
-      () => expect(queueHeader.textContent).toMatch(queuedCountText(2)),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(queueHeader.textContent).toMatch(queuedCountText(2)), {
+      timeout: 20_000,
+    });
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: /cancel generation/i }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: /cancel generation/i }));
     await screen.findByText("Paused");
     await waitForStreamTermination();
 
@@ -256,9 +233,7 @@ describe("pause queue (integration)", () => {
     await screen.findByLabelText(/^(sendMessage|Send message)$/, undefined, {
       timeout: 15_000,
     });
-    await waitFor(() =>
-      expect(queueHeader.textContent).toMatch(queuedCountText(3)),
-    );
+    await waitFor(() => expect(queueHeader.textContent).toMatch(queuedCountText(3)));
     await waitForStreamTermination();
 
     const immediateStreamEnded = harness.waitForEvent(

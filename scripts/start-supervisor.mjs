@@ -3,14 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
-const forgeCli = path.join(
-  repoRoot,
-  "node_modules/@electron-forge/cli/dist/electron-forge.js",
-);
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const forgeCli = path.join(repoRoot, "node_modules/@electron-forge/cli/dist/electron-forge.js");
 const electronExecutable = path.join(
   repoRoot,
   "node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
@@ -19,10 +13,7 @@ const crashpadExecutable = path.join(
   repoRoot,
   "node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron Framework.framework/Helpers/chrome_crashpad_handler",
 );
-const linuxSandboxHelper = path.join(
-  repoRoot,
-  "node_modules/electron/dist/chrome-sandbox",
-);
+const linuxSandboxHelper = path.join(repoRoot, "node_modules/electron/dist/chrome-sandbox");
 
 // Chromium refuses to start when its SUID sandbox helper is present but not
 // root-owned with the setuid bit set, which is how `npm install` always leaves
@@ -80,11 +71,7 @@ export function findMacCrashpadPids({ runSync = spawnSync } = {}) {
   );
 }
 
-export function signalDetachedProcesses({
-  pids,
-  signal,
-  kill = process.kill.bind(process),
-}) {
+export function signalDetachedProcesses({ pids, signal, kill = process.kill.bind(process) }) {
   for (const pid of pids) {
     try {
       kill(pid, signal);
@@ -94,11 +81,7 @@ export function signalDetachedProcesses({
   }
 }
 
-export function unregisterMacElectronApps({
-  pids,
-  exitStatus,
-  spawnProcess = spawn,
-}) {
+export function unregisterMacElectronApps({ pids, exitStatus, spawnProcess = spawn }) {
   for (const pid of pids) {
     const cleanup = spawnProcess(
       "lsappinfo",
@@ -167,16 +150,12 @@ export function startDevelopmentSupervisor({
     );
   }
 
-  const child = spawnProcess(
-    parentProcess.execPath,
-    [forgeCli, "start", ...args, ...sandboxArgs],
-    {
-      cwd: repoRoot,
-      detached: platform !== "win32",
-      env: parentProcess.env,
-      stdio: "inherit",
-    },
-  );
+  const child = spawnProcess(parentProcess.execPath, [forgeCli, "start", ...args, ...sandboxArgs], {
+    cwd: repoRoot,
+    detached: platform !== "win32",
+    env: parentProcess.env,
+    stdio: "inherit",
+  });
 
   let shutdownSignal;
   let forceKillTimer;
@@ -253,9 +232,7 @@ export function startDevelopmentSupervisor({
     if (typeof code === "number") {
       parentProcess.exitCode = code;
     } else {
-      console.error(
-        `Electron Forge exited with ${signal ?? "an unknown signal"}`,
-      );
+      console.error(`Electron Forge exited with ${signal ?? "an unknown signal"}`);
       parentProcess.exitCode = 1;
     }
   });
@@ -263,9 +240,6 @@ export function startDevelopmentSupervisor({
   return child;
 }
 
-if (
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   startDevelopmentSupervisor();
 }

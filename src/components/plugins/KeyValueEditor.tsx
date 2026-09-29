@@ -8,9 +8,7 @@ import { useTranslation } from "react-i18next";
 
 export type KeyValue = { key: string; value: string };
 
-export function parseJsonToArray(
-  json?: Record<string, string> | string | null,
-): KeyValue[] {
+export function parseJsonToArray(json?: Record<string, string> | string | null): KeyValue[] {
   if (!json) return [];
   try {
     const obj =
@@ -98,18 +96,12 @@ export function KeyValueEditor({
       showError(t("toolsMcp.keyValueRequired"));
       return;
     }
-    if (
-      envVars.some(
-        (e) => e.key === editingKeyValue.trim() && e.key !== editingKey,
-      )
-    ) {
+    if (envVars.some((e) => e.key === editingKeyValue.trim() && e.key !== editingKey)) {
       showError(t("settings:toolsMcp.duplicateKey"));
       return;
     }
     const next = envVars.map((e) =>
-      e.key === editingKey
-        ? { key: editingKeyValue.trim(), value: editingValue.trim() }
-        : e,
+      e.key === editingKey ? { key: editingKeyValue.trim(), value: editingValue.trim() } : e,
     );
     await saveAll(next);
     setEditingKey(null);
@@ -135,9 +127,7 @@ export function KeyValueEditor({
       {isAddingNew ? (
         <div className="space-y-3 p-3 border rounded-md bg-muted/50">
           <div className="space-y-2">
-            <Label htmlFor={`env-new-key-${id}`}>
-              {t("settings:toolsMcp.key")}
-            </Label>
+            <Label htmlFor={`env-new-key-${id}`}>{t("settings:toolsMcp.key")}</Label>
             <Input
               id={`env-new-key-${id}`}
               placeholder={
@@ -152,9 +142,7 @@ export function KeyValueEditor({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`env-new-value-${id}`}>
-              {t("settings:toolsMcp.value")}
-            </Label>
+            <Label htmlFor={`env-new-value-${id}`}>{t("settings:toolsMcp.value")}</Label>
             <Input
               id={`env-new-value-${id}`}
               placeholder={
@@ -168,11 +156,7 @@ export function KeyValueEditor({
             />
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={handleAdd}
-              size="sm"
-              disabled={disabled || isSaving}
-            >
+            <Button onClick={handleAdd} size="sm" disabled={disabled || isSaving}>
               <Save size={14} />
               {isSaving ? t("common:saving") : t("common:save")}
             </Button>
@@ -198,9 +182,7 @@ export function KeyValueEditor({
           disabled={disabled}
         >
           <Plus size={14} />
-          {itemLabel === "Header"
-            ? "Add Header"
-            : t("settings:toolsMcp.addEnvVar")}
+          {itemLabel === "Header" ? "Add Header" : t("settings:toolsMcp.addEnvVar")}
         </Button>
       )}
 
@@ -211,10 +193,7 @@ export function KeyValueEditor({
           </p>
         ) : (
           envVars.map((kv) => (
-            <div
-              key={kv.key}
-              className="flex items-center space-x-2 p-2 border rounded-md"
-            >
+            <div key={kv.key} className="flex items-center space-x-2 p-2 border rounded-md">
               {editingKey === kv.key ? (
                 <>
                   <div className="flex-1 space-y-2">
@@ -244,11 +223,7 @@ export function KeyValueEditor({
                     >
                       <Save size={14} />
                     </Button>
-                    <Button
-                      onClick={handleCancelEdit}
-                      size="sm"
-                      variant="outline"
-                    >
+                    <Button onClick={handleCancelEdit} size="sm" variant="outline">
                       <X size={14} />
                     </Button>
                   </div>
@@ -257,9 +232,7 @@ export function KeyValueEditor({
                 <>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate">{kv.key}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {kv.value}
-                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{kv.value}</div>
                   </div>
                   <div className="flex gap-1">
                     <Button

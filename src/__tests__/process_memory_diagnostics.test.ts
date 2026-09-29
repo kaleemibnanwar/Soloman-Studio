@@ -65,9 +65,7 @@ describe("collectProcessTree", () => {
 
   it("collects the root and all descendants", () => {
     const tree = collectProcessTree(10, entries);
-    expect(tree.map((e) => e.pid).sort((a, b) => a - b)).toEqual([
-      10, 11, 12, 13,
-    ]);
+    expect(tree.map((e) => e.pid).sort((a, b) => a - b)).toEqual([10, 11, 12, 13]);
   });
 
   it("returns empty when the root pid is not in the snapshot", () => {
@@ -134,9 +132,10 @@ describe("parseSwapUsage", () => {
   });
 
   it("converts G and K suffixes to MB", () => {
-    expect(
-      parseSwapUsage("vm.swapusage: total = 4.00G  used = 512.00K  free = ..."),
-    ).toEqual({ totalMb: 4096, usedMb: 0.5 });
+    expect(parseSwapUsage("vm.swapusage: total = 4.00G  used = 512.00K  free = ...")).toEqual({
+      totalMb: 4096,
+      usedMb: 0.5,
+    });
   });
 
   it("returns null when output does not match", () => {

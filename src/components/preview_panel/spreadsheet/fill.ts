@@ -53,7 +53,11 @@ function generateFillCell(source: GridCell[], stepIndex: number, axis: "row" | "
   return { ...template };
 }
 
-export function commitFill(origin: Bounds, target: Bounds, grid: GridData): { row: number; col: number; cell: GridCell }[] {
+export function commitFill(
+  origin: Bounds,
+  target: Bounds,
+  grid: GridData,
+): { row: number; col: number; cell: GridCell }[] {
   const patches: { row: number; col: number; cell: GridCell }[] = [];
   if (target.maxRow > origin.maxRow) {
     for (let c = origin.minCol; c <= origin.maxCol; c++) {

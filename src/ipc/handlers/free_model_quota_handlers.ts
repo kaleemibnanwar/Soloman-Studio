@@ -4,10 +4,7 @@ import log from "electron-log";
 import { createTypedHandler } from "./base";
 import { freeModelQuotaContracts } from "../types/free_model_quota";
 import { readSettings } from "@/main/settings";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { hasOctopusStudioProKey } from "@/lib/schemas";
 import { getOctopusStudioEngineBaseUrl } from "../utils/octopus_studio_engine_url";
 
@@ -21,9 +18,8 @@ const EngineFreeQuotaResponseSchema = z.object({
 });
 
 export function registerFreeModelQuotaHandlers() {
-  createTypedHandler(
-    freeModelQuotaContracts.getFreeModelQuotaStatus,
-    async () => getFreeModelQuotaStatus(),
+  createTypedHandler(freeModelQuotaContracts.getFreeModelQuotaStatus, async () =>
+    getFreeModelQuotaStatus(),
   );
 }
 
@@ -31,11 +27,7 @@ export async function getFreeModelQuotaStatus() {
   const settings = readSettings();
   const apiKey = settings.providerSettings?.auto?.apiKey?.value;
 
-  if (
-    !settings.enableOctopusStudioPro ||
-    !hasOctopusStudioProKey(settings) ||
-    !apiKey
-  ) {
+  if (!settings.enableOctopusStudioPro || !hasOctopusStudioProKey(settings) || !apiKey) {
     throw new OctopusStudioError(
       "OctopusStudio Pro must be enabled to check free model quota.",
       OctopusStudioErrorKind.Auth,

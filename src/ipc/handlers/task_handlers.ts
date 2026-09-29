@@ -1,10 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { messages, tasks } from "../../db/schema";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { createTypedHandler } from "./base";
 import { taskContracts } from "../types/task";
 import { runTask } from "../services/task_scheduler";
@@ -85,16 +82,9 @@ export function registerTaskHandlers() {
     }
     updates.updatedAt = new Date();
 
-    const [updated] = await db
-      .update(tasks)
-      .set(updates)
-      .where(eq(tasks.id, taskId))
-      .returning();
+    const [updated] = await db.update(tasks).set(updates).where(eq(tasks.id, taskId)).returning();
     if (!updated) {
-      throw new OctopusStudioError(
-        "Task not found",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("Task not found", OctopusStudioErrorKind.NotFound);
     }
     return {
       ...updated,

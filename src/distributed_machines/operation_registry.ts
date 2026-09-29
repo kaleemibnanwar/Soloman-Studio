@@ -1,25 +1,10 @@
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import {
-  sameInvocationRef,
-  type InvocationRef,
-} from "@/state_machines/invocation_ref";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { sameInvocationRef, type InvocationRef } from "@/state_machines/invocation_ref";
 import type { TransitionOutcomePublisher } from "@/state_machines/dispatcher";
-import type {
-  ActorDisposalCause,
-  ActorInstanceId,
-  ActorRuntimeMetadata,
-} from "./definition";
+import type { ActorDisposalCause, ActorInstanceId, ActorRuntimeMetadata } from "./definition";
 import type { RequestId } from "./request_identity";
 
-export type OperationDisposalCause =
-  | "actor"
-  | "key"
-  | "machine"
-  | "host"
-  | "window-session";
+export type OperationDisposalCause = "actor" | "key" | "machine" | "host" | "window-session";
 
 export interface OperationOwner {
   readonly hostId: string;
@@ -93,10 +78,7 @@ export class OperationIdentityConflictError extends OctopusStudioError {
 
 export class OperationCapacityError extends OctopusStudioError {
   constructor() {
-    super(
-      "Authoritative operation capacity is exhausted",
-      OctopusStudioErrorKind.RateLimited,
-    );
+    super("Authoritative operation capacity is exhausted", OctopusStudioErrorKind.RateLimited);
     this.name = "OperationCapacityError";
   }
 }
@@ -120,9 +102,7 @@ function deferred<Value>(): Deferred<Value> {
 interface OperationEntry<Outcome, Ref extends InvocationRef> {
   readonly identity: OperationAdmissionIdentity<Ref>;
   readonly deferred: Deferred<OperationSettlement<Outcome, Ref>>;
-  readonly listeners: Set<
-    (settlement: OperationSettlement<Outcome, Ref>) => void
-  >;
+  readonly listeners: Set<(settlement: OperationSettlement<Outcome, Ref>) => void>;
   ticket?: OperationTicket<Outcome, Ref>;
   settlement?: OperationSettlement<Outcome, Ref>;
   rejected: boolean;
@@ -145,10 +125,7 @@ function sameOwner(left: OperationOwner, right: OperationOwner): boolean {
   );
 }
 
-function sameLogicalOwner(
-  left: OperationOwner,
-  right: OperationOwner,
-): boolean {
+function sameLogicalOwner(left: OperationOwner, right: OperationOwner): boolean {
   return (
     left.hostId === right.hostId &&
     left.machineId === right.machineId &&
@@ -204,10 +181,7 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
       if (options.retry !== "new-invocation") {
         if (
           !sameOwner(existing.identity.owner, identity.owner) ||
-          !sameInvocationRef(
-            existing.identity.invocationRef,
-            identity.invocationRef,
-          )
+          !sameInvocationRef(existing.identity.invocationRef, identity.invocationRef)
         ) {
           throw new OperationIdentityConflictError(identity.requestId);
         }
@@ -216,18 +190,10 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
           ticket: this.ticket(existing),
         };
       }
-      if (
-        sameInvocationRef(
-          existing.identity.invocationRef,
-          identity.invocationRef,
-        )
-      ) {
+      if (sameInvocationRef(existing.identity.invocationRef, identity.invocationRef)) {
         throw new OperationIdentityConflictError(identity.requestId);
       }
-      if (
-        this.isTerminal(existing) &&
-        this.unresolved >= this.options.maxUnresolved
-      ) {
+      if (this.isTerminal(existing) && this.unresolved >= this.options.maxUnresolved) {
         throw new OperationCapacityError();
       }
       if (!this.isTerminal(existing)) {
@@ -246,11 +212,7 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
             },
           );
         } catch (error) {
-          this.reject(
-            existing.identity.requestId,
-            existing.identity.invocationRef,
-            error,
-          );
+          this.reject(existing.identity.requestId, existing.identity.invocationRef, error);
           this.report(error);
           throw error;
         }
@@ -287,10 +249,7 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
   reattach(
     identity: OperationLookupIdentity,
   ):
-    | Extract<
-        OperationAdmission<Outcome, Ref>,
-        { readonly kind: "coalesced" | "replayed" }
-      >
+    | Extract<OperationAdmission<Outcome, Ref>, { readonly kind: "coalesced" | "replayed" }>
     | undefined {
     const existing = this.entries.get(identity.requestId);
     if (!existing) return undefined;
@@ -312,12 +271,7 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
     outcome: Outcome,
     receipt: OperationReceiptMetadata,
   ): boolean {
-    const marked = this.markSettlement(
-      requestId,
-      invocationRef,
-      outcome,
-      receipt,
-    );
+    const marked = this.markSettlement(requestId, invocationRef, outcome, receipt);
     if (!marked) return false;
     this.publishMarkedSettlement(marked);
     this.trimSettledReplay();
@@ -418,11 +372,7 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
           settled += 1;
         }
       } catch (error) {
-        this.reject(
-          entry.identity.requestId,
-          entry.identity.invocationRef,
-          error,
-        );
+        this.reject(entry.identity.requestId, entry.identity.invocationRef, error);
         this.report(error);
       }
     }
@@ -430,19 +380,13 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
   }
 
   settleActor(actorInstanceId: ActorInstanceId): number {
-    return this.settleDisposed(
-      "actor",
-      (owner) => owner.actorInstanceId === actorInstanceId,
-    );
+    return this.settleDisposed("actor", (owner) => owner.actorInstanceId === actorInstanceId);
   }
 
   settleKey(hostId: string, machineId: string, keyId: string): number {
     return this.settleDisposed(
       "key",
-      (owner) =>
-        owner.hostId === hostId &&
-        owner.machineId === machineId &&
-        owner.keyId === keyId,
+      (owner) => owner.hostId === hostId && owner.machineId === machineId && owner.keyId === keyId,
     );
   }
 
@@ -469,19 +413,14 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
     matches: (owner: OperationOwner) => boolean,
   ): OperationTicket<Outcome, InvocationRef> | undefined {
     const entry = this.entries.get(requestId);
-    return entry && matches(entry.identity.owner)
-      ? this.ticket(entry)
-      : undefined;
+    return entry && matches(entry.identity.owner) ? this.ticket(entry) : undefined;
   }
 
   /**
    * Settles unresolved entries and removes both pending and retained terminal
    * payloads at the declared ownership boundary.
    */
-  releaseOwned(
-    cause: OperationDisposalCause,
-    matches: (owner: OperationOwner) => boolean,
-  ): number {
+  releaseOwned(cause: OperationDisposalCause, matches: (owner: OperationOwner) => boolean): number {
     const settled = this.settleDisposed(cause, matches);
     for (const [requestId, entry] of this.entries) {
       if (!matches(entry.identity.owner)) continue;
@@ -569,11 +508,7 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
     return this.options.enqueueFailureOutcome(error);
   }
 
-  rollbackAdmission(
-    requestId: RequestId,
-    invocationRef: Ref,
-    error: unknown,
-  ): boolean {
+  rollbackAdmission(requestId: RequestId, invocationRef: Ref, error: unknown): boolean {
     const entry = this.entries.get(requestId);
     if (
       !entry ||
@@ -614,17 +549,13 @@ export class OperationRegistry<Outcome, Ref extends InvocationRef> {
     return true;
   }
 
-  private ticket(
-    entry: OperationEntry<Outcome, Ref>,
-  ): OperationTicket<Outcome, Ref> {
+  private ticket(entry: OperationEntry<Outcome, Ref>): OperationTicket<Outcome, Ref> {
     if (entry.ticket) return entry.ticket;
     entry.ticket = Object.freeze({
       requestId: entry.identity.requestId,
       invocationRef: entry.identity.invocationRef,
       settled: entry.deferred.promise,
-      subscribe: (
-        listener: (settlement: OperationSettlement<Outcome, Ref>) => void,
-      ) => {
+      subscribe: (listener: (settlement: OperationSettlement<Outcome, Ref>) => void) => {
         if (entry.settlement) {
           try {
             listener(entry.settlement);
@@ -673,9 +604,7 @@ export interface AdmitOperationAndEnqueueOptions<
   readonly registry: OperationRegistry<Outcome, Ref>;
   readonly identity: OperationAdmissionIdentity<Ref>;
   readonly retry?: "new-invocation";
-  readonly enqueue: () => EnqueueResult extends PromiseLike<unknown>
-    ? never
-    : EnqueueResult;
+  readonly enqueue: () => EnqueueResult extends PromiseLike<unknown> ? never : EnqueueResult;
   readonly receiptOnEnqueueFailure: () => OperationReceiptMetadata;
   readonly assertAfterRegistration?: () => void;
 }
@@ -684,10 +613,7 @@ export interface FinalizeOperationAdmissionOptions<
   Outcome,
   Ref extends InvocationRef,
   EnqueueResult,
-> extends Omit<
-  AdmitOperationAndEnqueueOptions<Outcome, Ref, EnqueueResult>,
-  "identity"
-> {
+> extends Omit<AdmitOperationAndEnqueueOptions<Outcome, Ref, EnqueueResult>, "identity"> {
   readonly identity: OperationLookupIdentity;
   /** Minted only after the final authoritative admission check succeeds. */
   readonly createInvocationRef: () => Ref;
@@ -703,11 +629,7 @@ export interface FinalizeOperationAdmissionOptions<
  * The final admission linearization point. There is deliberately no async
  * boundary between authoritative registration and trusted-event enqueue.
  */
-export function admitOperationAndEnqueue<
-  Outcome,
-  Ref extends InvocationRef,
-  EnqueueResult,
->(
+export function admitOperationAndEnqueue<Outcome, Ref extends InvocationRef, EnqueueResult>(
   options: AdmitOperationAndEnqueueOptions<Outcome, Ref, EnqueueResult>,
 ):
   | {
@@ -720,9 +642,7 @@ export function admitOperationAndEnqueue<
       readonly operation: OperationTicket<Outcome, Ref>;
     } {
   if (options.enqueue.constructor.name === "AsyncFunction") {
-    throw new Error(
-      "Authoritative operation enqueue must be synchronous and non-thenable",
-    );
+    throw new Error("Authoritative operation enqueue must be synchronous and non-thenable");
   }
   const admission = options.registry.admit(
     options.identity,
@@ -749,12 +669,8 @@ export function admitOperationAndEnqueue<
       "then" in enqueueResult
     ) {
       const thenable = enqueueResult as PromiseLike<unknown>;
-      void Promise.resolve(thenable).catch((error) =>
-        options.registry.reportFailure(error),
-      );
-      throw new Error(
-        "Authoritative operation enqueue must be synchronous and non-thenable",
-      );
+      void Promise.resolve(thenable).catch((error) => options.registry.reportFailure(error));
+      throw new Error("Authoritative operation enqueue must be synchronous and non-thenable");
     }
     return {
       kind: "enqueued",
@@ -781,11 +697,7 @@ export function admitOperationAndEnqueue<
   }
 }
 
-export function finalizeOperationAdmission<
-  Outcome,
-  Ref extends InvocationRef,
-  EnqueueResult,
->(
+export function finalizeOperationAdmission<Outcome, Ref extends InvocationRef, EnqueueResult>(
   options: FinalizeOperationAdmissionOptions<Outcome, Ref, EnqueueResult>,
 ): ReturnType<typeof admitOperationAndEnqueue<Outcome, Ref, EnqueueResult>> {
   if (!options.retry) {
@@ -805,9 +717,7 @@ export function finalizeOperationAdmission<
   return admitOperationAndEnqueue({
     ...options,
     identity,
-    assertAfterRegistration: options.retry
-      ? options.assertFinalAdmission
-      : undefined,
+    assertAfterRegistration: options.retry ? options.assertFinalAdmission : undefined,
   });
 }
 
@@ -823,9 +733,7 @@ export interface OperationActorDisposalSource {
 }
 
 export interface OperationWindowSessionDisposalSource {
-  onWindowSessionDisposed(
-    listener: (windowSessionId: string) => void,
-  ): () => void;
+  onWindowSessionDisposed(listener: (windowSessionId: string) => void): () => void;
 }
 
 /**
@@ -833,10 +741,7 @@ export interface OperationWindowSessionDisposalSource {
  * events cover key, machine, and host bulk disposal because those paths dispose
  * every owned actor; the window-session signal covers client-owner teardown.
  */
-export function bindOperationRegistryLifetimes<
-  Outcome,
-  Ref extends InvocationRef,
->(options: {
+export function bindOperationRegistryLifetimes<Outcome, Ref extends InvocationRef>(options: {
   readonly registry: OperationRegistry<Outcome, Ref>;
   readonly actors: OperationActorDisposalSource;
   readonly windowSessions: OperationWindowSessionDisposalSource;
@@ -866,11 +771,9 @@ export function bindOperationRegistryLifetimes<
         return;
     }
   });
-  const removeWindowSession = options.windowSessions.onWindowSessionDisposed(
-    (windowSessionId) => {
-      options.registry.settleWindowSession(windowSessionId);
-    },
-  );
+  const removeWindowSession = options.windowSessions.onWindowSessionDisposed((windowSessionId) => {
+    options.registry.settleWindowSession(windowSessionId);
+  });
   let removeRegistryDispose: () => void = () => undefined;
   const dispose = () => {
     if (!active) return;
@@ -883,14 +786,9 @@ export function bindOperationRegistryLifetimes<
   return dispose;
 }
 
-export function createOperationOutcomePublisher<
-  Outcome,
-  Ref extends InvocationRef,
->(
+export function createOperationOutcomePublisher<Outcome, Ref extends InvocationRef>(
   registry: OperationRegistry<Outcome, Ref>,
-  captureReceipt: (
-    outcome: CorrelatedOperationOutcome<Outcome, Ref>,
-  ) => OperationReceiptMetadata,
+  captureReceipt: (outcome: CorrelatedOperationOutcome<Outcome, Ref>) => OperationReceiptMetadata,
 ): TransitionOutcomePublisher<CorrelatedOperationOutcome<Outcome, Ref>> {
   const capture = (
     outcome: CorrelatedOperationOutcome<Outcome, Ref>,
@@ -914,9 +812,9 @@ export function createOperationOutcomePublisher<
       throw error;
     }
   };
-  const publish: TransitionOutcomePublisher<
-    CorrelatedOperationOutcome<Outcome, Ref>
-  > = (outcome) => {
+  const publish: TransitionOutcomePublisher<CorrelatedOperationOutcome<Outcome, Ref>> = (
+    outcome,
+  ) => {
     const captured = capture(outcome);
     if (captured) registry.settleBatch([captured]);
   };

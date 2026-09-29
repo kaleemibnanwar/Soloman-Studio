@@ -18,10 +18,7 @@ import {
   shouldTriggerCompaction,
 } from "@/ipc/utils/token_utils";
 import { safeSend } from "@/ipc/utils/safe_sender";
-import {
-  cancelOrphanedBaseStream,
-  fastTextOutput,
-} from "@/ipc/utils/stream_text_utils";
+import { cancelOrphanedBaseStream, fastTextOutput } from "@/ipc/utils/stream_text_utils";
 import { COMPACTION_SYSTEM_PROMPT } from "@/prompts/compaction_system_prompt";
 import {
   storePreCompactionMessages,
@@ -75,10 +72,7 @@ const compactionChatsInFlight = new Set<number>();
  */
 export async function markChatForCompaction(chatId: number): Promise<void> {
   try {
-    await db
-      .update(chats)
-      .set({ pendingCompaction: true })
-      .where(eq(chats.id, chatId));
+    await db.update(chats).set({ pendingCompaction: true }).where(eq(chats.id, chatId));
     logger.info(`Marked chat ${chatId} for compaction`);
   } catch (error) {
     logger.error(`Failed to mark chat ${chatId} for compaction:`, error);
@@ -88,9 +82,7 @@ export async function markChatForCompaction(chatId: number): Promise<void> {
 /**
  * Check if a chat has pending compaction.
  */
-export async function isChatPendingCompaction(
-  chatId: number,
-): Promise<boolean> {
+export async function isChatPendingCompaction(chatId: number): Promise<boolean> {
   try {
     const chat = await db.query.chats.findFirst({
       where: eq(chats.id, chatId),
@@ -98,10 +90,7 @@ export async function isChatPendingCompaction(
     });
     return chat?.pendingCompaction === true;
   } catch (error) {
-    logger.error(
-      `Failed to check compaction status for chat ${chatId}:`,
-      error,
-    );
+    logger.error(`Failed to check compaction status for chat ${chatId}:`, error);
     return false;
   }
 }
@@ -129,16 +118,17 @@ export async function checkAndMarkForCompaction(
 
   const contextWindow = await getContextWindow(selectedModel);
   const provider = selectedModel.provider;
-  const shouldCompact = shouldTriggerCompaction(
-    totalTokens,
-    contextWindow,
-    provider,
-  );
+  // A user-configured token threshold wins over the context-window-derived one.
+  const configuredThreshold = settings.compactionConfig?.tokenThreshold;
+  const threshold = configuredThreshold ?? getCompactionThreshold(contextWindow, provider);
+  const shouldCompact = configuredThreshold
+    ? totalTokens >= configuredThreshold
+    : shouldTriggerCompaction(totalTokens, contextWindow, provider);
 
   if (shouldCompact) {
     await markChatForCompaction(chatId);
     logger.info(
-      `Compaction triggered for chat ${chatId}: ${totalTokens} tokens (threshold: ${getCompactionThreshold(contextWindow, provider)})`,
+      `Compaction triggered for chat ${chatId}: ${totalTokens} tokens (threshold: ${threshold})`,
     );
     return true;
   }
@@ -196,14 +186,11 @@ export async function performCompaction(
       ? await normalizeModelSelection(chat.modelSelection)
       : await resolveDefaultModelSelection(storedSettings);
     const compactionModel =
-      storedSettings.enableOctopusStudioPro &&
-      hasOctopusStudioProKey(storedSettings)
+      storedSettings.enableOctopusStudioPro && hasOctopusStudioProKey(storedSettings)
         ? await resolveModelSelection({
             model: PRO_COMPACTION_MODEL,
             preferredEffortLevel:
-              storedSettings.modelEffortPreferences?.[
-                getModelPreferenceKey(PRO_COMPACTION_MODEL)
-              ],
+              storedSettings.modelEffortPreferences?.[getModelPreferenceKey(PRO_COMPACTION_MODEL)],
           })
         : selectedModel;
     const settings = { ...storedSettings, selectedModel: compactionModel };
@@ -212,10 +199,7 @@ export async function performCompaction(
     // Load all messages for the chat
     const chatMessages = await db.query.messages.findMany({
       where: eq(messages.chatId, chatId),
-      orderBy: (messages, { asc }) => [
-        asc(messages.createdAt),
-        asc(messages.id),
-      ],
+      orderBy: (messages, { asc }) => [asc(messages.createdAt), asc(messages.id)],
     });
 
     if (chatMessages.length === 0) {
@@ -228,29 +212,19 @@ export async function performCompaction(
     const llmVisibleMessages = getPostCompactionMessages(chatMessages);
 
     // Prepare messages for backup
-    const messagesToBackup: CompactionMessage[] = llmVisibleMessages.map(
-      (m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }),
-    );
+    const messagesToBackup: CompactionMessage[] = llmVisibleMessages.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
 
     // Store readable transcript backup in the app's .octopusStudio/chats/ directory
-    const backupPath = await storePreCompactionMessages(
-      appPath,
-      chatId,
-      messagesToBackup,
-    );
+    const backupPath = await storePreCompactionMessages(appPath, chatId, messagesToBackup);
 
     // Prepare conversation for summarization using the same XML format as the backup
     const conversationText = formatAsTranscript(messagesToBackup, chatId);
 
     // Get model client
-    const { modelClient } = await getModelClient(
-      compactionModel,
-      settings,
-      compactionModel,
-    );
+    const { modelClient } = await getModelClient(compactionModel, settings, compactionModel);
 
     // Generate summary
     const summaryMessages: ModelMessage[] = [
@@ -263,6 +237,7 @@ export async function performCompaction(
     const summaryResult = streamText({
       output: fastTextOutput(),
       model: modelClient.model,
+      temperature: 0,
       headers: {
         ...getAiHeaders({
           builtinProviderId: modelClient.builtinProviderId,
@@ -326,9 +301,7 @@ Note: This file may be large. Read only the sections you need or use grep to sea
     //    user message, the user's prompt is excluded from the LLM context.
     // 3. sendResponseChunk updates the last assistant message, so the summary
     //    must not be the last assistant message (the placeholder should be).
-    const latestUserMessage = [...chatMessages]
-      .reverse()
-      .find((m) => m.role === "user");
+    const latestUserMessage = [...chatMessages].reverse().find((m) => m.role === "user");
     const compactionCreatedAt =
       options?.createdAtStrategy === "now"
         ? new Date()
@@ -389,14 +362,8 @@ Note: This file may be large. Read only the sections you need or use grep to sea
  */
 async function clearPendingCompaction(chatId: number): Promise<void> {
   try {
-    await db
-      .update(chats)
-      .set({ pendingCompaction: false })
-      .where(eq(chats.id, chatId));
+    await db.update(chats).set({ pendingCompaction: false }).where(eq(chats.id, chatId));
   } catch (error) {
-    logger.error(
-      `Failed to clear pending compaction for chat ${chatId}:`,
-      error,
-    );
+    logger.error(`Failed to clear pending compaction for chat ${chatId}:`, error);
   }
 }

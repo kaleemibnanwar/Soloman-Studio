@@ -9,9 +9,7 @@ export interface FirstPromptSagaProjection {
   readonly isExistingAppSubmission: boolean;
 }
 
-export function projectFirstPromptState(
-  state: FirstPromptState,
-): FirstPromptSagaProjection {
+export function projectFirstPromptState(state: FirstPromptState): FirstPromptSagaProjection {
   const isExistingAppSubmission = (() => {
     switch (state.type) {
       case "checkingProviders":
@@ -36,8 +34,7 @@ export function projectFirstPromptState(
   return {
     phase: state.type,
     hasArmedPayload:
-      (state.type === "checkingProviders" ||
-        state.type === "awaitingProviderSetup") &&
+      (state.type === "checkingProviders" || state.type === "awaitingProviderSetup") &&
       hasPromptContent(state.payload),
     isExistingAppSubmission,
   };

@@ -11,14 +11,24 @@ export interface CellStyle {
 }
 
 /** Chart-hue CSS vars used to color option chips, so they stay on-theme in both light and dark mode. */
-export const OPTION_COLOR_VARS = ["--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5"] as const;
+export const OPTION_COLOR_VARS = [
+  "--chart-1",
+  "--chart-2",
+  "--chart-3",
+  "--chart-4",
+  "--chart-5",
+] as const;
 
 export function optionColorVar(options: string[], value: string): string {
   const idx = options.indexOf(value);
   return OPTION_COLOR_VARS[(idx < 0 ? 0 : idx) % OPTION_COLOR_VARS.length];
 }
 
-export function optionChipStyle(varName: string): { background: string; color: string; borderColor: string } {
+export function optionChipStyle(varName: string): {
+  background: string;
+  color: string;
+  borderColor: string;
+} {
   return {
     background: `color-mix(in oklch, var(${varName}) 20%, var(--background))`,
     color: `var(${varName})`,
@@ -59,13 +69,36 @@ export function makeGrid(rows: number, cols: number): GridData {
   );
 }
 
+export const DEFAULT_MIN_ROWS = 100;
+export const DEFAULT_MIN_COLS = 26;
+
+export function ensureMinGrid(
+  grid: GridData,
+  minRows = DEFAULT_MIN_ROWS,
+  minCols = DEFAULT_MIN_COLS,
+): GridData {
+  const currentRows = grid.length;
+  const currentCols = grid[0]?.length ?? 0;
+  const targetRows = Math.max(currentRows, minRows);
+  const targetCols = Math.max(currentCols, minCols);
+
+  if (currentRows >= targetRows && currentCols >= targetCols) {
+    return grid;
+  }
+
+  return Array.from({ length: targetRows }, (_, r) => {
+    const sourceRow = grid[r];
+    return Array.from({ length: targetCols }, (_, c) => sourceRow?.[c] ?? emptyCell());
+  });
+}
+
 let nextSheetId = 1;
 export function newSheetId(): string {
   return `sheet-${nextSheetId++}-${Date.now().toString(36)}`;
 }
 
 export function emptySheet(name: string): SheetState {
-  return { id: newSheetId(), name, grid: makeGrid(1, 1) };
+  return { id: newSheetId(), name, grid: makeGrid(DEFAULT_MIN_ROWS, DEFAULT_MIN_COLS) };
 }
 
 export function normalizeRange(range: SelectionRange): {
@@ -84,9 +117,7 @@ export function normalizeRange(range: SelectionRange): {
 
 export function isInRange(pos: CellPos, range: SelectionRange): boolean {
   const { minRow, maxRow, minCol, maxCol } = normalizeRange(range);
-  return (
-    pos.row >= minRow && pos.row <= maxRow && pos.col >= minCol && pos.col <= maxCol
-  );
+  return pos.row >= minRow && pos.row <= maxRow && pos.col >= minCol && pos.col <= maxCol;
 }
 
 export function lettersToColIndex(letters: string): number {
@@ -120,7 +151,9 @@ export function makeRef(row: number, col: number): string {
 export function cloneSheets(sheets: SheetState[]): SheetState[] {
   return sheets.map((sheet) => ({
     ...sheet,
-    grid: sheet.grid.map((row) => row.map((cell) => ({ ...cell, style: cell.style ? { ...cell.style } : undefined }))),
+    grid: sheet.grid.map((row) =>
+      row.map((cell) => ({ ...cell, style: cell.style ? { ...cell.style } : undefined })),
+    ),
   }));
 }
 

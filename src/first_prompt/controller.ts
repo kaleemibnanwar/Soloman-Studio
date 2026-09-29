@@ -1,30 +1,16 @@
 import { SnapshotStore } from "@/state_machines/snapshot_store";
-import {
-  observeTransition,
-  type TransitionObserver,
-} from "@/state_machines/types";
-import type {
-  FirstPromptCommand,
-  FirstPromptEvent,
-  FirstPromptState,
-} from "./state";
+import { observeTransition, type TransitionObserver } from "@/state_machines/types";
+import type { FirstPromptCommand, FirstPromptEvent, FirstPromptState } from "./state";
 import { transition } from "./transition";
 
 export interface FirstPromptCommandRunner {
-  run(
-    command: FirstPromptCommand,
-    emit: (event: FirstPromptEvent) => void,
-  ): void | Promise<void>;
+  run(command: FirstPromptCommand, emit: (event: FirstPromptEvent) => void): void | Promise<void>;
   dispose?(): void;
 }
 
 export interface FirstPromptControllerOptions {
   runner: FirstPromptCommandRunner;
-  observer?: TransitionObserver<
-    FirstPromptState,
-    FirstPromptEvent,
-    FirstPromptCommand
-  >;
+  observer?: TransitionObserver<FirstPromptState, FirstPromptEvent, FirstPromptCommand>;
   onDispose?: () => void;
 }
 
@@ -72,10 +58,7 @@ export class FirstPromptController {
           await this.options.runner.run(command, this.send);
         } catch (error) {
           if (this.disposed) return;
-          console.error(
-            `[first-prompt] command "${command.type}" threw`,
-            error,
-          );
+          console.error(`[first-prompt] command "${command.type}" threw`, error);
         }
       }
     } finally {

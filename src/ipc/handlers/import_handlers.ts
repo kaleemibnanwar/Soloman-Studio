@@ -3,10 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import { createLoggedHandler } from "./safe_handle";
 import log from "electron-log";
-import {
-  getOctopusStudioAppPath,
-  isAppLocationAccessible,
-} from "../../paths/paths";
+import { getOctopusStudioAppPath, isAppLocationAccessible } from "../../paths/paths";
 import { apps } from "@/db/schema";
 import { db } from "@/db";
 import { chats, chatSearchDirtyChats } from "@/db/schema";
@@ -14,17 +11,11 @@ import { eq } from "drizzle-orm";
 
 import { ImportAppParams, ImportAppResult } from "@/ipc/types";
 import { copyDirectoryRecursive } from "../utils/file_utils";
-import { getCurrentCommitHash } from "../utils/git_utils";
+import { getCurrentCommitHash } from "../git/git_utils";
 import { gitService } from "../services/git_service";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { getInitialChatModeForNewChat } from "./chat_mode_resolution";
-import {
-  sanitizeAppDisplayName,
-  slugifyAppFolderName,
-} from "@/shared/app_names";
+import { sanitizeAppDisplayName, slugifyAppFolderName } from "@/shared/app_names";
 import { resolveUniqueFolderName } from "../utils/app_name_resolution";
 import { queryInvalidationBus } from "@/window_infrastructure/main/query_invalidation_bus";
 
@@ -75,13 +66,7 @@ export function registerImportHandlers() {
     "import-app",
     async (
       event,
-      {
-        path: sourcePath,
-        installCommand,
-        startCommand,
-        skipCopy,
-        ...params
-      }: ImportAppParams,
+      { path: sourcePath, installCommand, startCommand, skipCopy, ...params }: ImportAppParams,
     ): Promise<ImportAppResult> => {
       const appName = sanitizeAppDisplayName(params.appName);
       // Validate the source path exists
@@ -109,13 +94,9 @@ export function registerImportHandlers() {
       // Determine the app path based on skipCopy
       let folderName: string | null = null;
       if (!skipCopy) {
-        folderName = await resolveUniqueFolderName(
-          slugifyAppFolderName(appName),
-        );
+        folderName = await resolveUniqueFolderName(slugifyAppFolderName(appName));
       }
-      const appPath = skipCopy
-        ? sourcePath
-        : getOctopusStudioAppPath(folderName!);
+      const appPath = skipCopy ? sourcePath : getOctopusStudioAppPath(folderName!);
 
       if (!skipCopy) {
         if (!isAppLocationAccessible(appPath)) {

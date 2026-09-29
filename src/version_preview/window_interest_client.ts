@@ -2,9 +2,7 @@ import { ipc } from "@/ipc/types";
 
 type VersionInterestIpc = Pick<
   typeof ipc.version,
-  | "acquirePreviewWindowInterest"
-  | "restorePreviewWindowInterest"
-  | "releasePreviewWindowInterest"
+  "acquirePreviewWindowInterest" | "restorePreviewWindowInterest" | "releasePreviewWindowInterest"
 >;
 
 /**
@@ -19,15 +17,11 @@ export class VersionPreviewWindowInterestClient {
   constructor(private readonly client: VersionInterestIpc = ipc.version) {}
 
   acquire(appId: number): Promise<{ acquired: boolean }> {
-    return this.enqueue(appId, () =>
-      this.client.acquirePreviewWindowInterest({ appId }),
-    );
+    return this.enqueue(appId, () => this.client.acquirePreviewWindowInterest({ appId }));
   }
 
   restoreIfOrphaned(appId: number): Promise<{ acquired: boolean }> {
-    return this.enqueue(appId, () =>
-      this.client.restorePreviewWindowInterest({ appId }),
-    );
+    return this.enqueue(appId, () => this.client.restorePreviewWindowInterest({ appId }));
   }
 
   release(
@@ -53,10 +47,7 @@ export class VersionPreviewWindowInterestClient {
     return this.selectionEpoch(appId) === epoch;
   }
 
-  private enqueue<Result>(
-    appId: number,
-    operation: () => Promise<Result>,
-  ): Promise<Result> {
+  private enqueue<Result>(appId: number, operation: () => Promise<Result>): Promise<Result> {
     const previous = this.tails.get(appId) ?? Promise.resolve();
     const result = previous.catch(() => undefined).then(operation);
     const tail = result.then(

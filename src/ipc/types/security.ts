@@ -37,9 +37,7 @@ export const GetOrCreateSecurityFixChatInputSchema = z.object({
   findings: z.array(SecurityFindingSchema).min(1),
 });
 
-export type GetOrCreateSecurityFixChatInput = z.infer<
-  typeof GetOrCreateSecurityFixChatInputSchema
->;
+export type GetOrCreateSecurityFixChatInput = z.infer<typeof GetOrCreateSecurityFixChatInputSchema>;
 
 export const securityContracts = {
   getLatestSecurityReview: defineContract({
@@ -54,8 +52,7 @@ export const securityContracts = {
       chatId: z.number(),
       created: z.boolean(),
     }),
-    invalidates: (_input, output) =>
-      output.created ? [{ family: "chats" }] : [],
+    invalidates: (_input, output) => (output.created ? [{ family: "chats" }] : []),
   }),
 } as const;
 

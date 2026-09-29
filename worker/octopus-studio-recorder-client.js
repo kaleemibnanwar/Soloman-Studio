@@ -45,8 +45,7 @@
   // after this line. Snapshotting is therefore enough to stop a page script
   // flipping the recorder into accepting untrusted events mid-recording and
   // fabricating clicks and fills that land in a spec the user commits and runs.
-  const allowUntrustedEvents =
-    window.__OCTOPUS_STUDIO_RECORDER_ALLOW_UNTRUSTED__ === true;
+  const allowUntrustedEvents = window.__OCTOPUS_STUDIO_RECORDER_ALLOW_UNTRUSTED__ === true;
   // Minted per proxy and known only to the trusted renderer. Without this, an
   // unrelated page can frame the localhost preview, arm the recorder, and
   // receive every captured fill value through the parent message channel.
@@ -55,12 +54,9 @@
   // deleted: the app's own scripts all run after this line, but the attribute
   // would otherwise stay in the document for any of them — including CDN code
   // in an AI-generated app — to lift with one `querySelector`.
-  const recorderToken =
-    document.currentScript?.dataset.octopusStudioRecorderToken;
+  const recorderToken = document.currentScript?.dataset.octopusStudioRecorderToken;
   try {
-    document.currentScript?.removeAttribute(
-      "data-octopusStudio-recorder-token",
-    );
+    document.currentScript?.removeAttribute("data-octopusStudio-recorder-token");
   } catch {
     // Best effort: the value is already snapshotted above either way.
   }
@@ -203,14 +199,7 @@
     "treeitem",
   ]);
 
-  const NAV_KEYS = new Set([
-    "Enter",
-    "Escape",
-    "ArrowUp",
-    "ArrowDown",
-    "ArrowLeft",
-    "ArrowRight",
-  ]);
+  const NAV_KEYS = new Set(["Enter", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
 
   let active = false;
   let lastEmit = { key: "", at: 0 };
@@ -259,10 +248,7 @@
 
   function isOverlayEvent(e) {
     const path = (e.composedPath && e.composedPath()) || [];
-    return path.some(
-      (node) =>
-        node && node.classList && node.classList.contains(OVERLAY_CLASS),
-    );
+    return path.some((node) => node && node.classList && node.classList.contains(OVERLAY_CLASS));
   }
 
   function isCheckboxOrRadio(el) {
@@ -285,9 +271,7 @@
 
   function isValuePicker(el) {
     if (!el || el.tagName !== "INPUT") return false;
-    return VALUE_PICKER_TYPES.includes(
-      (el.getAttribute("type") || "").toLowerCase(),
-    );
+    return VALUE_PICKER_TYPES.includes((el.getAttribute("type") || "").toLowerCase());
   }
 
   /**
@@ -316,10 +300,7 @@
 
   function noteRevealedPasswords(records) {
     for (const record of records) {
-      if (
-        record.attributeName === "type" &&
-        (record.oldValue || "").toLowerCase() === "password"
-      ) {
+      if (record.attributeName === "type" && (record.oldValue || "").toLowerCase() === "password") {
         seenAsPassword.add(record.target);
       }
     }
@@ -341,9 +322,7 @@
    */
   function watchPasswordReveals() {
     const Observer =
-      typeof MutationObserver !== "undefined"
-        ? MutationObserver
-        : window.MutationObserver;
+      typeof MutationObserver !== "undefined" ? MutationObserver : window.MutationObserver;
     if (!Observer || passwordObserver) return;
     passwordObserver = new Observer(noteRevealedPasswords);
     passwordObserver.observe(document.documentElement || document, {
@@ -354,9 +333,8 @@
     });
     // Anything already masked when recording starts is a password field even if
     // the user only ever touches its reveal toggle.
-    Array.prototype.forEach.call(
-      document.querySelectorAll('input[type="password"]'),
-      (el) => seenAsPassword.add(el),
+    Array.prototype.forEach.call(document.querySelectorAll('input[type="password"]'), (el) =>
+      seenAsPassword.add(el),
     );
   }
 
@@ -377,9 +355,7 @@
     ) {
       return true;
     }
-    return SECRET_ATTRS.some((attr) =>
-      SECRET_NAME_RE.test(el.getAttribute(attr) || ""),
-    );
+    return SECRET_ATTRS.some((attr) => SECRET_NAME_RE.test(el.getAttribute(attr) || ""));
   }
 
   /** Whether this control's value must be redacted rather than recorded. */
@@ -429,11 +405,7 @@
         if (control) return control;
       }
     }
-    if (
-      el.tagName === "INPUT" ||
-      el.tagName === "SELECT" ||
-      el.tagName === "TEXTAREA"
-    ) {
+    if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
       return el;
     }
     return null;
@@ -485,11 +457,7 @@
     if (!el || el.nodeType !== 1) return el;
     // Nearest-first, the way `closest` walked it — but asking `computeRole`
     // per node instead of letting a CSS attribute match stand in for the role.
-    for (
-      let node = el;
-      node && node.nodeType === 1;
-      node = node.parentElement
-    ) {
+    for (let node = el; node && node.nodeType === 1; node = node.parentElement) {
       if (node.matches && node.matches(INTERACTIVE_TAGS)) return node;
       if (INTERACTIVE_ROLES.has(computeRole(node))) return node;
     }
@@ -522,8 +490,7 @@
         // `multiple`, or a `size` above 1, makes it a list — and Playwright
         // matches it as `listbox`, so calling it a combobox generates a locator
         // that never resolves.
-        return el.hasAttribute("multiple") ||
-          Number(el.getAttribute("size")) > 1
+        return el.hasAttribute("multiple") || Number(el.getAttribute("size")) > 1
           ? "listbox"
           : "combobox";
       case "textarea":
@@ -543,8 +510,7 @@
         const type = (el.getAttribute("type") || "text").toLowerCase();
         if (type === "checkbox") return "checkbox";
         if (type === "radio") return "radio";
-        if (["button", "submit", "reset", "image"].includes(type))
-          return "button";
+        if (["button", "submit", "reset", "image"].includes(type)) return "button";
         if (type === "range") return "slider";
         if (type === "search") return "searchbox";
         if (type === "password") return null; // no matching ARIA role
@@ -556,16 +522,9 @@
         // `getByLabel` and generate a locator that resolves to nothing every
         // time the test runs.
         if (
-          [
-            "date",
-            "datetime-local",
-            "month",
-            "week",
-            "time",
-            "color",
-            "file",
-            "hidden",
-          ].includes(type)
+          ["date", "datetime-local", "month", "week", "time", "color", "file", "hidden"].includes(
+            type,
+          )
         ) {
           return null;
         }
@@ -589,16 +548,12 @@
     if (!labels.length) {
       // Fallback for DOM implementations without `HTMLInputElement.labels`.
       if (el.id) {
-        labels = Array.from(
-          document.querySelectorAll(`label[for="${cssEscape(el.id)}"]`),
-        );
+        labels = Array.from(document.querySelectorAll(`label[for="${cssEscape(el.id)}"]`));
       }
       const wrap = el.closest && el.closest("label");
       if (wrap && !labels.includes(wrap)) labels.push(wrap);
     }
-    const parts = labels
-      .map((label) => normalize(accessibleTextContent(label)))
-      .filter(Boolean);
+    const parts = labels.map((label) => normalize(accessibleTextContent(label))).filter(Boolean);
     return parts.length ? normalize(parts.join(" ")) : null;
   }
 
@@ -621,11 +576,7 @@
         continue;
       }
       if (node.nodeType !== 1) continue;
-      if (
-        !includeHidden &&
-        node.getAttribute &&
-        node.getAttribute("aria-hidden") === "true"
-      )
+      if (!includeHidden && node.getAttribute && node.getAttribute("aria-hidden") === "true")
         continue;
       // The same visibility rule `getByRole` matching uses, so a name built
       // here is one Playwright can actually match. `display: none` and
@@ -684,9 +635,7 @@
     }
 
     const role = computeRole(el);
-    if (
-      ["button", "link", "heading", "tab", "menuitem", "option"].includes(role)
-    ) {
+    if (["button", "link", "heading", "tab", "menuitem", "option"].includes(role)) {
       const text = normalize(accessibleTextContent(el));
       if (text) return text;
     }
@@ -837,24 +786,16 @@
   function queryAll(descriptor) {
     switch (descriptor.kind) {
       case "testid":
-        return allElements().filter(
-          (e) => e.getAttribute("data-testid") === descriptor.value,
-        );
+        return allElements().filter((e) => e.getAttribute("data-testid") === descriptor.value);
       case "role":
         return allElements().filter(
           (e) =>
-            roleOf(e) === descriptor.value &&
-            accNameOf(e) === descriptor.name &&
-            isAriaVisible(e),
+            roleOf(e) === descriptor.value && accNameOf(e) === descriptor.name && isAriaVisible(e),
         );
       case "placeholder":
-        return allElements().filter(
-          (e) => e.getAttribute("placeholder") === descriptor.value,
-        );
+        return allElements().filter((e) => e.getAttribute("placeholder") === descriptor.value);
       case "label":
-        return allElements().filter(
-          (e) => labelForGetByLabel(e) === descriptor.value,
-        );
+        return allElements().filter((e) => labelForGetByLabel(e) === descriptor.value);
       case "text":
         return allElements().filter(
           (e) =>
@@ -863,9 +804,7 @@
         );
       case "css":
         try {
-          return Array.prototype.slice.call(
-            document.querySelectorAll(descriptor.value),
-          );
+          return Array.prototype.slice.call(document.querySelectorAll(descriptor.value));
         } catch {
           return [];
         }
@@ -890,12 +829,10 @@
 
     const role = roleOf(el);
     const name = accNameOf(el);
-    if (role && name)
-      candidates.push({ kind: "role", value: role, name, exact: true });
+    if (role && name) candidates.push({ kind: "role", value: role, name, exact: true });
 
     const placeholder = el.getAttribute && el.getAttribute("placeholder");
-    if (placeholder)
-      candidates.push({ kind: "placeholder", value: placeholder, exact: true });
+    if (placeholder) candidates.push({ kind: "placeholder", value: placeholder, exact: true });
 
     const label = labelForGetByLabel(el);
     if (label) candidates.push({ kind: "label", value: label, exact: true });
@@ -1023,10 +960,7 @@
     const now = Date.now();
     if (key === lastEmit.key && now - lastEmit.at < DEDUPE_MS) return;
     lastEmit = { key, at: now };
-    window.parent.postMessage(
-      { type: "octopusStudio-recorder-action", action },
-      "*",
-    );
+    window.parent.postMessage({ type: "octopusStudio-recorder-action", action }, "*");
   }
 
   /* ---------- key handling --------------------------------------------- */
@@ -1096,17 +1030,14 @@
       // custom ARIA controls rely on the app's key handler. Record that Space
       // press or keyboard-only interactions disappear from replay entirely.
       if (!t || activatesOnSpace(t)) return false;
-      return ["button", "checkbox", "radio", "switch", "menuitem"].includes(
-        computeRole(t),
-      );
+      return ["button", "checkbox", "radio", "switch", "menuitem"].includes(computeRole(t));
     }
     if (NAV_KEYS.has(e.key)) {
       if (e.key === "Enter") {
         const t = deepTarget(e);
         // Enter inside multi-line editors inserts a newline — that is captured
         // by the resulting `fill`, so don't also record it as a press.
-        if (t && (t.tagName === "TEXTAREA" || t.isContentEditable))
-          return false;
+        if (t && (t.tagName === "TEXTAREA" || t.isContentEditable)) return false;
         if (activatesOnEnter(t)) return false;
         return true;
       }
@@ -1257,11 +1188,7 @@
     const target = retarget(raw);
     // Keys fired with nothing focused target <body>, which has no meaningful
     // locator; record those as a page-level `page.keyboard.press`.
-    if (
-      !target ||
-      target === document.body ||
-      target === document.documentElement
-    ) {
+    if (!target || target === document.body || target === document.documentElement) {
       emit({ kind: "press", key: keyCombo(e) });
       return;
     }
@@ -1365,10 +1292,7 @@
     const type = e.data.type;
     if (type === "activate-octopusStudio-recorder") activate();
     else if (type === "deactivate-octopusStudio-recorder") deactivate();
-    else if (
-      type === "flush-octopusStudio-recorder" &&
-      typeof e.data.requestId === "string"
-    ) {
+    else if (type === "flush-octopusStudio-recorder" && typeof e.data.requestId === "string") {
       window.parent.postMessage(
         { type: "octopusStudio-recorder-flushed", requestId: e.data.requestId },
         "*",
@@ -1377,10 +1301,7 @@
   });
 
   function init() {
-    window.parent.postMessage(
-      { type: "octopusStudio-recorder-initialized" },
-      "*",
-    );
+    window.parent.postMessage({ type: "octopusStudio-recorder-initialized" }, "*");
     console.debug("OctopusStudio recorder client initialized");
   }
 

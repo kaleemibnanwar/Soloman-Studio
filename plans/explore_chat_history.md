@@ -290,11 +290,7 @@ interface ExploreChatHistoryReport {
   missing_coverage: string[];
   index_status: "ready" | "indexing";
   confidence: "high" | "medium" | "low";
-  action:
-    | "answer_from_report"
-    | "read_targets"
-    | "ask_user"
-    | "no_relevant_history";
+  action: "answer_from_report" | "read_targets" | "ask_user" | "no_relevant_history";
   archival_content: true;
   partial_reason?: string;
 }

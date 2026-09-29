@@ -7,14 +7,7 @@ import { z } from "zod";
  * because the payload originates in the previewed app's frame.
  */
 
-export const LocatorKindSchema = z.enum([
-  "testid",
-  "role",
-  "placeholder",
-  "label",
-  "text",
-  "css",
-]);
+export const LocatorKindSchema = z.enum(["testid", "role", "placeholder", "label", "text", "css"]);
 export type LocatorKind = z.infer<typeof LocatorKindSchema>;
 
 /**
@@ -88,12 +81,9 @@ function isAppRelativePath(value: string): boolean {
  * Constrained to an app-relative path so the previewed app can't inject
  * `page.goto("https://…")` into the spec written to the user's repo.
  */
-const NavigatePathSchema = z
-  .string()
-  .max(MAX_PATH_LEN)
-  .refine(isAppRelativePath, {
-    message: "navigate path must be app-relative",
-  });
+const NavigatePathSchema = z.string().max(MAX_PATH_LEN).refine(isAppRelativePath, {
+  message: "navigate path must be app-relative",
+});
 
 export const RecordedActionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("click"), locator: LocatorDescriptorSchema }),

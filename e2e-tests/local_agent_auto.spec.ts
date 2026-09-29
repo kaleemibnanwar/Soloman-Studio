@@ -11,9 +11,7 @@ testSkipIfWindows("local-agent - auto model", async ({ po }) => {
       enableCodeExplorer: false,
     });
   });
-  await expect
-    .poll(() => po.settings.recordSettings().enableCodeExplorer)
-    .toBe(false);
+  await expect.poll(() => po.settings.recordSettings().enableCodeExplorer).toBe(false);
 
   await po.importApp("minimal");
 

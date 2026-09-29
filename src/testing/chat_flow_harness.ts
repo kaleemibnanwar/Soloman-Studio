@@ -25,13 +25,7 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 import { closeDatabase, db, initializeDatabase } from "@/db";
-import {
-  apps,
-  chats,
-  language_model_providers,
-  language_models,
-  messages,
-} from "@/db/schema";
+import { apps, chats, language_model_providers, language_models, messages } from "@/db/schema";
 import {
   blockNewStreamsForApp,
   cancelAllActiveStreams,
@@ -47,27 +41,16 @@ import {
   runningApps,
   stopAppByInfo,
   stopAppGarbageCollection,
-} from "@/ipc/utils/process_manager";
+} from "@/ipc/process/process_manager";
 import { configureTrustedRenderer } from "@/ipc/utils/renderer_security";
 import { writeSettings } from "@/main/settings";
 import type { UserSettings } from "@/lib/schemas";
 import { asc, eq } from "drizzle-orm";
 
 import { generateAppFilesSnapshotData } from "../../e2e-tests/helpers/generateAppFilesSnapshotData";
-import {
-  createFakeIpcEvent,
-  type ElectronMockShared,
-  type RendererEvent,
-} from "./electron_mock";
-import {
-  readServerDump,
-  type ServerDumpOptions,
-  type ServerDumpResult,
-} from "./server_dump";
-import {
-  startFakeLlmServer,
-  type FakeLlmServerHandle,
-} from "../../testing/fake-llm-server/index";
+import { createFakeIpcEvent, type ElectronMockShared, type RendererEvent } from "./electron_mock";
+import { readServerDump, type ServerDumpOptions, type ServerDumpResult } from "./server_dump";
+import { startFakeLlmServer, type FakeLlmServerHandle } from "../../testing/fake-llm-server/index";
 
 const REPO_ROOT = process.cwd();
 const FIXTURES_ROOT = path.join(REPO_ROOT, "e2e-tests", "fixtures");
@@ -75,8 +58,7 @@ const IMPORT_APP_FIXTURES = path.join(FIXTURES_ROOT, "import-app");
 const SECOND_SETUP_ERROR =
   "Second harness setup in one process — one harness per test FILE " +
   "(forks pool isolation); split the file";
-const HARNESS_DISPOSING_ERROR =
-  "Cannot start a chat stream after harness disposal has begun";
+const HARNESS_DISPOSING_ERROR = "Cannot start a chat stream after harness disposal has begun";
 
 let activeChatFlowHarness = false;
 
@@ -110,9 +92,7 @@ function restoreHarnessEnv(snapshot: Map<string, string | undefined>): void {
 async function stopRunningAppsForHarness(): Promise<void> {
   stopAppGarbageCollection();
   const appsToStop = Array.from(runningApps.entries());
-  await Promise.allSettled(
-    appsToStop.map(([appId, appInfo]) => stopAppByInfo(appId, appInfo)),
-  );
+  await Promise.allSettled(appsToStop.map(([appId, appInfo]) => stopAppByInfo(appId, appInfo)));
 }
 
 async function removeHarnessTempRoot(tmpRootPath: string): Promise<void> {
@@ -344,14 +324,8 @@ export async function setupChatFlowHarness(
     git(appDir, "add", "-A");
     git(appDir, "commit", "-m", "init");
 
-    const [appRow] = await db
-      .insert(apps)
-      .values({ name: fixtureApp, path: appDir })
-      .returning();
-    const [chatRow] = await db
-      .insert(chats)
-      .values({ appId: appRow.id })
-      .returning();
+    const [appRow] = await db.insert(apps).values({ name: fixtureApp, path: appDir }).returning();
+    const [chatRow] = await db.insert(chats).values({ appId: appRow.id }).returning();
 
     if (options.registerChatStreamHandlers !== false) {
       registerChatStreamHandlers();
@@ -395,9 +369,7 @@ export async function setupChatFlowHarness(
     ): Promise<StreamChatResult> => {
       const handler = electronMock.ipcHandlers.get("chat:stream");
       if (!handler) {
-        throw new Error(
-          "chat:stream handler not registered — did registerChatStreamHandlers run?",
-        );
+        throw new Error("chat:stream handler not registered — did registerChatStreamHandlers run?");
       }
       const events: RendererEvent[] = [];
       const event = createFakeIpcEvent(events);
@@ -418,10 +390,7 @@ export async function setupChatFlowHarness(
         getServerDump,
       };
     };
-    const streamChat: ChatFlowHarness["streamChat"] = (
-      prompt,
-      streamOptions,
-    ) => {
+    const streamChat: ChatFlowHarness["streamChat"] = (prompt, streamOptions) => {
       if (isDisposing) {
         return Promise.reject(new Error(HARNESS_DISPOSING_ERROR));
       }
@@ -480,9 +449,7 @@ export async function setupChatFlowHarness(
           const harnessChats = await db.query.chats.findMany({
             columns: { id: true },
           });
-          await Promise.all(
-            harnessChats.map(({ id }) => settleChatActorsForDeletion(id)),
-          );
+          await Promise.all(harnessChats.map(({ id }) => settleChatActorsForDeletion(id)));
         }
         await cancelAllActiveStreams();
         // The handler can be fully unwound while the harness wrapper is still

@@ -103,9 +103,7 @@ Add an engine-side sandbox service with a narrow interface:
 ```ts
 interface SandboxService {
   create(input: CreateSandboxInput): Promise<CreateSandboxResult>;
-  uploadFiles(
-    input: UploadSandboxFilesInput,
-  ): Promise<UploadSandboxFilesResult>;
+  uploadFiles(input: UploadSandboxFilesInput): Promise<UploadSandboxFilesResult>;
   streamLogs(sandboxId: string): AsyncIterable<SandboxLogEvent>;
   destroy(sandboxId: string): Promise<void>;
   reconcileForUser(userId: string): Promise<ReconcileResult>;

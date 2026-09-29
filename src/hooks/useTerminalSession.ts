@@ -138,51 +138,41 @@ export function useTerminalSession({
           return;
         }
 
-        unsubscribeData = ipcRenderer.on(
-          terminalDataChannel(result.sessionId),
-          (payload) => {
-            const parsed = TerminalDataPayloadSchema.safeParse(payload);
-            if (parsed.success && parsed.data.sessionId === result.sessionId) {
-              if (hydrating) {
-                bufferedDuringHydration.push(parsed.data);
-              } else {
-                onDataRef.current(parsed.data.chunk);
-              }
+        unsubscribeData = ipcRenderer.on(terminalDataChannel(result.sessionId), (payload) => {
+          const parsed = TerminalDataPayloadSchema.safeParse(payload);
+          if (parsed.success && parsed.data.sessionId === result.sessionId) {
+            if (hydrating) {
+              bufferedDuringHydration.push(parsed.data);
+            } else {
+              onDataRef.current(parsed.data.chunk);
             }
-          },
-        );
+          }
+        });
 
-        unsubscribeExit = ipcRenderer.on(
-          terminalExitChannel(result.sessionId),
-          (payload) => {
-            const parsed = TerminalExitPayloadSchema.safeParse(payload);
-            if (!parsed.success || parsed.data.sessionId !== result.sessionId) {
-              return;
-            }
-            latestExit = {
-              exitCode: parsed.data.exitCode,
-              signal: parsed.data.signal ?? null,
-            };
-            setExit(latestExit);
-            setStatus("exited");
-            onExitRef.current?.();
-          },
-        );
+        unsubscribeExit = ipcRenderer.on(terminalExitChannel(result.sessionId), (payload) => {
+          const parsed = TerminalExitPayloadSchema.safeParse(payload);
+          if (!parsed.success || parsed.data.sessionId !== result.sessionId) {
+            return;
+          }
+          latestExit = {
+            exitCode: parsed.data.exitCode,
+            signal: parsed.data.signal ?? null,
+          };
+          setExit(latestExit);
+          setStatus("exited");
+          onExitRef.current?.();
+        });
 
         try {
-          const { scrollback, scrollbackEndOffset } =
-            await ipc.terminal.serialize({
-              sessionId: result.sessionId,
-            });
+          const { scrollback, scrollbackEndOffset } = await ipc.terminal.serialize({
+            sessionId: result.sessionId,
+          });
           if (cancelled) return;
           if (scrollback) {
             onDataRef.current(scrollback);
           }
           for (const payload of bufferedDuringHydration) {
-            const missedChunk = getChunkAfterScrollback(
-              payload,
-              scrollbackEndOffset,
-            );
+            const missedChunk = getChunkAfterScrollback(payload, scrollbackEndOffset);
             if (missedChunk) {
               onDataRef.current(missedChunk);
             }
@@ -201,9 +191,7 @@ export function useTerminalSession({
         }
 
         if (result.created) {
-          showSuccess(
-            tRef.current("terminal.readyToast", { appName: result.appName }),
-          );
+          showSuccess(tRef.current("terminal.readyToast", { appName: result.appName }));
         }
         if (result.evicted) {
           showWarning(
@@ -232,12 +220,10 @@ export function useTerminalSession({
   const write = useCallback(
     (data: string) => {
       if (!session?.sessionId || status !== "ready") return;
-      void ipc.terminal
-        .write({ sessionId: session.sessionId, data })
-        .catch((err: Error) => {
-          setError(err.message);
-          setStatus("error");
-        });
+      void ipc.terminal.write({ sessionId: session.sessionId, data }).catch((err: Error) => {
+        setError(err.message);
+        setStatus("error");
+      });
     },
     [session?.sessionId, status],
   );

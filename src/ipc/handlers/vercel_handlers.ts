@@ -5,7 +5,7 @@ import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import log from "electron-log";
-import { createVercelClient, VERCEL_API_BASE } from "../utils/vercel_utils";
+import { createVercelClient, VERCEL_API_BASE } from "../vercel/vercel_utils";
 import * as fs from "fs";
 import * as path from "path";
 import { CreateProjectFramework } from "@vercel/sdk/models/createprojectop.js";
@@ -28,11 +28,8 @@ import {
   previewNeonVercelSync,
   syncNeonConfigToVercel,
   removeNeonEnvVarsFromVercel,
-} from "../utils/vercel_neon_sync";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+} from "../vercel/vercel_neon_sync";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 const logger = log.scope("vercel_handlers");
 
@@ -107,9 +104,7 @@ async function getDefaultTeamId(token: string): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch teams: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`Failed to fetch teams: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -119,22 +114,14 @@ async function getDefaultTeamId(token: string): Promise<string> {
       return data.teams[0].id;
     }
 
-    throw new OctopusStudioError(
-      "No teams found for this user",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("No teams found for this user", OctopusStudioErrorKind.NotFound);
   } catch (error) {
     logger.error("Error getting default team ID:", error);
-    throw new OctopusStudioError(
-      "Failed to get team information",
-      OctopusStudioErrorKind.External,
-    );
+    throw new OctopusStudioError("Failed to get team information", OctopusStudioErrorKind.External);
   }
 }
 
-async function detectFramework(
-  appPath: string,
-): Promise<CreateProjectFramework | undefined> {
+async function detectFramework(appPath: string): Promise<CreateProjectFramework | undefined> {
   try {
     // Check for specific config files first
     const configFiles: Array<{
@@ -200,19 +187,14 @@ async function handleSaveVercelToken(
   logger.debug("Saving Vercel access token");
 
   if (!token || token.trim() === "") {
-    throw new OctopusStudioError(
-      "Access token is required.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Access token is required.", OctopusStudioErrorKind.Auth);
   }
 
   try {
     // Validate the token by making a test API call
     const isValid = await validateVercelToken(token.trim());
     if (!isValid) {
-      throw new Error(
-        "Invalid access token. Please check your token and try again.",
-      );
+      throw new Error("Invalid access token. Please check your token and try again.");
     }
 
     writeSettings({
@@ -237,10 +219,7 @@ async function handleListVercelProjects(): Promise<VercelProject[]> {
     const settings = readSettings();
     const accessToken = settings.vercelAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with Vercel.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with Vercel.", OctopusStudioErrorKind.Auth);
     }
 
     const response = await getVercelProjects(accessToken);
@@ -289,9 +268,7 @@ async function handleIsProjectAvailable(
       };
     }
 
-    const projectExists = response.projects.some(
-      (project) => project.name === name,
-    );
+    const projectExists = response.projects.some((project) => project.name === name);
 
     return {
       available: !projectExists,
@@ -313,10 +290,7 @@ async function handleCreateProject(
   const settings = readSettings();
   const accessToken = settings.vercelAccessToken?.value;
   if (!accessToken) {
-    throw new OctopusStudioError(
-      "Not authenticated with Vercel.",
-      OctopusStudioErrorKind.Auth,
-    );
+    throw new OctopusStudioError("Not authenticated with Vercel.", OctopusStudioErrorKind.Auth);
   }
 
   try {
@@ -325,10 +299,7 @@ async function handleCreateProject(
     // Get app details to determine the framework
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
     if (!app) {
-      throw new OctopusStudioError(
-        "App not found.",
-        OctopusStudioErrorKind.NotFound,
-      );
+      throw new OctopusStudioError("App not found.", OctopusStudioErrorKind.NotFound);
     }
 
     // Check if app has GitHub repository configured
@@ -339,9 +310,7 @@ async function handleCreateProject(
     }
 
     // Detect the framework from the app's directory
-    const detectedFramework = await detectFramework(
-      getOctopusStudioAppPath(app.path),
-    );
+    const detectedFramework = await detectFramework(getOctopusStudioAppPath(app.path));
 
     logger.info(
       `Detected framework: ${detectedFramework || "none detected"} for app at ${app.path}`,
@@ -399,11 +368,8 @@ async function handleCreateProject(
         });
         syncWarning = syncResult.warning;
       } catch (syncError: any) {
-        logger.warn(
-          `Neon→Vercel sync failed during project creation: ${syncError.message}`,
-        );
-        syncWarning =
-          syncError.message || "Failed to sync Neon config to Vercel.";
+        logger.warn(`Neon→Vercel sync failed during project creation: ${syncError.message}`);
+        syncWarning = syncError.message || "Failed to sync Neon config to Vercel.";
       }
     }
 
@@ -452,21 +418,14 @@ async function handleConnectToExistingProject(
     const settings = readSettings();
     const accessToken = settings.vercelAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with Vercel.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with Vercel.", OctopusStudioErrorKind.Auth);
     }
 
-    logger.info(
-      `Connecting to existing Vercel project: ${projectId} for app ${appId}`,
-    );
+    logger.info(`Connecting to existing Vercel project: ${projectId} for app ${appId}`);
 
     // Verify the project exists and get its details
     const response = await getVercelProjects(accessToken);
-    const projectData = response.projects?.find(
-      (p) => p.id === projectId || p.name === projectId,
-    );
+    const projectData = response.projects?.find((p) => p.id === projectId || p.name === projectId);
 
     if (!projectData) {
       throw new OctopusStudioError(
@@ -492,10 +451,7 @@ async function handleConnectToExistingProject(
     logger.info(`Successfully connected to Vercel project: ${projectData.id}`);
   } catch (err: any) {
     if (err instanceof OctopusStudioError) throw err;
-    logger.error(
-      "[Vercel Handler] Failed to connect to existing project:",
-      err,
-    );
+    logger.error("[Vercel Handler] Failed to connect to existing project:", err);
     throw new Error(err.message || "Failed to connect to existing project.");
   }
 }
@@ -509,10 +465,7 @@ async function handleGetVercelDeployments(
     const settings = readSettings();
     const accessToken = settings.vercelAccessToken?.value;
     if (!accessToken) {
-      throw new OctopusStudioError(
-        "Not authenticated with Vercel.",
-        OctopusStudioErrorKind.Auth,
-      );
+      throw new OctopusStudioError("Not authenticated with Vercel.", OctopusStudioErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
@@ -523,9 +476,7 @@ async function handleGetVercelDeployments(
       );
     }
 
-    logger.info(
-      `Getting deployments for Vercel project: ${app.vercelProjectId} for app ${appId}`,
-    );
+    logger.info(`Getting deployments for Vercel project: ${app.vercelProjectId} for app ${appId}`);
 
     const vercel = createVercelClient(accessToken);
 
@@ -588,10 +539,7 @@ async function handleDisconnectVercelProject(
   });
 
   if (!app) {
-    throw new OctopusStudioError(
-      "App not found",
-      OctopusStudioErrorKind.NotFound,
-    );
+    throw new OctopusStudioError("App not found", OctopusStudioErrorKind.NotFound);
   }
 
   // Update app in database to remove Vercel project info
@@ -617,23 +565,17 @@ export function registerVercelHandlers() {
     return handleListVercelProjects();
   });
 
-  createTypedHandler(
-    vercelContracts.isProjectAvailable,
-    async (event, params) => {
-      return handleIsProjectAvailable(event, params);
-    },
-  );
+  createTypedHandler(vercelContracts.isProjectAvailable, async (event, params) => {
+    return handleIsProjectAvailable(event, params);
+  });
 
   createTypedHandler(vercelContracts.createProject, async (event, params) => {
     return handleCreateProject(event, params);
   });
 
-  createTypedHandler(
-    vercelContracts.connectExistingProject,
-    async (event, params) => {
-      await handleConnectToExistingProject(event, params);
-    },
-  );
+  createTypedHandler(vercelContracts.connectExistingProject, async (event, params) => {
+    await handleConnectToExistingProject(event, params);
+  });
 
   createTypedHandler(vercelContracts.getDeployments, async (event, params) => {
     return handleGetVercelDeployments(event, params);
@@ -648,19 +590,13 @@ export function registerVercelHandlers() {
     return previewNeonVercelSync({ appId });
   });
 
-  createTypedHandler(
-    vercelContracts.syncNeonConfig,
-    async (_, { appId, branchType }) => {
-      return syncNeonConfigToVercel({ appId, branchType });
-    },
-  );
+  createTypedHandler(vercelContracts.syncNeonConfig, async (_, { appId, branchType }) => {
+    return syncNeonConfigToVercel({ appId, branchType });
+  });
 
-  createTypedHandler(
-    vercelContracts.removeNeonEnvVars,
-    async (_, { appId }) => {
-      return removeNeonEnvVarsFromVercel({ appId });
-    },
-  );
+  createTypedHandler(vercelContracts.removeNeonEnvVars, async (_, { appId }) => {
+    return removeNeonEnvVarsFromVercel({ appId });
+  });
 
   logger.debug("Registered Vercel IPC handlers");
 }

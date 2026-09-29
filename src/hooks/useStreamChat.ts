@@ -28,9 +28,7 @@ export function getRandomNumberId() {
  * submissions, forwards them as machine events, and exposes authoritative
  * machine status/error plus the prompt queue helpers.
  */
-export function useStreamChat({
-  hasChatId = true,
-}: { hasChatId?: boolean } = {}) {
+export function useStreamChat({ hasChatId = true }: { hasChatId?: boolean } = {}) {
   const chatStreamManager = useChatStreamManager();
 
   let chatId: number | undefined;
@@ -78,10 +76,7 @@ export function useStreamChat({
       planAcceptInNewChat?: boolean;
       onSettled?: (result: StreamSettledResult) => void;
     }) => {
-      if (
-        (!prompt.trim() && (!attachments || attachments.length === 0)) ||
-        !chatId
-      ) {
+      if ((!prompt.trim() && (!attachments || attachments.length === 0)) || !chatId) {
         return;
       }
 
@@ -123,11 +118,7 @@ export function useStreamChat({
   );
 
   const cancelStream = useCallback(() => {
-    if (
-      chatId === undefined ||
-      !streamState ||
-      !streamState.capabilities.canCancel
-    ) {
+    if (chatId === undefined || !streamState || !streamState.capabilities.canCancel) {
       return;
     }
     chatStreamManager.ensure(chatId).send({ type: "cancel" });
@@ -154,23 +145,16 @@ export function useStreamChat({
   const updateQueuedMessage = useCallback(
     (
       id: string,
-      updates: Partial<
-        Pick<QueuedMessageItem, "prompt" | "attachments" | "selectedComponents">
-      >,
+      updates: Partial<Pick<QueuedMessageItem, "prompt" | "attachments" | "selectedComponents">>,
     ) => {
       if (chatId === undefined) return;
-      if (
-        updates.prompt !== undefined &&
-        updates.prompt.length > MAX_CHAT_PROMPT_CHARS
-      ) {
+      if (updates.prompt !== undefined && updates.prompt.length > MAX_CHAT_PROMPT_CHARS) {
         showError(CHAT_PROMPT_LENGTH_LIMIT_MESSAGE);
         return;
       }
       const current = queuedMessages.find((message) => message.id === id);
       if (!current) return;
-      void convertFileAttachmentsToChatAttachments(
-        updates.attachments ?? current.attachments ?? [],
-      )
+      void convertFileAttachmentsToChatAttachments(updates.attachments ?? current.attachments ?? [])
         .then((serializedAttachments) =>
           chatStreamManager.dispatchQueueEvent(
             chatId,
@@ -179,8 +163,7 @@ export function useStreamChat({
               itemId: id,
               prompt: updates.prompt ?? current.prompt,
               attachments: serializedAttachments,
-              selectedComponents:
-                updates.selectedComponents ?? current.selectedComponents,
+              selectedComponents: updates.selectedComponents ?? current.selectedComponents,
             },
             queueRevision,
           ),
@@ -248,9 +231,7 @@ export function useStreamChat({
     streamMessage,
     cancelStream,
     isStreaming:
-      hasChatId && chatId !== undefined
-        ? !!streamState && isStreamActive(streamState)
-        : false,
+      hasChatId && chatId !== undefined ? !!streamState && isStreamActive(streamState) : false,
     isCancellationSettling:
       hasChatId && chatId !== undefined
         ? streamState?.phase === "cancelling" ||
@@ -275,10 +256,7 @@ export function useStreamChat({
     removeQueuedMessage,
     reorderQueuedMessages,
     clearAllQueuedMessages,
-    isPaused:
-      hasChatId && chatId !== undefined
-        ? (streamState?.queuePaused ?? false)
-        : false,
+    isPaused: hasChatId && chatId !== undefined ? (streamState?.queuePaused ?? false) : false,
     pauseQueue: useCallback(() => {
       if (chatId === undefined) return;
       void chatStreamManager

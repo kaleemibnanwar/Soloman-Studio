@@ -13,9 +13,7 @@ testSkipIfWindows("local-agent - explore_code experiment", async ({ po }) => {
       enableCodeExplorer: false,
     });
   });
-  await expect
-    .poll(() => po.settings.recordSettings().enableCodeExplorer)
-    .toBe(false);
+  await expect.poll(() => po.settings.recordSettings().enableCodeExplorer).toBe(false);
 
   await po.sendPrompt("[dump]");
   await po.snapshotServerDump("request", { name: "disabled" });
@@ -25,22 +23,14 @@ testSkipIfWindows("local-agent - explore_code experiment", async ({ po }) => {
       enableCodeExplorer: true,
     });
   });
-  await expect
-    .poll(() => po.settings.recordSettings().enableCodeExplorer)
-    .toBe(true);
+  await expect.poll(() => po.settings.recordSettings().enableCodeExplorer).toBe(true);
 
   await po.appManagement.ensurePnpmInstall();
   await po.appManagement.ensureCodeExplorerReady();
   const appPath = await po.appManagement.getCurrentAppPath();
   const nodeModulesPath = path.join(appPath, "node_modules");
-  const typeScriptPackagePath = path.join(
-    nodeModulesPath,
-    "typescript",
-    "package.json",
-  );
-  const typeScriptPackage = JSON.parse(
-    fs.readFileSync(typeScriptPackagePath, "utf8"),
-  );
+  const typeScriptPackagePath = path.join(nodeModulesPath, "typescript", "package.json");
+  const typeScriptPackage = JSON.parse(fs.readFileSync(typeScriptPackagePath, "utf8"));
   const typeScriptPackageDir = path.dirname(typeScriptPackagePath);
   const backupRoot = fs.mkdtempSync(
     path.join(nodeModulesPath, ".octopusStudio-typescript-backup-"),

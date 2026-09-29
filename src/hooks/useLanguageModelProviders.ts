@@ -41,12 +41,8 @@ export function useLanguageModelProviders() {
     }
 
     // Check custom providers
-    const customProviders = queryResult.data?.filter(
-      (provider) => provider.type === "custom",
-    );
-    return (
-      customProviders?.some((provider) => isProviderSetup(provider.id)) ?? false
-    );
+    const customProviders = queryResult.data?.filter((provider) => provider.type === "custom");
+    return customProviders?.some((provider) => isProviderSetup(provider.id)) ?? false;
   };
 
   return {

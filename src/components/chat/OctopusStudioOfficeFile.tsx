@@ -8,15 +8,9 @@ import { OfficePreview } from "./OfficePreview";
  * Renders a generated office artifact (.docx/.pptx/.xlsx) inside the chat by
  * fetching its parsed content via `office:parseFile`.
  */
-export function OctopusStudioOfficeFile({
-  node,
-}: {
-  node: { properties: { path?: string } };
-}) {
+export function OctopusStudioOfficeFile({ node }: { node: { properties: { path?: string } } }) {
   const appId = useAtomValue(selectedAppIdAtom);
-  const [preview, setPreview] = useState<{ kind: string; data: unknown } | null>(
-    null,
-  );
+  const [preview, setPreview] = useState<{ kind: string; data: unknown } | null>(null);
   const path = node?.properties?.path;
 
   useEffect(() => {

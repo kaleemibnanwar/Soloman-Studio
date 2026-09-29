@@ -2,10 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  removeUnusedAppPackageFiles,
-  removeUnusedCopiedResources,
-} from "@/lib/packaging_cleanup";
+import { removeUnusedAppPackageFiles, removeUnusedCopiedResources } from "@/lib/packaging_cleanup";
 
 const tempDirectories: string[] = [];
 
@@ -34,21 +31,12 @@ describe("removeUnusedAppPackageFiles", () => {
     tempDirectories.push(buildPath);
 
     const nodePtyPath = path.join(buildPath, "node_modules/node-pty");
-    const supportedBinary = path.join(
-      nodePtyPath,
-      "prebuilds/darwin-arm64/pty.node",
-    );
-    const unsupportedBinary = path.join(
-      nodePtyPath,
-      "prebuilds/win32-x64/pty.node",
-    );
+    const supportedBinary = path.join(nodePtyPath, "prebuilds/darwin-arm64/pty.node");
+    const unsupportedBinary = path.join(nodePtyPath, "prebuilds/win32-x64/pty.node");
     const debugSymbols = path.join(nodePtyPath, "prebuilds/win32-x64/pty.pdb");
     const rebuiltBinary = path.join(nodePtyPath, "build/Release/pty.node");
     const spawnHelper = path.join(nodePtyPath, "build/Release/spawn-helper");
-    const buildIntermediate = path.join(
-      nodePtyPath,
-      "build/Release/obj.target/pty/src/unix/pty.o",
-    );
+    const buildIntermediate = path.join(nodePtyPath, "build/Release/obj.target/pty/src/unix/pty.o");
     const windowsBuildDepsArtifact = path.join(
       nodePtyPath,
       "build/deps/winpty/src/Release/obj/winpty-agent/Agent.obj",
@@ -96,24 +84,12 @@ describe("removeUnusedAppPackageFiles", () => {
     );
     tempDirectories.push(buildPath);
 
-    const betterSqlitePath = path.join(
-      buildPath,
-      "node_modules/better-sqlite3",
-    );
+    const betterSqlitePath = path.join(buildPath, "node_modules/better-sqlite3");
     const runtimeJs = path.join(betterSqlitePath, "lib/database.js");
-    const runtimeBinary = path.join(
-      betterSqlitePath,
-      "build/Release/better_sqlite3.node",
-    );
+    const runtimeBinary = path.join(betterSqlitePath, "build/Release/better_sqlite3.node");
     const sqliteSource = path.join(betterSqlitePath, "deps/sqlite3/sqlite3.c");
-    const staticLibrary = path.join(
-      betterSqlitePath,
-      "build/Release/sqlite3.a",
-    );
-    const buildObject = path.join(
-      betterSqlitePath,
-      "build/Release/obj.target/sqlite3/sqlite3.o",
-    );
+    const staticLibrary = path.join(betterSqlitePath, "build/Release/sqlite3.a");
+    const buildObject = path.join(betterSqlitePath, "build/Release/obj.target/sqlite3/sqlite3.o");
     const windowsBuildArtifacts = [
       "build/Release/better_sqlite3.iobj",
       "build/Release/better_sqlite3.ipdb",
@@ -150,24 +126,15 @@ describe("removeUnusedAppPackageFiles", () => {
     );
     tempDirectories.push(buildPath);
 
-    const keychainReaderPath = path.join(
-      buildPath,
-      "node_modules/octopus-studio-keychain-reader",
-    );
+    const keychainReaderPath = path.join(buildPath, "node_modules/octopus-studio-keychain-reader");
     const runtimeJs = path.join(keychainReaderPath, "index.js");
-    const runtimeBinary = path.join(
-      keychainReaderPath,
-      "build/Release/keychain_reader.node",
-    );
+    const runtimeBinary = path.join(keychainReaderPath, "build/Release/keychain_reader.node");
     const sourceFile = path.join(keychainReaderPath, "src/keychain_reader.c");
     const buildObject = path.join(
       keychainReaderPath,
       "build/Release/obj.target/keychain_reader/src/keychain_reader.o",
     );
-    const debugSymbols = path.join(
-      keychainReaderPath,
-      "build/Release/keychain_reader.pdb",
-    );
+    const debugSymbols = path.join(keychainReaderPath, "build/Release/keychain_reader.pdb");
 
     await Promise.all([
       writeFixtureFile(runtimeJs),
@@ -196,22 +163,13 @@ describe("removeUnusedCopiedResources", () => {
     );
     tempDirectories.push(buildPath);
 
-    const appResourcesPath = path.join(
-      buildPath,
-      "Octopus Studio.app/Contents/Resources",
-    );
+    const appResourcesPath = path.join(buildPath, "Octopus Studio.app/Contents/Resources");
     const electronResourcesPath = path.join(
       buildPath,
       "Octopus Studio.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources",
     );
-    const keptLocale = path.join(
-      electronResourcesPath,
-      "pt_BR.lproj/locale.pak",
-    );
-    const removedLocale = path.join(
-      electronResourcesPath,
-      "fr.lproj/locale.pak",
-    );
+    const keptLocale = path.join(electronResourcesPath, "pt_BR.lproj/locale.pak");
+    const removedLocale = path.join(electronResourcesPath, "fr.lproj/locale.pak");
     const gitLfs = path.join(appResourcesPath, "git/libexec/git-core/git-lfs");
 
     await Promise.all([
@@ -262,9 +220,7 @@ describe("removeUnusedCopiedResources", () => {
       "mergetools/vimdiff",
     ].map((file) => path.join(gitCorePath, file));
 
-    await Promise.all(
-      [...removedFiles, ...keptFiles].map((file) => writeFixtureFile(file)),
-    );
+    await Promise.all([...removedFiles, ...keptFiles].map((file) => writeFixtureFile(file)));
 
     await removeUnusedCopiedResources(buildPath, "darwin");
 
@@ -286,18 +242,14 @@ describe("removeUnusedCopiedResources", () => {
       buildPath,
       "Octopus Studio.app/Contents/Resources/git/libexec/git-core",
     );
-    await writeFixtureFile(
-      path.join(gitCorePath, "ja/System.CommandLine.resources.dll"),
-    );
+    await writeFixtureFile(path.join(gitCorePath, "ja/System.CommandLine.resources.dll"));
 
     const error = Object.assign(new Error("permission denied"), {
       code: "EACCES",
     });
     const rmdirSpy = vi.spyOn(fs, "rmdir").mockRejectedValueOnce(error);
 
-    await expect(removeUnusedCopiedResources(buildPath, "darwin")).rejects.toBe(
-      error,
-    );
+    await expect(removeUnusedCopiedResources(buildPath, "darwin")).rejects.toBe(error);
 
     rmdirSpy.mockRestore();
   });
@@ -345,9 +297,7 @@ describe("removeUnusedCopiedResources", () => {
     const gitconfig = path.join(gitPath, "etc/gitconfig");
 
     await Promise.all([
-      ...[...removedFiles, ...keptFiles, gitLfs, cmdScalar].map((file) =>
-        writeFixtureFile(file),
-      ),
+      ...[...removedFiles, ...keptFiles, gitLfs, cmdScalar].map((file) => writeFixtureFile(file)),
       writeFixtureFile(
         gitconfig,
         "[core]\n\tsymlinks = false\n[credential]\n\thelper = manager\n[http]\n\tsslBackend = schannel\n",
@@ -377,10 +327,7 @@ describe("removeUnusedCopiedResources", () => {
     const keptPak = path.join(buildPath, "locales/zh-CN.pak");
     const removedPak = path.join(buildPath, "locales/fr.pak");
 
-    await Promise.all([
-      writeFixtureFile(keptPak),
-      writeFixtureFile(removedPak),
-    ]);
+    await Promise.all([writeFixtureFile(keptPak), writeFixtureFile(removedPak)]);
 
     await removeUnusedCopiedResources(buildPath, "linux");
 

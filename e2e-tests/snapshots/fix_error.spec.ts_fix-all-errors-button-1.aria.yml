@@ -13,9 +13,9 @@
 - button "Restore to this point"
 - paragraph: "Fix all of the following errors:"
 - list:
-  - listitem: First error in Index
-  - listitem: Second error in ErrorComponent
-  - listitem: Third error in helper
+    - listitem: First error in Index
+    - listitem: Second error in ErrorComponent
+    - listitem: Third error in helper
 - button "file1.txt file1.txt Edit"
 - paragraph: More EOM
 - button "Copy"

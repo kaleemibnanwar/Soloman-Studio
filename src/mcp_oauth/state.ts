@@ -10,10 +10,7 @@ import type { InvocationRef } from "@/state_machines/invocation_ref";
 
 export const MCP_OAUTH_INVOCATION_KIND = "mcp-oauth";
 
-export type McpOAuthInvocationRef = InvocationRef<
-  typeof MCP_OAUTH_INVOCATION_KIND,
-  number
->;
+export type McpOAuthInvocationRef = InvocationRef<typeof MCP_OAUTH_INVOCATION_KIND, number>;
 
 export interface McpOAuthFlowIdentity {
   invocationRef: McpOAuthInvocationRef;
@@ -87,9 +84,5 @@ export function identityOf(state: McpOAuthState): McpOAuthFlowIdentity | null {
 }
 
 export function isTerminalMcpOAuthState(state: McpOAuthState): boolean {
-  return (
-    state.status === "connected" ||
-    state.status === "failed" ||
-    state.status === "timedOut"
-  );
+  return state.status === "connected" || state.status === "failed" || state.status === "timedOut";
 }

@@ -51,9 +51,7 @@ export function VercelIntegration() {
         disabled={isDisconnecting}
         className="flex items-center gap-2"
       >
-        {isDisconnecting
-          ? t("common:disconnecting")
-          : t("integrations.vercel.disconnect")}
+        {isDisconnecting ? t("common:disconnecting") : t("integrations.vercel.disconnect")}
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
           <path d="M24 22.525H0l12-21.05 12 21.05z" />
         </svg>

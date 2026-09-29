@@ -8,9 +8,7 @@ import { createRequire } from "module";
 import { afterEach, describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
-const {
-  verifyReleaseAssetProvenance,
-} = require("../../scripts/verify-release-assets.js");
+const { verifyReleaseAssetProvenance } = require("../../scripts/verify-release-assets.js");
 
 const temporaryDirectories: string[] = [];
 
@@ -19,9 +17,7 @@ function sha256(bytes: Buffer | string) {
 }
 
 function createFixture() {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "octopus-studio-release-verification-"),
-  );
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "octopus-studio-release-verification-"));
   temporaryDirectories.push(directory);
 
   const artifact = {
@@ -30,9 +26,7 @@ function createFixture() {
     size: Buffer.byteLength("binary"),
   };
   const manifestName = "release-provenance-windows.json";
-  const manifest = Buffer.from(
-    `${JSON.stringify({ artifacts: [artifact] }, null, 2)}\n`,
-  );
+  const manifest = Buffer.from(`${JSON.stringify({ artifacts: [artifact] }, null, 2)}\n`);
   fs.writeFileSync(path.join(directory, manifestName), manifest);
 
   return {

@@ -1,5 +1,5 @@
-import type { DevLocale, MessageKey } from './type';
-import { defaultLocale, getMessageFromLocale } from './getMessageFromLocale';
+import type { DevLocale, MessageKey } from "./type";
+import { defaultLocale, getMessageFromLocale } from "./getMessageFromLocale";
 
 type I18nValue = {
   message: string;
@@ -21,7 +21,7 @@ function translate(key: MessageKey, substitutions?: string | string[]) {
       if (!content) {
         return;
       }
-      message = message.replace(new RegExp(`\\$${key}\\$`, 'gi'), content);
+      message = message.replace(new RegExp(`\\$${key}\\$`, "gi"), content);
     });
   }
   if (!substitutions) {
@@ -34,7 +34,7 @@ function translate(key: MessageKey, substitutions?: string | string[]) {
 }
 
 function removePlaceholder(message: string) {
-  return message.replace(/\$\d+/g, '');
+  return message.replace(/\$\d+/g, "");
 }
 
 export const t = (...args: Parameters<typeof translate>) => {

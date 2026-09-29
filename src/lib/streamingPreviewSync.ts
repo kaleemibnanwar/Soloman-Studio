@@ -27,9 +27,6 @@ export function applyPreviewChunk(
  * error, and cancellation so a stale overlay never outlives the stream
  * that produced it.
  */
-export function clearPreviewForChat(
-  setPreview: SetPreview,
-  chatId: number,
-): void {
+export function clearPreviewForChat(setPreview: SetPreview, chatId: number): void {
   setPreview(chatId, "");
 }

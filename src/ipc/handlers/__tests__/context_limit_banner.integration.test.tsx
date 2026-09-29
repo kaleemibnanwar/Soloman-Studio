@@ -4,16 +4,10 @@ import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 
 import { messages, language_models } from "@/db/schema";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
-async function setContextWindow(
-  harness: HybridChatHarness,
-  contextWindow: number,
-) {
+async function setContextWindow(harness: HybridChatHarness, contextWindow: number) {
   await harness.db
     .update(language_models)
     .set({ context_window: contextWindow })
@@ -45,19 +39,14 @@ describe("context limit banner (integration)", () => {
     const originalChatId = await harness.createChat();
     harness.mount({ chatId: originalChatId });
 
-    const { send } = await harness.typeInChat(
-      "tc=context-limit-response [high-tokens=110000]",
-      { chatId: originalChatId },
-    );
+    const { send } = await harness.typeInChat("tc=context-limit-response [high-tokens=110000]", {
+      chatId: originalChatId,
+    });
     send();
 
     await harness.waitForStreamEnd(originalChatId);
 
-    const banner = await screen.findByTestId(
-      "context-limit-banner",
-      {},
-      { timeout: 15_000 },
-    );
+    const banner = await screen.findByTestId("context-limit-banner", {}, { timeout: 15_000 });
     expect(banner.textContent).toContain("This chat context is running out");
 
     fireEvent.click(screen.getByRole("button", { name: /Summarize/ }));
@@ -81,16 +70,9 @@ describe("context limit banner (integration)", () => {
       where: eq(messages.chatId, newChatId),
       orderBy: (messages, { asc }) => [asc(messages.id)],
     });
-    expect(newChatMessages.map((message) => message.role)).toEqual([
-      "user",
-      "assistant",
-    ]);
-    expect(newChatMessages[0].content).toBe(
-      `Summarize from chat-id=${originalChatId}`,
-    );
-    expect(newChatMessages[1].content.replace(/\s+/g, " ")).toContain(
-      "More EOM",
-    );
+    expect(newChatMessages.map((message) => message.role)).toEqual(["user", "assistant"]);
+    expect(newChatMessages[0].content).toBe(`Summarize from chat-id=${originalChatId}`);
+    expect(newChatMessages[1].content.replace(/\s+/g, " ")).toContain("More EOM");
   }, 60_000);
 
   it("shows the long-context cost warning for large context models", async () => {
@@ -98,19 +80,14 @@ describe("context limit banner (integration)", () => {
     const chatId = await harness.createChat();
     harness.mount({ chatId });
 
-    const { send } = await harness.typeInChat(
-      "tc=context-limit-response [high-tokens=250000]",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=context-limit-response [high-tokens=250000]", {
+      chatId,
+    });
     send();
 
     await harness.waitForStreamEnd(chatId);
 
-    const banner = await screen.findByTestId(
-      "context-limit-banner",
-      {},
-      { timeout: 15_000 },
-    );
+    const banner = await screen.findByTestId("context-limit-banner", {}, { timeout: 15_000 });
     expect(banner.textContent).toContain("Long chat context costs extra");
   }, 60_000);
 
@@ -119,10 +96,9 @@ describe("context limit banner (integration)", () => {
     const chatId = await harness.createChat();
     harness.mount({ chatId });
 
-    const { send } = await harness.typeInChat(
-      "tc=context-limit-response [high-tokens=50000]",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=context-limit-response [high-tokens=50000]", {
+      chatId,
+    });
     const countTokensCallsBeforeSend = harness.bridge.invokeLog.filter(
       (entry) => entry.channel === "chat:count-tokens",
     ).length;
@@ -135,8 +111,7 @@ describe("context limit banner (integration)", () => {
     // sleep here lets the absence check pass vacuously under load).
     await waitFor(() => {
       const settledAfterSend = harness.bridge.invokeLog.filter(
-        (entry) =>
-          entry.channel === "chat:count-tokens" && entry.status !== "pending",
+        (entry) => entry.channel === "chat:count-tokens" && entry.status !== "pending",
       ).length;
       expect(settledAfterSend).toBeGreaterThan(countTokensCallsBeforeSend);
     });

@@ -19,13 +19,7 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import { ipc } from "@/ipc/types";
-import {
-  type ReactNode,
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import { type ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { helpDialogAtom } from "@/atoms/helpDialogAtom";
@@ -73,8 +67,7 @@ const screenTransition = {
 // GitHub issue helpers (shared between Report a Bug & Upload Chat Session)
 // =============================================================================
 
-const GITHUB_ISSUES_BASE =
-  "https://github.com/octopus-studio-sh/octopusStudio/issues/new" as const;
+const GITHUB_ISSUES_BASE = "https://github.com/octopus-studio-sh/octopusStudio/issues/new" as const;
 
 function formatSettingsLines(
   settings: UserSettings | null,
@@ -264,9 +257,7 @@ export function HelpDialog() {
   const [isUploading, setIsUploading] = useState(false);
   const [screen, setScreen] = useState<DialogScreen>("main");
   const [direction, setDirection] = useState(0);
-  const [debugBundle, setDebugBundle] = useState<SessionDebugBundle | null>(
-    null,
-  );
+  const [debugBundle, setDebugBundle] = useState<SessionDebugBundle | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [isHelpBotOpen, setIsHelpBotOpen] = useState(false);
   const [isBugScreenshotOpen, setIsBugScreenshotOpen] = useState(false);
@@ -281,8 +272,7 @@ export function HelpDialog() {
   const defaultCatalogModel = settings
     ? modelsByProviders?.[settings.selectedModel.provider]?.find((model) =>
         settings.selectedModel.customModelId
-          ? model.type === "custom" &&
-            model.id === settings.selectedModel.customModelId
+          ? model.type === "custom" && model.id === settings.selectedModel.customModelId
           : model.apiName === settings.selectedModel.name,
       )
     : undefined;
@@ -292,14 +282,11 @@ export function HelpDialog() {
         model: settings.selectedModel,
         catalogModel: defaultCatalogModel,
         preferredEffortLevel:
-          settings.modelEffortPreferences?.[
-            getModelPreferenceKey(settings.selectedModel)
-          ],
+          settings.modelEffortPreferences?.[getModelPreferenceKey(settings.selectedModel)],
       }))
     : null;
   const { userBudget } = useUserBudgetInfo();
-  const isOctopusStudioProUser =
-    settings?.providerSettings?.["auto"]?.apiKey?.value;
+  const isOctopusStudioProUser = settings?.providerSettings?.["auto"]?.apiKey?.value;
 
   // ---------------------------------------------------------------------------
   // Navigation
@@ -413,17 +400,14 @@ ${formatLogsSection(debugInfo)}
     if (!debugBundle) return;
     setIsUploading(true);
     try {
-      const response = await fetch(
-        "https://upload-logs.octopusStudio.sh/generate-upload-url",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            extension: "json",
-            contentType: "application/json",
-          }),
-        },
-      );
+      const response = await fetch("https://upload-logs.octopusStudio.sh/generate-upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          extension: "json",
+          contentType: "application/json",
+        }),
+      });
       if (!response.ok) {
         showError(`Failed to get upload URL: ${response.statusText}`);
         throw new Error(`Failed to get upload URL: ${response.statusText}`);
@@ -498,11 +482,7 @@ ${formatLogsSection(debugInfo)}
   // ---------------------------------------------------------------------------
 
   const renderMainScreen = () => (
-    <AnimatedScreen
-      screenKey="main"
-      direction={direction}
-      skipInitial={!hasNavigated.current}
-    >
+    <AnimatedScreen screenKey="main" direction={direction} skipInitial={!hasNavigated.current}>
       <DialogHeader>
         <DialogTitle>Need help with Octopus Studio?</DialogTitle>
       </DialogHeader>
@@ -517,15 +497,12 @@ ${formatLogsSection(debugInfo)}
             onClick={() => setIsHelpBotOpen(true)}
             className="w-full py-6 border-primary/50 shadow-sm shadow-primary/10 transition-all hover:shadow-md hover:shadow-primary/15"
           >
-            <SparklesIcon className="mr-2 h-5 w-5" /> Chat with OctopusStudio
-            help bot (Pro)
+            <SparklesIcon className="mr-2 h-5 w-5" /> Chat with OctopusStudio help bot (Pro)
           </Button>
         ) : (
           <Button
             variant="outline"
-            onClick={() =>
-              ipc.system.openExternalUrl("https://www.octopusStudio.sh/docs")
-            }
+            onClick={() => ipc.system.openExternalUrl("https://www.octopusStudio.sh/docs")}
             className="w-full py-6 bg-(--background-lightest)"
           >
             <BookOpenIcon className="mr-2 h-5 w-5" /> Open Docs
@@ -550,8 +527,8 @@ ${formatLogsSection(debugInfo)}
               <span className="text-sm font-semibold">Report a Bug</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Includes error logs and system info to help troubleshoot issues
-              with Octopus Studio (UI bugs, crashes, setup problems, etc.).
+              Includes error logs and system info to help troubleshoot issues with Octopus Studio
+              (UI bugs, crashes, setup problems, etc.).
             </p>
             <Button
               variant="outline"
@@ -580,29 +557,22 @@ ${formatLogsSection(debugInfo)}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Button
-              variant="ghost"
-              className="mr-2 p-0 h-8 w-8"
-              onClick={handleCancelReview}
-            >
+            <Button variant="ghost" className="mr-2 p-0 h-8 w-8" onClick={handleCancelReview}>
               <ChevronLeftIcon className="h-4 w-4" />
             </Button>
             OK to upload chat session?
           </DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Please review the information that will be submitted. Your chat
-          messages, system information, and a snapshot of your codebase will be
-          included.
+          Please review the information that will be submitted. Your chat messages, system
+          information, and a snapshot of your codebase will be included.
         </DialogDescription>
 
         <div className="space-y-2 overflow-y-auto flex-grow mt-4">
           <ReviewDetailsSection title="Chat Messages" mono={false}>
             {debugBundle.chat.messages.map((msg) => (
               <div key={msg.id} className="mb-2">
-                <span className="font-semibold">
-                  {msg.role === "user" ? "You" : "Assistant"}:{" "}
-                </span>
+                <span className="font-semibold">{msg.role === "user" ? "You" : "Assistant"}: </span>
                 <span>{msg.content}</span>
               </div>
             ))}
@@ -612,9 +582,7 @@ ${formatLogsSection(debugInfo)}
             {debugBundle.codebase}
           </ReviewDetailsSection>
 
-          <ReviewDetailsSection title="Logs">
-            {debugBundle.logs}
-          </ReviewDetailsSection>
+          <ReviewDetailsSection title="Logs">{debugBundle.logs}</ReviewDetailsSection>
 
           {debugBundle.updaterLogs && (
             <ReviewDetailsSection title="Auto-Updater Logs">
@@ -623,40 +591,23 @@ ${formatLogsSection(debugInfo)}
           )}
 
           <ReviewDetailsSection title="System Information" mono={false}>
-            <p>
-              Octopus Studio Version: {debugBundle.system.octopusStudioVersion}
-            </p>
+            <p>Octopus Studio Version: {debugBundle.system.octopusStudioVersion}</p>
             <p>Platform: {debugBundle.system.platform}</p>
             <p>Architecture: {debugBundle.system.architecture}</p>
-            <p>
-              Node Version: {debugBundle.system.nodeVersion || "Not available"}
-            </p>
+            <p>Node Version: {debugBundle.system.nodeVersion || "Not available"}</p>
           </ReviewDetailsSection>
 
           <ReviewDetailsSection title="Settings" data={debugBundle.settings} />
           <ReviewDetailsSection title="App Metadata" data={debugBundle.app} />
-          <ReviewDetailsSection
-            title="Custom Providers & Models"
-            data={debugBundle.providers}
-          />
-          <ReviewDetailsSection
-            title="MCP Servers"
-            data={debugBundle.mcpServers}
-          />
+          <ReviewDetailsSection title="Custom Providers & Models" data={debugBundle.providers} />
+          <ReviewDetailsSection title="MCP Servers" data={debugBundle.mcpServers} />
           {debugBundle.memoryDiagnostics && (
-            <ReviewDetailsSection
-              title="Memory Diagnostics"
-              data={debugBundle.memoryDiagnostics}
-            />
+            <ReviewDetailsSection title="Memory Diagnostics" data={debugBundle.memoryDiagnostics} />
           )}
         </div>
 
         <div className="flex justify-between mt-4 pt-2 sticky bottom-0 bg-background">
-          <Button
-            variant="outline"
-            onClick={handleCancelReview}
-            className="flex items-center"
-          >
+          <Button variant="outline" onClick={handleCancelReview} className="flex items-center">
             <XIcon className="mr-2 h-4 w-4" /> Cancel
           </Button>
           <Button
@@ -692,11 +643,7 @@ ${formatLogsSection(debugInfo)}
         <CopyButton text={sessionId} />
       </div>
 
-      <Button
-        onClick={handleOpenGitHubIssue}
-        className="w-full py-5 text-base mt-4"
-        size="lg"
-      >
+      <Button onClick={handleOpenGitHubIssue} className="w-full py-5 text-base mt-4" size="lg">
         <ExternalLinkIcon className="mr-2 h-5 w-5" />
         Create GitHub Issue
       </Button>
@@ -705,8 +652,8 @@ ${formatLogsSection(debugInfo)}
         <div className="flex items-start gap-2">
           <AlertCircleIcon className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <p className="text-sm text-amber-700 dark:text-amber-400/80">
-            Your upload will not be reviewed without a linked GitHub issue. The
-            issue will be pre-filled with your session ID and system info.
+            Your upload will not be reviewed without a linked GitHub issue. The issue will be
+            pre-filled with your session ID and system info.
           </p>
         </div>
       </div>
@@ -717,11 +664,7 @@ ${formatLogsSection(debugInfo)}
   // clicked "Upload Chat Session" sees a spinner instead of the main help menu
   // before the review screen appears.
   const renderPreloadingScreen = () => (
-    <AnimatedScreen
-      screenKey="main"
-      direction={direction}
-      skipInitial={!hasNavigated.current}
-    >
+    <AnimatedScreen screenKey="main" direction={direction} skipInitial={!hasNavigated.current}>
       <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
         <Loader2Icon className="h-6 w-6 animate-spin" />
         <span>{t("home:help.preparingUpload")}</span>
@@ -743,25 +686,18 @@ ${formatLogsSection(debugInfo)}
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent
           className={
-            screen === "review"
-              ? "max-w-4xl max-h-[80vh] overflow-hidden flex flex-col"
-              : undefined
+            screen === "review" ? "max-w-4xl max-h-[80vh] overflow-hidden flex flex-col" : undefined
           }
         >
           <AnimatePresence mode="wait" custom={direction}>
             {screen === "main" &&
-              (isCrashPreloading
-                ? renderPreloadingScreen()
-                : renderMainScreen())}
+              (isCrashPreloading ? renderPreloadingScreen() : renderMainScreen())}
             {screen === "review" && renderReviewScreen()}
             {screen === "upload-complete" && renderUploadCompleteScreen()}
           </AnimatePresence>
         </DialogContent>
       </Dialog>
-      <HelpBotDialog
-        isOpen={isHelpBotOpen}
-        onClose={() => setIsHelpBotOpen(false)}
-      />
+      <HelpBotDialog isOpen={isHelpBotOpen} onClose={() => setIsHelpBotOpen(false)} />
       <BugScreenshotDialog
         isOpen={isBugScreenshotOpen}
         onClose={() => setIsBugScreenshotOpen(false)}

@@ -23,9 +23,7 @@ export const OctopusStudioRead: React.FC<OctopusStudioReadProps> = ({
   const endLine = endLineProp || node?.properties?.endLine || "";
   const appName = node?.properties?.appName || "";
   const fileName = path ? path.split("/").pop() : "";
-  const dirPath = path
-    ? path.slice(0, path.length - (fileName?.length || 0))
-    : "";
+  const dirPath = path ? path.slice(0, path.length - (fileName?.length || 0)) : "";
 
   // Build the line number suffix (e.g., ":L3-L5" or ":L3")
   const getLineNumberSuffix = () => {
@@ -45,29 +43,18 @@ export const OctopusStudioRead: React.FC<OctopusStudioReadProps> = ({
       <div className="flex items-center gap-1 py-1">
         <FileText size={14} className="shrink-0 text-muted-foreground/50" />
         <span className="text-[13px] font-medium text-foreground/70">Read</span>
-        {appName && (
-          <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>
-        )}
+        {appName && <OctopusStudioBadge color="sky">{appName}</OctopusStudioBadge>}
         {path && (
-          <span
-            className="text-[13px] truncate min-w-0"
-            title={path + lineNumberSuffix}
-          >
-            {dirPath && (
-              <span className="text-muted-foreground/85">{dirPath}</span>
-            )}
+          <span className="text-[13px] truncate min-w-0" title={path + lineNumberSuffix}>
+            {dirPath && <span className="text-muted-foreground/85">{dirPath}</span>}
             <span className="font-medium text-foreground/70">{fileName}</span>
             {lineNumberSuffix && (
-              <span className="text-muted-foreground/85">
-                {lineNumberSuffix}
-              </span>
+              <span className="text-muted-foreground/85">{lineNumberSuffix}</span>
             )}
           </span>
         )}
       </div>
-      {children && (
-        <div className="text-xs text-muted-foreground ml-5">{children}</div>
-      )}
+      {children && <div className="text-xs text-muted-foreground ml-5">{children}</div>}
     </div>
   );
 };

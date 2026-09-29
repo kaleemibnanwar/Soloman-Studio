@@ -1,15 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  CheckSquare,
-  FolderPlus,
-  Loader2,
-  Plus,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { CheckSquare, FolderPlus, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { useAtom } from "jotai";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BackButton } from "@/components/ui/back-button";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,10 +25,7 @@ import { ipc } from "@/ipc/types";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { showError } from "@/lib/toast";
 import { AppsViewTabs, type AppsView } from "@/components/AppsViewTabs";
-import {
-  useAppCollections,
-  type AppCollection,
-} from "@/hooks/useAppCollections";
+import { useAppCollections, type AppCollection } from "@/hooks/useAppCollections";
 import { CollectionFolderCard } from "@/components/CollectionFolderCard";
 import { CollectionDetailView } from "@/components/CollectionDetailView";
 import { AddOrEditCollectionDialog } from "@/components/AddOrEditCollectionDialog";
@@ -50,18 +41,15 @@ export default function AppsPage() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedAppIds, setSelectedAppIds] = useState<Set<number>>(new Set());
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
-  const [isAssignCollectionDialogOpen, setIsAssignCollectionDialogOpen] =
-    useState(false);
+  const [keepProjectFiles, setKeepProjectFiles] = useState(false);
+  const [isAssignCollectionDialogOpen, setIsAssignCollectionDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedAppId, setSelectedAppId] = useAtom(selectedAppIdAtom);
   const [view, setView] = useState<AppsView>("apps");
   const [openCollectionId, setOpenCollectionId] = useState<number | null>(null);
-  const [isAddOrEditCollectionOpen, setIsAddOrEditCollectionOpen] =
-    useState(false);
-  const [editingCollection, setEditingCollection] =
-    useState<AppCollection | null>(null);
-  const [deletingCollection, setDeletingCollection] =
-    useState<AppCollection | null>(null);
+  const [isAddOrEditCollectionOpen, setIsAddOrEditCollectionOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<AppCollection | null>(null);
+  const [deletingCollection, setDeletingCollection] = useState<AppCollection | null>(null);
 
   const openCollection = useMemo(
     () =>
@@ -80,9 +68,7 @@ export default function AppsPage() {
   const filteredApps = useMemo(() => {
     // Exclude the pre-seeded "Chats" bucket — it's not a project the user
     // created, and it already has a dedicated home in the sidebar.
-    const sorted = sortAppsForShowcase(
-      apps.filter((app) => !app.isDefaultChatProject),
-    );
+    const sorted = sortAppsForShowcase(apps.filter((app) => !app.isDefaultChatProject));
     const q = searchQuery.trim().toLowerCase();
     if (!q) return sorted;
     return sorted.filter((app) => app.name.toLowerCase().includes(q));
@@ -99,13 +85,9 @@ export default function AppsPage() {
     () => apps.filter((a) => selectedAppIds.has(a.id)),
     [apps, selectedAppIds],
   );
-  const visibleFilteredIds = useMemo(
-    () => filteredApps.map((a) => a.id),
-    [filteredApps],
-  );
+  const visibleFilteredIds = useMemo(() => filteredApps.map((a) => a.id), [filteredApps]);
   const allVisibleSelected =
-    visibleFilteredIds.length > 0 &&
-    visibleFilteredIds.every((id) => selectedAppIds.has(id));
+    visibleFilteredIds.length > 0 && visibleFilteredIds.every((id) => selectedAppIds.has(id));
 
   const handleEnterSelectionMode = () => {
     setIsSelectionMode(true);
@@ -145,12 +127,10 @@ export default function AppsPage() {
     const idsToDelete = [...selectedAppIds];
     setIsDeleting(true);
     try {
-      const { results } = await ipc.app.deleteApps({ appIds: idsToDelete });
+      const { results } = await ipc.app.deleteApps({ appIds: idsToDelete, keepProjectFiles });
 
       const failed = results.filter((r) => !r.success);
-      const succeededIds = new Set(
-        results.filter((r) => r.success).map((r) => r.appId),
-      );
+      const succeededIds = new Set(results.filter((r) => r.success).map((r) => r.appId));
 
       // Reset the active app atoms if the currently-active app was deleted,
       // so app-details and the sidebar don't render against a stale id.
@@ -218,12 +198,8 @@ export default function AppsPage() {
             <Search className="absolute left-4 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder={
-                view === "apps" ? "Search apps..." : "Search collections..."
-              }
-              aria-label={
-                view === "apps" ? "Search apps" : "Search collections"
-              }
+              placeholder={view === "apps" ? "Search apps..." : "Search collections..."}
+              aria-label={view === "apps" ? "Search apps" : "Search collections"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent py-3 pl-11 pr-4 text-sm outline-none placeholder:text-muted-foreground"
@@ -252,10 +228,7 @@ export default function AppsPage() {
             className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-border bg-(--background-lighter) px-3 py-2"
           >
             <div className="text-sm text-muted-foreground">
-              <span data-testid="apps-gallery-selection-count">
-                {selectedAppIds.size}
-              </span>{" "}
-              selected
+              <span data-testid="apps-gallery-selection-count">{selectedAppIds.size}</span> selected
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -316,9 +289,7 @@ export default function AppsPage() {
           ) : filteredApps.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <p className="text-muted-foreground text-center">
-                {searchQuery
-                  ? "No apps match your search."
-                  : "You haven't created any apps yet."}
+                {searchQuery ? "No apps match your search." : "You haven't created any apps yet."}
               </p>
               {!searchQuery && (
                 <Button onClick={() => navigate({ to: "/" })} size="sm">
@@ -368,9 +339,7 @@ export default function AppsPage() {
               </Button>
             </div>
             {collectionsLoading ? (
-              <div className="text-muted-foreground text-center py-12">
-                Loading collections...
-              </div>
+              <div className="text-muted-foreground text-center py-12">Loading collections...</div>
             ) : filteredCollections.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <p className="text-muted-foreground text-center">
@@ -417,24 +386,28 @@ export default function AppsPage() {
       <Dialog
         open={isBulkDeleteDialogOpen}
         onOpenChange={(open) => {
-          if (!isDeleting) setIsBulkDeleteDialogOpen(open);
+          if (!isDeleting) {
+            setIsBulkDeleteDialogOpen(open);
+            if (open) setKeepProjectFiles(false);
+          }
         }}
       >
-        <DialogContent className="max-w-sm p-4">
+        <DialogContent className="max-w-md p-5">
           <DialogHeader className="pb-2">
             <DialogTitle>
               Delete {selectedAppIds.size} app
               {selectedAppIds.size === 1 ? "" : "s"}?
             </DialogTitle>
             <DialogDescription className="text-xs">
-              This action is irreversible. All app files and chat history for
-              these apps will be permanently deleted.
+              {keepProjectFiles
+                ? "This will remove the selected apps and their chat histories from Octopus Studio, while keeping their project directories intact on disk."
+                : "This action is irreversible. All app files, local directories, and chat histories will be permanently deleted."}
             </DialogDescription>
           </DialogHeader>
           {selectedApps.length > 0 && (
             <ul
               data-testid="apps-gallery-bulk-delete-list"
-              className="max-h-40 overflow-y-auto rounded border border-border bg-(--background-lighter) px-3 py-2 text-xs text-foreground"
+              className="max-h-36 overflow-y-auto rounded border border-border bg-(--background-lighter) px-3 py-2 text-xs text-foreground"
             >
               {selectedApps.map((app) => (
                 <li key={app.id} className="truncate py-0.5">
@@ -443,6 +416,29 @@ export default function AppsPage() {
               ))}
             </ul>
           )}
+
+          {/* Keep project files option */}
+          <div className="flex items-start gap-2.5 rounded-lg border border-border/80 bg-muted/20 p-2.5 my-1">
+            <Checkbox
+              id="bulk-keep-project-files"
+              checked={keepProjectFiles}
+              onCheckedChange={(checked) => setKeepProjectFiles(checked === true)}
+              className="mt-0.5"
+            />
+            <div className="grid gap-0.5 leading-none">
+              <label
+                htmlFor="bulk-keep-project-files"
+                className="text-xs font-semibold text-foreground cursor-pointer"
+              >
+                Keep project files on disk
+              </label>
+              <p className="text-[11px] text-muted-foreground leading-normal">
+                Preserves all source code and local project folders on disk, removing only the
+                metadata and chats from Octopus Studio.
+              </p>
+            </div>
+          </div>
+
           <DialogFooter className="flex justify-end gap-2 pt-2">
             <Button
               variant="outline"

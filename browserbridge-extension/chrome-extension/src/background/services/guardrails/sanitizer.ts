@@ -2,11 +2,11 @@
  * Content sanitizer for removing malicious patterns from untrusted content
  */
 
-import type { SanitizationResult, ThreatType } from './types';
-import { getPatterns } from './patterns';
-import { createLogger } from '@src/background/log';
+import type { SanitizationResult, ThreatType } from "./types";
+import { getPatterns } from "./patterns";
+import { createLogger } from "@src/background/log";
 
-const logger = createLogger('SecuritySanitizer');
+const logger = createLogger("SecuritySanitizer");
 
 /**
  * Sanitize untrusted content by removing dangerous patterns
@@ -15,16 +15,19 @@ const logger = createLogger('SecuritySanitizer');
  * @returns Sanitization result with cleaned content and detected threats
  * @throws Error if pattern processing fails
  */
-export function sanitizeContent(content: string | undefined, strict: boolean = false): SanitizationResult {
-  if (!content || content.trim() === '') {
+export function sanitizeContent(
+  content: string | undefined,
+  strict: boolean = false,
+): SanitizationResult {
+  if (!content || content.trim() === "") {
     return {
-      sanitized: '',
+      sanitized: "",
       threats: [],
       modified: false,
     };
   }
 
-  let sanitized = content.normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g, '');
+  let sanitized = content.normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "");
   const detectedThreats = new Set<ThreatType>();
   let wasModified = false;
 
@@ -44,10 +47,13 @@ export function sanitizeContent(content: string | undefined, strict: boolean = f
         detectedThreats.add(securityPattern.type);
 
         // Create another fresh instance for replacement
-        const replacementRegex = new RegExp(securityPattern.pattern.source, securityPattern.pattern.flags);
+        const replacementRegex = new RegExp(
+          securityPattern.pattern.source,
+          securityPattern.pattern.flags,
+        );
 
         // Apply replacement
-        sanitized = sanitized.replace(replacementRegex, securityPattern.replacement || '');
+        sanitized = sanitized.replace(replacementRegex, securityPattern.replacement || "");
 
         // Track if content was modified
         if (sanitized.length !== originalLength) {
@@ -64,8 +70,8 @@ export function sanitizeContent(content: string | undefined, strict: boolean = f
   // Clean up any double spaces or empty lines created by replacements
   if (wasModified) {
     sanitized = sanitized
-      .replace(/[^\S\r\n]+/g, ' ') // Collapse spaces/tabs only
-      .replace(/\n{3,}/g, '\n\n') // Reduce 3+ blank lines to 2
+      .replace(/[^\S\r\n]+/g, " ") // Collapse spaces/tabs only
+      .replace(/\n{3,}/g, "\n\n") // Reduce 3+ blank lines to 2
       .trim();
 
     // Also clean up any empty tags that might remain
@@ -87,7 +93,7 @@ export function sanitizeContent(content: string | undefined, strict: boolean = f
  * @returns Array of detected threat types
  */
 export function detectThreats(content: string, strict: boolean = false): ThreatType[] {
-  if (!content || content.trim() === '') {
+  if (!content || content.trim() === "") {
     return [];
   }
 
@@ -120,9 +126,9 @@ export function detectThreats(content: string, strict: boolean = false): ThreatT
 export function cleanEmptyTags(content: string): string {
   // Remove empty element pairs like <tag></tag>
   const emptyPairPattern = /<(\w+)[^>]*>\s*<\/\1>/g;
-  let result = content.replace(emptyPairPattern, '');
+  let result = content.replace(emptyPairPattern, "");
   // Remove stray empty tags like <> or </>
   const strayEmptyTagPattern = /<\s*\/?\s*>/g;
-  result = result.replace(strayEmptyTagPattern, '');
+  result = result.replace(strayEmptyTagPattern, "");
   return result;
 }

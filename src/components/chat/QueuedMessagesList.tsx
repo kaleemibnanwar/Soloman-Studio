@@ -162,11 +162,7 @@ export function QueuedMessagesList({
         >
           <ListOrdered className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <span className="text-sm">{messages.length} Queued</span>
-          {!isPaused && (
-            <span className="text-xs text-muted-foreground">
-              - {statusText}
-            </span>
-          )}
+          {!isPaused && <span className="text-xs text-muted-foreground">- {statusText}</span>}
           {isPaused && (
             <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 font-medium">
               Paused

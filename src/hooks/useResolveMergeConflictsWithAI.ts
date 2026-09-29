@@ -67,10 +67,7 @@ export function useResolveMergeConflictsWithAI({
           try {
             await ipc.chat.deleteChat(newChatId);
           } catch (deleteError) {
-            console.error(
-              "Failed to delete unused conflict-resolution chat:",
-              deleteError,
-            );
+            console.error("Failed to delete unused conflict-resolution chat:", deleteError);
           }
           throw error;
         }
@@ -110,16 +107,9 @@ For each listed file, resolve every Git conflict by editing the file in place. P
         try {
           await onStartFailed?.();
         } catch (rollbackError) {
-          console.error(
-            "Failed to release conflict-resolution claim:",
-            rollbackError,
-          );
+          console.error("Failed to release conflict-resolution claim:", rollbackError);
         }
-        showError(
-          error instanceof Error
-            ? error.message
-            : "Failed to start conflict resolution",
-        );
+        showError(error instanceof Error ? error.message : "Failed to start conflict resolution");
         isResolvingRef.current = false;
         setIsResolving(false);
       }

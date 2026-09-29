@@ -37,7 +37,7 @@ export function dereferenceJsonSchema(schema: JsonSchemaObject): JsonSchemaObjec
 
   // Copy all properties except $defs
   for (const [key, value] of Object.entries(result)) {
-    if (key !== '$defs') {
+    if (key !== "$defs") {
       resultWithoutDefs[key] = value;
     }
   }
@@ -48,15 +48,18 @@ export function dereferenceJsonSchema(schema: JsonSchemaObject): JsonSchemaObjec
 /**
  * Process a schema node, resolving all references
  */
-function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, JsonSchemaObject>): JsonSchemaObject {
+function processSchemaNode(
+  node: JsonSchemaObject,
+  definitions: Record<string, JsonSchemaObject>,
+): JsonSchemaObject {
   // If it's not an object or is null, return as is
-  if (typeof node !== 'object' || node === null) {
+  if (typeof node !== "object" || node === null) {
     return node;
   }
 
   // If it's a reference, resolve it
   if (node.$ref) {
-    const refPath = node.$ref.replace('#/$defs/', '');
+    const refPath = node.$ref.replace("#/$defs/", "");
     const definition = definitions[refPath];
     if (definition) {
       // Process the definition to resolve any nested references
@@ -67,7 +70,7 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
 
       // First copy properties from the original node except $ref
       for (const [key, value] of Object.entries(node)) {
-        if (key !== '$ref') {
+        if (key !== "$ref") {
           result[key] = value;
         }
       }
@@ -87,11 +90,11 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
   // Handle anyOf for references
   if (node.anyOf) {
     // Process each item in anyOf
-    const processedAnyOf = node.anyOf.map(item => processSchemaNode(item, definitions));
+    const processedAnyOf = node.anyOf.map((item) => processSchemaNode(item, definitions));
 
     // If anyOf contains a reference and a null type, merge them
-    const nonNullTypes = processedAnyOf.filter(item => item.type !== 'null');
-    const hasNullType = processedAnyOf.some(item => item.type === 'null');
+    const nonNullTypes = processedAnyOf.filter((item) => item.type !== "null");
+    const hasNullType = processedAnyOf.some((item) => item.type === "null");
 
     if (nonNullTypes.length === 1 && hasNullType) {
       // Create a result that preserves all properties from the original node
@@ -99,7 +102,7 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
 
       // Copy all properties from original node except anyOf
       for (const [key, value] of Object.entries(node)) {
-        if (key !== 'anyOf') {
+        if (key !== "anyOf") {
           result[key] = value;
         }
       }
@@ -128,14 +131,17 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
 
   // Copy all properties except $ref
   for (const [key, value] of Object.entries(node)) {
-    if (key !== '$ref') {
-      if (key === 'properties' && typeof value === 'object' && value !== null) {
+    if (key !== "$ref") {
+      if (key === "properties" && typeof value === "object" && value !== null) {
         // Process properties
         result.properties = {};
         for (const [propKey, propValue] of Object.entries(value)) {
-          result.properties[propKey] = processSchemaNode(propValue as JsonSchemaObject, definitions);
+          result.properties[propKey] = processSchemaNode(
+            propValue as JsonSchemaObject,
+            definitions,
+          );
         }
-      } else if (key === 'items' && typeof value === 'object' && value !== null) {
+      } else if (key === "items" && typeof value === "object" && value !== null) {
         // Process items for arrays
         result.items = processSchemaNode(value as JsonSchemaObject, definitions);
       } else {
@@ -162,7 +168,10 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
  * @param ensureOrder If true, adds the propertyOrdering field for consistent ordering
  * @returns A Google Gemini compatible JSON schema
  */
-export function convertOpenAISchemaToGemini(openaiSchema: JsonSchemaObject, ensureOrder = false): JsonSchemaObject {
+export function convertOpenAISchemaToGemini(
+  openaiSchema: JsonSchemaObject,
+  ensureOrder = false,
+): JsonSchemaObject {
   // First flatten the schema with dereferenceJsonSchema
   const flattenedSchema = dereferenceJsonSchema(openaiSchema);
 
@@ -201,7 +210,7 @@ export function convertOpenAISchemaToGemini(openaiSchema: JsonSchemaObject, ensu
   }
 
   // Handle array items
-  if (flattenedSchema.type === 'array' && flattenedSchema.items) {
+  if (flattenedSchema.type === "array" && flattenedSchema.items) {
     geminiSchema.items = processPropertyForGemini(flattenedSchema.items);
 
     if (flattenedSchema.minItems !== undefined) {
@@ -226,7 +235,7 @@ function processPropertiesForGemini(
   const result: Record<string, JsonSchemaObject> = {};
 
   for (const [key, value] of Object.entries(properties)) {
-    if (typeof value !== 'object' || value === null) continue;
+    if (typeof value !== "object" || value === null) continue;
 
     result[key] = processPropertyForGemini(value, addPropertyOrdering);
   }
@@ -240,7 +249,10 @@ function processPropertiesForGemini(
  * @param property The property to process
  * @param addPropertyOrdering Whether to add property ordering for object properties
  */
-function processPropertyForGemini(property: JsonSchemaObject, addPropertyOrdering = false): JsonSchemaObject {
+function processPropertyForGemini(
+  property: JsonSchemaObject,
+  addPropertyOrdering = false,
+): JsonSchemaObject {
   // Create a new property object
   const result: JsonSchemaObject = {
     type: property.type,
@@ -267,7 +279,7 @@ function processPropertyForGemini(property: JsonSchemaObject, addPropertyOrderin
   }
 
   // Process nested properties for objects
-  if (property.type === 'object' && property.properties) {
+  if (property.type === "object" && property.properties) {
     result.properties = processPropertiesForGemini(property.properties, addPropertyOrdering);
 
     // Copy required fields
@@ -286,7 +298,7 @@ function processPropertyForGemini(property: JsonSchemaObject, addPropertyOrderin
   }
 
   // Handle arrays
-  if (property.type === 'array' && property.items) {
+  if (property.type === "array" && property.items) {
     result.items = processPropertyForGemini(property.items, addPropertyOrdering);
 
     if (property.minItems !== undefined) {
@@ -303,40 +315,46 @@ function processPropertyForGemini(property: JsonSchemaObject, addPropertyOrderin
 
 export type JSONSchemaType = JsonSchemaObject | JSONSchemaType[];
 // Custom stringify function
-export function stringifyCustom(value: JSONSchemaType, indent = '', baseIndent = '  '): string {
+export function stringifyCustom(value: JSONSchemaType, indent = "", baseIndent = "  "): string {
   const currentIndent = indent + baseIndent;
   if (value === null) {
-    return 'null';
+    return "null";
   }
   switch (typeof value) {
-    case 'string':
+    case "string":
       // Escape single quotes within the string if necessary
       return `'${(value as string).replace(/'/g, "\\\\'")}'`;
-    case 'number':
-    case 'boolean':
+    case "number":
+    case "boolean":
       return String(value);
-    case 'object': {
+    case "object": {
       if (Array.isArray(value)) {
         if (value.length === 0) {
-          return '[]';
+          return "[]";
         }
-        const items = value.map(item => `${currentIndent}${stringifyCustom(item, currentIndent, baseIndent)}`);
-        return `[\n${items.join(',\n')}\n${indent}]`;
+        const items = value.map(
+          (item) => `${currentIndent}${stringifyCustom(item, currentIndent, baseIndent)}`,
+        );
+        return `[\n${items.join(",\n")}\n${indent}]`;
       }
       const keys = Object.keys(value);
       if (keys.length === 0) {
-        return '{}';
+        return "{}";
       }
-      const properties = keys.map(key => {
+      const properties = keys.map((key) => {
         // Assume keys are valid JS identifiers and don't need quotes
         const formattedKey = key;
-        const formattedValue = stringifyCustom(value[key] as JSONSchemaType, currentIndent, baseIndent);
+        const formattedValue = stringifyCustom(
+          value[key] as JSONSchemaType,
+          currentIndent,
+          baseIndent,
+        );
         return `${currentIndent}${formattedKey}: ${formattedValue}`;
       });
-      return `{\n${properties.join(',\n')}\n${indent}}`;
+      return `{\n${properties.join(",\n")}\n${indent}}`;
     }
     default:
       // Handle undefined, etc.
-      return 'undefined';
+      return "undefined";
   }
 }

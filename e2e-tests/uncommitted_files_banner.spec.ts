@@ -35,13 +35,7 @@ function commitRuntimeBaselineChanges(appPath: string) {
   });
   execFileSync(
     "git",
-    [
-      "commit",
-      "-m",
-      "E2E baseline pnpm workspace",
-      "--",
-      "pnpm-workspace.yaml",
-    ],
+    ["commit", "-m", "E2E baseline pnpm workspace", "--", "pnpm-workspace.yaml"],
     { cwd: appPath },
   );
 }
@@ -70,10 +64,7 @@ const runDiscardChangesTest = async (po: PageObject) => {
   let originalContent: string | null = null;
   if (fs.existsSync(indexPath)) {
     originalContent = fs.readFileSync(indexPath, "utf-8");
-    fs.writeFileSync(
-      indexPath,
-      originalContent + "\n<!-- Should be discarded -->",
-    );
+    fs.writeFileSync(indexPath, originalContent + "\n<!-- Should be discarded -->");
   }
 
   // Wait for the banner to appear
@@ -111,9 +102,7 @@ const runDiscardChangesTest = async (po: PageObject) => {
   // Verify the modified file was restored
   if (originalContent !== null) {
     const restoredContent = fs.readFileSync(indexPath, "utf-8");
-    expect(normalizeLineEndings(restoredContent)).toBe(
-      normalizeLineEndings(originalContent),
-    );
+    expect(normalizeLineEndings(restoredContent)).toBe(normalizeLineEndings(originalContent));
   }
 };
 
@@ -214,13 +203,10 @@ const runUncommittedFilesBannerTest = async (po: PageObject) => {
   expect(gitLog).toBe(testCommitMessage);
 
   // Verify the files were committed
-  const lastCommitFiles = execSync(
-    "git diff-tree --no-commit-id --name-only -r HEAD",
-    {
-      cwd: appPath,
-      encoding: "utf-8",
-    },
-  ).trim();
+  const lastCommitFiles = execSync("git diff-tree --no-commit-id --name-only -r HEAD", {
+    cwd: appPath,
+    encoding: "utf-8",
+  }).trim();
   expect(lastCommitFiles).toContain("new-file.txt");
 };
 

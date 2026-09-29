@@ -27,19 +27,8 @@ import {
 } from "@/lib/freeProModel";
 import { useFreeAgentQuota } from "@/hooks/useFreeAgentQuota";
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
-import {
-  Compass,
-  Hammer,
-  Loader2,
-  Play,
-  RefreshCw,
-  ShieldCheck,
-  Zap,
-} from "lucide-react";
-import {
-  useFirstPromptSaga,
-  useFirstPromptSend,
-} from "@/first_prompt/FirstPromptProvider";
+import { Compass, Hammer, Loader2, Play, RefreshCw, ShieldCheck, Zap } from "lucide-react";
+import { useFirstPromptSaga, useFirstPromptSend } from "@/first_prompt/FirstPromptProvider";
 import { getHomeDefaultChatMode } from "@/lib/homeChatMode";
 import { useLoadApps } from "@/hooks/useLoadApps";
 import { useSelectChat } from "@/hooks/useSelectChat";
@@ -78,11 +67,8 @@ export default function HomePage() {
   const { settings, envVars, loading: isSettingsLoading } = useSettings();
   const { isAnyProviderSetup, isLoading: isLoadingLanguageModelProviders } =
     useLanguageModelProviders();
-  const hasOctopusStudioProApiKey = settings
-    ? hasOctopusStudioProKey(settings)
-    : false;
-  const hasConfiguredAiProvider =
-    !isLoadingLanguageModelProviders && isAnyProviderSetup();
+  const hasOctopusStudioProApiKey = settings ? hasOctopusStudioProKey(settings) : false;
+  const hasConfiguredAiProvider = !isLoadingLanguageModelProviders && isAnyProviderSetup();
   const { quotaStatus } = useFreeAgentQuota();
   const homeInitialChatMode = useMemo<ChatMode | undefined>(() => {
     if (!settings) {
@@ -102,9 +88,7 @@ export default function HomePage() {
   const appId = search.appId ? Number(search.appId) : null;
 
   // State for random prompts
-  const [randomPrompts, setRandomPrompts] = useState<
-    typeof INSPIRATION_PROMPTS
-  >([]);
+  const [randomPrompts, setRandomPrompts] = useState<typeof INSPIRATION_PROMPTS>([]);
 
   // Function to get random prompts
   const getRandomPrompts = useCallback(() => {
@@ -126,9 +110,7 @@ export default function HomePage() {
     }
   }, [appId, navigate]);
 
-  const hasManuallySelectedChatMode = useAtomValue(
-    hasManuallySelectedChatModeAtom,
-  );
+  const hasManuallySelectedChatMode = useAtomValue(hasManuallySelectedChatModeAtom);
 
   // Honor a manually picked mode (e.g. "plan") on submit; otherwise fall back
   // to the effective default so it still tracks provider/quota state. Apply the
@@ -138,10 +120,7 @@ export default function HomePage() {
       hasManuallySelectedChatMode && settings?.selectedChatMode
         ? settings.selectedChatMode
         : homeInitialChatMode;
-    if (
-      settings &&
-      isFreeProBuildModeCombination(settings.selectedModel, selected)
-    ) {
+    if (settings && isFreeProBuildModeCombination(settings.selectedModel, selected)) {
       return FREE_PRO_MODEL_FALLBACK_CHAT_MODE;
     }
     return selected;
@@ -172,11 +151,7 @@ export default function HomePage() {
           streamMessage({ prompt, chatId, appId });
           return true;
         } catch (error) {
-          showError(
-            error instanceof Error
-              ? error.message
-              : "Failed to create research project",
-          );
+          showError(error instanceof Error ? error.message : "Failed to create research project");
           return false;
         }
       }
@@ -194,11 +169,7 @@ export default function HomePage() {
           selectChat({ chatId, appId });
           return true;
         } catch (error) {
-          showError(
-            error instanceof Error
-              ? error.message
-              : "Failed to create chat project",
-          );
+          showError(error instanceof Error ? error.message : "Failed to create chat project");
           return false;
         }
       }
@@ -230,12 +201,9 @@ export default function HomePage() {
     ],
   );
 
-  const isLoading = [
-    "creating",
-    "postCreate",
-    "dispatching",
-    "navigating",
-  ].includes(firstPromptSaga.phase);
+  const isLoading = ["creating", "postCreate", "dispatching", "navigating"].includes(
+    firstPromptSaga.phase,
+  );
   const isCheckingProviders = firstPromptSaga.phase === "checkingProviders";
 
   // Loading overlay for app creation
@@ -245,9 +213,7 @@ export default function HomePage() {
         <div className="w-full flex flex-col items-center">
           <Loader2 className="mb-8 h-16 w-16 animate-spin text-primary" aria-hidden />
           <h2 className="text-2xl font-bold mb-2 text-foreground">
-            {firstPromptSaga.isExistingAppSubmission
-              ? t("startingChat")
-              : t("buildingApp")}
+            {firstPromptSaga.isExistingAppSubmission ? t("startingChat") : t("buildingApp")}
           </h2>
           <p className="text-muted-foreground text-center max-w-md mb-8">
             {firstPromptSaga.isExistingAppSubmission ? (
@@ -277,12 +243,7 @@ export default function HomePage() {
               aria-hidden
               className="mx-auto mb-5 text-primary"
             >
-              <g
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                opacity="0.9"
-              >
+              <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.9">
                 {Array.from({ length: 8 }).map((_, i) => {
                   const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
                   const x1 = 28 + 13 * Math.cos(angle);
@@ -301,8 +262,8 @@ export default function HomePage() {
               What do you want to automate?
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
-              Describe the outcome. Your agents plan it, build it, and run it —
-              on your machine, with your approval at every step.
+              Describe the outcome. Your agents plan it, build it, and run it — on your machine,
+              with your approval at every step.
             </p>
 
             {/* Signature: the literal Plan → Build → Run lifecycle from the
@@ -335,50 +296,41 @@ export default function HomePage() {
             </div>
 
             <div className="mt-4 flex justify-center">
-              <ImportAppButton
-                className="px-0 pb-0"
-                variant="outline"
-                size="sm"
-              />
+              <ImportAppButton className="px-0 pb-0" variant="outline" size="sm" />
             </div>
           </div>
-          <HomeChatInput
-            onSubmit={handleSubmit}
-            disabled={isCheckingProviders}
-          />
+          <HomeChatInput onSubmit={handleSubmit} disabled={isCheckingProviders} />
 
-          {!isSettingsLoading &&
-            !isLoadingLanguageModelProviders &&
-            !hasOctopusStudioProApiKey && (
-              <div className="-mt-2 flex justify-end px-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    posthog.capture("home:setup-pill:click");
-                    sendFirstPrompt({
-                      type: "ARM_FOR_SETUP",
-                      payload: {
-                        prompt: inputValue,
-                        attachments,
-                        selectedApp: selectedApp ?? undefined,
-                        chatMode: homeSubmitChatMode,
-                        isChatModeExplicit: hasManuallySelectedChatMode,
-                      },
-                    });
-                  }}
-                  className={
-                    hasConfiguredAiProvider
-                      ? "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                      : "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-primary transition-colors hover:bg-primary/10"
-                  }
-                >
-                  <Zap aria-hidden="true" className="size-3.5" />
-                  {hasConfiguredAiProvider
-                    ? "Manage AI setup"
-                    : "Connect AI to build — takes a minute"}
-                </button>
-              </div>
-            )}
+          {!isSettingsLoading && !isLoadingLanguageModelProviders && !hasOctopusStudioProApiKey && (
+            <div className="-mt-2 flex justify-end px-4">
+              <button
+                type="button"
+                onClick={() => {
+                  posthog.capture("home:setup-pill:click");
+                  sendFirstPrompt({
+                    type: "ARM_FOR_SETUP",
+                    payload: {
+                      prompt: inputValue,
+                      attachments,
+                      selectedApp: selectedApp ?? undefined,
+                      chatMode: homeSubmitChatMode,
+                      isChatModeExplicit: hasManuallySelectedChatMode,
+                    },
+                  });
+                }}
+                className={
+                  hasConfiguredAiProvider
+                    ? "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                    : "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-primary transition-colors hover:bg-primary/10"
+                }
+              >
+                <Zap aria-hidden="true" className="size-3.5" />
+                {hasConfiguredAiProvider
+                  ? "Manage AI setup"
+                  : "Connect AI to build — takes a minute"}
+              </button>
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {randomPrompts.map((item) => (

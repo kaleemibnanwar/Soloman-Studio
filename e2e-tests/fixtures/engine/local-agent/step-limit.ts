@@ -1,7 +1,4 @@
-import type {
-  LocalAgentFixture,
-  Turn,
-} from "../../../../testing/fake-llm-server/localAgentTypes";
+import type { LocalAgentFixture, Turn } from "../../../../testing/fake-llm-server/localAgentTypes";
 
 /**
  * Fixture that triggers the step limit by generating 100 tool call turns.
@@ -24,7 +21,6 @@ const finalTurn: Turn = {
 };
 
 export const fixture: LocalAgentFixture = {
-  description:
-    "Triggers step limit by making 50+ tool call rounds, causing a pause notification",
+  description: "Triggers step limit by making 50+ tool call rounds, causing a pause notification",
   turns: [...toolCallTurns, finalTurn],
 };

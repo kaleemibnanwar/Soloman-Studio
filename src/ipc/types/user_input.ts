@@ -1,16 +1,7 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 
-const ConsentDecisionSchema = z.enum([
-  "accept-once",
-  "accept-always",
-  "decline",
-]);
+const ConsentDecisionSchema = z.enum(["accept-once", "accept-always", "decline"]);
 const DescriptorBaseSchema = z.object({
   requestId: z.string(),
   chatId: z.number(),
@@ -27,9 +18,7 @@ export const UserInputQuestionSchema = z
     placeholder: z.string().optional(),
   })
   .refine(
-    (question) =>
-      question.type === "text" ||
-      (question.options && question.options.length >= 1),
+    (question) => question.type === "text" || (question.options && question.options.length >= 1),
     {
       message: "options are required for radio and checkbox questions",
       path: ["options"],
@@ -168,9 +157,7 @@ export const userInputEvents = {
 export const userInputClient = createClient(userInputContracts);
 export const userInputEventClient = createEventClient(userInputEvents);
 
-export type UserInputDescriptorPayload = z.infer<
-  typeof UserInputDescriptorSchema
->;
+export type UserInputDescriptorPayload = z.infer<typeof UserInputDescriptorSchema>;
 export type UserInputResponsePayload = z.infer<typeof UserInputResponseSchema>;
 export type PendingUserInputPayload = z.infer<typeof PendingSnapshotSchema>;
 export type UserInputQuestionPayload = z.infer<typeof UserInputQuestionSchema>;

@@ -153,11 +153,7 @@ async function refreshSupabaseTokenOnce(): Promise<void> {
       );
     }
 
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      expiresIn,
-    } = await response.json();
+    const { accessToken, refreshToken: newRefreshToken, expiresIn } = await response.json();
 
     // Re-read settings right before writing to get latest state
     const freshSettings = readSettings();
@@ -244,9 +240,7 @@ export async function getSupabaseClient({
 /**
  * Checks if an organization's token is expired or about to expire.
  */
-function isOrganizationTokenExpired(
-  org: SupabaseOrganizationCredentials,
-): boolean {
+function isOrganizationTokenExpired(org: SupabaseOrganizationCredentials): boolean {
   if (!org.expiresIn || !org.tokenTimestamp) return true;
 
   const currentTime = Math.floor(Date.now() / 1000);
@@ -257,9 +251,7 @@ function isOrganizationTokenExpired(
 /**
  * Refreshes the Supabase access token for a specific organization.
  */
-async function refreshSupabaseTokenForOrganization(
-  organizationSlug: string,
-): Promise<void> {
+async function refreshSupabaseTokenForOrganization(organizationSlug: string): Promise<void> {
   const settings = readSettings();
   const org = settings.supabase?.organizations?.[organizationSlug];
 
@@ -301,11 +293,7 @@ async function refreshSupabaseTokenForOrganization(
       );
     }
 
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      expiresIn,
-    } = await response.json();
+    const { accessToken, refreshToken: newRefreshToken, expiresIn } = await response.json();
 
     // Re-read settings right before writing to avoid stale-read race conditions.
     // The async fetch above may take time, during which other org credentials
@@ -332,10 +320,7 @@ async function refreshSupabaseTokenForOrganization(
       },
     });
   } catch (error) {
-    logger.error(
-      `Error refreshing Supabase token for organization ${organizationSlug}:`,
-      error,
-    );
+    logger.error(`Error refreshing Supabase token for organization ${organizationSlug}:`, error);
     throw error;
   }
 }
@@ -371,8 +356,7 @@ export async function getSupabaseClientForOrganization(
     );
     // Get updated settings after refresh
     const updatedSettings = readSettings();
-    const updatedOrg =
-      updatedSettings.supabase?.organizations?.[organizationSlug];
+    const updatedOrg = updatedSettings.supabase?.organizations?.[organizationSlug];
     const newAccessToken = updatedOrg?.accessToken?.value;
 
     if (!newAccessToken) {
@@ -411,8 +395,7 @@ export async function listSupabaseOrganizations(
     );
 
     if (response.status === 200) {
-      const organizations: SupabaseOrganizationDetails[] =
-        await response.json();
+      const organizations: SupabaseOrganizationDetails[] = await response.json();
       return organizations;
     }
 
@@ -426,9 +409,7 @@ export async function listSupabaseOrganizations(
       continue;
     }
 
-    logger.error(
-      `Failed to fetch organizations (${response.status}): ${errorText}`,
-    );
+    logger.error(`Failed to fetch organizations (${response.status}): ${errorText}`);
     throw new SupabaseManagementAPIError(
       `Failed to fetch organizations: ${response.statusText}`,
       response,
@@ -484,9 +465,7 @@ export async function getOrganizationMembers(
 
   if (response.status !== 200) {
     const errorText = await response.text();
-    logger.error(
-      `Failed to fetch organization members (${response.status}): ${errorText}`,
-    );
+    logger.error(`Failed to fetch organization members (${response.status}): ${errorText}`);
     throw new SupabaseManagementAPIError(
       `Failed to fetch organization members: ${response.statusText}`,
       response,
@@ -538,9 +517,7 @@ export async function getOrganizationDetails(
 
   if (response.status !== 200) {
     const errorText = await response.text();
-    logger.error(
-      `Failed to fetch organization details (${response.status}): ${errorText}`,
-    );
+    logger.error(`Failed to fetch organization details (${response.status}): ${errorText}`);
     throw new SupabaseManagementAPIError(
       `Failed to fetch organization details: ${response.statusText}`,
       response,
@@ -756,17 +733,13 @@ export async function deleteSupabaseFunction({
   functionName: string;
   organizationSlug: string | null;
 }): Promise<void> {
-  logger.info(
-    `Deleting Supabase function: ${functionName} from project: ${supabaseProjectId}`,
-  );
+  logger.info(`Deleting Supabase function: ${functionName} from project: ${supabaseProjectId}`);
   const supabase = await getSupabaseClient({ organizationSlug });
   await retryWithRateLimit(
     () => supabase.deleteFunction(supabaseProjectId, functionName),
     `Delete function ${functionName}`,
   );
-  logger.info(
-    `Deleted Supabase function: ${functionName} from project: ${supabaseProjectId}`,
-  );
+  logger.info(`Deleted Supabase function: ${functionName} from project: ${supabaseProjectId}`);
 }
 
 export async function listSupabaseFunctions({
@@ -799,9 +772,7 @@ export async function listSupabaseFunctions({
   }
 
   const functions: DeployedFunctionResponse[] = await response.json();
-  logger.info(
-    `Found ${functions.length} functions for project: ${supabaseProjectId}`,
-  );
+  logger.info(`Found ${functions.length} functions for project: ${supabaseProjectId}`);
   return functions;
 }
 
@@ -907,16 +878,9 @@ async function deploySupabaseFunctionUnqueued({
   bundleOnly?: boolean;
   organizationSlug: string | null;
 }): Promise<DeployedFunctionResponse> {
-  logger.info(
-    `Deploying Supabase function: ${functionName} to project: ${supabaseProjectId}`,
-  );
+  logger.info(`Deploying Supabase function: ${functionName} to project: ${supabaseProjectId}`);
 
-  const functionPath = path.join(
-    appPath,
-    "supabase",
-    "functions",
-    functionName,
-  );
+  const functionPath = path.join(appPath, "supabase", "functions", functionName);
 
   // 1) Collect function files
   const functionFiles = await collectFunctionFiles({
@@ -1043,9 +1007,7 @@ async function bulkUpdateFunctionsUnqueued({
   functions: DeployedFunctionResponse[];
   organizationSlug: string | null;
 }): Promise<void> {
-  logger.info(
-    `Bulk updating ${functions.length} functions for project: ${supabaseProjectId}`,
-  );
+  logger.info(`Bulk updating ${functions.length} functions for project: ${supabaseProjectId}`);
 
   if (IS_TEST_BUILD) {
     logger.info(
@@ -1134,12 +1096,7 @@ async function collectFunctionFiles({
 }
 
 async function getSharedFiles(appPath: string): Promise<CachedSharedFiles> {
-  const sharedDirectory = path.join(
-    appPath,
-    "supabase",
-    "functions",
-    "_shared",
-  );
+  const sharedDirectory = path.join(appPath, "supabase", "functions", "_shared");
 
   try {
     const sharedStats = await fsPromises.stat(sharedDirectory);
@@ -1180,10 +1137,7 @@ export async function listFilesWithStats(
     const relativePath = path.posix.join(prefix, dirent.name);
 
     if (dirent.isDirectory()) {
-      const nestedEntries = await listFilesWithStats(
-        absolutePath,
-        relativePath,
-      );
+      const nestedEntries = await listFilesWithStats(absolutePath, relativePath);
       entries.push(...nestedEntries);
     } else if (dirent.isFile() || dirent.isSymbolicLink()) {
       const stat = await fsPromises.stat(absolutePath);
@@ -1202,16 +1156,13 @@ export async function listFilesWithStats(
 export function buildSignature(entries: FileStatEntry[]): string {
   return entries
     .map(
-      (entry) =>
-        `${entry.relativePath}:${entry.mtimeMs.toString(16)}:${entry.size.toString(16)}`,
+      (entry) => `${entry.relativePath}:${entry.mtimeMs.toString(16)}:${entry.size.toString(16)}`,
     )
     .sort()
     .join("|");
 }
 
-async function loadZipEntries(
-  entries: FileStatEntry[],
-): Promise<ZipFileEntry[]> {
+async function loadZipEntries(entries: FileStatEntry[]): Promise<ZipFileEntry[]> {
   const files: ZipFileEntry[] = [];
 
   for (const entry of entries) {
@@ -1234,10 +1185,7 @@ export function toPosixPath(filePath: string): string {
   return filePath.split(path.sep).join(path.posix.sep);
 }
 
-export function stripSupabaseFunctionsPrefix(
-  relativePath: string,
-  functionName: string,
-): string {
+export function stripSupabaseFunctionsPrefix(relativePath: string, functionName: string): string {
   const normalized = toPosixPath(relativePath).replace(/^\//, "");
   const slugPrefix = `supabase/functions/${functionName}/`;
 
@@ -1290,10 +1238,7 @@ function guessMimeType(filePath: string): string {
  * renderer as `Auth` rather than as an unclassified product exception (see
  * `rules/octopus-studio-errors.md`).
  */
-export function classifyManagementApiError(
-  error: unknown,
-  action: string,
-): unknown {
+export function classifyManagementApiError(error: unknown, action: string): unknown {
   if (isOctopusStudioError(error)) {
     return error;
   }

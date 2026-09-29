@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  createClient,
-  createEventClient,
-  defineEvent,
-} from "../contracts/core";
+import { defineContract, createClient, createEventClient, defineEvent } from "../contracts/core";
 import { SafeGitRefSchema } from "../../shared/git_refs";
 
 // =============================================================================
@@ -40,10 +35,7 @@ export const RevertVersionParamsSchema = z.object({
   currentChatMessageId: CurrentChatMessageIdSchema.optional(),
   targetBranchName: z
     .string()
-    .refine(
-      (v) => !v.startsWith("-"),
-      "targetBranchName must not start with '-'",
-    )
+    .refine((v) => !v.startsWith("-"), "targetBranchName must not start with '-'")
     .optional(),
 });
 
@@ -94,9 +86,7 @@ export const GetVersionChangesParamsSchema = z.object({
   // Must be a hex commit SHA. This is appended as a positional argument to
   // native `git diff-tree`/`cat-file`; constraining it to hex characters
   // prevents a dash-prefixed value from being interpreted as a git option.
-  versionId: z
-    .string()
-    .regex(/^[0-9a-fA-F]{4,64}$/, "versionId must be a hex commit SHA"),
+  versionId: z.string().regex(/^[0-9a-fA-F]{4,64}$/, "versionId must be a hex commit SHA"),
 });
 
 export const CheckoutVersionResponseSchema = VersionCommandResultSchema;
@@ -141,22 +131,15 @@ export const RestoreToMessageParamsSchema = z.object({
   // fork-only chats can be anchored to the live branch instead of the preview.
   targetBranchName: z
     .string()
-    .refine(
-      (v) => !v.startsWith("-"),
-      "targetBranchName must not start with '-'",
-    )
+    .refine((v) => !v.startsWith("-"), "targetBranchName must not start with '-'")
     .optional(),
 });
 
-export type RestoreToMessageParams = z.infer<
-  typeof RestoreToMessageParamsSchema
->;
+export type RestoreToMessageParams = z.infer<typeof RestoreToMessageParamsSchema>;
 
 export const RestoreToMessageResponseSchema = VersionCommandResultSchema;
 
-export type RestoreToMessageResponse = z.infer<
-  typeof RestoreToMessageResponseSchema
->;
+export type RestoreToMessageResponse = z.infer<typeof RestoreToMessageResponseSchema>;
 
 export const VersionPreviewPresentationResultSchema = z
   .object({

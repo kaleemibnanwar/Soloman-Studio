@@ -14,26 +14,19 @@ import type {
   RequestMessageId,
 } from "@/distributed_machines/request_identity";
 import { ipc } from "@/ipc/types";
-import {
-  getImageGenerationKey,
-  imageGenerationClientDefinition,
-} from "./transport";
+import { getImageGenerationKey, imageGenerationClientDefinition } from "./transport";
 import type {
   CancelImageGenerationEvent,
   ImageGenerationJobView,
   ImageGenerationOperationOutcome,
   SubmitImageGenerationEvent,
 } from "./state";
-import {
-  selectChatImageGenerationJobs,
-  selectImageGenerationPendingCount,
-} from "./selectors";
+import { selectChatImageGenerationJobs, selectImageGenerationPendingCount } from "./selectors";
 import { useImageGenerationRequestScope } from "./request_scope";
 import type { ImageGenerationIgnoreReason } from "./state";
 import type { ObservedRevisionToken } from "@/distributed_machines/remote_client";
 
-const selectJobs = (snapshot: { jobs: readonly ImageGenerationJobView[] }) =>
-  snapshot.jobs;
+const selectJobs = (snapshot: { jobs: readonly ImageGenerationJobView[] }) => snapshot.jobs;
 
 export function useImageGenerationActor() {
   return useDistributedMachine(
@@ -43,8 +36,7 @@ export function useImageGenerationActor() {
   );
 }
 
-export type ImageGenerationAdmission =
-  MachineDispatchReceipt<ImageGenerationIgnoreReason>;
+export type ImageGenerationAdmission = MachineDispatchReceipt<ImageGenerationIgnoreReason>;
 
 export type ImageGenerationAdmissionRefusal =
   | Extract<ImageGenerationAdmission, { readonly kind: "rejected" }>["reason"]
@@ -95,8 +87,7 @@ export function useImageGenerationRequestActor(): ImageGenerationRequestActor {
       snapshotIntent: (input) => structuredClone(input),
       prepareIdentity: ({ intent }) => ({
         requestId: intent.requestId,
-        messageId:
-          `image-generation-message:${globalThis.crypto.randomUUID()}` as RequestMessageId,
+        messageId: `image-generation-message:${globalThis.crypto.randomUUID()}` as RequestMessageId,
         idempotencyKey:
           `image-generation-delivery:${globalThis.crypto.randomUUID()}` as RequestIdempotencyKey,
         windowSessionId: scope.windowSessionId,
@@ -115,9 +106,7 @@ export function useImageGenerationRequestActor(): ImageGenerationRequestActor {
             }
           : { kind: "unexpected" },
       enqueue: () => {
-        throw new Error(
-          "Image generation exposes completion-aware request() only",
-        );
+        throw new Error("Image generation exposes completion-aware request() only");
       },
       dispatchRequest: async (
         identity,
@@ -171,8 +160,7 @@ export function useImageGenerationRequestActor(): ImageGenerationRequestActor {
       scope,
       snapshotIntent: (input) => structuredClone(input),
       prepareIdentity: () => ({
-        requestId:
-          `image-generation-cancel:${globalThis.crypto.randomUUID()}` as RequestId,
+        requestId: `image-generation-cancel:${globalThis.crypto.randomUUID()}` as RequestId,
         messageId:
           `image-generation-cancel-message:${globalThis.crypto.randomUUID()}` as RequestMessageId,
         idempotencyKey:
@@ -192,10 +180,7 @@ export function useImageGenerationRequestActor(): ImageGenerationRequestActor {
       enqueue: () => {
         throw new Error("Image generation cancellation exposes request() only");
       },
-      dispatchRequest: async (
-        identity,
-        { intent, owningRequestId, observedRevision },
-      ) => {
+      dispatchRequest: async (identity, { intent, owningRequestId, observedRevision }) => {
         const lease = actor.retain();
         try {
           await lease.ready;
@@ -225,8 +210,7 @@ export function useImageGenerationRequestActor(): ImageGenerationRequestActor {
       },
     });
     return {
-      request: (intent, observedRevision) =>
-        completionAware.request({ intent, observedRevision }),
+      request: (intent, observedRevision) => completionAware.request({ intent, observedRevision }),
       cancel: (intent, owningRequestId, observedRevision) =>
         cancellationActor.request({
           intent,

@@ -1,8 +1,5 @@
 import type { IpcMainInvokeEvent } from "electron";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 
 type RendererTrustPolicy = {
   devServerOrigin: string | null;
@@ -56,23 +53,13 @@ function getFileVolumePrefix(pathname: string): string {
   return pathname.match(/^\/[a-z]:/i)?.[0].toLowerCase() ?? "";
 }
 
-function isPackagedRendererRoutePath(
-  pathname: string,
-  volumePrefix: string,
-): boolean {
-  if (
-    volumePrefix &&
-    pathname.slice(0, volumePrefix.length).toLowerCase() !== volumePrefix
-  ) {
+function isPackagedRendererRoutePath(pathname: string, volumePrefix: string): boolean {
+  if (volumePrefix && pathname.slice(0, volumePrefix.length).toLowerCase() !== volumePrefix) {
     return false;
   }
-  const routePath = volumePrefix
-    ? pathname.slice(volumePrefix.length)
-    : pathname;
+  const routePath = volumePrefix ? pathname.slice(volumePrefix.length) : pathname;
   const normalizedPath =
-    routePath.length > 1 && routePath.endsWith("/")
-      ? routePath.slice(0, -1)
-      : routePath;
+    routePath.length > 1 && routePath.endsWith("/") ? routePath.slice(0, -1) : routePath;
   return (
     PACKAGED_RENDERER_STATIC_PATHS.has(normalizedPath) ||
     /^\/providers\/[^/]+$/.test(normalizedPath) ||
@@ -87,9 +74,7 @@ export function configureTrustedRenderer(options: {
 }): void {
   const packagedRenderer = new URL(options.packagedRendererUrl);
   if (packagedRenderer.protocol !== "file:" || packagedRenderer.host !== "") {
-    throw new Error(
-      "The packaged renderer URL must be a local file URL with an empty host.",
-    );
+    throw new Error("The packaged renderer URL must be a local file URL with an empty host.");
   }
   let devServerOrigin: string | null = null;
   if (options.devServerUrl) {
@@ -100,9 +85,7 @@ export function configureTrustedRenderer(options: {
     packagedRendererProtocol: packagedRenderer.protocol,
     packagedRendererHost: packagedRenderer.host,
     packagedRendererEntryPath: packagedRenderer.pathname,
-    packagedRendererVolumePrefix: getFileVolumePrefix(
-      packagedRenderer.pathname,
-    ),
+    packagedRendererVolumePrefix: getFileVolumePrefix(packagedRenderer.pathname),
   };
   if (
     trustPolicy.packagedRendererProtocol !== null &&
@@ -123,10 +106,7 @@ export function isTrustedRendererUrl(url: string): boolean {
         parsed.host === "" &&
         parsed.host === trustPolicy.packagedRendererHost &&
         (parsed.pathname === trustPolicy.packagedRendererEntryPath ||
-          isPackagedRendererRoutePath(
-            parsed.pathname,
-            trustPolicy.packagedRendererVolumePrefix,
-          ))
+          isPackagedRendererRoutePath(parsed.pathname, trustPolicy.packagedRendererVolumePrefix))
       );
     }
     return (

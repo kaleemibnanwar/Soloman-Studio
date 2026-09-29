@@ -205,8 +205,7 @@ function determineIssueNumber({ context }) {
   if (envNumber) return Number(envNumber);
 
   if (context.eventName === "workflow_run") {
-    const prFromPayload =
-      context.payload?.workflow_run?.pull_requests?.[0]?.number;
+    const prFromPayload = context.payload?.workflow_run?.pull_requests?.[0]?.number;
     if (prFromPayload) return prFromPayload;
   } else if (context.eventName === "pull_request") {
     // Direct PR trigger (e.g., from merge-reports job in CI)
@@ -230,9 +229,7 @@ async function run({ github, context, core }) {
   const blobDir = "all-blob-reports";
   const blobFiles = fs.existsSync(blobDir) ? collectBlobFiles(blobDir) : [];
   const hasMacOS = blobFiles.some((f) => detectOsFromPath(f.toLowerCase()));
-  const hasWindows = blobFiles.some(
-    (f) => detectOsFromPath(f.toLowerCase()) === "Windows",
-  );
+  const hasWindows = blobFiles.some((f) => detectOsFromPath(f.toLowerCase()) === "Windows");
 
   // Check for missing shards
   const { counts: shardCounts, hasMissing } = detectMissingShards(blobFiles);
@@ -255,9 +252,7 @@ async function run({ github, context, core }) {
   // Traverse suites and collect test results
   function traverseSuites(suites, parentTitle = "") {
     for (const suite of suites || []) {
-      const suiteTitle = parentTitle
-        ? `${parentTitle} > ${suite.title}`
-        : suite.title;
+      const suiteTitle = parentTitle ? `${parentTitle} > ${suite.title}` : suite.title;
 
       for (const spec of suite.specs || []) {
         for (const test of spec.tests || []) {
@@ -309,10 +304,7 @@ async function run({ github, context, core }) {
           const hadPriorFailure = results
             .slice(0, -1)
             .some(
-              (r) =>
-                r.status === "failed" ||
-                r.status === "timedOut" ||
-                r.status === "interrupted",
+              (r) => r.status === "failed" || r.status === "timedOut" || r.status === "interrupted",
             );
           const isFlaky = finalResult.status === "passed" && hadPriorFailure;
 
@@ -329,14 +321,9 @@ async function run({ github, context, core }) {
               });
             } else if (status === "passed") {
               resultsByOs[targetOs].passed++;
-            } else if (
-              status === "failed" ||
-              status === "timedOut" ||
-              status === "interrupted"
-            ) {
+            } else if (status === "failed" || status === "timedOut" || status === "interrupted") {
               resultsByOs[targetOs].failed++;
-              const errorMsg =
-                finalResult.error?.message?.split("\n")[0] || "Test failed";
+              const errorMsg = finalResult.error?.message?.split("\n")[0] || "Test failed";
               resultsByOs[targetOs].failures.push({
                 title: `${suiteTitle} > ${spec.title}`,
                 error: stripAnsi(errorMsg),
@@ -441,8 +428,7 @@ async function run({ github, context, core }) {
       }
 
       for (const f of data.failures) {
-        const errorPreview =
-          f.error.length > 150 ? f.error.substring(0, 150) + "..." : f.error;
+        const errorPreview = f.error.length > 150 ? f.error.substring(0, 150) + "..." : f.error;
         comment += `- \`${f.title}\`\n  - ${errorPreview}\n`;
       }
 
@@ -508,9 +494,7 @@ async function run({ github, context, core }) {
       });
 
       const botComment = comments.find(
-        (c) =>
-          c.user?.type === "Bot" &&
-          c.body?.includes("🎭 Playwright Test Results"),
+        (c) => c.user?.type === "Bot" && c.body?.includes("🎭 Playwright Test Results"),
       );
 
       if (botComment) {

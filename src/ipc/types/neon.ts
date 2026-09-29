@@ -20,9 +20,7 @@ export const CreateNeonProjectParamsSchema = z.object({
   appId: z.number(),
 });
 
-export type CreateNeonProjectParams = z.infer<
-  typeof CreateNeonProjectParamsSchema
->;
+export type CreateNeonProjectParams = z.infer<typeof CreateNeonProjectParamsSchema>;
 
 export const GetNeonProjectParamsSchema = z.object({
   appId: z.number(),
@@ -48,9 +46,7 @@ export const GetNeonProjectResponseSchema = z.object({
   branches: z.array(NeonBranchSchema),
 });
 
-export type GetNeonProjectResponse = z.infer<
-  typeof GetNeonProjectResponseSchema
->;
+export type GetNeonProjectResponse = z.infer<typeof GetNeonProjectResponseSchema>;
 
 // Schema for project list items (lighter than full NeonProject)
 export const NeonProjectListItemSchema = z.object({
@@ -66,9 +62,7 @@ export const ListNeonProjectsResponseSchema = z.object({
   projects: z.array(NeonProjectListItemSchema),
 });
 
-export type ListNeonProjectsResponse = z.infer<
-  typeof ListNeonProjectsResponseSchema
->;
+export type ListNeonProjectsResponse = z.infer<typeof ListNeonProjectsResponseSchema>;
 
 export const SetNeonAppProjectParamsSchema = z.object({
   appId: z.number(),
@@ -94,9 +88,7 @@ export const NeonAuthEmailAndPasswordConfigSchema = z.object({
   disable_sign_up: z.boolean(),
 });
 
-export type NeonAuthEmailAndPasswordConfig = z.infer<
-  typeof NeonAuthEmailAndPasswordConfigSchema
->;
+export type NeonAuthEmailAndPasswordConfig = z.infer<typeof NeonAuthEmailAndPasswordConfigSchema>;
 
 export const GetNeonEmailPasswordConfigParamsSchema = z.object({
   appId: z.number(),
@@ -122,9 +114,7 @@ export const GetNeonBranchEnvVarsParamsSchema = z.object({
   branchType: z.enum(["production", "development"]),
 });
 
-export type GetNeonBranchEnvVarsParams = z.infer<
-  typeof GetNeonBranchEnvVarsParamsSchema
->;
+export type GetNeonBranchEnvVarsParams = z.infer<typeof GetNeonBranchEnvVarsParamsSchema>;
 
 export const GetNeonBranchEnvVarsResponseSchema = z.object({
   databaseUrl: z.string(),
@@ -132,9 +122,7 @@ export const GetNeonBranchEnvVarsResponseSchema = z.object({
   neonAuthCookieSecret: z.string().optional(),
 });
 
-export type GetNeonBranchEnvVarsResponse = z.infer<
-  typeof GetNeonBranchEnvVarsResponseSchema
->;
+export type GetNeonBranchEnvVarsResponse = z.infer<typeof GetNeonBranchEnvVarsResponseSchema>;
 
 // =============================================================================
 // Neon Contracts
@@ -166,20 +154,14 @@ export const neonContracts = {
       success: z.boolean(),
       warning: z.string().optional(),
     }),
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
   }),
 
   unsetAppProject: defineContract({
     channel: "neon:unset-app-project",
     input: UnsetNeonAppProjectParamsSchema,
     output: z.object({ success: z.boolean() }),
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
   }),
 
   setActiveBranch: defineContract({
@@ -189,10 +171,7 @@ export const neonContracts = {
       success: z.boolean(),
       warning: z.string().optional(),
     }),
-    invalidates: (input) => [
-      { family: "apps" },
-      { family: "app", appId: input.appId },
-    ],
+    invalidates: (input) => [{ family: "apps" }, { family: "app", appId: input.appId }],
     originHandles: (input) => [{ family: "app", appId: input.appId }],
   }),
 

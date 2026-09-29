@@ -13,10 +13,7 @@ export type ScreenshotAdapterEvent =
       dataUrl?: string;
     };
 
-export function useScreenshot(input: {
-  appId: number | null;
-  postMessage: ScreenshotPostMessage;
-}) {
+export function useScreenshot(input: { appId: number | null; postMessage: ScreenshotPostMessage }) {
   const { appId, postMessage } = input;
   const manager = useScreenshotManager();
   const postMessageRef = useRef(postMessage);
@@ -24,9 +21,7 @@ export function useScreenshot(input: {
 
   useEffect(() => {
     if (appId === null) return;
-    const detach = manager.commands.attach(appId, (message) =>
-      postMessageRef.current(message),
-    );
+    const detach = manager.commands.attach(appId, (message) => postMessageRef.current(message));
     return () => {
       detach();
       manager.send(appId, { type: "APP_HIDDEN" });

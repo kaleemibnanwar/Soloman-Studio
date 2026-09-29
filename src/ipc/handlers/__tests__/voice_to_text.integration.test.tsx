@@ -4,10 +4,7 @@ import { cleanup, screen } from "@testing-library/react";
 
 import type { UserSettings } from "@/lib/schemas";
 import { writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 const PRO_SETTINGS: Partial<UserSettings> = {
@@ -65,8 +62,6 @@ describe("voice-to-text chat input controls (integration)", () => {
     const chatId = await harness.createChat();
     harness.mount({ chatId });
 
-    expect(
-      await screen.findByRole("button", { name: "Voice to text (Pro)" }),
-    ).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Voice to text (Pro)" })).toBeTruthy();
   });
 });

@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import type { InvocationRef } from "@/state_machines/invocation_ref";
 import { sameInvocationRef } from "@/state_machines/invocation_ref";
 import { change, ignore, stay } from "@/state_machines/types";
@@ -82,9 +79,7 @@ export interface RemoteTestState {
 export type RemoteTestEvent = z.infer<typeof RemoteTestEventSchema>;
 export type RemoteTestIntent = z.infer<typeof RemoteTestIntentSchema>;
 export type RemoteTestSnapshot = z.infer<typeof RemoteTestSnapshotSchema>;
-type RemoteTestCommand =
-  | { readonly type: "FAIL" }
-  | { readonly type: "EMIT_INCREMENT" };
+type RemoteTestCommand = { readonly type: "FAIL" } | { readonly type: "EMIT_INCREMENT" };
 type RemoteTestReason = "ignored" | "stale-invocation";
 
 export function remoteTestLifecycle(
@@ -203,20 +198,14 @@ export function createRemoteTestMachine(
       authorizeSubscribe({ key }) {
         return key === "forbidden"
           ? denyRemoteAuthorization(
-              new OctopusStudioError(
-                "forbidden key",
-                OctopusStudioErrorKind.Auth,
-              ),
+              new OctopusStudioError("forbidden key", OctopusStudioErrorKind.Auth),
             )
           : allowRemoteAuthorization();
       },
       authorizeDispatch({ key }) {
         return key === "forbidden"
           ? denyRemoteAuthorization(
-              new OctopusStudioError(
-                "forbidden key",
-                OctopusStudioErrorKind.Auth,
-              ),
+              new OctopusStudioError("forbidden key", OctopusStudioErrorKind.Auth),
             )
           : allowRemoteAuthorization();
       },
@@ -302,22 +291,15 @@ export function createRemoteTestMachine(
         activeInvocationRef: state.activeInvocationRef,
       }),
       unavailableSnapshot: () => ({ value: 0 }),
-      revisionPolicy: (event) =>
-        event.type === "SET" ? "reject-stale" : "allow-stale",
+      revisionPolicy: (event) => (event.type === "SET" ? "reject-stale" : "allow-stale"),
       authorizeSubscribe({ key }) {
         if (key === "forbidden") {
-          throw new OctopusStudioError(
-            "forbidden key",
-            OctopusStudioErrorKind.Auth,
-          );
+          throw new OctopusStudioError("forbidden key", OctopusStudioErrorKind.Auth);
         }
       },
       authorizeDispatch({ key, event }) {
         if (key === "forbidden") {
-          throw new OctopusStudioError(
-            "forbidden key",
-            OctopusStudioErrorKind.Auth,
-          );
+          throw new OctopusStudioError("forbidden key", OctopusStudioErrorKind.Auth);
         }
         if (
           (event.type === "START" || event.type === "CANCEL") &&

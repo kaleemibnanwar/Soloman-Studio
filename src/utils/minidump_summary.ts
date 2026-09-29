@@ -274,10 +274,7 @@ export function parseMinidumpBuffer(
 ): MinidumpSummary | null {
   try {
     const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-    if (
-      buf.length < HEADER_SIZE ||
-      view.getUint32(0, true) !== MINIDUMP_SIGNATURE
-    ) {
+    if (buf.length < HEADER_SIZE || view.getUint32(0, true) !== MINIDUMP_SIGNATURE) {
       return null;
     }
     const numStreams = view.getUint32(HEADER_STREAM_COUNT_OFF, true);
@@ -321,13 +318,7 @@ export function parseMinidumpBuffer(
       ? readAddressMask(view, buf, crashpadInfoRva, crashpadInfoSize)
       : 0n;
 
-    const details = parseExceptionDetails(
-      view,
-      exceptionRva,
-      exceptionCode,
-      platform,
-      addressMask,
-    );
+    const details = parseExceptionDetails(view, exceptionRva, exceptionCode, platform, addressMask);
 
     const crashReason =
       platform === "win32"
@@ -343,10 +334,7 @@ export function parseMinidumpBuffer(
     let instructionPointer = 0n;
     const ipOffset = IP_OFFSET_IN_CONTEXT[arch];
     if (ipOffset !== undefined) {
-      const contextRva = view.getUint32(
-        exceptionRva + EXC_CONTEXT_RVA_OFF,
-        true,
-      );
+      const contextRva = view.getUint32(exceptionRva + EXC_CONTEXT_RVA_OFF, true);
       if (contextRva + ipOffset + 8 <= buf.length) {
         instructionPointer = view.getBigUint64(contextRva + ipOffset, true);
       }
@@ -361,25 +349,18 @@ export function parseMinidumpBuffer(
     let faultingDebugFile: string | undefined;
     let faultingDebugId: string | undefined;
     if (moduleListRva !== 0 && instructionPointer !== 0n) {
-      const module = findModule(
-        parseModules(view, buf, moduleListRva),
-        instructionPointer,
-      );
+      const module = findModule(parseModules(view, buf, moduleListRva), instructionPointer);
       if (module) {
         faultingModule = basename(module.name);
         faultingOffset = "0x" + (instructionPointer - module.base).toString(16);
         const identity = parseDebugIdentity(view, buf, module.recordRva);
         faultingDebugId = identity.debugId;
         // ELF build id records carry no name; the module name keys the file.
-        faultingDebugFile = identity.debugId
-          ? (identity.debugFile ?? faultingModule)
-          : undefined;
+        faultingDebugFile = identity.debugId ? (identity.debugFile ?? faultingModule) : undefined;
       }
     }
 
-    const annotations = crashpadInfoRva
-      ? parseAnnotations(view, buf, crashpadInfoRva)
-      : undefined;
+    const annotations = crashpadInfoRva ? parseAnnotations(view, buf, crashpadInfoRva) : undefined;
 
     return {
       crashReason,
@@ -410,11 +391,7 @@ function parseExceptionDetails(
   addressMask: bigint,
 ): Pick<
   MinidumpSummary,
-  | "faultAddress"
-  | "accessType"
-  | "inPageErrorStatus"
-  | "oomAllocationSizeBytes"
-  | "fastFailCode"
+  "faultAddress" | "accessType" | "inPageErrorStatus" | "oomAllocationSizeBytes" | "fastFailCode"
 > {
   const numParams = Math.min(
     view.getUint32(exceptionRva + EXC_NUM_PARAMS_OFF, true),
@@ -496,10 +473,7 @@ function toHex(value: bigint): `0x${string}` {
 // they can reach telemetry or logs.
 const NULL_PAGE_LIMIT = 0xffffn;
 
-function redactFaultAddress(
-  address: bigint,
-  mask: bigint,
-): `0x${string}` | "non-null" {
+function redactFaultAddress(address: bigint, mask: bigint): `0x${string}` | "non-null" {
   const masked = applyAddressMask(address, mask);
   return masked <= NULL_PAGE_LIMIT ? toHex(masked) : "non-null";
 }
@@ -507,12 +481,7 @@ function redactFaultAddress(
 // Read the address_mask from the MinidumpCrashpadInfo stream, used to strip
 // pointer-tag bits from addresses (arm64). Returns 0n when absent — older dumps
 // don't have the field, so only read it when the stream is long enough.
-function readAddressMask(
-  view: DataView,
-  buf: Buffer,
-  infoRva: number,
-  infoSize: number,
-): bigint {
+function readAddressMask(view: DataView, buf: Buffer, infoRva: number, infoSize: number): bigint {
   if (
     infoSize < CRASHPAD_INFO_MIN_SIZE_FOR_MASK ||
     infoRva + CRASHPAD_ADDRESS_MASK_OFF + 8 > buf.length
@@ -532,11 +501,7 @@ function applyAddressMask(pointer: bigint, mask: bigint): bigint {
 }
 
 // A u32 byte-length followed by UTF-8 bytes (MinidumpUTF8String / ByteArray).
-function readAnnotationString(
-  view: DataView,
-  buf: Buffer,
-  rva: number,
-): string {
+function readAnnotationString(view: DataView, buf: Buffer, rva: number): string {
   if (rva === 0 || rva + 4 > buf.length) return "";
   const len = view.getUint32(rva, true);
   const start = rva + 4;
@@ -550,11 +515,7 @@ function readAnnotationString(
 // Parse the module list stream into the base address, size, and name of each
 // loaded module. (MINIDUMP_MODULE_LIST: a u32 count, then `count` fixed-size
 // module records.)
-function parseModules(
-  view: DataView,
-  buf: Buffer,
-  rva: number,
-): MinidumpModule[] {
+function parseModules(view: DataView, buf: Buffer, rva: number): MinidumpModule[] {
   if (rva + 4 > buf.length) return [];
   const count = view.getUint32(rva, true);
   const modules: MinidumpModule[] = [];
@@ -576,13 +537,8 @@ function parseModules(
 
 // Find the loaded module whose address range contains the given address (the
 // crash IP), or undefined if it falls outside every module.
-function findModule(
-  modules: MinidumpModule[],
-  address: bigint,
-): MinidumpModule | undefined {
-  return modules.find(
-    (m) => address >= m.base && address < m.base + BigInt(m.size),
-  );
+function findModule(modules: MinidumpModule[], address: bigint): MinidumpModule | undefined {
+  return modules.find((m) => address >= m.base && address < m.base + BigInt(m.size));
 }
 
 // Debug identity from a module's CodeView record: the file name and the
@@ -761,15 +717,9 @@ function readModuleAnnotations(
   out: Record<string, string>,
 ): void {
   if (infoRva + CRASHPAD_MODULE_LIST_RVA_OFF + 4 > buf.length) return;
-  const modListRva = view.getUint32(
-    infoRva + CRASHPAD_MODULE_LIST_RVA_OFF,
-    true,
-  );
+  const modListRva = view.getUint32(infoRva + CRASHPAD_MODULE_LIST_RVA_OFF, true);
   if (modListRva === 0 || modListRva + 4 > buf.length) return;
-  const moduleCount = Math.min(
-    view.getUint32(modListRva, true),
-    MAX_ANNOTATION_SCAN,
-  );
+  const moduleCount = Math.min(view.getUint32(modListRva, true), MAX_ANNOTATION_SCAN);
   for (let i = 0; i < moduleCount; i++) {
     const link = modListRva + 4 + i * 12;
     if (link + 12 > buf.length) break;
@@ -781,15 +731,9 @@ function readModuleAnnotations(
       view.getUint32(moduleInfoRva + MODULE_INFO_SIMPLE_RVA_OFF, true),
       out,
     );
-    const objectsRva = view.getUint32(
-      moduleInfoRva + MODULE_INFO_OBJECTS_RVA_OFF,
-      true,
-    );
+    const objectsRva = view.getUint32(moduleInfoRva + MODULE_INFO_OBJECTS_RVA_OFF, true);
     if (objectsRva === 0 || objectsRva + 4 > buf.length) continue;
-    const objectCount = Math.min(
-      view.getUint32(objectsRva, true),
-      MAX_ANNOTATION_SCAN,
-    );
+    const objectCount = Math.min(view.getUint32(objectsRva, true), MAX_ANNOTATION_SCAN);
     for (let j = 0; j < objectCount; j++) {
       const obj = objectsRva + 4 + j * 12;
       if (obj + 12 > buf.length) break;
@@ -807,11 +751,7 @@ function annotationsFull(out: Record<string, string>): boolean {
   return Object.keys(out).length >= MAX_ANNOTATIONS;
 }
 
-function addAnnotation(
-  out: Record<string, string>,
-  key: string,
-  value: string,
-): void {
+function addAnnotation(out: Record<string, string>, key: string, value: string): void {
   // Truncate before the checks so lookup and storage use the same key.
   const k = key.slice(0, MAX_ANNOTATION_KEY_LEN);
   // First writer wins, so the trusted source (module annotations, read

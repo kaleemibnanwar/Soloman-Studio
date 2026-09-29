@@ -100,21 +100,13 @@ export class PreparedRequestScope {
 
   constructor(readonly windowSessionId: string) {
     if (windowSessionId.length === 0) {
-      throw new Error(
-        "PreparedRequestScope requires a window-session identity",
-      );
+      throw new Error("PreparedRequestScope requires a window-session identity");
     }
   }
 
-  register(
-    identity: RequestIdentity,
-    fingerprint: string,
-    dispose: () => void,
-  ): () => void {
+  register(identity: RequestIdentity, fingerprint: string, dispose: () => void): () => void {
     if (identity.windowSessionId !== this.windowSessionId) {
-      throw new Error(
-        "Prepared request does not belong to this window-session lifetime",
-      );
+      throw new Error("Prepared request does not belong to this window-session lifetime");
     }
     if (this.disposed) {
       dispose();
@@ -185,9 +177,7 @@ export interface PrepareRequestOptions<Admission, Outcome, Refusal> {
     identity: RequestIdentity,
     signal: AbortSignal,
   ) => Promise<PreparedDispatchResult<Admission, Outcome, Refusal>>;
-  readonly classifyFailure: (
-    error: unknown,
-  ) => PreparedRequestFailureClassification;
+  readonly classifyFailure: (error: unknown) => PreparedRequestFailureClassification;
   readonly reportError?: (error: unknown) => void;
 }
 
@@ -207,14 +197,10 @@ export function prepareRequest<Admission, Outcome, Refusal>(
   let admissionMayHaveOccurred = false;
   let retryEligible = false;
   const detached = new AbortController();
-  let attemptPending:
-    | Promise<PreparedAdmission<Admission, Refusal>>
-    | undefined;
+  let attemptPending: Promise<PreparedAdmission<Admission, Refusal>> | undefined;
   let pendingAttemptIsRetry = false;
 
-  const settleTerminal = (
-    value: PreparedRequestSettlement<Outcome, Refusal>,
-  ): boolean => {
+  const settleTerminal = (value: PreparedRequestSettlement<Outcome, Refusal>): boolean => {
     if (!terminalPending) return false;
     terminalPending = false;
     terminal.resolve(value);
@@ -226,22 +212,18 @@ export function prepareRequest<Admission, Outcome, Refusal>(
     terminal.reject(error);
     return true;
   };
-  const releaseRegistration = options.scope.register(
-    identity,
-    options.fingerprint,
-    () => {
-      detached.abort();
-      if (firstAdmissionPending) {
-        firstAdmissionPending = false;
-        firstAdmission.resolve({ kind: "disposed" });
-      }
-      settleTerminal(
-        admitted || dispatchInFlight || admissionMayHaveOccurred
-          ? { kind: "detached", authoritativeOperationMayContinue: true }
-          : { kind: "not-admitted", reason: "disposed" },
-      );
-    },
-  );
+  const releaseRegistration = options.scope.register(identity, options.fingerprint, () => {
+    detached.abort();
+    if (firstAdmissionPending) {
+      firstAdmissionPending = false;
+      firstAdmission.resolve({ kind: "disposed" });
+    }
+    settleTerminal(
+      admitted || dispatchInFlight || admissionMayHaveOccurred
+        ? { kind: "detached", authoritativeOperationMayContinue: true }
+        : { kind: "not-admitted", reason: "disposed" },
+    );
+  });
   void terminal.promise.then(releaseRegistration, releaseRegistration);
 
   const dispatchAttempt = (
@@ -252,28 +234,23 @@ export function prepareRequest<Admission, Outcome, Refusal>(
     }
     if (attemptPending) {
       if (!retryAttempt || pendingAttemptIsRetry) return attemptPending;
-      return Promise.reject(
-        new Error("Prepared request is not eligible for retry"),
-      );
+      return Promise.reject(new Error("Prepared request is not eligible for retry"));
     }
     if (retryAttempt && !retryEligible) {
-      return Promise.reject(
-        new Error("Prepared request is not eligible for retry"),
-      );
+      return Promise.reject(new Error("Prepared request is not eligible for retry"));
     }
     if (retryAttempt) retryEligible = false;
     pendingAttemptIsRetry = retryAttempt;
     const attempt = Promise.resolve()
-      .then<
-        | PreparedDispatchResult<Admission, Outcome, Refusal>
-        | { readonly kind: "disposed" }
-      >(() => {
-        if (!terminalPending) {
-          return { kind: "disposed" } as const;
-        }
-        dispatchInFlight = true;
-        return options.dispatch(identity, detached.signal);
-      })
+      .then<PreparedDispatchResult<Admission, Outcome, Refusal> | { readonly kind: "disposed" }>(
+        () => {
+          if (!terminalPending) {
+            return { kind: "disposed" } as const;
+          }
+          dispatchInFlight = true;
+          return options.dispatch(identity, detached.signal);
+        },
+      )
       .then(
         (result): PreparedAdmission<Admission, Refusal> => {
           if (result.kind === "disposed") {
@@ -343,8 +320,7 @@ export function prepareRequest<Admission, Outcome, Refusal>(
             }
             throw error;
           }
-          const retryable =
-            classification.retryable && options.retry.kind === "stable-id";
+          const retryable = classification.retryable && options.retry.kind === "stable-id";
           admissionMayHaveOccurred ||= classification.admission === "unknown";
           retryEligible = retryable;
           if (!retryable) {

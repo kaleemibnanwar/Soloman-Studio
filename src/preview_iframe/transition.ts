@@ -33,9 +33,7 @@ export function transition(
     case "RESTORE_PRESENTATION": {
       const history = event.history.slice(0, 100);
       const position =
-        history.length === 0
-          ? 0
-          : Math.min(Math.max(event.position, 0), history.length - 1);
+        history.length === 0 ? 0 : Math.min(Math.max(event.position, 0), history.length - 1);
       const currentUrl = history[position] ?? null;
       return applied(
         {
@@ -52,15 +50,12 @@ export function transition(
           // Presentations saved before provenance was captured have none, and
           // "app" is the safe reading: the recorder falls back to the app root
           // rather than pinning replay to a route nobody may have picked.
-          currentUrlSource:
-            currentUrl === null ? "none" : (event.source ?? "app"),
+          currentUrlSource: currentUrl === null ? "none" : (event.source ?? "app"),
           preservedUrl: currentUrl,
-          iframeEpoch:
-            currentUrl === null ? state.iframeEpoch + 1 : state.iframeEpoch,
+          iframeEpoch: currentUrl === null ? state.iframeEpoch + 1 : state.iframeEpoch,
           selectorReady: false,
           picking: false,
-          preserveHistoryOnNextReplacement:
-            event.preserveHistoryOnNextReplacement === true,
+          preserveHistoryOnNextReplacement: event.preserveHistoryOnNextReplacement === true,
         },
         currentUrl ? [navigateCommand(currentUrl)] : [],
       );
@@ -85,10 +80,7 @@ export function transition(
     }
     case "NAVIGATE": {
       if (!event.path) return ignore(state, "empty-url");
-      const history = [
-        ...state.history.slice(0, state.position + 1),
-        event.path,
-      ];
+      const history = [...state.history.slice(0, state.position + 1), event.path];
       return applied(
         {
           ...state,
@@ -135,10 +127,7 @@ export function transition(
         event.kind === "pushState" ||
         (event.kind === "documentLoad" && event.historyEffect === "push")
       ) {
-        const history = [
-          ...state.history.slice(0, state.position + 1),
-          event.url,
-        ];
+        const history = [...state.history.slice(0, state.position + 1), event.url];
         return applied({
           ...state,
           history,
@@ -263,10 +252,7 @@ export function transition(
         ? ignore(state, "no-preview-error")
         : applied({ ...state, error: undefined });
     case "IFRAME_ERROR":
-      if (
-        state.error?.source === event.source &&
-        state.error.message === event.message
-      ) {
+      if (state.error?.source === event.source && state.error.message === event.message) {
         return ignore(state, "same-preview-error");
       }
       return applied({
@@ -277,10 +263,7 @@ export function transition(
       if (state.error && state.error.source !== "octopus-studio-sync") {
         return ignore(state, "higher-priority-error");
       }
-      if (
-        state.error?.source === "octopus-studio-sync" &&
-        state.error.message === event.message
-      ) {
+      if (state.error?.source === "octopus-studio-sync" && state.error.message === event.message) {
         return ignore(state, "same-preview-error");
       }
       return applied({
@@ -292,10 +275,7 @@ export function transition(
         ? applied({ ...state, error: undefined })
         : ignore(state, "no-sync-error");
     case "APP_ERROR":
-      if (
-        state.error?.source === "octopus-studio-app" &&
-        state.error.message === event.message
-      ) {
+      if (state.error?.source === "octopus-studio-app" && state.error.message === event.message) {
         return ignore(state, "same-preview-error");
       }
       return applied({

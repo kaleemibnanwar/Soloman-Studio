@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 // Relative imports: this module is pulled into the preload bundle, which cannot
 // resolve the "@/" alias.
 import {
@@ -48,9 +43,7 @@ export const LEGACY_TEST_DIR = "tests";
 export const TEST_SPEC_GLOB = `${E2E_TEST_DIR}/**/*.spec.{${TEST_SPEC_EXTENSIONS.join(",")}}`;
 
 /** Matches a filename with a spec extension (any directory). */
-export const SPEC_FILE_RE = new RegExp(
-  `\\.spec\\.(${TEST_SPEC_EXT_ALTERNATION})$`,
-);
+export const SPEC_FILE_RE = new RegExp(`\\.spec\\.(${TEST_SPEC_EXT_ALTERNATION})$`);
 
 // =============================================================================
 // Tests Schemas
@@ -268,9 +261,7 @@ export const MigrateLegacyTestResultSchema = z.object({
   /** Why the move was skipped/failed (e.g. destination already exists). */
   error: z.string().optional(),
 });
-export type MigrateLegacyTestResult = z.infer<
-  typeof MigrateLegacyTestResultSchema
->;
+export type MigrateLegacyTestResult = z.infer<typeof MigrateLegacyTestResultSchema>;
 
 export const MigrateLegacyTestsResultSchema = z.object({
   /** Outcome per selected spec. */
@@ -315,9 +306,7 @@ export const ApplyTestAssertionsParamsSchema = z.object({
    */
   items: z.array(AssertionPlanItemSchema).max(MAX_PLAN_ITEMS),
 });
-export type ApplyTestAssertionsParams = z.infer<
-  typeof ApplyTestAssertionsParamsSchema
->;
+export type ApplyTestAssertionsParams = z.infer<typeof ApplyTestAssertionsParamsSchema>;
 
 /** Mark a proposal declined, so a reloaded card can't offer it for approval. */
 export const DiscardTestAssertionsParamsSchema = z.object({
@@ -325,9 +314,7 @@ export const DiscardTestAssertionsParamsSchema = z.object({
   chatId: z.number(),
   proposalId: z.string().max(MAX_PROPOSAL_ID_LENGTH),
 });
-export type DiscardTestAssertionsParams = z.infer<
-  typeof DiscardTestAssertionsParamsSchema
->;
+export type DiscardTestAssertionsParams = z.infer<typeof DiscardTestAssertionsParamsSchema>;
 
 export const ApplyTestAssertionsResultSchema = z.object({
   /** App-relative path of the spec this approval generated. */
@@ -336,9 +323,7 @@ export const ApplyTestAssertionsResultSchema = z.object({
   /** Set when the apply succeeded but something was skipped. */
   warning: z.string().optional(),
 });
-export type ApplyTestAssertionsResult = z.infer<
-  typeof ApplyTestAssertionsResultSchema
->;
+export type ApplyTestAssertionsResult = z.infer<typeof ApplyTestAssertionsResultSchema>;
 
 // =============================================================================
 // Tests Contracts

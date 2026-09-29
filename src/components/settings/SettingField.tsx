@@ -24,10 +24,7 @@ export function SettingField({
   return (
     <div className={cn("space-y-2.5", className)}>
       <div className="space-y-1">
-        <Label
-          htmlFor={htmlFor}
-          className="text-sm font-medium text-foreground"
-        >
+        <Label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
           {label}
         </Label>
         {description && (

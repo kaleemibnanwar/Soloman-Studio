@@ -24,10 +24,7 @@ export function FeaturedAppShowcase() {
     [apps],
   );
 
-  const featured = useMemo(
-    () => sortedApps.slice(0, MAX_FEATURED_APPS),
-    [sortedApps],
-  );
+  const featured = useMemo(() => sortedApps.slice(0, MAX_FEATURED_APPS), [sortedApps]);
   const featuredIds = useMemo(() => featured.map((a) => a.id), [featured]);
 
   const thumbnailByAppId = useAppThumbnails(featuredIds);
@@ -73,7 +70,8 @@ export function FeaturedAppShowcase() {
                 onClick={openApp}
               />
               <p className="mt-1.5 truncate px-0.5 font-mono text-[11px] text-muted-foreground">
-                {app.path} · {formatDistanceToNow(new Date(app.updatedAt ?? app.createdAt), { addSuffix: true })}
+                {app.path} ·{" "}
+                {formatDistanceToNow(new Date(app.updatedAt ?? app.createdAt), { addSuffix: true })}
               </p>
             </div>
           ))}

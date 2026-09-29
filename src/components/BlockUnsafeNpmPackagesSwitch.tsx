@@ -18,9 +18,7 @@ export function BlockUnsafeNpmPackagesSwitch() {
             });
           }}
         />
-        <Label htmlFor="block-unsafe-npm-packages">
-          Block unsafe npm packages
-        </Label>
+        <Label htmlFor="block-unsafe-npm-packages">Block unsafe npm packages</Label>
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
         Uses socket.dev to detect unsafe packages and blocks them

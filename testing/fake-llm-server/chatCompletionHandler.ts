@@ -2,10 +2,7 @@ import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { CANNED_MESSAGE, createStreamChunk } from "./index";
-import {
-  handleLocalAgentFixture,
-  extractLocalAgentFixture,
-} from "./localAgentHandler";
+import { handleLocalAgentFixture, extractLocalAgentFixture } from "./localAgentHandler";
 import {
   buildExploreCodeNestedToolArgs,
   buildExploreCodeSubmitReportArgs,
@@ -13,10 +10,7 @@ import {
 } from "./exploreCodeFixtures";
 import { fakeLlmLog } from "./log";
 import { resolveDumpDir, resolveFixturesDir } from "./paths";
-import {
-  matchConsentClassifierPayload,
-  SLOW_CONSENT_TOOL,
-} from "./consentClassifier";
+import { matchConsentClassifierPayload, SLOW_CONSENT_TOOL } from "./consentClassifier";
 import {
   matchAssertionCodePayload,
   matchAssertionsAgentTurn,
@@ -31,10 +25,7 @@ function hasInvalidApiKey(req: Request): boolean {
   return typeof authorization === "string" && /invalid/i.test(authorization);
 }
 
-async function waitForDelayOrDisconnect(
-  res: Response,
-  delayMs: number,
-): Promise<boolean> {
+async function waitForDelayOrDisconnect(res: Response, delayMs: number): Promise<boolean> {
   let disconnected = false;
   await new Promise<void>((resolve) => {
     const onClose = () => {
@@ -51,19 +42,14 @@ async function waitForDelayOrDisconnect(
   return disconnected;
 }
 
-function hasExploreCodeToolResult(
-  messages: any[],
-  getTextContent: (msg: any) => string,
-): boolean {
+function hasExploreCodeToolResult(messages: any[], getTextContent: (msg: any) => string): boolean {
   return messages.some((message: any) => {
     if (message?.role !== "tool") {
       return false;
     }
     const text = getTextContent(message);
     return (
-      text.includes("Found ") ||
-      text.includes("Code exploration:") ||
-      text.includes("src/App.tsx")
+      text.includes("Found ") || text.includes("Code exploration:") || text.includes("src/App.tsx")
     );
   });
 }
@@ -71,9 +57,7 @@ function hasExploreCodeToolResult(
 function isMergeConflictResolutionPrompt(content: string): boolean {
   return (
     content.includes("Resolve the Git conflict(s) in ") ||
-    content.includes(
-      "Please resolve the Git merge conflicts in the following file",
-    )
+    content.includes("Please resolve the Git merge conflicts in the following file")
   );
 }
 
@@ -81,17 +65,12 @@ function hasTool(req: Request, toolName: string): boolean {
   return (
     Array.isArray(req.body.tools) &&
     req.body.tools.some(
-      (tool: any) =>
-        tool?.type === "function" && tool.function?.name === toolName,
+      (tool: any) => tool?.type === "function" && tool.function?.name === toolName,
     )
   );
 }
 
-function sendToolCallJson(
-  res: Response,
-  toolName: string,
-  args: Record<string, unknown>,
-) {
+function sendToolCallJson(res: Response, toolName: string, args: Record<string, unknown>) {
   res.json({
     id: `chatcmpl-${Date.now()}`,
     object: "chat.completion",
@@ -133,11 +112,7 @@ function sendToolCallJson(
  * bailed after one chunk without ever ending the response: every fixture that
  * answers with a streamed tool call hung until the client timed out.
  */
-async function streamToolCall(
-  res: Response,
-  toolName: string,
-  args: Record<string, unknown>,
-) {
+async function streamToolCall(res: Response, toolName: string, args: Record<string, unknown>) {
   let closed = res.destroyed;
   const onClose = () => {
     closed = true;
@@ -256,9 +231,7 @@ export const createChatCompletionHandler =
 
     // Get the last user message's text content for other checks
     const lastUserMessage = userMessages[userMessages.length - 1];
-    const userTextContent = lastUserMessage
-      ? getTextContent(lastUserMessage)
-      : "";
+    const userTextContent = lastUserMessage ? getTextContent(lastUserMessage) : "";
     const lastMessageText = lastMessage ? getTextContent(lastMessage) : "";
 
     // Check if the last user message contains "[429]" to simulate rate limiting.
@@ -319,14 +292,11 @@ export const createChatCompletionHandler =
 
     // Route plan comment messages to generate dump for testing
     if (userTextContent.includes("I have the following comments on the plan")) {
-      messageContent =
-        "I'll update the plan based on your comments.\n\n" + generateDump(req);
+      messageContent = "I'll update the plan based on your comments.\n\n" + generateDump(req);
     }
 
     // Handle compaction summary requests (from generateText() in compaction_handler)
-    if (
-      userTextContent.startsWith("Please summarize the following conversation:")
-    ) {
+    if (userTextContent.startsWith("Please summarize the following conversation:")) {
       messageContent =
         "## Key Decisions Made\n- Completed initial task as requested\n\n## Current Task State\nConversation was compacted to save context space.";
     }
@@ -338,11 +308,7 @@ export const createChatCompletionHandler =
     );
     if (assertionsToolCall) {
       if (stream) {
-        await streamToolCall(
-          res,
-          assertionsToolCall.name,
-          assertionsToolCall.args,
-        );
+        await streamToolCall(res, assertionsToolCall.name, assertionsToolCall.args);
         return;
       }
       sendToolCallJson(res, assertionsToolCall.name, assertionsToolCall.args);
@@ -368,8 +334,7 @@ export const createChatCompletionHandler =
     if (userTextContent.includes("[[UPLOAD_IMAGE_TO_CODEBASE]]")) {
       // Extract the attachment path from the user message (format: "path: /path/to/app/.octopusStudio/media/...")
       const pathMatch = userTextContent.match(/\(path: ([^\s)]+)\)/);
-      const attachmentPath =
-        pathMatch?.[1] ?? ".octopusStudio/media/unknown.png";
+      const attachmentPath = pathMatch?.[1] ?? ".octopusStudio/media/unknown.png";
       messageContent = `Uploading image to codebase
 <octopusStudio-copy from="${attachmentPath}" to="new/image/file.png" description="Uploaded image to codebase"></octopusStudio-copy>
 `;
@@ -381,10 +346,7 @@ export const createChatCompletionHandler =
       : userTextContent.includes("[sleep=medium]")
         ? 10_000
         : 0;
-    if (
-      responseDelayMs > 0 &&
-      (await waitForDelayOrDisconnect(res, responseDelayMs))
-    ) {
+    if (responseDelayMs > 0 && (await waitForDelayOrDisconnect(res, responseDelayMs))) {
       return;
     }
 
@@ -423,9 +385,7 @@ Line 3
     if (
       lastMessage &&
       typeof lastMessage.content === "string" &&
-      lastMessage.content.startsWith(
-        "Fix these 2 TypeScript compile-time error",
-      )
+      lastMessage.content.startsWith("Fix these 2 TypeScript compile-time error")
     ) {
       // Fix errors in create-ts-errors.md and introduce a new error
       messageContent = `
@@ -443,9 +403,7 @@ x.nonExistentMethod2();
     if (
       lastMessage &&
       typeof lastMessage.content === "string" &&
-      lastMessage.content.startsWith(
-        "Fix these 1 TypeScript compile-time error",
-      )
+      lastMessage.content.startsWith("Fix these 1 TypeScript compile-time error")
     ) {
       // Fix errors in create-ts-errors.md and introduce a new error
       messageContent = `
@@ -503,9 +461,7 @@ export default Index;
         "There was an issue with the following `octopusStudio-search-replace` tags.",
       )
     ) {
-      if (
-        lastMessage.content.includes("Make sure you use `octopusStudio-read`")
-      ) {
+      if (lastMessage.content.includes("Make sure you use `octopusStudio-read`")) {
         // Fix errors in create-ts-errors.md and introduce a new error
         messageContent =
           `
@@ -554,10 +510,7 @@ export default Index;
       lastMessage.content.startsWith("/security-review")
     ) {
       messageContent = fs
-        .readFileSync(
-          path.join(resolveFixturesDir(), "security-review", "findings.md"),
-          "utf-8",
-        )
+        .readFileSync(path.join(resolveFixturesDir(), "security-review", "findings.md"), "utf-8")
         .replace(/\r\n/g, "\n");
       messageContent += "\n\n" + generateDump(req);
     }
@@ -568,23 +521,14 @@ export default Index;
     }
 
     // Check if the last message starts with "tc=" to load test case file
-    if (
-      userTextContent.startsWith("tc=") &&
-      !userTextContent.startsWith("tc=local-agent/")
-    ) {
+    if (userTextContent.startsWith("tc=") && !userTextContent.startsWith("tc=local-agent/")) {
       const testCaseName = userTextContent.slice(3).split("[")[0].trim(); // Remove "tc=" prefix
       fakeLlmLog(`* Loading test case: ${testCaseName}`);
-      const testFilePath = path.join(
-        resolveFixturesDir(),
-        prefix,
-        `${testCaseName}.md`,
-      );
+      const testFilePath = path.join(resolveFixturesDir(), prefix, `${testCaseName}.md`);
 
       try {
         if (fs.existsSync(testFilePath)) {
-          messageContent = fs
-            .readFileSync(testFilePath, "utf-8")
-            .replace(/\r\n/g, "\n");
+          messageContent = fs.readFileSync(testFilePath, "utf-8").replace(/\r\n/g, "\n");
           fakeLlmLog(`* Loaded test case: `);
         } else {
           console.error(`* Test case file not found: ${testFilePath}`);
@@ -599,11 +543,7 @@ export default Index;
     // Continuation requests: the partial assistant output is in a preceding assistant
     // message, then a user message asks to continue ("did not finish completely").
     // Check any message for the marker. See chat_stream_handlers continuation prompt.
-    if (
-      messages.some((m: any) =>
-        getTextContent(m).includes("[[STRING_TO_BE_FINISHED]]"),
-      )
-    ) {
+    if (messages.some((m: any) => getTextContent(m).includes("[[STRING_TO_BE_FINISHED]]"))) {
       messageContent = `[[STRING_IS_FINISHED]]";</octopusStudio-write>\nFinished writing file.`;
       messageContent += "\n\n" + generateDump(req);
     }
@@ -617,9 +557,7 @@ export default Index;
     // spawning a real Playwright run. Normally it comes back as the parked
     // tool's result inside the same turn, so it's found by scanning every
     // message; the fallback path sends it as a user message instead.
-    const assertionsResumedMatch = matchAssertionsResumedTurn(
-      messages.map(getTextContent),
-    );
+    const assertionsResumedMatch = matchAssertionsResumedTurn(messages.map(getTextContent));
     if (assertionsResumedMatch) {
       messageContent = assertionsResumedMatch;
     }
@@ -647,9 +585,7 @@ export default Index;
         if (req.destroyed) return;
       }
     }
-    const isToolCall = !!(
-      lastMessage && lastMessageText.includes("[call_tool=calculator_add]")
-    );
+    const isToolCall = !!(lastMessage && lastMessageText.includes("[call_tool=calculator_add]"));
     // Emit two parallel tool calls (slow first, fast second) so their results
     // land out of order. See mcp_out_of_order.spec.ts.
     const isParallelOutOfOrderToolCall = !!(
@@ -827,9 +763,7 @@ export default Index;
       typeof lastMessage?.content === "string" &&
       !lastMessage?.content.startsWith("Summarize the following chat:") &&
       lastMessage?.content?.match?.(/\[high-tokens=(\d+)\]/);
-    const highTokensValue = highTokensMatch
-      ? parseInt(highTokensMatch[1], 10)
-      : null;
+    const highTokensValue = highTokensMatch ? parseInt(highTokensMatch[1], 10) : null;
 
     // Split the message into characters to simulate streaming
     const messageChars = messageContent.split("");

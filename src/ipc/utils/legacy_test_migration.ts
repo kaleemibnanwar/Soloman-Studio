@@ -69,9 +69,7 @@ function importsPlaywright(content: string): boolean {
  * Playwright E2E specs and skips other spec files (e.g. Vitest unit tests)
  * that happen to live under `tests/`. Unreadable files are skipped.
  */
-export async function detectLegacyPlaywrightSpecs(
-  appPath: string,
-): Promise<string[]> {
+export async function detectLegacyPlaywrightSpecs(appPath: string): Promise<string[]> {
   const legacyDir = path.join(appPath, LEGACY_TEST_DIR);
   if (!fs.existsSync(legacyDir)) {
     return [];
@@ -84,17 +82,12 @@ export async function detectLegacyPlaywrightSpecs(
   const playwrightSpecs: string[] = [];
   for (const file of matches) {
     try {
-      const content = await fs.promises.readFile(
-        path.join(appPath, file),
-        "utf8",
-      );
+      const content = await fs.promises.readFile(path.join(appPath, file), "utf8");
       if (importsPlaywright(content)) {
         playwrightSpecs.push(file);
       }
     } catch (error) {
-      logger.warn(
-        `Failed to read ${file} while detecting legacy tests: ${error}`,
-      );
+      logger.warn(`Failed to read ${file} while detecting legacy tests: ${error}`);
     }
   }
   return playwrightSpecs.sort((a, b) => a.localeCompare(b));
@@ -114,8 +107,7 @@ const RESOLVE_EXTENSIONS = ["ts", "tsx", "js", "jsx"] as const;
 // `require("x")`. The trailing quote anchor keeps identifiers like `fromCache`
 // from matching. Best-effort (regex, not a full parser) — matches the ad-hoc
 // import detection used elsewhere in the codebase.
-const IMPORT_SPECIFIER_RE =
-  /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']/g;
+const IMPORT_SPECIFIER_RE = /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']/g;
 
 /** Every import/require specifier found in a file's content (best-effort). */
 export function parseImportSpecifiers(content: string): string[] {
@@ -151,13 +143,8 @@ function resolveRelativeImport(
   specifier: string,
   known: Set<string>,
 ): string | null {
-  const resolved = path.posix.normalize(
-    path.posix.join(path.posix.dirname(fromFile), specifier),
-  );
-  if (
-    resolved !== LEGACY_TEST_DIR &&
-    !resolved.startsWith(`${LEGACY_TEST_DIR}/`)
-  ) {
+  const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(fromFile), specifier));
+  if (resolved !== LEGACY_TEST_DIR && !resolved.startsWith(`${LEGACY_TEST_DIR}/`)) {
     return null; // Escapes the tests/ directory.
   }
   const candidates = [
@@ -177,12 +164,8 @@ interface LegacyImportGraph {
 }
 
 /** Build the local import graph among all source files under `tests/`. */
-async function buildLegacyImportGraph(
-  appPath: string,
-): Promise<LegacyImportGraph> {
-  const files = (
-    await glob(LEGACY_SOURCE_GLOB, { cwd: appPath, nodir: true, posix: true })
-  ).sort();
+async function buildLegacyImportGraph(appPath: string): Promise<LegacyImportGraph> {
+  const files = (await glob(LEGACY_SOURCE_GLOB, { cwd: appPath, nodir: true, posix: true })).sort();
   const known = new Set(files);
   const imports = new Map<string, Set<string>>();
   const importedBy = new Map<string, Set<string>>();
@@ -195,9 +178,7 @@ async function buildLegacyImportGraph(
     try {
       content = await fs.promises.readFile(path.join(appPath, file), "utf8");
     } catch (error) {
-      logger.warn(
-        `Failed to read ${file} while graphing legacy tests: ${error}`,
-      );
+      logger.warn(`Failed to read ${file} while graphing legacy tests: ${error}`);
       continue;
     }
     for (const specifier of parseRelativeImportSpecifiers(content)) {
@@ -266,10 +247,7 @@ export async function planLegacyMigration(
 
   // Undirected neighbours: an import edge in either direction couples two files.
   const neighbors = (file: string): Set<string> =>
-    new Set([
-      ...(graph.imports.get(file) ?? []),
-      ...(graph.importedBy.get(file) ?? []),
-    ]);
+    new Set([...(graph.imports.get(file) ?? []), ...(graph.importedBy.get(file) ?? [])]);
 
   const movableSpecs: string[] = [];
   const blockedSpecs: BlockedLegacySpec[] = [];
@@ -303,14 +281,10 @@ export async function planLegacyMigration(
       }
     }
 
-    const selectedSpecsInComponent = component.filter(
-      (f) => isSpecFile(f) && selectedSet.has(f),
-    );
+    const selectedSpecsInComponent = component.filter((f) => isSpecFile(f) && selectedSet.has(f));
     const supportInComponent = component.filter((f) => !isSpecFile(f));
     const collision = component.find((f) => destExists(f));
-    const unselectedSpec = component.find(
-      (f) => isSpecFile(f) && !selectedSet.has(f),
-    );
+    const unselectedSpec = component.find((f) => isSpecFile(f) && !selectedSet.has(f));
 
     let reason: string | null = null;
     if (collision) {
@@ -340,9 +314,7 @@ export async function planLegacyMigration(
   }
 
   const supportFiles = [...supportSet].sort((a, b) => a.localeCompare(b));
-  const skippedSupportFiles = [...skippedSupportSet].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const skippedSupportFiles = [...skippedSupportSet].sort((a, b) => a.localeCompare(b));
   movableSpecs.sort((a, b) => a.localeCompare(b));
   blockedSpecs.sort((a, b) => a.file.localeCompare(b.file));
   return {

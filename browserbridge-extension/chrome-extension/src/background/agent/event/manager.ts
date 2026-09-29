@@ -1,7 +1,7 @@
-import type { AgentEvent, EventType, EventCallback } from './types';
-import { createLogger } from '../../log';
+import type { AgentEvent, EventType, EventCallback } from "./types";
+import { createLogger } from "../../log";
 
-const logger = createLogger('event-manager');
+const logger = createLogger("event-manager");
 
 export class EventManager {
   private _subscribers: Map<EventType, EventCallback[]>;
@@ -27,7 +27,7 @@ export class EventManager {
       if (callbacks) {
         this._subscribers.set(
           eventType,
-          callbacks.filter(cb => cb !== callback),
+          callbacks.filter((cb) => cb !== callback),
         );
       }
     }
@@ -43,9 +43,9 @@ export class EventManager {
     const callbacks = this._subscribers.get(event.type);
     if (callbacks) {
       try {
-        await Promise.all(callbacks.map(async callback => await callback(event)));
+        await Promise.all(callbacks.map(async (callback) => await callback(event)));
       } catch (error) {
-        logger.error('Error executing event callbacks:', error);
+        logger.error("Error executing event callbacks:", error);
       }
     }
   }

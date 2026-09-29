@@ -5,10 +5,7 @@ import { z } from "zod";
 import { getOctopusStudioAppPath } from "../paths/paths";
 import { getDb } from "../db";
 import { apps, chats } from "../db/schema";
-import {
-  PersistedQueuedMessageSchema,
-  type PersistedQueue,
-} from "../ipc/types/queue";
+import { PersistedQueuedMessageSchema, type PersistedQueue } from "../ipc/types/queue";
 
 const logger = log.scope("queue_store");
 
@@ -96,10 +93,7 @@ export async function readPersistedQueue(options?: {
     try {
       const parsed = ChatQueueSchema.safeParse(JSON.parse(raw));
       if (!parsed.success) {
-        logger.error(
-          `Invalid queue file ${ref.filePath}, removing:`,
-          parsed.error,
-        );
+        logger.error(`Invalid queue file ${ref.filePath}, removing:`, parsed.error);
         if (!options?.preserveLegacyFiles) await tryUnlink(ref.filePath);
         continue;
       }

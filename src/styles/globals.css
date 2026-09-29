@@ -37,7 +37,8 @@ body[data-scroll-locked] .app-region-drag {
   /* Matches TitleBar height — keep TitleBar using this var so main panel clears it exactly */
   --layout-title-bar-offset: 2.25rem;
   --docs-bg: #f5f5f5;
-  --default-font-family: "Instrument Sans Variable", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --default-font-family:
+    "Instrument Sans Variable", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --default-mono-font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
   --font-display: "Instrument Serif", "Instrument Sans Variable", Georgia, serif;
 

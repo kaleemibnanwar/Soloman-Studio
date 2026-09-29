@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 
 import { ipc } from "@/ipc/types";
@@ -25,10 +18,7 @@ import {
   type RecordingState,
 } from "@/atoms/recorderAtoms";
 import { collapseActions } from "@/lib/test_recorder/merge";
-import {
-  actionToCodeLine,
-  recordedBodyStatements,
-} from "@/lib/test_recorder/codegen";
+import { actionToCodeLine, recordedBodyStatements } from "@/lib/test_recorder/codegen";
 import {
   normalizeTestName,
   RECORDED_TEST_DRAFT_VERSION,
@@ -222,10 +212,7 @@ export function useTestRecorder({
   // "hello" arrives as five growing fills but becomes one step.
   const collapsedActions = useMemo(() => collapseActions(entries), [entries]);
   const entryCount = collapsedActions.length;
-  const steps = useMemo(
-    () => collapsedActions.map(actionToCodeLine),
-    [collapsedActions],
-  );
+  const steps = useMemo(() => collapsedActions.map(actionToCodeLine), [collapsedActions]);
 
   const postToIframe = useCallback((message: unknown, targetOrigin = "*") => {
     iframeElRef.current?.contentWindow?.postMessage(message, targetOrigin);
@@ -279,9 +266,7 @@ export function useTestRecorder({
       // Only a rejection is worth saying out loud: a navigation made while
       // nothing is recording is just the user browsing their app.
       if (record({ kind: "navigate", path }) === "rejected") {
-        console.warn(
-          "Recorder ignored a navigation that resolves outside the app",
-        );
+        console.warn("Recorder ignored a navigation that resolves outside the app");
       }
     },
     [record],
@@ -324,10 +309,8 @@ export function useTestRecorder({
   );
 
   const patchState = useCallback(
-    (
-      targetAppId: number,
-      update: RecordingState | ((prev: RecordingState) => RecordingState),
-    ) => setRecordingState({ appId: targetAppId, update }),
+    (targetAppId: number, update: RecordingState | ((prev: RecordingState) => RecordingState)) =>
+      setRecordingState({ appId: targetAppId, update }),
     [setRecordingState],
   );
 
@@ -343,16 +326,13 @@ export function useTestRecorder({
    * Declared above the `recording:ended` subscription because that effect lists
    * it as a dependency, and a dependency array is evaluated during render.
    */
-  const settlePendingAuth = useCallback(
-    (targetAppId: number, error: string) => {
-      if (pendingAuthRef.current?.appId !== targetAppId) return;
-      pendingAuthRef.current = null;
-      const pendingAuthReady = authReadyRef.current;
-      authReadyRef.current = null;
-      pendingAuthReady?.({ ok: false, error });
-    },
-    [],
-  );
+  const settlePendingAuth = useCallback((targetAppId: number, error: string) => {
+    if (pendingAuthRef.current?.appId !== targetAppId) return;
+    pendingAuthRef.current = null;
+    const pendingAuthReady = authReadyRef.current;
+    authReadyRef.current = null;
+    pendingAuthReady?.({ ok: false, error });
+  }, []);
 
   /**
    * Settle a preview-readiness wait this app is still parked on.
@@ -406,10 +386,7 @@ export function useTestRecorder({
         };
         timer = setTimeout(finish, RECORDER_FLUSH_TIMEOUT_MS);
         recorderFlushRef.current = { appId: targetAppId, requestId, finish };
-        postToIframe(
-          { type: "flush-octopus-studio-recorder", token, requestId },
-          origin,
-        );
+        postToIframe({ type: "flush-octopus-studio-recorder", token, requestId }, origin);
       });
     },
     [postToIframe, previewOrigin, settleRecorderFlush],
@@ -446,11 +423,7 @@ export function useTestRecorder({
         }
         case "octopus-studio-recorder-flushed": {
           const waiting = recorderFlushRef.current;
-          if (
-            waiting &&
-            waiting.appId === currentAppId &&
-            data.requestId === waiting.requestId
-          ) {
+          if (waiting && waiting.appId === currentAppId && data.requestId === waiting.requestId) {
             waiting.finish();
           }
           break;
@@ -493,13 +466,7 @@ export function useTestRecorder({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [
-    postRecorderControl,
-    postToIframe,
-    previewOrigin,
-    record,
-    settleRecorderReady,
-  ]);
+  }, [postRecorderControl, postToIframe, previewOrigin, record, settleRecorderReady]);
 
   /**
    * Park what a session captured before it ended on its own, and open the
@@ -535,15 +502,12 @@ export function useTestRecorder({
             limitReached: prev.limitReached,
             isolation: captured.isolation,
             auth: captured.auth,
-            warning:
-              [captured.warning, endMessage].filter(Boolean).join(" ") ||
-              undefined,
+            warning: [captured.warning, endMessage].filter(Boolean).join(" ") || undefined,
           }));
         })
         .catch((error) => {
           // Nothing was kept, so this is the ending the old path reported.
-          const failure =
-            error instanceof Error ? error.message : String(error);
+          const failure = error instanceof Error ? error.message : String(error);
           clearEntries(targetAppId);
           patchState(targetAppId, { phase: "idle", error: endMessage });
           showError(`${endMessage} Couldn't keep the recording: ${failure}`);
@@ -625,9 +589,7 @@ export function useTestRecorder({
           return;
         }
         patchState(endedAppId, (prev) =>
-          prev.phase === "idle"
-            ? prev
-            : { phase: "idle", error: failureMessage },
+          prev.phase === "idle" ? prev : { phase: "idle", error: failureMessage },
         );
         if (failureMessage) {
           failedSessionsRef.current.set(endedAppId, sessionId);
@@ -749,16 +711,12 @@ export function useTestRecorder({
   // remaining actions all act on a recording that has already been written, and
   // taking one up would produce a second copy of the same test.
   useEffect(() => {
-    const unsub = ipc.events.recording.onDraftConsumed(
-      ({ appId: consumedAppId, draftId }) => {
-        if (consumedAppId == null) return;
-        patchState(consumedAppId, (prev) =>
-          prev.phase === "reviewing" && prev.draft?.draftId === draftId
-            ? { phase: "idle" }
-            : prev,
-        );
-      },
-    );
+    const unsub = ipc.events.recording.onDraftConsumed(({ appId: consumedAppId, draftId }) => {
+      if (consumedAppId == null) return;
+      patchState(consumedAppId, (prev) =>
+        prev.phase === "reviewing" && prev.draft?.draftId === draftId ? { phase: "idle" } : prev,
+      );
+    });
     return unsub;
   }, [patchState]);
 
@@ -767,29 +725,25 @@ export function useTestRecorder({
   // it shows the name the spec will be written under. Scoped by draft id: an
   // older card settling after a newer recording was parked must not rename it.
   useEffect(() => {
-    const unsub = ipc.events.recording.onDraftNamed(
-      ({ appId: namedAppId, draftId, testName }) => {
-        if (namedAppId == null || !testName) return;
-        patchState(namedAppId, (prev) =>
-          prev.draft && prev.draft.draftId === draftId
-            ? { ...prev, draft: { ...prev.draft, testName } }
-            : prev,
-        );
-      },
-    );
+    const unsub = ipc.events.recording.onDraftNamed(({ appId: namedAppId, draftId, testName }) => {
+      if (namedAppId == null || !testName) return;
+      patchState(namedAppId, (prev) =>
+        prev.draft && prev.draft.draftId === draftId
+          ? { ...prev, draft: { ...prev.draft, testName } }
+          : prev,
+      );
+    });
     return unsub;
   }, [patchState]);
 
   // Surface isolation/sign-in setup progress.
   useEffect(() => {
-    const unsub = ipc.events.recording.onSetupProgress(
-      ({ appId: progressAppId, message }) => {
-        if (progressAppId == null) return;
-        patchState(progressAppId, (prev) =>
-          prev.phase === "idle" ? prev : { ...prev, progress: message.trim() },
-        );
-      },
-    );
+    const unsub = ipc.events.recording.onSetupProgress(({ appId: progressAppId, message }) => {
+      if (progressAppId == null) return;
+      patchState(progressAppId, (prev) =>
+        prev.phase === "idle" ? prev : { ...prev, progress: message.trim() },
+      );
+    });
     return unsub;
   }, [patchState]);
 
@@ -808,54 +762,51 @@ export function useTestRecorder({
           error: "secure preview sign-in is unavailable",
         });
       }
-      return new Promise<{ ok: boolean; error?: string; path?: string }>(
-        (resolve) => {
-          let done = false;
-          const finish = (ok: boolean, error?: string, path?: string) => {
-            if (done) return;
-            done = true;
-            pendingAuthRef.current = null;
-            authReadyRef.current = null;
-            clearTimeout(timer);
-            resolve({ ok, error, path });
-          };
-          const timer = setTimeout(
-            () => finish(false, "timed out waiting for the preview to sign in"),
-            AUTH_READY_TIMEOUT_MS,
+      return new Promise<{ ok: boolean; error?: string; path?: string }>((resolve) => {
+        let done = false;
+        const finish = (ok: boolean, error?: string, path?: string) => {
+          if (done) return;
+          done = true;
+          pendingAuthRef.current = null;
+          authReadyRef.current = null;
+          clearTimeout(timer);
+          resolve({ ok, error, path });
+        };
+        const timer = setTimeout(
+          () => finish(false, "timed out waiting for the preview to sign in"),
+          AUTH_READY_TIMEOUT_MS,
+        );
+        // Register the creds FIRST so the fresh load's bootstrap announce
+        // triggers a resend, then force that load. Also post directly, for when
+        // the current page is alive and listening.
+        const nonce = crypto.randomUUID();
+        pendingAuthRef.current = {
+          appId: targetAppId,
+          auth,
+          nonce,
+          authBootstrapToken,
+        };
+        authReadyRef.current = (result) => finish(Boolean(result.ok), result.error, result.path);
+        reloadPreview();
+        // Fails closed on an unknown origin, exactly as the inbound handler
+        // does. This is the one message carrying the test user's credentials,
+        // and "*" would hand them to whatever origin the preview happens to be
+        // showing. The registration above stands, and the effect below replays
+        // it as soon as an origin exists — the bootstrap's own announce can't
+        // be relied on for that, since it is refused by this same check.
+        const origin = previewOrigin();
+        if (origin !== "*") {
+          postToIframe(
+            {
+              type: "octopus-studio-auth-login",
+              auth,
+              nonce,
+              token: authBootstrapToken,
+            },
+            origin,
           );
-          // Register the creds FIRST so the fresh load's bootstrap announce
-          // triggers a resend, then force that load. Also post directly, for when
-          // the current page is alive and listening.
-          const nonce = crypto.randomUUID();
-          pendingAuthRef.current = {
-            appId: targetAppId,
-            auth,
-            nonce,
-            authBootstrapToken,
-          };
-          authReadyRef.current = (result) =>
-            finish(Boolean(result.ok), result.error, result.path);
-          reloadPreview();
-          // Fails closed on an unknown origin, exactly as the inbound handler
-          // does. This is the one message carrying the test user's credentials,
-          // and "*" would hand them to whatever origin the preview happens to be
-          // showing. The registration above stands, and the effect below replays
-          // it as soon as an origin exists — the bootstrap's own announce can't
-          // be relied on for that, since it is refused by this same check.
-          const origin = previewOrigin();
-          if (origin !== "*") {
-            postToIframe(
-              {
-                type: "octopus-studio-auth-login",
-                auth,
-                nonce,
-                token: authBootstrapToken,
-              },
-              origin,
-            );
-          }
-        },
-      );
+        }
+      });
     },
     [postToIframe, previewOrigin, reloadPreview],
   );
@@ -924,9 +875,7 @@ export function useTestRecorder({
       // preview in with this app's test credentials while this app's session
       // stayed alive, locked, and invisible.
       const isAbandoned = () =>
-        attempt.cancelled ||
-        !mountedRef.current ||
-        appIdRef.current !== targetAppId;
+        attempt.cancelled || !mountedRef.current || appIdRef.current !== targetAppId;
 
       clearEntries(targetAppId);
       // A previous session's failure belongs to that session.
@@ -965,8 +914,7 @@ export function useTestRecorder({
       }
 
       if (!result.authBootstrapToken) {
-        const message =
-          "Secure preview recording is unavailable. Restart the app and try again.";
+        const message = "Secure preview recording is unavailable. Restart the app and try again.";
         endSession(targetAppId);
         patchState(targetAppId, { phase: "idle", error: message });
         showError(message);
@@ -983,9 +931,7 @@ export function useTestRecorder({
       patchState(targetAppId, (prev) => ({
         ...prev,
         isolation: result.isolation,
-        warning:
-          [result.isolation.reason, result.warning].filter(Boolean).join(" ") ||
-          undefined,
+        warning: [result.isolation.reason, result.warning].filter(Boolean).join(" ") || undefined,
         auth,
         progress: undefined,
       }));
@@ -996,11 +942,7 @@ export function useTestRecorder({
           phase: "authenticating",
           progress: "Signing in the test user…",
         }));
-        const signIn = await authenticate(
-          targetAppId,
-          auth,
-          result.authBootstrapToken,
-        );
+        const signIn = await authenticate(targetAppId, auth, result.authBootstrapToken);
         // Sign-in waits up to 30s — plenty of room for the selection to move on.
         if (isAbandoned()) {
           releaseSession(targetAppId);
@@ -1146,10 +1088,7 @@ export function useTestRecorder({
     async (startPath?: string) => {
       const targetAppId = appId;
       if (targetAppId == null) return;
-      if (
-        startingAppsRef.current.has(targetAppId) ||
-        ownedSessionsRef.current.has(targetAppId)
-      ) {
+      if (startingAppsRef.current.has(targetAppId) || ownedSessionsRef.current.has(targetAppId)) {
         return;
       }
       const attempt: StartAttempt = { cancelled: false };
@@ -1187,8 +1126,7 @@ export function useTestRecorder({
       if (
         appIdRef.current !== targetAppId ||
         !ownedSessionsRef.current.has(targetAppId) ||
-        (ourSessionId !== undefined &&
-          sessionIdsRef.current.get(targetAppId) !== ourSessionId)
+        (ourSessionId !== undefined && sessionIdsRef.current.get(targetAppId) !== ourSessionId)
       ) {
         return null;
       }
@@ -1221,9 +1159,7 @@ export function useTestRecorder({
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         showError(`Couldn't keep the recording: ${message}`);
-        await ipc.recording
-          .stopRecording({ appId: targetAppId })
-          .catch(() => {});
+        await ipc.recording.stopRecording({ appId: targetAppId }).catch(() => {});
         recorderTokensRef.current.delete(targetAppId);
         clearEntries(targetAppId);
         patchState(targetAppId, { phase: "idle" });
@@ -1269,8 +1205,7 @@ export function useTestRecorder({
       // parked in main with nothing on screen to discard it. Unattributable when
       // we never had a session id, so that case keeps the old behaviour.
       const ourSessionGone =
-        ourSessionId !== undefined &&
-        sessionIdsRef.current.get(targetAppId) !== ourSessionId;
+        ourSessionId !== undefined && sessionIdsRef.current.get(targetAppId) !== ourSessionId;
       if (ourSessionFailed || ourSessionGone) {
         failedSessionsRef.current.delete(targetAppId);
         void ipc.recording
@@ -1280,9 +1215,7 @@ export function useTestRecorder({
           })
           .catch(() => {});
         clearEntries(targetAppId);
-        patchState(targetAppId, (prev) =>
-          prev.phase === "idle" ? prev : { phase: "idle" },
-        );
+        patchState(targetAppId, (prev) => (prev.phase === "idle" ? prev : { phase: "idle" }));
         return null;
       }
 
@@ -1304,14 +1237,7 @@ export function useTestRecorder({
       }));
       return draft;
     },
-    [
-      appId,
-      clearEntries,
-      flushRecorder,
-      patchState,
-      postRecorderControl,
-      reloadPreview,
-    ],
+    [appId, clearEntries, flushRecorder, patchState, postRecorderControl, reloadPreview],
   );
 
   /**
@@ -1358,9 +1284,7 @@ export function useTestRecorder({
     if (targetAppId == null) return;
     const draftId = stateRef.current.draft?.draftId;
     patchState(targetAppId, { phase: "idle" });
-    await ipc.recording
-      .discardRecordedTestDraft({ appId: targetAppId, draftId })
-      .catch(() => {});
+    await ipc.recording.discardRecordedTestDraft({ appId: targetAppId, draftId }).catch(() => {});
   }, [appId, patchState]);
 
   const cancelRecording = useCallback(async () => {
@@ -1451,8 +1375,7 @@ export function useTestRecorder({
   // leaves the request behind for this hook to consume once it mounts.
   useEffect(() => {
     if (!startRequest || appId == null) return;
-    const isStale =
-      Date.now() - startRequest.requestedAt > RECORDING_REQUEST_TTL_MS;
+    const isStale = Date.now() - startRequest.requestedAt > RECORDING_REQUEST_TTL_MS;
     if (startRequest.appId !== appId) {
       // Only drop another app's request once it can no longer be honored, so
       // switching apps mid-request doesn't cancel an in-flight ask.
@@ -1467,10 +1390,7 @@ export function useTestRecorder({
   // Numbered exactly as the assertion tool numbers them, so what the review
   // shows is what the model is asked about and what ends up in the file.
   const draft = recordingState.draft;
-  const draftSteps = useMemo(
-    () => (draft ? recordedBodyStatements(draft) : []),
-    [draft],
-  );
+  const draftSteps = useMemo(() => (draft ? recordedBodyStatements(draft) : []), [draft]);
 
   const limitWarning = recordingState.limitReached
     ? `This recording reached the ${MAX_RECORDED_ENTRIES.toLocaleString()}-action limit — anything after that wasn't captured.`
@@ -1480,9 +1400,7 @@ export function useTestRecorder({
     phase: recordingState.phase,
     isolation: recordingState.isolation,
     auth: recordingState.auth,
-    warning:
-      [recordingState.warning, limitWarning].filter(Boolean).join(" ") ||
-      undefined,
+    warning: [recordingState.warning, limitWarning].filter(Boolean).join(" ") || undefined,
     progress: recordingState.progress,
     error: recordingState.error,
     draft,

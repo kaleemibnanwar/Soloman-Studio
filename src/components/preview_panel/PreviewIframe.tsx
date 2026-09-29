@@ -1,13 +1,7 @@
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useCurrentAppUrl } from "@/hooks/useAppRun";
 import { useAtomValue, useSetAtom, useAtom } from "jotai";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -57,17 +51,9 @@ import {
 } from "@/atoms/previewAtoms";
 import { ComponentSelection } from "@/ipc/types";
 import { mergePendingChange } from "@/ipc/types/visual-editing";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { runAppLifecycleInBackground, useRunApp } from "@/hooks/useRunApp";
 import { useSettings } from "@/hooks/useSettings";
 import { useShortcut } from "@/hooks/useShortcut";
@@ -101,15 +87,8 @@ import {
 } from "./previewAddressPath";
 import { getPreviewToolbarActionVisibility } from "./previewToolbarLayout";
 import { usePreviewIframe } from "@/preview_iframe/usePreviewIframe";
-import {
-  selectCanGoBack,
-  selectCanGoForward,
-  selectPreviewError,
-} from "@/preview_iframe/state";
-import {
-  useScreenshot,
-  type ScreenshotAdapterEvent,
-} from "@/screenshot/useScreenshot";
+import { selectCanGoBack, selectCanGoForward, selectPreviewError } from "@/preview_iframe/state";
+import { useScreenshot, type ScreenshotAdapterEvent } from "@/screenshot/useScreenshot";
 import { useAppRunRemoteManager } from "@/app_run/AppRunRemoteProvider";
 
 interface ErrorBannerProps {
@@ -161,10 +140,7 @@ const ErrorBanner = ({ error, onDismiss, onAIFix }: ErrorBannerProps) => {
 
       {/* Error message in the middle */}
       <div
-        className={cn(
-          "px-6 py-1 text-sm",
-          (isInternalOctopusStudioError || isSyncError) && "pt-6",
-        )}
+        className={cn("px-6 py-1 text-sm", (isInternalOctopusStudioError || isSyncError) && "pt-6")}
       >
         <div
           className="text-red-700 dark:text-red-300 text-wrap font-mono whitespace-pre-wrap break-words text-xs cursor-pointer flex gap-1 items-start"
@@ -243,14 +219,11 @@ export const PreviewIframe = ({
   const { userBudget } = useUserBudgetInfo();
   const isProMode = !!userBudget;
   const queryClient = useQueryClient();
-  const setSelectedComponentsPreview = useSetAtom(
-    selectedComponentsPreviewAtom,
+  const setSelectedComponentsPreview = useSetAtom(selectedComponentsPreviewAtom);
+  const [visualEditingSelectedComponent, setVisualEditingSelectedComponent] = useAtom(
+    visualEditingSelectedComponentAtom,
   );
-  const [visualEditingSelectedComponent, setVisualEditingSelectedComponent] =
-    useAtom(visualEditingSelectedComponentAtom);
-  const setCurrentComponentCoordinates = useSetAtom(
-    currentComponentCoordinatesAtom,
-  );
+  const setCurrentComponentCoordinates = useSetAtom(currentComponentCoordinatesAtom);
   const setPreviewIframeRef = useSetAtom(previewIframeRefAtom);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const handleIframeRef = useCallback(
@@ -260,12 +233,10 @@ export const PreviewIframe = ({
     },
     [setPreviewIframeRef],
   );
-  const componentMessageHandlerRef = useRef<(event: MessageEvent) => void>(
+  const componentMessageHandlerRef = useRef<(event: MessageEvent) => void>(() => undefined);
+  const screenshotAdapterHandlerRef = useRef<(event: ScreenshotAdapterEvent) => void>(
     () => undefined,
   );
-  const screenshotAdapterHandlerRef = useRef<
-    (event: ScreenshotAdapterEvent) => void
-  >(() => undefined);
   const {
     state: iframeState,
     send: sendIframeEvent,
@@ -328,12 +299,8 @@ export const PreviewIframe = ({
   };
 
   const previewToolbarRef = useRef<HTMLDivElement>(null);
-  const [previewToolbarWidth, setPreviewToolbarWidth] = useState<number | null>(
-    null,
-  );
-  const [screenshotDataUrl, setScreenshotDataUrl] = useAtom(
-    screenshotDataUrlAtom,
-  );
+  const [previewToolbarWidth, setPreviewToolbarWidth] = useState<number | null>(null);
+  const [screenshotDataUrl, setScreenshotDataUrl] = useAtom(screenshotDataUrlAtom);
   const currentHistoryUrl = navigationHistory[currentHistoryPosition] ?? null;
   const currentAddressPath = formatPreviewAddressPath(currentHistoryUrl);
   const [addressBarValue, setAddressBarValue] = useState(currentAddressPath);
@@ -418,14 +385,12 @@ export const PreviewIframe = ({
   // Device mode state
   const deviceMode: DeviceMode = settings?.previewDeviceMode ?? "desktop";
   const [isDevicePopoverOpen, setIsDevicePopoverOpen] = useState(false);
-  const {
-    mutateAsync: createCloudSandboxShareLink,
-    isPending: isCreatingCloudSandboxShareLink,
-  } = useMutation({
-    mutationFn: async ({ appId }: { appId: number }) => {
-      return ipc.app.createCloudSandboxShareLink({ appId });
-    },
-  });
+  const { mutateAsync: createCloudSandboxShareLink, isPending: isCreatingCloudSandboxShareLink } =
+    useMutation({
+      mutationFn: async ({ appId }: { appId: number }) => {
+        return ipc.app.createCloudSandboxShareLink({ appId });
+      },
+    });
 
   // Device configurations
   const deviceWidthConfig = {
@@ -477,9 +442,7 @@ export const PreviewIframe = ({
       sendIframeEvent({
         type: "IFRAME_ERROR",
         message: cloudSandboxStatus.lastErrorMessage
-          ? cloudSandboxStatus.lastErrorMessage.includes(
-              "OctopusStudio stopped",
-            )
+          ? cloudSandboxStatus.lastErrorMessage.includes("OctopusStudio stopped")
             ? cloudSandboxStatus.lastErrorMessage
             : cloudSandboxStatus.terminationReason === "credits_exhausted"
               ? "This cloud sandbox was stopped because your OctopusStudio Pro credits ran out. Add credits and start it again."
@@ -584,10 +547,7 @@ export const PreviewIframe = ({
         componentId,
         mergePendingChange(existing, {
           componentId,
-          componentName:
-            existing?.componentName ||
-            visualEditingSelectedComponent?.name ||
-            "",
+          componentName: existing?.componentName || visualEditingSelectedComponent?.name || "",
           relativePath: filePath,
           lineNumber,
           textContent: text,
@@ -600,8 +560,7 @@ export const PreviewIframe = ({
 
   // Function to get current styles from selected element
   const getCurrentElementStyles = () => {
-    if (!iframeRef.current?.contentWindow || !visualEditingSelectedComponent)
-      return;
+    if (!iframeRef.current?.contentWindow || !visualEditingSelectedComponent) return;
 
     try {
       // Send message to iframe to get current styles
@@ -657,10 +616,7 @@ export const PreviewIframe = ({
           level === "debug"
             ? level.toUpperCase()
             : "LOG";
-        const formattedMessage = formatPreviewConsoleMessage(
-          `[${levelLabel}]`,
-          args,
-        );
+        const formattedMessage = formatPreviewConsoleMessage(`[${levelLabel}]`, args);
         const logLevel: "info" | "warn" | "error" =
           level === "error" ? "error" : level === "warn" ? "warn" : "info";
         const logEntry = boundPreviewConsoleEntry({
@@ -682,10 +638,7 @@ export const PreviewIframe = ({
       // Handle network requests from the iframe
       if (event.data?.type === "network-request") {
         const { method, url } = event.data;
-        const formattedMessage = formatPreviewConsoleMessage("→", [
-          method,
-          url,
-        ]);
+        const formattedMessage = formatPreviewConsoleMessage("→", [method, url]);
         const logEntry = boundPreviewConsoleEntry({
           level: "info" as const,
           type: "network-requests" as const,
@@ -707,19 +660,14 @@ export const PreviewIframe = ({
         const { method, url, status, duration } = event.data;
         const numericStatus = typeof status === "number" ? status : 0;
         const durationLabel =
-          typeof duration === "number"
-            ? `(${duration}ms)`
-            : "(unknown duration)";
-        const formattedMessage = formatPreviewConsoleMessage(
-          formatPreviewNetworkStatus(status),
-          [method, url, durationLabel],
-        );
+          typeof duration === "number" ? `(${duration}ms)` : "(unknown duration)";
+        const formattedMessage = formatPreviewConsoleMessage(formatPreviewNetworkStatus(status), [
+          method,
+          url,
+          durationLabel,
+        ]);
         const level: "info" | "warn" | "error" =
-          numericStatus >= 400
-            ? "error"
-            : numericStatus >= 300
-              ? "warn"
-              : "info";
+          numericStatus >= 400 ? "error" : numericStatus >= 300 ? "warn" : "info";
         const logEntry = boundPreviewConsoleEntry({
           level,
           type: "network-requests" as const,
@@ -739,12 +687,9 @@ export const PreviewIframe = ({
       // Handle network errors from the iframe
       if (event.data?.type === "network-error") {
         const { method, url, status, error, duration } = event.data;
-        const statusCode =
-          typeof status === "number" && status !== 0 ? `[${status}]` : "";
+        const statusCode = typeof status === "number" && status !== 0 ? `[${status}]` : "";
         const durationLabel =
-          typeof duration === "number"
-            ? `(${duration}ms)`
-            : "(unknown duration)";
+          typeof duration === "number" ? `(${duration}ms)` : "(unknown duration)";
         const formattedMessage = formatPreviewConsoleMessage(statusCode, [
           method,
           url,
@@ -768,9 +713,7 @@ export const PreviewIframe = ({
         return;
       }
 
-      if (
-        event.data?.type === "octopus-studio-component-selector-initialized"
-      ) {
+      if (event.data?.type === "octopus-studio-component-selector-initialized") {
         iframeRef.current?.contentWindow?.postMessage(
           { type: "octopus-studio-pro-mode", enabled: isProMode },
           "*",
@@ -840,9 +783,7 @@ export const PreviewIframe = ({
             );
           }
 
-          setSelectedComponentsPreview((prev) =>
-            prev.filter((c) => c.id !== componentId),
-          );
+          setSelectedComponentsPreview((prev) => prev.filter((c) => c.id !== componentId));
           setVisualEditingSelectedComponent((prev) => {
             const shouldClear = prev?.id === componentId;
             if (shouldClear) {
@@ -863,8 +804,7 @@ export const PreviewIframe = ({
             const updated = new Map(prev);
             const existing = updated.get(elementId);
             if (existing?.imageSrc) {
-              const hasStyles =
-                existing.styles && Object.keys(existing.styles).length > 0;
+              const hasStyles = existing.styles && Object.keys(existing.styles).length > 0;
               if (!hasStyles && !existing.textContent) {
                 // No other changes, remove entirely
                 updated.delete(elementId);
@@ -891,14 +831,8 @@ export const PreviewIframe = ({
       }
 
       if (event.data?.type === "octopus-studio-screenshot-response") {
-        const requestId =
-          typeof event.data.requestId === "string"
-            ? event.data.requestId
-            : null;
-        if (
-          requestId !== null &&
-          requestId === pendingAnnotatorScreenshotRequestIdRef.current
-        ) {
+        const requestId = typeof event.data.requestId === "string" ? event.data.requestId : null;
+        if (requestId !== null && requestId === pendingAnnotatorScreenshotRequestIdRef.current) {
           pendingAnnotatorScreenshotRequestIdRef.current = null;
           if (event.data.success && event.data.dataUrl) {
             setScreenshotDataUrl(event.data.dataUrl);
@@ -1119,9 +1053,7 @@ export const PreviewIframe = ({
   // Display message if no app is selected
   if (selectedAppId === null) {
     return (
-      <div className="p-4 text-gray-500 dark:text-gray-400">
-        Select an app to see the preview.
-      </div>
+      <div className="p-4 text-gray-500 dark:text-gray-400">Select an app to see the preview.</div>
     );
   }
 
@@ -1140,25 +1072,17 @@ export const PreviewIframe = ({
       await ipc.system.openExternalUrl(url);
     } catch (error) {
       showError(
-        error instanceof Error
-          ? error.message
-          : "Failed to open cloud sandbox share link.",
+        error instanceof Error ? error.message : "Failed to open cloud sandbox share link.",
       );
     }
   };
 
   const onCleanRestart = () => {
-    runAppLifecycleInBackground(
-      "rebuild",
-      restartApp({ removeNodeModules: true }),
-    );
+    runAppLifecycleInBackground("rebuild", restartApp({ removeNodeModules: true }));
   };
 
   const onRecreateSandbox = () => {
-    runAppLifecycleInBackground(
-      "restart",
-      restartApp({ recreateSandbox: true }),
-    );
+    runAppLifecycleInBackground("restart", restartApp({ recreateSandbox: true }));
   };
 
   // Isolation setup restarts the dev server and signs the test user in, so the
@@ -1166,11 +1090,8 @@ export const PreviewIframe = ({
   // inert rather than covered — see RecordingSetupOverlay.
   const isRecorderSettingUp = recorder.isBusy && !annotatorMode;
 
-  const { showOpenBrowser } =
-    getPreviewToolbarActionVisibility(previewToolbarWidth);
-  const openBrowserDisabled = isCloudMode
-    ? isCreatingCloudSandboxShareLink
-    : !originalUrl;
+  const { showOpenBrowser } = getPreviewToolbarActionVisibility(previewToolbarWidth);
+  const openBrowserDisabled = isCloudMode ? isCreatingCloudSandboxShareLink : !originalUrl;
 
   return (
     <div className="flex flex-col h-full">
@@ -1190,11 +1111,7 @@ export const PreviewIframe = ({
                 render={
                   <button
                     onClick={handleActivateComponentSelector}
-                    aria-label={
-                      isPicking
-                        ? "Deactivate component selector"
-                        : "Select component"
-                    }
+                    aria-label={isPicking ? "Deactivate component selector" : "Select component"}
                     aria-pressed={isPicking}
                     className={cn(
                       PREVIEW_TOOLBAR_BUTTON_CLASSES,
@@ -1203,11 +1120,7 @@ export const PreviewIframe = ({
                         ? "bg-purple-500 text-white hover:bg-purple-600 hover:text-white dark:bg-purple-600 dark:hover:bg-purple-700"
                         : "text-purple-700 hover:bg-purple-100 hover:text-purple-800 dark:text-purple-300 dark:hover:bg-purple-900/50 dark:hover:text-purple-200",
                     )}
-                    disabled={
-                      loading ||
-                      !selectedAppId ||
-                      !isComponentSelectorInitialized
-                    }
+                    disabled={loading || !selectedAppId || !isComponentSelectorInitialized}
                     data-testid="preview-pick-element-button"
                   />
                 }
@@ -1225,11 +1138,7 @@ export const PreviewIframe = ({
                 render={
                   <button
                     onClick={handleAnnotatorClick}
-                    aria-label={
-                      annotatorMode
-                        ? "Annotator mode active"
-                        : "Activate annotator"
-                    }
+                    aria-label={annotatorMode ? "Annotator mode active" : "Activate annotator"}
                     aria-pressed={annotatorMode}
                     className={cn(
                       PREVIEW_TOOLBAR_BUTTON_CLASSES,
@@ -1390,8 +1299,7 @@ export const PreviewIframe = ({
                     data-testid="device-mode-button"
                     onClick={() => {
                       // Toggle popover open/close
-                      if (isDevicePopoverOpen)
-                        updateSettings({ previewDeviceMode: "desktop" });
+                      if (isDevicePopoverOpen) updateSettings({ previewDeviceMode: "desktop" });
                       setIsDevicePopoverOpen(!isDevicePopoverOpen);
                     }}
                     className={cn(
@@ -1421,12 +1329,7 @@ export const PreviewIframe = ({
               >
                 <Tooltip>
                   <TooltipTrigger
-                    render={
-                      <ToggleGroupItem
-                        value="desktop"
-                        aria-label="Desktop view"
-                      />
-                    }
+                    render={<ToggleGroupItem value="desktop" aria-label="Desktop view" />}
                   >
                     <Monitor size={16} />
                   </TooltipTrigger>
@@ -1434,12 +1337,7 @@ export const PreviewIframe = ({
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger
-                    render={
-                      <ToggleGroupItem
-                        value="tablet"
-                        aria-label="Tablet view"
-                      />
-                    }
+                    render={<ToggleGroupItem value="tablet" aria-label="Tablet view" />}
                   >
                     <Tablet size={16} className="scale-x-130" />
                   </TooltipTrigger>
@@ -1447,12 +1345,7 @@ export const PreviewIframe = ({
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger
-                    render={
-                      <ToggleGroupItem
-                        value="mobile"
-                        aria-label="Mobile view"
-                      />
-                    }
+                    render={<ToggleGroupItem value="mobile" aria-label="Mobile view" />}
                   >
                     <Smartphone size={16} />
                   </TooltipTrigger>
@@ -1508,13 +1401,9 @@ export const PreviewIframe = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full">
                   {routesLoading ? (
-                    <DropdownMenuItem disabled>
-                      Loading routes...
-                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>Loading routes...</DropdownMenuItem>
                   ) : routesError ? (
-                    <DropdownMenuItem disabled>
-                      Unable to load routes
-                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>Unable to load routes</DropdownMenuItem>
                   ) : availableRoutes.length > 0 ? (
                     availableRoutes.map((route) => (
                       <DropdownMenuItem
@@ -1529,9 +1418,7 @@ export const PreviewIframe = ({
                       </DropdownMenuItem>
                     ))
                   ) : (
-                    <DropdownMenuItem disabled>
-                      No routes detected
-                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>No routes detected</DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1581,9 +1468,7 @@ export const PreviewIframe = ({
                   <button
                     onClick={onRestart}
                     data-testid="preview-restart-button"
-                    aria-label={
-                      isCloudMode ? "Restart Cloud Sandbox" : "Restart"
-                    }
+                    aria-label={isCloudMode ? "Restart Cloud Sandbox" : "Restart"}
                     className={PREVIEW_TOOLBAR_BUTTON_CLASSES}
                   />
                 }
@@ -1681,9 +1566,7 @@ export const PreviewIframe = ({
         <PreviewLoadingScreen
           loading={loading}
           isAppUrlReady={!!appUrl}
-          hasStartupError={
-            !loading && errorMessage?.source === "octopus-studio-app"
-          }
+          hasStartupError={!loading && errorMessage?.source === "octopus-studio-app"}
         />
         {!loading && appUrl && (
           <div
@@ -1707,9 +1590,7 @@ export const PreviewIframe = ({
               <div
                 className="w-full h-full bg-white dark:bg-gray-950"
                 style={
-                  deviceMode == "desktop"
-                    ? {}
-                    : { width: `${deviceWidthConfig[deviceMode]}px` }
+                  deviceMode == "desktop" ? {} : { width: `${deviceWidthConfig[deviceMode]}px` }
                 }
               >
                 {userBudget ? (
@@ -1735,27 +1616,23 @@ export const PreviewIframe = ({
                   title={`Preview for App ${selectedAppId}`}
                   className="w-full h-full border-none bg-white dark:bg-gray-950"
                   style={
-                    deviceMode == "desktop"
-                      ? {}
-                      : { width: `${deviceWidthConfig[deviceMode]}px` }
+                    deviceMode == "desktop" ? {} : { width: `${deviceWidthConfig[deviceMode]}px` }
                   }
                   src={iframeSrc}
                   allow="clipboard-read; clipboard-write; fullscreen; microphone; camera; display-capture; geolocation; autoplay; picture-in-picture"
                 />
                 {/* Visual Editing Toolbar */}
-                {isProMode &&
-                  visualEditingSelectedComponent &&
-                  selectedAppId && (
-                    <VisualEditingToolbar
-                      selectedComponent={visualEditingSelectedComponent}
-                      iframeRef={iframeRef}
-                      isDynamic={isDynamicComponent}
-                      hasStaticText={hasStaticText}
-                      hasImage={hasImage}
-                      isDynamicImage={isDynamicImage}
-                      currentImageSrc={currentImageSrc}
-                    />
-                  )}
+                {isProMode && visualEditingSelectedComponent && selectedAppId && (
+                  <VisualEditingToolbar
+                    selectedComponent={visualEditingSelectedComponent}
+                    iframeRef={iframeRef}
+                    isDynamic={isDynamicComponent}
+                    hasStaticText={hasStaticText}
+                    hasImage={hasImage}
+                    isDynamicImage={isDynamicImage}
+                    currentImageSrc={currentImageSrc}
+                  />
+                )}
               </>
             )}
           </div>
@@ -1782,11 +1659,7 @@ export const PreviewIframe = ({
  * its label, and a preview does not — bare text lands on top of whatever the
  * app happens to be rendering.
  */
-function RecordingSetupOverlay({
-  recorder,
-}: {
-  recorder: TestRecorderController;
-}) {
+function RecordingSetupOverlay({ recorder }: { recorder: TestRecorderController }) {
   return (
     <div
       className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center"
@@ -1796,9 +1669,7 @@ function RecordingSetupOverlay({
     >
       <div className="flex max-w-sm flex-col items-center gap-2.5 rounded-xl border border-border bg-(--background-lightest) px-6 py-5 shadow-lg">
         <Loader2 className="size-7 animate-spin text-purple-600 dark:text-purple-300" />
-        <p className="text-base font-medium text-foreground">
-          {recordingStatusMessage(recorder)}
-        </p>
+        <p className="text-base font-medium text-foreground">{recordingStatusMessage(recorder)}</p>
         <p className="text-sm text-muted-foreground">
           {recorder.phase === "starting" || recorder.phase === "authenticating"
             ? "OctopusStudio is preparing an isolated environment for your recording — hold off on interacting with the preview until it's ready."
@@ -1815,11 +1686,7 @@ function parseComponentSelection(data: any): ComponentSelection | null {
   }
 
   const component = data.component;
-  if (
-    !component ||
-    typeof component.id !== "string" ||
-    typeof component.name !== "string"
-  ) {
+  if (!component || typeof component.id !== "string" || typeof component.name !== "string") {
     return null;
   }
 

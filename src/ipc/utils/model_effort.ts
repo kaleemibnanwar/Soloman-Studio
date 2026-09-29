@@ -1,8 +1,4 @@
-import type {
-  LargeLanguageModel,
-  ModelSelection,
-  UserSettings,
-} from "@/lib/schemas";
+import type { LargeLanguageModel, ModelSelection, UserSettings } from "@/lib/schemas";
 import { createModelSelection, getModelPreferenceKey } from "@/lib/modelEffort";
 import { findLanguageModel } from "./findLanguageModel";
 
@@ -27,15 +23,11 @@ export async function resolveDefaultModelSelection(
   return resolveModelSelection({
     model: settings.selectedModel,
     preferredEffortLevel:
-      settings.modelEffortPreferences?.[
-        getModelPreferenceKey(settings.selectedModel)
-      ],
+      settings.modelEffortPreferences?.[getModelPreferenceKey(settings.selectedModel)],
   });
 }
 
-export async function normalizeModelSelection(
-  selection: ModelSelection,
-): Promise<ModelSelection> {
+export async function normalizeModelSelection(selection: ModelSelection): Promise<ModelSelection> {
   return resolveModelSelection({
     model: selection,
     preferredEffortLevel: selection.effortLevel,

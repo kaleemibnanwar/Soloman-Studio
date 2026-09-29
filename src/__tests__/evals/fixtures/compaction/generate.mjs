@@ -34,15 +34,12 @@ const MIN_TOKENS = Number(argValue("--min", "165000"));
 const MAX_TOKENS = Number(argValue("--max", "210000"));
 const FORCE = argv.includes("--force");
 
-const API_KEY =
-  process.env.OCTOPUS_STUDIO_PRO_API_KEY || process.env.OCTOPUS_STUDIO_PRO_KEY;
-const ENGINE_URL =
-  process.env.OCTOPUS_STUDIO_ENGINE_URL || "https://engine.octopusStudio.sh/v1";
+const API_KEY = process.env.OCTOPUS_STUDIO_PRO_API_KEY || process.env.OCTOPUS_STUDIO_PRO_KEY;
+const ENGINE_URL = process.env.OCTOPUS_STUDIO_ENGINE_URL || "https://engine.octopusStudio.sh/v1";
 const MODEL = process.env.CMPGEN_MODEL || "gpt-5.6-sol";
 
 if (!SPEC_PATH) fail("Missing --spec <path>");
-if (!API_KEY)
-  fail("Missing OCTOPUS_STUDIO_PRO_KEY / OCTOPUS_STUDIO_PRO_API_KEY in env");
+if (!API_KEY) fail("Missing OCTOPUS_STUDIO_PRO_KEY / OCTOPUS_STUDIO_PRO_API_KEY in env");
 
 function fail(msg) {
   console.error(`[generate] FATAL: ${msg}`);
@@ -67,9 +64,7 @@ function transformToolTags(content) {
     /<octopus-studio-mcp-tool-result\b[^>]*?\bserver="([^"]*)"[^>]*?\btool="([^"]*)"[^>]*>\n([\s\S]*?)\n<\/octopus-studio-mcp-tool-result>/g,
     (_m, server, tool, rc) => {
       const truncated = rc.length > TOOL_RESULT_TRUNCATION_LIMIT;
-      const body = truncated
-        ? rc.slice(0, TOOL_RESULT_TRUNCATION_LIMIT) + "\n..."
-        : rc;
+      const body = truncated ? rc.slice(0, TOOL_RESULT_TRUNCATION_LIMIT) + "\n..." : rc;
       return `<tool-result name="${tool}" server="${server}" chars="${rc.length}"${truncated ? ' truncated="true"' : ""}>\n${body}\n</tool-result>`;
     },
   );
@@ -78,9 +73,7 @@ function transformToolTags(content) {
 
 function formatAsTranscriptMirror(messages) {
   const body = messages
-    .map(
-      (m) => `<msg role="${m.role}">\n${transformToolTags(m.content)}\n</msg>`,
-    )
+    .map((m) => `<msg role="${m.role}">\n${transformToolTags(m.content)}\n</msg>`)
     .join("\n\n");
   return `<transcript>\n\n${body}\n\n</transcript>`;
 }
@@ -138,28 +131,20 @@ async function generateWithSol({ system, user, maxTokens = 30000 }) {
           continue;
         }
         if (chunk.error)
-          throw new Error(
-            `engine SSE error: ${JSON.stringify(chunk.error).slice(0, 500)}`,
-          );
+          throw new Error(`engine SSE error: ${JSON.stringify(chunk.error).slice(0, 500)}`);
         if (chunk.usage) usage = chunk.usage;
         for (const c of chunk.choices ?? []) {
           if (c.delta?.content) content += c.delta.content;
           if (c.finish_reason) finish = c.finish_reason;
         }
       }
-      if (finish === "length")
-        throw new Error("generation hit max_tokens (finish_reason=length)");
+      if (finish === "length") throw new Error("generation hit max_tokens (finish_reason=length)");
       return { content, usage };
     } catch (e) {
       lastErr = e;
-      if (
-        attempt < 5 &&
-        /fetch failed|ECONNRESET|ETIMEDOUT|max_tokens/i.test(String(e))
-      ) {
+      if (attempt < 5 && /fetch failed|ECONNRESET|ETIMEDOUT|max_tokens/i.test(String(e))) {
         const delay = 5000 * 2 ** (attempt - 1);
-        console.error(
-          `[generate] ${e}. retry ${attempt}/5 in ${Math.round(delay / 1000)}s`,
-        );
+        console.error(`[generate] ${e}. retry ${attempt}/5 in ${Math.round(delay / 1000)}s`);
         await sleep(delay);
         continue;
       }
@@ -233,9 +218,7 @@ function synthLocaleJson(pathStr, count) {
   const word = () => WORDS[Math.floor(rand() * WORDS.length)];
   const entries = [];
   for (let i = 0; i < count; i++) {
-    entries.push(
-      `  "${word()}.${word()}.${i}": "${word()} ${word()} ${word()} ${word()}"`,
-    );
+    entries.push(`  "${word()}.${word()}.${i}": "${word()} ${word()} ${word()} ${word()}"`);
   }
   return `{\n${entries.join(",\n")}\n}\n`;
 }
@@ -254,8 +237,7 @@ function synthLongCss(pathStr, count) {
 
 function synthAsset(bulk, scale = 1) {
   const count = Math.max(10, Math.round(bulk.count * scale));
-  if (bulk.asset === "seed-data")
-    return synthSeedData(bulk.path, bulk.kind ?? "products", count);
+  if (bulk.asset === "seed-data") return synthSeedData(bulk.path, bulk.kind ?? "products", count);
   if (bulk.asset === "locale-json") return synthLocaleJson(bulk.path, count);
   if (bulk.asset === "long-css") return synthLongCss(bulk.path, count);
   throw new Error(`unknown bulk asset type: ${bulk.asset}`);
@@ -327,8 +309,7 @@ function phaseUserPrompt(spec, phase, recap, fileState, required) {
 
 function requiredStringsForPhase(spec, phase) {
   const req = [];
-  for (const f of spec.facts ?? [])
-    if ((phase.factIds ?? []).includes(f.id)) req.push(f.evidence);
+  for (const f of spec.facts ?? []) if ((phase.factIds ?? []).includes(f.id)) req.push(f.evidence);
   for (const t of spec.traps ?? []) {
     if (t.oldPhase === phase.id) req.push(t.supersededEvidence);
     if (t.newPhase === phase.id) req.push(t.currentEvidence);
@@ -353,11 +334,7 @@ function materializeTurns(turns, fileState, bulkByPath) {
       } else if (action.type === "write") {
         fileState[action.path] = action.content;
         parts.push(
-          octopusStudioWriteXml(
-            action.path,
-            action.description ?? "Update file",
-            action.content,
-          ),
+          octopusStudioWriteXml(action.path, action.description ?? "Update file", action.content),
         );
       } else if (action.type === "bulk") {
         const bulk = bulkByPath.get(action.ref);
@@ -398,8 +375,7 @@ function fillerCycle(spec, fileState, cycleIdx) {
   const content = synthAsset(bulk, scale);
   fileState[bulk.path] = content;
   const n = Math.round(bulk.count * scale);
-  const kindLabel =
-    bulk.asset === "seed-data" ? (bulk.kind ?? "records") : bulk.asset;
+  const kindLabel = bulk.asset === "seed-data" ? (bulk.kind ?? "records") : bulk.asset;
   return [
     {
       role: "user",
@@ -409,11 +385,7 @@ function fillerCycle(spec, fileState, cycleIdx) {
       role: "assistant",
       content: [
         `Regenerating ${bulk.path} with ${n} entries.`,
-        octopusStudioWriteXml(
-          bulk.path,
-          `Expand generated ${kindLabel} to ${n} entries`,
-          content,
-        ),
+        octopusStudioWriteXml(bulk.path, `Expand generated ${kindLabel} to ${n} entries`, content),
         toolCallXml(
           "run_terminal",
           { command: "npm run typecheck" },
@@ -451,19 +423,16 @@ async function main() {
   const spec = JSON.parse(fs.readFileSync(specAbs, "utf8"));
   const outPath = path.join(__dirname, `${spec.name}.json`);
   const statsPath = path.join(__dirname, `${spec.name}.stats.json`);
-  if (fs.existsSync(outPath) && !FORCE)
-    fail(`${outPath} exists (use --force to overwrite)`);
+  if (fs.existsSync(outPath) && !FORCE) fail(`${outPath} exists (use --force to overwrite)`);
 
   // Basic spec sanity
   for (const key of ["name", "domain", "phases", "facts", "traps", "probes"])
     if (!(key in spec)) fail(`spec missing "${key}"`);
   const plantedFactIds = new Set(spec.phases.flatMap((p) => p.factIds ?? []));
   for (const f of spec.facts)
-    if (!plantedFactIds.has(f.id))
-      fail(`fact ${f.id} not assigned to any phase`);
+    if (!plantedFactIds.has(f.id)) fail(`fact ${f.id} not assigned to any phase`);
   for (const t of spec.traps)
-    if (!t.oldPhase || !t.newPhase)
-      fail(`trap ${t.id} missing oldPhase/newPhase`);
+    if (!t.oldPhase || !t.newPhase) fail(`trap ${t.id} missing oldPhase/newPhase`);
 
   const fileState = {};
   let recap = "";
@@ -473,9 +442,7 @@ async function main() {
   for (const phase of spec.phases) {
     const required = requiredStringsForPhase(spec, phase);
     const bulkByPath = new Map((phase.bulk ?? []).map((b) => [b.path, b]));
-    console.error(
-      `[generate] ${spec.name}: authoring phase ${phase.id} (${phase.turns} turns)...`,
-    );
+    console.error(`[generate] ${spec.name}: authoring phase ${phase.id} (${phase.turns} turns)...`);
 
     let seg = null;
     let lastProblem = "";
@@ -484,9 +451,7 @@ async function main() {
         system: AUTHOR_SYSTEM,
         user:
           phaseUserPrompt(spec, phase, recap, fileState, required) +
-          (lastProblem
-            ? `\n\nPREVIOUS ATTEMPT REJECTED: ${lastProblem}. Fix this.`
-            : ""),
+          (lastProblem ? `\n\nPREVIOUS ATTEMPT REJECTED: ${lastProblem}. Fix this.` : ""),
       });
       if (usage) {
         totalUsage.prompt_tokens += usage.prompt_tokens ?? 0;
@@ -514,9 +479,7 @@ async function main() {
       const missing = required.filter((r) => !segText.includes(r));
       const unusedBulk = [...bulkByPath.keys()].filter((p) =>
         turns.every((t) =>
-          (t.assistant?.actions ?? []).every(
-            (a) => !(a.type === "bulk" && a.ref === p),
-          ),
+          (t.assistant?.actions ?? []).every((a) => !(a.type === "bulk" && a.ref === p)),
         ),
       );
       if (missing.length) {
@@ -531,8 +494,7 @@ async function main() {
       }
       seg = { msgs, recap: parsed.recap ?? recap, fileStateAfter: probeState };
     }
-    if (!seg)
-      fail(`phase ${phase.id}: 3 authoring attempts failed (${lastProblem})`);
+    if (!seg) fail(`phase ${phase.id}: 3 authoring attempts failed (${lastProblem})`);
     Object.assign(fileState, seg.fileStateAfter);
     recap = seg.recap;
     phaseMessages.push(seg.msgs);
@@ -545,9 +507,7 @@ async function main() {
   let cycle = 0;
   const assemble = () => [...head, ...filler, ...tail];
   let tokens = estTokens(formatAsTranscriptMirror(assemble()));
-  console.error(
-    `[generate] ${spec.name}: authored core = ~${tokens} est tokens`,
-  );
+  console.error(`[generate] ${spec.name}: authored core = ~${tokens} est tokens`);
   while (tokens < TARGET_TOKENS && cycle < 400) {
     const more = fillerCycle(spec, { ...fileState }, cycle++);
     if (!more.length) break;
@@ -581,9 +541,7 @@ async function main() {
       `evidence missing from final transcript: ${missing.map((m) => m.label).join(", ")} (stats written)`,
     );
   if (!stats.withinBand)
-    fail(
-      `est tokens ${tokens} outside [${MIN_TOKENS}, ${MAX_TOKENS}] (stats written)`,
-    );
+    fail(`est tokens ${tokens} outside [${MIN_TOKENS}, ${MAX_TOKENS}] (stats written)`);
 
   const fixture = {
     name: spec.name,

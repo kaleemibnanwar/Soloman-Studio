@@ -41,16 +41,11 @@ export function AgentModeRequiredDialog({
       <AlertDialogContent data-testid="agent-mode-required-dialog">
         <AlertDialogHeader>
           <AlertDialogTitle>Switch to Agent mode?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {DESCRIPTIONS[action]}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{DESCRIPTIONS[action]}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onContinue}
-            data-testid="agent-mode-continue"
-          >
+          <AlertDialogAction onClick={onContinue} data-testid="agent-mode-continue">
             Continue in Agent mode
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -16,10 +16,7 @@ export function useAttachments() {
   };
 
   const validateFiles = useCallback(
-    (
-      files: readonly File[],
-      existingAttachments: readonly FileAttachment[],
-    ): boolean => {
+    (files: readonly File[], existingAttachments: readonly FileAttachment[]): boolean => {
       const validation = validateChatAttachmentFiles([
         ...existingAttachments.map(({ file }) => file),
         ...files,
@@ -34,10 +31,7 @@ export function useAttachments() {
   );
 
   const addAttachments = useCallback(
-    (
-      files: File[],
-      type: "chat-context" | "upload-to-codebase" = "chat-context",
-    ): boolean => {
+    (files: File[], type: "chat-context" | "upload-to-codebase" = "chat-context"): boolean => {
       const fileAttachments: FileAttachment[] = files.map((file) => ({
         file,
         type,
@@ -67,10 +61,7 @@ export function useAttachments() {
     }
   };
 
-  const handleFileSelect = (
-    fileList: FileList,
-    type: "chat-context" | "upload-to-codebase",
-  ) => {
+  const handleFileSelect = (fileList: FileList, type: "chat-context" | "upload-to-codebase") => {
     const files = Array.from(fileList);
     addAttachments(files, type);
   };
@@ -123,9 +114,7 @@ export function useAttachments() {
   };
 
   const replaceAttachments = (newAttachments: FileAttachment[]) => {
-    const validation = validateChatAttachmentFiles(
-      newAttachments.map(({ file }) => file),
-    );
+    const validation = validateChatAttachmentFiles(newAttachments.map(({ file }) => file));
     if (!validation.ok) {
       showError(validation.message);
       setAttachments([]);

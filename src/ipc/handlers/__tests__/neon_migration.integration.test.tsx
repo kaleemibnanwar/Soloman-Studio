@@ -1,15 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   process.env.E2E_TEST_BUILD = "true";
@@ -20,10 +12,7 @@ import { eq } from "drizzle-orm";
 
 import { apps } from "@/db/schema";
 import { writeSettings } from "@/main/settings";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("Neon migration actions (integration)", () => {
@@ -83,10 +72,7 @@ describe("Neon migration actions (integration)", () => {
         2,
       ) + "\n",
     );
-    fs.writeFileSync(
-      path.join(harness.appDir, "next.config.ts"),
-      "export default {};\n",
-    );
+    fs.writeFileSync(path.join(harness.appDir, "next.config.ts"), "export default {};\n");
 
     await harness.db
       .update(apps)
@@ -117,9 +103,7 @@ describe("Neon migration actions (integration)", () => {
     mountDatabaseSection();
 
     await screen.findByTestId("database-section");
-    await screen.findByText(
-      "Pick the database your deployed app should connect to.",
-    );
+    await screen.findByText("Pick the database your deployed app should connect to.");
 
     fireEvent.click(
       await screen.findByRole("button", {
@@ -133,9 +117,7 @@ describe("Neon migration actions (integration)", () => {
       expect((await appRow())?.selectedDatabaseBranchType).toBe("production");
     });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Migrate to Production" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Migrate to Production" }));
 
     await screen.findByRole("dialog", { name: "Review migration SQL" });
     await screen.findByText("Destructive changes detected");
@@ -144,9 +126,7 @@ describe("Neon migration actions (integration)", () => {
       "This statement includes a database hazard such as a permission, lock, dependency, or data-safety risk.",
     );
     await screen.findByText('DROP TABLE "mock_legacy"');
-    fireEvent.click(
-      screen.getByRole("button", { name: "I understand, continue" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "I understand, continue" }));
 
     await screen.findByText(
       "This will modify the main schema in Test Project using the schema from development. Are you sure you want to continue?",
@@ -174,13 +154,9 @@ describe("Neon migration actions (integration)", () => {
     await screen.findByText(
       "Your app is on the production branch, so the production database will be used for deployment. No migration is needed.",
     );
-    expect(
-      screen.queryByRole("button", { name: "Migrate to Production" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Migrate to Production" })).toBeNull();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Environment variables" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Environment variables" }));
 
     await waitFor(() => {
       expect(

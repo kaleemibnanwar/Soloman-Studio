@@ -7,10 +7,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { eq } from "drizzle-orm";
 
 import { messages } from "@/db/schema";
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 describe("local-agent grep cards (integration)", () => {
@@ -20,9 +17,7 @@ describe("local-agent grep cards (integration)", () => {
   // error in one test doesn't also fail every later test in the file.
   let errorEventsBaseline = 0;
   const errorEvents = () =>
-    harness.bridge.sentEvents.filter(
-      (e) => e.channel === "chat:response:error",
-    );
+    harness.bridge.sentEvents.filter((e) => e.channel === "chat:response:error");
   const newErrorEvents = () => errorEvents().slice(errorEventsBaseline);
 
   beforeEach(() => {
@@ -55,11 +50,9 @@ describe("local-agent grep cards (integration)", () => {
     const { send } = await harness.typeInChat("tc=local-agent/grep-search");
     send();
 
-    await waitFor(
-      () =>
-        expect(screen.getAllByTestId("octopus-studio-grep")).toHaveLength(2),
-      { timeout: 20_000 },
-    );
+    await waitFor(() => expect(screen.getAllByTestId("octopus-studio-grep")).toHaveLength(2), {
+      timeout: 20_000,
+    });
     const cards = screen.getAllByTestId("octopus-studio-grep");
     expect(cards[0].textContent).toContain('"createRoot"');
     expect(cards[1].textContent).toContain('"App"');
@@ -83,11 +76,7 @@ describe("local-agent grep cards (integration)", () => {
   }, 60_000);
 
   it("can include ignored files when the agent requests them", async () => {
-    const ignoredPackageDir = path.join(
-      harness.appDir,
-      "node_modules",
-      "ignored-pkg",
-    );
+    const ignoredPackageDir = path.join(harness.appDir, "node_modules", "ignored-pkg");
     fs.mkdirSync(ignoredPackageDir, { recursive: true });
     fs.writeFileSync(
       path.join(ignoredPackageDir, "index.js"),
@@ -98,22 +87,13 @@ describe("local-agent grep cards (integration)", () => {
     harness.mount({ chatId });
     await harness.selectChatMode("local-agent");
 
-    const { send } = await harness.typeInChat(
-      "tc=local-agent/grep-include-ignored",
-      { chatId },
-    );
+    const { send } = await harness.typeInChat("tc=local-agent/grep-include-ignored", { chatId });
     send();
 
-    const grepCard = await screen.findByTestId(
-      "octopus-studio-grep",
-      undefined,
-      {
-        timeout: 20_000,
-      },
-    );
-    await waitFor(() =>
-      expect(grepCard.textContent).toContain("ignoredNeedle"),
-    );
+    const grepCard = await screen.findByTestId("octopus-studio-grep", undefined, {
+      timeout: 20_000,
+    });
+    await waitFor(() => expect(grepCard.textContent).toContain("ignoredNeedle"));
     fireEvent.click(grepCard);
     await harness.waitForStreamEnd(chatId);
     expect(grepCard.getAttribute("aria-expanded")).toBe("true");
@@ -122,9 +102,7 @@ describe("local-agent grep cards (integration)", () => {
       where: eq(messages.chatId, chatId),
       orderBy: (messages, { asc }) => [asc(messages.id)],
     });
-    expect(storedMessages.at(-1)?.content).toContain(
-      "node_modules/ignored-pkg/index.js",
-    );
+    expect(storedMessages.at(-1)?.content).toContain("node_modules/ignored-pkg/index.js");
     expect(newErrorEvents()).toHaveLength(0);
   }, 60_000);
 });

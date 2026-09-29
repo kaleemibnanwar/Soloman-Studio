@@ -1,9 +1,6 @@
 import type { WebContents } from "electron";
 import { queryInvalidationBus } from "@/window_infrastructure/main/query_invalidation_bus";
-import {
-  windowRegistry,
-  type WindowEndpoint,
-} from "@/window_infrastructure/main/window_registry";
+import { windowRegistry, type WindowEndpoint } from "@/window_infrastructure/main/window_registry";
 import type { WindowSessionId } from "@/window_infrastructure/types";
 
 const nullEndpoint: WindowEndpoint = {
@@ -21,30 +18,18 @@ export function chatExecutionEndpoint(
   preferredWindowSessionId?: string,
 ): WebContents {
   const preferred = preferredWindowSessionId
-    ? windowRegistry.endpointForSession(
-        preferredWindowSessionId as WindowSessionId,
-      )
+    ? windowRegistry.endpointForSession(preferredWindowSessionId as WindowSessionId)
     : undefined;
   const routedSession = windowRegistry.routePresentation({
     effect: "user-input",
-    initiatorWindowSessionId: preferredWindowSessionId as
-      | WindowSessionId
-      | undefined,
+    initiatorWindowSessionId: preferredWindowSessionId as WindowSessionId | undefined,
     entity: { kind: "chat", id: chatId },
   });
-  const routed = routedSession
-    ? windowRegistry.endpointForSession(routedSession)
-    : undefined;
-  return (preferred ??
-    routed ??
-    windowRegistry.liveEndpoints()[0] ??
-    nullEndpoint) as WebContents;
+  const routed = routedSession ? windowRegistry.endpointForSession(routedSession) : undefined;
+  return (preferred ?? routed ?? windowRegistry.liveEndpoints()[0] ?? nullEndpoint) as WebContents;
 }
 
-export function publishChatInvalidations(
-  chatId: number,
-  targetAppId?: number | null,
-): void {
+export function publishChatInvalidations(chatId: number, targetAppId?: number | null): void {
   const scopes = [
     { family: "chats" },
     { family: "chat", chatId },
@@ -74,18 +59,14 @@ export function routePlanHandoffPresentation(input: {
 }): void {
   const session = windowRegistry.routePresentation({
     effect: "navigation",
-    initiatorWindowSessionId: input.originWindowSessionId as
-      | WindowSessionId
-      | undefined,
+    initiatorWindowSessionId: input.originWindowSessionId as WindowSessionId | undefined,
     entity: { kind: "chat", id: input.sourceChatId },
   });
   if (!session) return;
-  windowRegistry
-    .endpointForSession(session)
-    ?.send("plan:handoff-presentation", {
-      handoffId: input.handoffId,
-      sourceChatId: input.sourceChatId,
-      targetChatId: input.targetChatId,
-      appId: input.appId,
-    });
+  windowRegistry.endpointForSession(session)?.send("plan:handoff-presentation", {
+    handoffId: input.handoffId,
+    sourceChatId: input.sourceChatId,
+    targetChatId: input.targetChatId,
+    appId: input.appId,
+  });
 }

@@ -27,12 +27,7 @@ import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useSetAtom } from "jotai";
 import { useLoadApps } from "@/hooks/useLoadApps";
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "./ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettings } from "@/hooks/useSettings";
 import { UnconnectedGitHubConnector } from "@/components/GitHubConnector";
@@ -60,8 +55,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
   const { selectChat } = useSelectChat();
   const { refreshApps } = useLoadApps();
   const setSelectedAppId = useSetAtom(selectedAppIdAtom);
-  const [optimizeForOctopusStudio, setOptimizeForOctopusStudio] =
-    useState(true);
+  const [optimizeForOctopusStudio, setOptimizeForOctopusStudio] = useState(true);
   // GitHub import state
   const [url, setUrl] = useState("");
   const [importing, setImporting] = useState(false);
@@ -209,9 +203,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
     }
   };
 
-  const handleGithubAppNameChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleGithubAppNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setGithubAppName(newName);
     if (newName.trim()) {
@@ -249,8 +241,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
       setNameExists(result.exists);
     } catch (error: unknown) {
       showError(
-        "Failed to check app name: " +
-          (error instanceof Error ? error.message : String(error)),
+        "Failed to check app name: " + (error instanceof Error ? error.message : String(error)),
       );
     } finally {
       setIsCheckingName(false);
@@ -294,9 +285,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
       });
     },
     onSuccess: async (result) => {
-      showSuccess(
-        !hasAiRules ? t("home:appImportedWithRules") : t("home:appImported"),
-      );
+      showSuccess(!hasAiRules ? t("home:appImportedWithRules") : t("home:appImported"));
       onClose();
 
       await refreshApps();
@@ -333,9 +322,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
     setCopyToOctopusStudioApps(true);
   };
 
-  const handleAppNameChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleAppNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setCustomAppName(newName);
     if (newName.trim()) {
@@ -365,25 +352,14 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
           </Alert>
           <Tabs defaultValue="local-folder" className="w-full">
             <TabsList className="grid w-full grid-cols-3 h-auto">
-              <TabsTrigger
-                value="local-folder"
-                className="text-xs sm:text-sm px-2 py-2"
-              >
+              <TabsTrigger value="local-folder" className="text-xs sm:text-sm px-2 py-2">
                 {t("home:localFolder")}
               </TabsTrigger>
-              <TabsTrigger
-                value="github-repos"
-                className="text-xs sm:text-sm px-2 py-2"
-              >
-                <span className="hidden sm:inline">
-                  {t("home:yourGithubRepos")}
-                </span>
+              <TabsTrigger value="github-repos" className="text-xs sm:text-sm px-2 py-2">
+                <span className="hidden sm:inline">{t("home:yourGithubRepos")}</span>
                 <span className="sm:hidden">{t("home:githubRepos")}</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="github-url"
-                className="text-xs sm:text-sm px-2 py-2"
-              >
+              <TabsTrigger value="github-url" className="text-xs sm:text-sm px-2 py-2">
                 {t("home:githubUrl")}
               </TabsTrigger>
             </TabsList>
@@ -409,9 +385,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                     <div className="rounded-md border p-3 sm:p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1 overflow-hidden">
-                          <p className="text-sm font-medium mb-1">
-                            {t("home:selectedFolder")}
-                          </p>
+                          <p className="text-sm font-medium mb-1">{t("home:selectedFolder")}</p>
                           <p className="text-xs sm:text-sm text-muted-foreground break-words">
                             {selectedPath}
                           </p>
@@ -424,9 +398,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                           disabled={importAppMutation.isPending}
                         >
                           <X className="h-4 w-4" />
-                          <span className="sr-only">
-                            {t("home:clearSelection")}
-                          </span>
+                          <span className="sr-only">{t("home:clearSelection")}</span>
                         </Button>
                       </div>
                     </div>
@@ -436,9 +408,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                         id="copy-to-octopus-studio-apps"
                         aria-label="Copy to the octopus-studio-apps folder"
                         checked={copyToOctopusStudioApps}
-                        onCheckedChange={(checked) =>
-                          setCopyToOctopusStudioApps(checked === true)
-                        }
+                        onCheckedChange={(checked) => setCopyToOctopusStudioApps(checked === true)}
                         disabled={importAppMutation.isPending}
                       />
                       <label
@@ -456,9 +426,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                         </p>
                       )}
                       <div className="relative">
-                        <Label className="text-xs sm:text-sm ml-2 mb-2">
-                          {t("home:appName")}
-                        </Label>
+                        <Label className="text-xs sm:text-sm ml-2 mb-2">{t("home:appName")}</Label>
                         <Input
                           value={customAppName}
                           onChange={handleAppNameChange}
@@ -486,9 +454,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                             </Label>
                             <Input
                               value={installCommand}
-                              onChange={(e) =>
-                                setInstallCommand(e.target.value)
-                              }
+                              onChange={(e) => setInstallCommand(e.target.value)}
                               placeholder="pnpm install"
                               className="text-sm"
                               disabled={importAppMutation.isPending}
@@ -551,18 +517,11 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                 <Button
                   onClick={handleImport}
                   disabled={
-                    !selectedPath ||
-                    importAppMutation.isPending ||
-                    nameExists ||
-                    !commandsValid
+                    !selectedPath || importAppMutation.isPending || nameExists || !commandsValid
                   }
                   className="w-full sm:w-auto min-w-[80px]"
                 >
-                  {importAppMutation.isPending ? (
-                    <>{t("common:importing")}</>
-                  ) : (
-                    t("home:import")
-                  )}
+                  {importAppMutation.isPending ? <>{t("common:importing")}</> : t("home:import")}
                 </Button>
               </DialogFooter>
             </TabsContent>
@@ -619,12 +578,8 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors min-w-0"
                       >
                         <div className="min-w-0 flex-1 overflow-hidden mr-2">
-                          <p className="font-semibold truncate text-sm">
-                            {repo.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {repo.full_name}
-                          </p>
+                          <p className="font-semibold truncate text-sm">{repo.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{repo.full_name}</p>
                         </div>
                         <Button
                           variant="outline"
@@ -664,8 +619,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                                 htmlFor="optimize-for-octopus-studio-repos"
                                 className="text-xs sm:text-sm cursor-pointer"
                               >
-                                {t("home:autoUpgradeAnnotator")} (
-                                {t("common:recommended")})
+                                {t("home:autoUpgradeAnnotator")} ({t("common:recommended")})
                               </Label>
                             </div>
                             <div className="grid gap-2">
@@ -674,23 +628,17 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                               </Label>
                               <Input
                                 value={installCommand}
-                                onChange={(e) =>
-                                  setInstallCommand(e.target.value)
-                                }
+                                onChange={(e) => setInstallCommand(e.target.value)}
                                 placeholder="pnpm install"
                                 className="text-sm"
                                 disabled={importing}
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label className="text-xs sm:text-sm">
-                                {t("home:startCommand")}
-                              </Label>
+                              <Label className="text-xs sm:text-sm">{t("home:startCommand")}</Label>
                               <Input
                                 value={startCommand}
-                                onChange={(e) =>
-                                  setStartCommand(e.target.value)
-                                }
+                                onChange={(e) => setStartCommand(e.target.value)}
                                 placeholder="pnpm dev"
                                 className="text-sm"
                                 disabled={importing}
@@ -711,9 +659,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
             </TabsContent>
             <TabsContent value="github-url" className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs sm:text-sm">
-                  {t("home:repositoryUrl")}
-                </Label>
+                <Label className="text-xs sm:text-sm">{t("home:repositoryUrl")}</Label>
                 <Input
                   placeholder={t("home:repositoryUrlPlaceholder")}
                   value={url}
@@ -724,9 +670,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs sm:text-sm">
-                  {t("home:appNameOptional")}
-                </Label>
+                <Label className="text-xs sm:text-sm">{t("home:appNameOptional")}</Label>
                 <Input
                   value={githubAppName}
                   onChange={handleGithubAppNameChange}
@@ -740,9 +684,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                   </div>
                 )}
                 {githubNameExists && (
-                  <p className="text-xs sm:text-sm text-yellow-500">
-                    {t("home:appNameExists")}
-                  </p>
+                  <p className="text-xs sm:text-sm text-yellow-500">{t("home:appNameExists")}</p>
                 )}
               </div>
 
@@ -756,23 +698,18 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                       <Checkbox
                         id="optimize-for-octopus-studio-url"
                         checked={optimizeForOctopusStudio}
-                        onCheckedChange={(checked) =>
-                          setOptimizeForOctopusStudio(checked === true)
-                        }
+                        onCheckedChange={(checked) => setOptimizeForOctopusStudio(checked === true)}
                         disabled={importing}
                       />
                       <Label
                         htmlFor="optimize-for-octopus-studio-url"
                         className="text-xs sm:text-sm cursor-pointer"
                       >
-                        {t("home:autoUpgradeAnnotator")} (
-                        {t("common:recommended")})
+                        {t("home:autoUpgradeAnnotator")} ({t("common:recommended")})
                       </Label>
                     </div>
                     <div className="grid gap-2">
-                      <Label className="text-xs sm:text-sm">
-                        {t("home:installCommand")}
-                      </Label>
+                      <Label className="text-xs sm:text-sm">{t("home:installCommand")}</Label>
                       <Input
                         value={installCommand}
                         onChange={(e) => setInstallCommand(e.target.value)}
@@ -782,9 +719,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label className="text-xs sm:text-sm">
-                        {t("home:startCommand")}
-                      </Label>
+                      <Label className="text-xs sm:text-sm">{t("home:startCommand")}</Label>
                       <Input
                         value={startCommand}
                         onChange={(e) => setStartCommand(e.target.value)}

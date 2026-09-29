@@ -1,14 +1,20 @@
-import { type BaseMessage, AIMessage, HumanMessage, type SystemMessage, ToolMessage } from '@langchain/core/messages';
-import { MessageHistory, MessageMetadata } from '@src/background/agent/messages/views';
-import { createLogger } from '@src/background/log';
+import {
+  type BaseMessage,
+  AIMessage,
+  HumanMessage,
+  type SystemMessage,
+  ToolMessage,
+} from "@langchain/core/messages";
+import { MessageHistory, MessageMetadata } from "@src/background/agent/messages/views";
+import { createLogger } from "@src/background/log";
 import {
   filterExternalContent,
   wrapUserRequest,
   splitUserTextAndAttachments,
   wrapAttachments,
-} from '@src/background/agent/messages/utils';
+} from "@src/background/agent/messages/utils";
 
-const logger = createLogger('MessageManager');
+const logger = createLogger("MessageManager");
 
 export class MessageManagerSettings {
   maxInputTokens = 128000;
@@ -37,7 +43,8 @@ export class MessageManagerSettings {
     if (options.includeAttributes !== undefined) this.includeAttributes = options.includeAttributes;
     if (options.messageContext !== undefined) this.messageContext = options.messageContext;
     if (options.sensitiveData !== undefined) this.sensitiveData = options.sensitiveData;
-    if (options.availableFilePaths !== undefined) this.availableFilePaths = options.availableFilePaths;
+    if (options.availableFilePaths !== undefined)
+      this.availableFilePaths = options.availableFilePaths;
   }
 }
 
@@ -52,21 +59,25 @@ export default class MessageManager {
     this.toolId = 1;
   }
 
-  public initTaskMessages(systemMessage: SystemMessage, task: string, messageContext?: string): void {
+  public initTaskMessages(
+    systemMessage: SystemMessage,
+    task: string,
+    messageContext?: string,
+  ): void {
     // Add system message
-    this.addMessageWithTokens(systemMessage, 'init');
+    this.addMessageWithTokens(systemMessage, "init");
 
     // Add context message if provided
     if (messageContext && messageContext.length > 0) {
       const contextMessage = new HumanMessage({
         content: `Context for the task: ${messageContext}`,
       });
-      this.addMessageWithTokens(contextMessage, 'init');
+      this.addMessageWithTokens(contextMessage, "init");
     }
 
     // Add task instructions
     const taskMessage = MessageManager.taskInstructions(task);
-    this.addMessageWithTokens(taskMessage, 'init');
+    this.addMessageWithTokens(taskMessage, "init");
 
     // Add sensitive data info if sensitive data is provided
     if (this.settings.sensitiveData) {
@@ -74,31 +85,33 @@ export default class MessageManager {
       const infoMessage = new HumanMessage({
         content: `${info}\nTo use them, write <secret>the placeholder name</secret>`,
       });
-      this.addMessageWithTokens(infoMessage, 'init');
+      this.addMessageWithTokens(infoMessage, "init");
     }
 
     // Add example output
     const placeholderMessage = new HumanMessage({
-      content: 'Example output:',
+      content: "Example output:",
     });
-    this.addMessageWithTokens(placeholderMessage, 'init');
+    this.addMessageWithTokens(placeholderMessage, "init");
 
     const toolCallId = this.nextToolId();
     const toolCalls = [
       {
-        name: 'AgentOutput',
+        name: "AgentOutput",
         args: {
           current_state: {
             evaluation_previous_goal:
               `Success - I successfully clicked on the 'Apple' link from the Google Search results page, 
               which directed me to the 'Apple' company homepage. This is a good start toward finding 
               the best place to buy a new iPhone as the Apple website often list iPhones for sale.`.trim(),
-            memory: `I searched for 'iPhone retailers' on Google. From the Google Search results page, 
+            memory:
+              `I searched for 'iPhone retailers' on Google. From the Google Search results page, 
               I used the 'click_element' tool to click on a element labelled 'Best Buy' but calling 
               the tool did not direct me to a new page. I then used the 'click_element' tool to click 
               on a element labelled 'Apple' which redirected me to the 'Apple' company homepage. 
               Currently at step 3/15.`.trim(),
-            next_goal: `Looking at reported structure of the current page, I can see the item '[127]<h3 iPhone/>' 
+            next_goal:
+              `Looking at reported structure of the current page, I can see the item '[127]<h3 iPhone/>' 
               in the content. I think this button will lead to more information and potentially prices 
               for iPhones. I'll click on the link to 'iPhone' at index [127] using the 'click_element' 
               tool and hope to see prices on the next page.`.trim(),
@@ -106,20 +119,20 @@ export default class MessageManager {
           action: [{ click_element: { index: 127 } }],
         },
         id: String(toolCallId),
-        type: 'tool_call' as const,
+        type: "tool_call" as const,
       },
     ];
 
     const exampleToolCall = new AIMessage({
-      content: '',
+      content: "",
       tool_calls: toolCalls,
     });
-    this.addMessageWithTokens(exampleToolCall, 'init');
-    this.addToolMessage('Browser started', toolCallId, 'init');
+    this.addMessageWithTokens(exampleToolCall, "init");
+    this.addToolMessage("Browser started", toolCallId, "init");
 
     // Add history start marker
     const historyStartMessage = new HumanMessage({
-      content: '[Your task history memory starts here]',
+      content: "[Your task history memory starts here]",
     });
     this.addMessageWithTokens(historyStartMessage);
 
@@ -128,7 +141,7 @@ export default class MessageManager {
       const filepathsMsg = new HumanMessage({
         content: `Here are file paths you can use: ${this.settings.availableFilePaths}`,
       });
-      this.addMessageWithTokens(filepathsMsg, 'init');
+      this.addMessageWithTokens(filepathsMsg, "init");
     }
   }
 
@@ -220,22 +233,22 @@ export default class MessageManager {
     const toolCallId = this.nextToolId();
     const toolCalls = [
       {
-        name: 'AgentOutput',
+        name: "AgentOutput",
         args: modelOutput,
         id: String(toolCallId),
-        type: 'tool_call' as const,
+        type: "tool_call" as const,
       },
     ];
 
     const msg = new AIMessage({
-      content: 'tool call',
+      content: "tool call",
       tool_calls: toolCalls,
     });
     this.addMessageWithTokens(msg);
 
     // Need a placeholder for the tool response here to avoid errors sometimes
     // NOTE: in browser-use, it uses an empty string
-    this.addToolMessage('tool call response', toolCallId);
+    this.addToolMessage("tool call response", toolCallId);
   }
 
   /**
@@ -247,14 +260,17 @@ export default class MessageManager {
 
   public getMessages(): BaseMessage[] {
     const messages = this.history.messages
-      .filter(m => {
+      .filter((m) => {
         if (!m.message) {
-          console.error(`[MessageManager] Filtering out message with undefined message property:`, m);
+          console.error(
+            `[MessageManager] Filtering out message with undefined message property:`,
+            m,
+          );
           return false;
         }
         return true;
       })
-      .map(m => m.message);
+      .map((m) => m.message);
 
     let totalInputTokens = 0;
     logger.debug(`Messages in history: ${this.history.messages.length}:`);
@@ -279,7 +295,11 @@ export default class MessageManager {
    * @param messageType - The type of the message (optional)
    * @param position - The optional position to add the message, if not provided, the message will be added to the end of the history
    */
-  public addMessageWithTokens(message: BaseMessage, messageType?: string | null, position?: number): void {
+  public addMessageWithTokens(
+    message: BaseMessage,
+    messageType?: string | null,
+    position?: number,
+  ): void {
     let filteredMessage = message;
     // filter out sensitive data if provided
     if (this.settings.sensitiveData) {
@@ -309,12 +329,12 @@ export default class MessageManager {
       return filteredValue;
     };
 
-    if (typeof message.content === 'string') {
+    if (typeof message.content === "string") {
       message.content = replaceSensitive(message.content);
     } else if (Array.isArray(message.content)) {
-      message.content = message.content.map(item => {
+      message.content = message.content.map((item) => {
         // Add null check to match Python's isinstance() behavior
-        if (typeof item === 'object' && item !== null && 'text' in item) {
+        if (typeof item === "object" && item !== null && "text" in item) {
           return { ...item, text: replaceSensitive(item.text) };
         }
         return item;
@@ -334,16 +354,16 @@ export default class MessageManager {
 
     if (Array.isArray(message.content)) {
       for (const item of message.content) {
-        if ('image_url' in item) {
+        if ("image_url" in item) {
           tokens += this.settings.imageTokens;
-        } else if (typeof item === 'object' && 'text' in item) {
+        } else if (typeof item === "object" && "text" in item) {
           tokens += this._countTextTokens(item.text);
         }
       }
     } else {
       let msg = message.content;
       // Check if it's an AIMessage with tool_calls
-      if ('tool_calls' in message) {
+      if ("tool_calls" in message) {
         msg += JSON.stringify(message.tool_calls);
       }
       tokens += this._countTextTokens(msg);
@@ -375,9 +395,9 @@ export default class MessageManager {
 
     // if list with image remove image
     if (Array.isArray(lastMsg.message.content)) {
-      let text = '';
-      lastMsg.message.content = lastMsg.message.content.filter(item => {
-        if ('image_url' in item) {
+      let text = "";
+      lastMsg.message.content = lastMsg.message.content.filter((item) => {
+        if ("image_url" in item) {
           diff -= this.settings.imageTokens;
           lastMsg.metadata.tokens -= this.settings.imageTokens;
           this.history.totalTokens -= this.settings.imageTokens;
@@ -386,7 +406,7 @@ export default class MessageManager {
           );
           return false;
         }
-        if ('text' in item) {
+        if ("text" in item) {
           text += item.text;
         }
         return true;

@@ -19,10 +19,7 @@ export interface InvocationRef<
 }
 
 /** Mint a ref at the authoritative boundary that starts the operation. */
-export function createInvocationRef<
-  Kind extends string,
-  EntityKey extends string | number,
->(
+export function createInvocationRef<Kind extends string, EntityKey extends string | number>(
   kind: Kind,
   entityKey: EntityKey,
   ids: IdSource,
@@ -38,10 +35,7 @@ export function createInvocationRef<
   };
 }
 
-export function sameInvocationRef(
-  left: InvocationRef,
-  right: InvocationRef,
-): boolean {
+export function sameInvocationRef(left: InvocationRef, right: InvocationRef): boolean {
   return (
     left.kind === right.kind &&
     left.entityKey === right.entityKey &&
@@ -54,8 +48,7 @@ export function isInvocationRef(value: unknown): value is InvocationRef {
   const candidate = value as Partial<InvocationRef>;
   return (
     typeof candidate.kind === "string" &&
-    (typeof candidate.entityKey === "string" ||
-      typeof candidate.entityKey === "number") &&
+    (typeof candidate.entityKey === "string" || typeof candidate.entityKey === "number") &&
     typeof candidate.operationId === "string" &&
     candidate.operationId.length > 0
   );
@@ -68,18 +61,14 @@ export function isInvocationRef(value: unknown): value is InvocationRef {
 export function invocationRegistryKey(ref: InvocationRef): string {
   const kind = ref.kind;
   const entityKey =
-    typeof ref.entityKey === "number"
-      ? `number:${ref.entityKey}`
-      : `string:${ref.entityKey}`;
+    typeof ref.entityKey === "number" ? `number:${ref.entityKey}` : `string:${ref.entityKey}`;
   const operationId = ref.operationId;
   return `${kind.length}:${kind}${entityKey.length}:${entityKey}${operationId.length}:${operationId}`;
 }
 
 function entityRegistryKey(kind: string, entityKey: string | number): string {
   const normalizedEntityKey =
-    typeof entityKey === "number"
-      ? `number:${entityKey}`
-      : `string:${entityKey}`;
+    typeof entityKey === "number" ? `number:${entityKey}` : `string:${entityKey}`;
   return `${kind.length}:${kind}${normalizedEntityKey.length}:${normalizedEntityKey}`;
 }
 
@@ -185,10 +174,7 @@ export type InvocationClaim<Value> =
  * which makes the structural-safety argument explicit at the claim site.
  */
 export class InvocationRegistry<Value> {
-  private readonly activeByEntity = new Map<
-    string,
-    { ref: InvocationRef; value: Value }
-  >();
+  private readonly activeByEntity = new Map<string, { ref: InvocationRef; value: Value }>();
 
   register(ref: InvocationRef, value: Value): Value | undefined {
     const key = entityRegistryKey(ref.kind, ref.entityKey);
@@ -198,9 +184,7 @@ export class InvocationRegistry<Value> {
   }
 
   claim(ref: InvocationRef): InvocationClaim<Value> {
-    const active = this.activeByEntity.get(
-      entityRegistryKey(ref.kind, ref.entityKey),
-    );
+    const active = this.activeByEntity.get(entityRegistryKey(ref.kind, ref.entityKey));
     if (!active) return { kind: "unsolicited" };
     if (!sameInvocationRef(active.ref, ref)) {
       return { kind: "stale", expected: active.ref };

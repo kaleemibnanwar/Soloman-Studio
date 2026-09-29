@@ -6,10 +6,10 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { createTypedHandler } from "./base";
 import { OctopusStudioError, OctopusStudioErrorKind } from "../../errors/octopus_studio_error";
 
-import { getStoredConsent } from "../utils/mcp_consent";
-import { mcpManager } from "../utils/mcp_manager";
-import { disconnectOAuth, runOAuthFlow, withMcpOAuthServerMutation } from "../utils/mcp_oauth_flow";
-import { oauthStateHasTokens } from "../utils/mcp_oauth_provider";
+import { getStoredConsent } from "../mcp/mcp_consent";
+import { mcpManager } from "../mcp/mcp_manager";
+import { disconnectOAuth, runOAuthFlow, withMcpOAuthServerMutation } from "../mcp/mcp_oauth_flow";
+import { oauthStateHasTokens } from "../mcp/mcp_oauth_provider";
 import { encryptSecretMap, encryptToString, readServerSecretMap } from "../utils/secret_storage";
 import {
   mcpContracts,

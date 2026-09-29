@@ -79,9 +79,7 @@ export const LanguageModelCatalogResponseSchema = z.object({
   }),
 });
 
-export type LanguageModelCatalogResponse = z.infer<
-  typeof LanguageModelCatalogResponseSchema
->;
+export type LanguageModelCatalogResponse = z.infer<typeof LanguageModelCatalogResponseSchema>;
 
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 
@@ -266,9 +264,7 @@ const modelsByProvider = {
       contextWindow: 256_000,
     },
   ],
-} satisfies z.infer<
-  typeof LanguageModelCatalogResponseSchema.shape.modelsByProvider
->;
+} satisfies z.infer<typeof LanguageModelCatalogResponseSchema.shape.modelsByProvider>;
 
 const aliases = [
   {
@@ -336,9 +332,7 @@ const aliases = [
   },
 ] satisfies z.infer<typeof CatalogAliasSchema>[];
 
-export function buildLanguageModelCatalogResponse(
-  now = new Date(),
-): LanguageModelCatalogResponse {
+export function buildLanguageModelCatalogResponse(now = new Date()): LanguageModelCatalogResponse {
   return LanguageModelCatalogResponseSchema.parse({
     version: now.toISOString(),
     expiresAt: new Date(now.getTime() + ONE_HOUR_IN_MS).toISOString(),

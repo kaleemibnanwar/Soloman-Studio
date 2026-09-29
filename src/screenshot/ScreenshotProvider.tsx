@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { systemClock, uuidIdSource } from "@/state_machines/clock";
-import {
-  createMachineProvider,
-  useRegisterEntityDisposer,
-} from "@/state_machines/react";
+import { createMachineProvider, useRegisterEntityDisposer } from "@/state_machines/react";
 import { createScreenshotCommandAdapter } from "./commands";
 import { ScreenshotManager } from "./manager";
 

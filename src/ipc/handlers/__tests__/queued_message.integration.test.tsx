@@ -1,16 +1,7 @@
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  setupHybridChatHarness,
-  type HybridChatHarness,
-} from "@/testing/hybrid_chat_harness";
+import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
 
 async function startMediumStream(harness: HybridChatHarness, chatId: number) {
@@ -75,9 +66,7 @@ describe("queued messages (integration)", () => {
 
     await harness.pressEnterInChat("queued with extras", { chatId });
     await waitFor(() =>
-      expect(screen.getByTestId("queue-header").textContent).toMatch(
-        /^1\s+Queued/i,
-      ),
+      expect(screen.getByTestId("queue-header").textContent).toMatch(/^1\s+Queued/i),
     );
     expect(screen.queryByText("queued-notes.txt")).toBeNull();
     expect(screen.queryByTestId("selected-component-display")).toBeNull();
@@ -94,19 +83,13 @@ describe("queued messages (integration)", () => {
       ),
     );
     await screen.findByText("queued-notes.txt");
-    const selectedDisplay = await screen.findByTestId(
-      "selected-component-display",
-    );
+    const selectedDisplay = await screen.findByTestId("selected-component-display");
     expect(selectedDisplay.textContent).toContain("HeroTitle");
     expect(selectedDisplay.textContent).toContain("src/App.tsx:1");
 
     fireEvent.keyDown(getEditable(), { key: "Enter", keyCode: 13 });
-    await waitFor(() =>
-      expect(screen.queryByText("queued-notes.txt")).toBeNull(),
-    );
-    await waitFor(() =>
-      expect(screen.queryByTestId("selected-component-display")).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByText("queued-notes.txt")).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId("selected-component-display")).toBeNull());
 
     await harness.waitForStreamEnd(chatId, 40_000);
     await harness.waitForStreamEnd(chatId, 40_000);

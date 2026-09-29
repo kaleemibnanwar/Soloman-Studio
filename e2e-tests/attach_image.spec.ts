@@ -16,10 +16,7 @@ test("attach image - home chat", async ({ po }) => {
   await po.setUp();
 
   // Open auxiliary actions menu
-  await po.chatActions
-    .getHomeChatInputContainer()
-    .getByTestId("auxiliary-actions-menu")
-    .click();
+  await po.chatActions.getHomeChatInputContainer().getByTestId("auxiliary-actions-menu").click();
 
   // Click "Attach files" to open submenu
   await po.page.getByRole("menuitem", { name: "Attach files" }).click();
@@ -48,10 +45,7 @@ test("attach image - chat", async ({ po }) => {
   await po.sendPrompt("basic");
 
   // Open auxiliary actions menu
-  await po.chatActions
-    .getChatInputContainer()
-    .getByTestId("auxiliary-actions-menu")
-    .click();
+  await po.chatActions.getChatInputContainer().getByTestId("auxiliary-actions-menu").click();
 
   // Click "Attach files" to open submenu
   await po.page.getByRole("menuitem", { name: "Attach files" }).click();
@@ -80,10 +74,7 @@ test("attach image - chat - upload to codebase", async ({ po }) => {
   await po.sendPrompt("basic");
 
   // Open auxiliary actions menu
-  await po.chatActions
-    .getChatInputContainer()
-    .getByTestId("auxiliary-actions-menu")
-    .click();
+  await po.chatActions.getChatInputContainer().getByTestId("auxiliary-actions-menu").click();
 
   // Click "Attach files" to open submenu
   await po.page.getByRole("menuitem", { name: "Attach files" }).click();
@@ -109,9 +100,7 @@ test("attach image - chat - upload to codebase", async ({ po }) => {
   // Wait for the uploaded file card to render before snapshotting. Use .first()
   // because the modified-files card at the bottom of the chat now also lists
   // "file.png"; the attachment card is rendered above it, so it comes first.
-  await expect(
-    po.page.getByText("file.png", { exact: true }).first(),
-  ).toBeVisible();
+  await expect(po.page.getByText("file.png", { exact: true }).first()).toBeVisible();
 
   await po.snapshotServerDump("last-message", { name: "upload-to-codebase" });
   await po.snapshotMessages({ replaceDumpPath: true });
@@ -121,10 +110,7 @@ test("attach image - chat - upload to codebase", async ({ po }) => {
   const filePath = path.join(appPath, "new", "image", "file.png");
   expect(fs.existsSync(filePath)).toBe(true);
   // check contents of filePath is equal in value to e2e-tests/fixtures/images/logo.png
-  const expectedContents = fs.readFileSync(
-    "e2e-tests/fixtures/images/logo.png",
-    "base64",
-  );
+  const expectedContents = fs.readFileSync("e2e-tests/fixtures/images/logo.png", "base64");
   const actualContents = fs.readFileSync(filePath, "base64");
   expect(actualContents).toBe(expectedContents);
 });
@@ -134,15 +120,9 @@ test("attach image via drag - chat", async ({ po }) => {
   await po.setUp({ autoApprove: true });
   await po.sendPrompt("basic");
   // read fixture and convert to base64 for browser context
-  const fileBase64 = fs.readFileSync(
-    "e2e-tests/fixtures/images/logo.png",
-    "base64",
-  );
+  const fileBase64 = fs.readFileSync("e2e-tests/fixtures/images/logo.png", "base64");
   // locate the inner drop target (first child div of the container)
-  const dropTarget = po.chatActions
-    .getChatInputContainer()
-    .locator("div")
-    .first();
+  const dropTarget = po.chatActions.getChatInputContainer().locator("div").first();
   // simulate dragenter, dragover, and drop with a File
   await dropTarget.evaluate((element, fileBase64) => {
     // convert base64 to Uint8Array
@@ -157,9 +137,7 @@ test("attach image via drag - chat", async ({ po }) => {
     dt.items.add(file);
     // dispatch drag events
     ["dragenter", "dragover", "drop"].forEach((eventType) => {
-      element.dispatchEvent(
-        new DragEvent(eventType, { dataTransfer: dt, bubbles: true }),
-      );
+      element.dispatchEvent(new DragEvent(eventType, { dataTransfer: dt, bubbles: true }));
     });
   }, fileBase64);
 

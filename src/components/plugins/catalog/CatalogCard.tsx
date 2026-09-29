@@ -1,10 +1,7 @@
 import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  looksLikePackageSpec,
-  type McpCatalogEntry,
-} from "@/ipc/types/mcp_catalog";
+import { looksLikePackageSpec, type McpCatalogEntry } from "@/ipc/types/mcp_catalog";
 import { catalogEntryCanConnect } from "./catalogCardStatus";
 
 // The schema already validates url, but parse defensively so one bad
@@ -29,11 +26,7 @@ function sourceOf(entry: McpCatalogEntry): string {
 // What an already-added entry is doing. "Added" on its own says only
 // that a row exists, which reads as finished while an OAuth connect is
 // still running or has failed.
-export type CatalogCardStatus =
-  | "not-added"
-  | "added"
-  | "connecting"
-  | "needs-connect";
+export type CatalogCardStatus = "not-added" | "added" | "connecting" | "needs-connect";
 
 export function CatalogCard({
   entry,
@@ -52,25 +45,17 @@ export function CatalogCard({
         <CardTitle className="text-base font-medium mb-1 flex items-center gap-2 min-w-0">
           <span className="truncate">{entry.name}</span>
           {entry.transport === "http" && entry.oauth != null && (
-            <span className="text-xs font-normal text-muted-foreground shrink-0">
-              OAuth
-            </span>
+            <span className="text-xs font-normal text-muted-foreground shrink-0">OAuth</span>
           )}
           {entry.transport === "stdio" && (
-            <span className="text-xs font-normal text-muted-foreground shrink-0">
-              Local
-            </span>
+            <span className="text-xs font-normal text-muted-foreground shrink-0">Local</span>
           )}
         </CardTitle>
         {entry.description && (
-          <div className="text-xs text-muted-foreground truncate">
-            {entry.description}
-          </div>
+          <div className="text-xs text-muted-foreground truncate">{entry.description}</div>
         )}
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground truncate">
-            {sourceOf(entry)}
-          </span>
+          <span className="text-xs text-muted-foreground truncate">{sourceOf(entry)}</span>
           {status === "not-added" ? (
             <Button size="sm" onClick={() => onAdd(entry)} disabled={isAdding}>
               {isAdding ? "Adding…" : "Add"}
@@ -92,9 +77,7 @@ export function CatalogCard({
               {status === "connecting" && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />
               )}
-              {status === "added" && (
-                <Check className="w-3.5 h-3.5" aria-hidden />
-              )}
+              {status === "added" && <Check className="w-3.5 h-3.5" aria-hidden />}
               {status === "connecting"
                 ? "Connecting…"
                 : status === "needs-connect"

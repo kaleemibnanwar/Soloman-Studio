@@ -7,10 +7,7 @@ import type {
   MachineHostContext,
 } from "@/distributed_machines/definition";
 import { REMOTE_MACHINE_PROTOCOL_VERSION } from "@/distributed_machines/remote_protocol";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { queryInvalidationBus } from "@/window_infrastructure/main/query_invalidation_bus";
 import { ignore } from "@/state_machines/types";
 import {
@@ -47,10 +44,7 @@ interface VersionPreviewActorCommand {
   readonly invocationRef: VersionPreviewInvocationRef | null;
 }
 
-function invocation(
-  appId: number,
-  operationId: string,
-): VersionPreviewInvocationRef {
+function invocation(appId: number, operationId: string): VersionPreviewInvocationRef {
   return {
     kind: VERSION_PREVIEW_INVOCATION_KIND,
     entityKey: appId,
@@ -73,9 +67,7 @@ function sameInvocation(
   );
 }
 
-function isIntent(
-  event: VersionPreviewWireEvent,
-): event is VersionPreviewIntentEvent {
+function isIntent(event: VersionPreviewWireEvent): event is VersionPreviewIntentEvent {
   return "operationId" in event;
 }
 
@@ -100,17 +92,12 @@ function isFailureEvent(event: VersionPreviewWireEvent): boolean {
   );
 }
 
-function producerError(
-  event: VersionPreviewProducerEvent,
-): { message: string } | undefined {
+function producerError(event: VersionPreviewProducerEvent): { message: string } | undefined {
   return "error" in event ? event.error : undefined;
 }
 
 function reconcileRestore(
-  current: Extract<
-    PreviewState,
-    { type: "restoring" | "restore-recovery-required" }
-  >,
+  current: Extract<PreviewState, { type: "restoring" | "restore-recovery-required" }>,
   event: Extract<VersionPreviewWireEvent, { type: "RECONCILED" }>,
 ): PreviewState {
   const recovery = current.restoreRecovery;
@@ -132,25 +119,18 @@ function reconcileRestore(
 
   if (recovery && "preRestoreHead" in recovery) {
     const branchMatches =
-      recovery.preRestoreBranch !== null &&
-      event.branch === recovery.preRestoreBranch;
+      recovery.preRestoreBranch !== null && event.branch === recovery.preRestoreBranch;
     const preRestoreStateMatches =
-      branchMatches &&
-      event.headOid === recovery.preRestoreHead &&
-      event.isClean;
+      branchMatches && event.headOid === recovery.preRestoreHead && event.isClean;
     const maySettleAtPreRestoreState =
-      recovery.nextStep !== "chat-mutation" &&
-      recovery.nextStep !== "completed";
+      recovery.nextStep !== "chat-mutation" && recovery.nextStep !== "completed";
     const completedStateMatches =
       recovery.nextStep === "completed" &&
       recovery.repositoryOutcome === "target-applied" &&
       branchMatches &&
       event.headOid === recovery.completedHead &&
       event.isClean;
-    if (
-      (maySettleAtPreRestoreState && preRestoreStateMatches) ||
-      completedStateMatches
-    ) {
+    if ((maySettleAtPreRestoreState && preRestoreStateMatches) || completedStateMatches) {
       return CLOSED_STATE;
     }
   }
@@ -196,8 +176,7 @@ function transitionActor(
     let state: import("@/version_preview/state").PreviewState;
     if (current.type === "switching-branch") {
       const fallback = current.fallback;
-      const ownsCheckout =
-        fallback.type === "previewing" || fallback.type === "recovery-required";
+      const ownsCheckout = fallback.type === "previewing" || fallback.type === "recovery-required";
       const reachedSafeBranch =
         event.branch === current.branch ||
         (ownsCheckout && event.branch === fallback.session.originBranch);
@@ -212,10 +191,7 @@ function transitionActor(
                   "Octopus Studio restarted while switching branches. Return to the original branch before continuing.",
               },
             };
-    } else if (
-      current.type === "restoring" ||
-      current.type === "restore-recovery-required"
-    ) {
+    } else if (current.type === "restoring" || current.type === "restore-recovery-required") {
       state = reconcileRestore(current, event);
     } else {
       state =
@@ -240,10 +216,7 @@ function transitionActor(
       commands: [],
     };
   }
-  if (
-    !isIntent(event) &&
-    !sameInvocation(actorState.activeInvocationRef, event)
-  ) {
+  if (!isIntent(event) && !sameInvocation(actorState.activeInvocationRef, event)) {
     return ignore(actorState, "stale-operation");
   }
 
@@ -257,10 +230,7 @@ function transitionActor(
     const opened = transition(domainState, { type: "OPEN", appId: key.appId });
     if (opened.kind === "applied") domainState = opened.state;
   }
-  const result = transition(
-    domainState,
-    toPreviewDomainEvent(key.appId, event),
-  );
+  const result = transition(domainState, toPreviewDomainEvent(key.appId, event));
   if (result.kind === "ignored") return { ...result, state: actorState };
 
   const hasFollowup =
@@ -275,9 +245,7 @@ function transitionActor(
   const lastSettlement = completedProducer
     ? {
         operationId: event.invocationRef.operationId,
-        outcome: isFailureEvent(event)
-          ? ("failed" as const)
-          : ("succeeded" as const),
+        outcome: isFailureEvent(event) ? ("failed" as const) : ("succeeded" as const),
         ...(producerError(event) ? { error: producerError(event) } : {}),
       }
     : actorState.lastSettlement;
@@ -310,11 +278,7 @@ function errorInfo(error: unknown): { message: string } {
 }
 
 function createCommandRunner(
-  context: MachineHostContext<
-    VersionPreviewKey,
-    VersionPreviewActorState,
-    VersionPreviewWireEvent
-  >,
+  context: MachineHostContext<VersionPreviewKey, VersionPreviewActorState, VersionPreviewWireEvent>,
 ) {
   let resolveEpoch = 0;
   const emit = (event: VersionPreviewProducerEvent) => context.send(event);
@@ -365,14 +329,10 @@ function createCommandRunner(
       case "restore-to-message": {
         if (!invocationRef) return;
         let restoreProgress: RestoreRecovery | null = null;
-        const isRestore =
-          command.type === "restore" || command.type === "restore-to-message";
+        const isRestore = command.type === "restore" || command.type === "restore-to-message";
         try {
           if (!isRestore) {
-            versionPreviewPersistence.checkpoint(
-              appId,
-              context.getSnapshot().state,
-            );
+            versionPreviewPersistence.checkpoint(appId, context.getSnapshot().state);
           }
         } catch (error) {
           const info = errorInfo(error);
@@ -404,18 +364,14 @@ function createCommandRunner(
         }
         const operation =
           command.type === "restore" || command.type === "restore-to-message"
-            ? versionPreviewService.run(
-                command,
-                invocationRef.operationId,
-                (progress) => {
-                  versionPreviewPersistence.checkpointRestore(
-                    appId,
-                    context.getSnapshot().state,
-                    progress,
-                  );
-                  restoreProgress = progress;
-                },
-              )
+            ? versionPreviewService.run(command, invocationRef.operationId, (progress) => {
+                versionPreviewPersistence.checkpointRestore(
+                  appId,
+                  context.getSnapshot().state,
+                  progress,
+                );
+                restoreProgress = progress;
+              })
             : versionPreviewService.run(command, invocationRef.operationId);
         const lifecycle = operation.then(
           async (result) => {
@@ -426,19 +382,14 @@ function createCommandRunner(
                 { family: "app", appId },
                 { family: "problems", appId },
                 ...(result.affectedChatId
-                  ? ([
-                      { family: "chat", chatId: result.affectedChatId },
-                    ] as const)
+                  ? ([{ family: "chat", chatId: result.affectedChatId }] as const)
                   : []),
-                ...(result.createdChatId
-                  ? ([{ family: "chats" }] as const)
-                  : []),
+                ...(result.createdChatId ? ([{ family: "chats" }] as const) : []),
               ] as const;
               queryInvalidationBus.publish(scopes, {
-                originEndpoint:
-                  versionPreviewPresentationService.originEndpointFor(
-                    invocationRef.operationId,
-                  ),
+                originEndpoint: versionPreviewPresentationService.originEndpointFor(
+                  invocationRef.operationId,
+                ),
                 originHandledScopes: scopes,
               });
               versionPreviewPresentationService.publishResult(
@@ -532,15 +483,13 @@ function createCommandRunner(
             }
           },
         );
-        void versionPreviewService
-          .trackLifecycle(appId, lifecycle)
-          .catch((error) => {
-            versionPreviewPresentationService.publishError(
-              appId,
-              invocationRef.operationId,
-              `Version preview completion failed: ${errorInfo(error).message}`,
-            );
-          });
+        void versionPreviewService.trackLifecycle(appId, lifecycle).catch((error) => {
+          versionPreviewPresentationService.publishError(
+            appId,
+            invocationRef.operationId,
+            `Version preview completion failed: ${errorInfo(error).message}`,
+          );
+        });
         return;
       }
       case "notify-error":
@@ -595,8 +544,7 @@ type Definition = DistributedMachineDefinition<
       VersionPreviewActorState,
       VersionPreviewWireEvent,
       VersionPreviewActorCommand,
-      | import("@/version_preview/transition").PreviewIgnoreReason
-      | "stale-operation"
+      import("@/version_preview/transition").PreviewIgnoreReason | "stale-operation"
     >["remote"]
   >;
 };
@@ -629,8 +577,7 @@ export const versionPreviewDefinition: Definition = {
       if (state.state.type === "closed") {
         versionPreviewWindowInterestService.clearApp(context.key.appId);
       }
-      const previousOperationId =
-        previous.activeInvocationRef?.operationId ?? null;
+      const previousOperationId = previous.activeInvocationRef?.operationId ?? null;
       const activeOperationId = state.activeInvocationRef?.operationId ?? null;
       if ("operationId" in event) {
         versionPreviewPresentationService.confirm(event.operationId);
@@ -643,8 +590,7 @@ export const versionPreviewDefinition: Definition = {
         previousOperationId !== activeOperationId &&
         !commands.some(
           ({ command, invocationRef }) =>
-            command.type === "notify-error" &&
-            invocationRef?.operationId === previousOperationId,
+            command.type === "notify-error" && invocationRef?.operationId === previousOperationId,
         )
       ) {
         versionPreviewPresentationService.forget(previousOperationId);
@@ -689,16 +635,11 @@ export const versionPreviewDefinition: Definition = {
       versionPreviewService.assertAcceptingOperations(key.appId);
       return versionPreviewKey(key.appId);
     },
-    eventCodec:
-      VersionPreviewIntentEventSchema as z.ZodType<VersionPreviewWireEvent>,
+    eventCodec: VersionPreviewIntentEventSchema as z.ZodType<VersionPreviewWireEvent>,
     snapshotCodec: VersionPreviewRemoteSnapshotSchema,
     keyToString: (key) => String(key.appId),
     projectSnapshot: (state, key, metadata) =>
-      projectVersionPreviewRemoteSnapshot(
-        key.appId,
-        metadata.snapshotRevision,
-        state,
-      ),
+      projectVersionPreviewRemoteSnapshot(key.appId, metadata.snapshotRevision, state),
     unavailableSnapshot: (key) =>
       projectVersionPreviewRemoteSnapshot(key.appId, 0, {
         state: CLOSED_STATE,

@@ -1,20 +1,11 @@
 import log from "electron-log";
 import fs from "node:fs";
 import path from "node:path";
-import { gitAddAll, gitCommit } from "./git_utils";
-import { simpleSpawn } from "./simpleSpawn";
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
-import {
-  isPnpmIgnoredBuildsError,
-  PNPM_PM_ON_FAIL_IGNORE_ARG,
-} from "./socket_firewall";
-import {
-  recordAndReportDeniedPnpmBuilds,
-  resolvePnpmIgnoredBuilds,
-} from "./pnpm_denied_builds";
+import { gitAddAll, gitCommit } from "../git/git_utils";
+import { simpleSpawn } from "../process/simpleSpawn";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
+import { isPnpmIgnoredBuildsError, PNPM_PM_ON_FAIL_IGNORE_ARG } from "./socket_firewall";
+import { recordAndReportDeniedPnpmBuilds, resolvePnpmIgnoredBuilds } from "./pnpm_denied_builds";
 
 export const logger = log.scope("app_upgrade_utils");
 
@@ -45,9 +36,7 @@ export function isComponentTaggerUpgradeNeeded(appPath: string): boolean {
     if (!viteConfigContent.includes("plugin-react")) {
       return false;
     }
-    return !viteConfigContent.includes(
-      "@octopus-studio-sh/react-vite-component-tagger",
-    );
+    return !viteConfigContent.includes("@octopus-studio-sh/react-vite-component-tagger");
   } catch (e) {
     logger.error("Error reading vite config", e);
     return false;
@@ -129,10 +118,7 @@ export async function applyComponentTagger(
     );
   }
 
-  const originalViteContent = await fs.promises.readFile(
-    viteConfigPath,
-    "utf-8",
-  );
+  const originalViteContent = await fs.promises.readFile(viteConfigPath, "utf-8");
   let content = originalViteContent;
 
   if (
@@ -199,8 +185,7 @@ export async function applyComponentTagger(
       await simpleSpawnWithDeniedPnpmBuildSelfHeal({
         command: `pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} add --ignore-workspace-root-check -D @octopus-studio-sh/react-vite-component-tagger`,
         cwd: appPath,
-        successMessage:
-          "component-tagger dependency installed successfully with pnpm",
+        successMessage: "component-tagger dependency installed successfully with pnpm",
         errorPrefix: "Failed to install dependency via pnpm",
       });
     } catch (pnpmErr) {
@@ -210,8 +195,7 @@ export async function applyComponentTagger(
           command:
             "npm install --save-dev --legacy-peer-deps @octopus-studio-sh/react-vite-component-tagger",
           cwd: appPath,
-          successMessage:
-            "component-tagger dependency installed successfully with npm",
+          successMessage: "component-tagger dependency installed successfully with npm",
           errorPrefix: "Failed to install dependency via npm",
         });
       } catch (npmErr) {
@@ -232,29 +216,17 @@ export async function applyComponentTagger(
     }
   } else {
     try {
-      const packageJson = JSON.parse(
-        await fs.promises.readFile(packageJsonPath, "utf-8"),
-      );
+      const packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, "utf-8"));
       packageJson.devDependencies ??= {};
-      packageJson.devDependencies[
-        "@octopus-studio-sh/react-vite-component-tagger"
-      ] = COMPONENT_TAGGER_VERSION;
-      if (
-        packageJson.dependencies?.[
-          "@octopus-studio-sh/react-vite-component-tagger"
-        ]
-      ) {
-        delete packageJson.dependencies[
-          "@octopus-studio-sh/react-vite-component-tagger"
-        ];
+      packageJson.devDependencies["@octopus-studio-sh/react-vite-component-tagger"] =
+        COMPONENT_TAGGER_VERSION;
+      if (packageJson.dependencies?.["@octopus-studio-sh/react-vite-component-tagger"]) {
+        delete packageJson.dependencies["@octopus-studio-sh/react-vite-component-tagger"];
         if (Object.keys(packageJson.dependencies).length === 0) {
           delete packageJson.dependencies;
         }
       }
-      await fs.promises.writeFile(
-        packageJsonPath,
-        `${JSON.stringify(packageJson, null, 2)}\n`,
-      );
+      await fs.promises.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
     } catch (err) {
       logger.warn(
         "Failed to update package.json for component tagger, rolling back vite config changes",

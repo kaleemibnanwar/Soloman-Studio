@@ -1,9 +1,9 @@
 export enum Actors {
-  SYSTEM = 'system',
-  USER = 'user',
-  PLANNER = 'planner',
-  NAVIGATOR = 'navigator',
-  VALIDATOR = 'validator',
+  SYSTEM = "system",
+  USER = "user",
+  PLANNER = "planner",
+  NAVIGATOR = "navigator",
+  VALIDATOR = "validator",
 }
 
 export interface Message {

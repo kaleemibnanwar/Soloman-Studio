@@ -1,11 +1,7 @@
 import { z } from "zod";
 import { createClient, defineContract } from "../contracts/core";
 
-export const WorkerProposalStatusSchema = z.enum([
-  "pending",
-  "approved",
-  "rejected",
-]);
+export const WorkerProposalStatusSchema = z.enum(["pending", "approved", "rejected"]);
 
 export const WorkerProposalSchema = z.object({
   id: z.number(),

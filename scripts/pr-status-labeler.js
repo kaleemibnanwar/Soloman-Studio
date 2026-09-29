@@ -37,10 +37,7 @@ function isReviewClean(body) {
   }
 
   // Multi-agent: no issues found
-  if (
-    body.includes(MULTI_AGENT_NO_ISSUES) ||
-    body.includes(MULTI_AGENT_NO_NEW_ISSUES)
-  ) {
+  if (body.includes(MULTI_AGENT_NO_ISSUES) || body.includes(MULTI_AGENT_NO_NEW_ISSUES)) {
     return true;
   }
 
@@ -58,10 +55,7 @@ function isReviewClean(body) {
   }
 
   // Swarm verdicts indicating issues
-  if (
-    body.includes(SWARM_VERDICT_UNSURE) ||
-    body.includes(SWARM_VERDICT_REJECT)
-  ) {
+  if (body.includes(SWARM_VERDICT_UNSURE) || body.includes(SWARM_VERDICT_REJECT)) {
     return false;
   }
 
@@ -71,8 +65,7 @@ function isReviewClean(body) {
 }
 
 async function applyLabel(github, owner, repo, prNumber, addLabel) {
-  const removeLabel =
-    addLabel === LABEL_REVIEW_ISSUE ? LABEL_FINAL_CHECK : LABEL_REVIEW_ISSUE;
+  const removeLabel = addLabel === LABEL_REVIEW_ISSUE ? LABEL_FINAL_CHECK : LABEL_REVIEW_ISSUE;
 
   // Atomically swap labels using setLabels to avoid a window where both exist
   const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
@@ -120,9 +113,7 @@ async function run({ github, context, core, prNumber, ciConclusion }) {
   }
 
   if (!reviewComment && !ciSuccess) {
-    core.info(
-      "CI failed and no review comment found, adding review-issue label",
-    );
+    core.info("CI failed and no review comment found, adding review-issue label");
     await applyLabel(github, owner, repo, prNumber, LABEL_REVIEW_ISSUE);
     return;
   }
@@ -143,9 +134,7 @@ async function run({ github, context, core, prNumber, ciConclusion }) {
   const reviewDate = new Date(reviewComment.created_at);
 
   if (reviewDate < commitDate) {
-    core.info(
-      "Latest review is stale (posted before latest commit), adding review-issue label",
-    );
+    core.info("Latest review is stale (posted before latest commit), adding review-issue label");
     await applyLabel(github, owner, repo, prNumber, LABEL_REVIEW_ISSUE);
     return;
   }

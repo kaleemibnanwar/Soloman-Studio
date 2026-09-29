@@ -182,9 +182,6 @@ export class PlanHandoffRemoteManager {
   }
 
   private actor(sourceChatId: number) {
-    return this.client.actor(
-      planHandoffClientDefinition,
-      planHandoffKey(sourceChatId),
-    );
+    return this.client.actor(planHandoffClientDefinition, planHandoffKey(sourceChatId));
   }
 }

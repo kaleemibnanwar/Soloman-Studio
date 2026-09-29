@@ -16,14 +16,11 @@ if (!contextPath) throw new Error("CONTEXT_PATH is required");
 if (!findingsPath) throw new Error("FINDINGS_PATH is required");
 
 const [owner, repo] = repository.split("/");
-if (!owner || !repo)
-  throw new Error(`Invalid GITHUB_REPOSITORY: ${repository}`);
+if (!owner || !repo) throw new Error(`Invalid GITHUB_REPOSITORY: ${repository}`);
 
 const context = JSON.parse(fs.readFileSync(contextPath, "utf8"));
 const findingsPayload = JSON.parse(fs.readFileSync(findingsPath, "utf8"));
-const findings = Array.isArray(findingsPayload.findings)
-  ? findingsPayload.findings
-  : [];
+const findings = Array.isArray(findingsPayload.findings) ? findingsPayload.findings : [];
 const headSha = context.pullRequest?.headSha;
 
 if (!headSha) {

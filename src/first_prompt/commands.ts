@@ -23,34 +23,20 @@ export interface CreatedFirstPromptApp {
 }
 
 export interface FirstPromptDeps {
-  createApp(
-    operationId: string,
-    chatMode?: FirstPromptChatMode,
-  ): Promise<CreatedFirstPromptApp>;
-  createChat(
-    appId: number,
-    operationId: string,
-    chatMode?: FirstPromptChatMode,
-  ): Promise<number>;
+  createApp(operationId: string, chatMode?: FirstPromptChatMode): Promise<CreatedFirstPromptApp>;
+  createChat(appId: number, operationId: string, chatMode?: FirstPromptChatMode): Promise<number>;
   commitCreation(operationId: string): void;
   cancelCreation(operationId: string): void;
   runNeonTemplateHook(appId: number, appName: string): Promise<void>;
   applyTheme(appId: number): Promise<void>;
   openPreviewIfSetupRequired(appId: number): Promise<boolean>;
-  submitPrompt(request: {
-    appId: number;
-    chatId: number;
-    payload: FirstPromptPayload;
-  }): void;
+  submitPrompt(request: { appId: number; chatId: number; payload: FirstPromptPayload }): void;
   refreshQueries(appId: number): Promise<void>;
   navigateHome(): void;
   selectChat(appId: number, chatId: number): void;
   showSetupDialog(): void;
   clearEditingBuffer(): void;
-  showError(
-    message: string,
-    failure: "createApp" | "createChat" | "postCreate",
-  ): void;
+  showError(message: string, failure: "createApp" | "createChat" | "postCreate"): void;
 }
 
 function errorMessage(error: unknown): string {
@@ -69,8 +55,7 @@ export function createFirstPromptCommandRunner(options: {
   let cancelledCreationOperationId: string | undefined;
 
   function retryCreationCancellation(deps: FirstPromptDeps): void {
-    const operationId =
-      ownedCreationOperationId ?? cancelledCreationOperationId;
+    const operationId = ownedCreationOperationId ?? cancelledCreationOperationId;
     if (operationId) deps.cancelCreation(operationId);
   }
 
@@ -82,10 +67,7 @@ export function createFirstPromptCommandRunner(options: {
   }
 
   return {
-    async run(
-      command: FirstPromptCommand,
-      emit: (event: FirstPromptEvent) => void,
-    ) {
+    async run(command: FirstPromptCommand, emit: (event: FirstPromptEvent) => void) {
       if (disposed) return;
       const deps = options.getDeps();
       switch (command.type) {
@@ -109,9 +91,7 @@ export function createFirstPromptCommandRunner(options: {
           try {
             const result = await deps.createApp(
               operationId,
-              command.payload.isChatModeExplicit
-                ? command.payload.chatMode
-                : undefined,
+              command.payload.isChatModeExplicit ? command.payload.chatMode : undefined,
             );
             if (disposed) {
               deps.cancelCreation(operationId);
@@ -144,9 +124,7 @@ export function createFirstPromptCommandRunner(options: {
             const chatId = await deps.createChat(
               command.appId,
               operationId,
-              command.payload.isChatModeExplicit
-                ? command.payload.chatMode
-                : undefined,
+              command.payload.isChatModeExplicit ? command.payload.chatMode : undefined,
             );
             if (disposed) {
               deps.cancelCreation(operationId);

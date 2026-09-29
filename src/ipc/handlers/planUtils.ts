@@ -1,23 +1,16 @@
-import {
-  OctopusStudioError,
-  OctopusStudioErrorKind,
-} from "@/errors/octopus_studio_error";
+import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 export { slugify } from "@/shared/slugify";
 
 export function buildFrontmatter(meta: Record<string, string>): string {
   const lines = Object.entries(meta).map(
-    ([k, v]) =>
-      `${k}: "${v.replace(/\\/g, "\\\\").replace(/\n/g, " ").replace(/"/g, '\\"')}"`,
+    ([k, v]) => `${k}: "${v.replace(/\\/g, "\\\\").replace(/\n/g, " ").replace(/"/g, '\\"')}"`,
   );
   return `---\n${lines.join("\n")}\n---\n\n`;
 }
 
 export function validatePlanId(planId: string): void {
   if (!/^[a-z0-9-]+$/.test(planId)) {
-    throw new OctopusStudioError(
-      "Invalid plan ID",
-      OctopusStudioErrorKind.Validation,
-    );
+    throw new OctopusStudioError("Invalid plan ID", OctopusStudioErrorKind.Validation);
   }
 }
 

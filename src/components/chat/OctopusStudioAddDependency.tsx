@@ -21,9 +21,10 @@ interface OctopusStudioAddDependencyProps {
   packages?: string;
 }
 
-export const OctopusStudioAddDependency: React.FC<
-  OctopusStudioAddDependencyProps
-> = ({ children, node }) => {
+export const OctopusStudioAddDependency: React.FC<OctopusStudioAddDependencyProps> = ({
+  children,
+  node,
+}) => {
   const packages = node?.properties?.packages
     ? node.properties.packages.split(" ").filter(Boolean)
     : [];
@@ -34,9 +35,7 @@ export const OctopusStudioAddDependency: React.FC<
     <OctopusStudioCard
       accentColor="blue"
       isExpanded={isContentVisible}
-      onClick={
-        hasChildren ? () => setIsContentVisible(!isContentVisible) : undefined
-      }
+      onClick={hasChildren ? () => setIsContentVisible(!isContentVisible) : undefined}
     >
       <OctopusStudioCardHeader icon={<Package size={15} />} accentColor="blue">
         <OctopusStudioBadge color="blue">Add Packages</OctopusStudioBadge>
@@ -48,9 +47,7 @@ export const OctopusStudioAddDependency: React.FC<
       </OctopusStudioCardHeader>
       {packages.length > 0 && (
         <div className="px-3 pb-2">
-          <div className="text-sm text-foreground mb-1">
-            Do you want to install these packages?
-          </div>
+          <div className="text-sm text-foreground mb-1">Do you want to install these packages?</div>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {packages.map((p: string) => (
               <span

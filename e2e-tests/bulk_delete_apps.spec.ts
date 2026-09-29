@@ -35,28 +35,18 @@ testSkipIfWindows("bulk delete apps from gallery", async ({ po }) => {
   await po.page.getByRole("button", { name: "See more" }).first().click();
 
   // All three cards should be visible.
-  await expect(
-    po.page.getByTestId(`app-showcase-card-${appName1}`),
-  ).toBeVisible();
-  await expect(
-    po.page.getByTestId(`app-showcase-card-${appName2}`),
-  ).toBeVisible();
-  await expect(
-    po.page.getByTestId(`app-showcase-card-${appName3}`),
-  ).toBeVisible();
+  await expect(po.page.getByTestId(`app-showcase-card-${appName1}`)).toBeVisible();
+  await expect(po.page.getByTestId(`app-showcase-card-${appName2}`)).toBeVisible();
+  await expect(po.page.getByTestId(`app-showcase-card-${appName3}`)).toBeVisible();
 
   // Enter selection mode.
   await po.page.getByTestId("apps-gallery-select-button").click();
-  await expect(
-    po.page.getByTestId("apps-gallery-selection-toolbar"),
-  ).toBeVisible();
+  await expect(po.page.getByTestId("apps-gallery-selection-toolbar")).toBeVisible();
 
   // Select the first two apps.
   await po.page.getByTestId(`app-showcase-card-${appName1}`).click();
   await po.page.getByTestId(`app-showcase-card-${appName2}`).click();
-  await expect(po.page.getByTestId("apps-gallery-selection-count")).toHaveText(
-    "2",
-  );
+  await expect(po.page.getByTestId("apps-gallery-selection-count")).toHaveText("2");
 
   // Click delete and confirm.
   await po.page.getByTestId("apps-gallery-bulk-delete-button").click();
@@ -64,23 +54,17 @@ testSkipIfWindows("bulk delete apps from gallery", async ({ po }) => {
 
   // Selection mode should exit after a successful bulk delete. Deleting app
   // directories can take a while on CI runners, so allow extra time.
-  await expect(
-    po.page.getByTestId("apps-gallery-selection-toolbar"),
-  ).not.toBeVisible({ timeout: 30_000 });
+  await expect(po.page.getByTestId("apps-gallery-selection-toolbar")).not.toBeVisible({
+    timeout: 30_000,
+  });
 
   // The two deleted apps should be gone from the gallery and disk.
-  await expect(
-    po.page.getByTestId(`app-showcase-card-${appName1}`),
-  ).not.toBeVisible();
-  await expect(
-    po.page.getByTestId(`app-showcase-card-${appName2}`),
-  ).not.toBeVisible();
+  await expect(po.page.getByTestId(`app-showcase-card-${appName1}`)).not.toBeVisible();
+  await expect(po.page.getByTestId(`app-showcase-card-${appName2}`)).not.toBeVisible();
   expect(fs.existsSync(appPath1)).toBe(false);
   expect(fs.existsSync(appPath2)).toBe(false);
 
   // The third app must still be present.
-  await expect(
-    po.page.getByTestId(`app-showcase-card-${appName3}`),
-  ).toBeVisible();
+  await expect(po.page.getByTestId(`app-showcase-card-${appName3}`)).toBeVisible();
   expect(fs.existsSync(appPath3)).toBe(true);
 });

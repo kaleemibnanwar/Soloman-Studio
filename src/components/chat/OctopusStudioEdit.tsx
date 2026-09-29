@@ -47,28 +47,12 @@ export const OctopusStudioEdit: React.FC<OctopusStudioEditProps> = ({
       <OctopusStudioCardHeader icon={<Zap size={15} />} accentColor="sky">
         <div className="min-w-0 truncate">
           {fileName && (
-            <span className="font-medium text-sm text-foreground truncate block">
-              {fileName}
-            </span>
+            <span className="font-medium text-sm text-foreground truncate block">{fileName}</span>
           )}
-          {path && (
-            <span className="text-[11px] text-muted-foreground truncate block">
-              {path}
-            </span>
-          )}
+          {path && <span className="text-[11px] text-muted-foreground truncate block">{path}</span>}
         </div>
-        {inProgress && (
-          <OctopusStudioStateIndicator
-            state="pending"
-            pendingLabel="Editing..."
-          />
-        )}
-        {aborted && (
-          <OctopusStudioStateIndicator
-            state="aborted"
-            abortedLabel="Did not finish"
-          />
-        )}
+        {inProgress && <OctopusStudioStateIndicator state="pending" pendingLabel="Editing..." />}
+        {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
         <div className="ml-auto flex items-center gap-1">
           <OctopusStudioBadge color="sky">Turbo Edit</OctopusStudioBadge>
           <OctopusStudioExpandIcon isExpanded={isContentVisible} />
@@ -83,13 +67,8 @@ export const OctopusStudioEdit: React.FC<OctopusStudioEditProps> = ({
         </OctopusStudioDescription>
       )}
       <OctopusStudioCardContent isExpanded={isContentVisible}>
-        <div
-          className="text-xs cursor-text"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <CodeHighlight className="language-typescript">
-            {children}
-          </CodeHighlight>
+        <div className="text-xs cursor-text" onClick={(e) => e.stopPropagation()}>
+          <CodeHighlight className="language-typescript">{children}</CodeHighlight>
         </div>
       </OctopusStudioCardContent>
     </OctopusStudioCard>

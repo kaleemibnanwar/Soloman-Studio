@@ -1,29 +1,26 @@
 import { testSkipIfWindows, Timeout } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 
-testSkipIfWindows(
-  "preview loading screen shows spinner and server logs",
-  async ({ po }) => {
-    await po.setUp({ autoApprove: true });
-    await po.sendPrompt("hi");
+testSkipIfWindows("preview loading screen shows spinner and server logs", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.sendPrompt("hi");
 
-    // Force the loading state so we can observe the new loading screen.
-    await po.clickRestart();
+  // Force the loading state so we can observe the new loading screen.
+  await po.clickRestart();
 
-    await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible({
-      timeout: Timeout.MEDIUM,
-    });
-    const loadingScreen = po.previewPanel.locatePreviewLoadingScreen();
-    await expect(loadingScreen).toBeVisible({ timeout: Timeout.MEDIUM });
+  await expect(po.previewPanel.locateLoadingAppPreview()).toBeVisible({
+    timeout: Timeout.MEDIUM,
+  });
+  const loadingScreen = po.previewPanel.locatePreviewLoadingScreen();
+  await expect(loadingScreen).toBeVisible({ timeout: Timeout.MEDIUM });
 
-    await expect(loadingScreen.getByText("Preparing preview")).toBeVisible();
-    await expect(po.previewPanel.locatePreviewLoadingLogList()).toBeVisible();
+  await expect(loadingScreen.getByText("Preparing preview")).toBeVisible();
+  await expect(po.previewPanel.locatePreviewLoadingLogList()).toBeVisible();
 
-    // The loading screen animates out once the iframe is ready.
-    await expect(loadingScreen).toBeHidden({ timeout: Timeout.LONG });
-    await po.previewPanel.expectPreviewIframeIsVisible();
-  },
-);
+  // The loading screen animates out once the iframe is ready.
+  await expect(loadingScreen).toBeHidden({ timeout: Timeout.LONG });
+  await po.previewPanel.expectPreviewIframeIsVisible();
+});
 
 testSkipIfWindows(
   "preview loading screen surfaces errors when dev script is missing",

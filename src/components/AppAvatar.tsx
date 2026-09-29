@@ -39,8 +39,7 @@ export function AppAvatar({
   name: string;
   className?: string;
 }) {
-  const colorClass =
-    avatarPalette[(Math.abs(appId) * 7) % avatarPalette.length];
+  const colorClass = avatarPalette[(Math.abs(appId) * 7) % avatarPalette.length];
   return (
     <div
       className={cn(

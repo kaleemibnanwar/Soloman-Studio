@@ -1,22 +1,8 @@
 import React from "react";
 import { Button } from "../ui/button";
-import {
-  X,
-  Bot,
-  Info,
-  ShieldCheck,
-  Check,
-  Ban,
-  AlertTriangle,
-  Loader2,
-} from "lucide-react";
+import { X, Bot, Info, ShieldCheck, Check, Ban, AlertTriangle, Loader2 } from "lucide-react";
 import type { PendingToolConsent } from "@/user_input/selectors";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { useTranslation } from "react-i18next";
 
 const INPUT_PREVIEW_COLLAPSED_LINES = 6;
@@ -50,8 +36,7 @@ export function AgentConsentBanner({
 
   // Collapsible input preview state
   const [isInputExpanded, setIsInputExpanded] = React.useState(false);
-  const [inputCollapsedMaxHeight, setInputCollapsedMaxHeight] =
-    React.useState<number>();
+  const [inputCollapsedMaxHeight, setInputCollapsedMaxHeight] = React.useState<number>();
   const [inputHasOverflow, setInputHasOverflow] = React.useState(false);
   const inputRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -67,12 +52,8 @@ export function AgentConsentBanner({
     const compute = () => {
       const computedStyle = window.getComputedStyle(element);
       const parsedLineHeight = Number.parseFloat(computedStyle.lineHeight);
-      const lineHeight = Number.isFinite(parsedLineHeight)
-        ? parsedLineHeight
-        : 20;
-      const collapsedMaxHeight = Math.round(
-        lineHeight * INPUT_PREVIEW_COLLAPSED_LINES,
-      );
+      const lineHeight = Number.isFinite(parsedLineHeight) ? parsedLineHeight : 20;
+      const collapsedMaxHeight = Math.round(lineHeight * INPUT_PREVIEW_COLLAPSED_LINES);
 
       setInputCollapsedMaxHeight(collapsedMaxHeight);
       setInputHasOverflow(element.scrollHeight > collapsedMaxHeight + 1);

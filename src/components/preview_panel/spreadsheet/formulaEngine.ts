@@ -1,4 +1,10 @@
-import { type CellPos, type SheetState, colIndexToLetters, lettersToColIndex, parseNumeric } from "./types";
+import {
+  type CellPos,
+  type SheetState,
+  colIndexToLetters,
+  lettersToColIndex,
+  parseNumeric,
+} from "./types";
 
 export type FormulaValue = number | string | boolean;
 
@@ -159,7 +165,10 @@ class Parser {
 
   private parseComparison(): Node {
     let left = this.parseConcat();
-    while (this.peek()?.kind === "op" && ["=", "<>", "<", ">", "<=", ">="].includes((this.peek() as { value: string }).value)) {
+    while (
+      this.peek()?.kind === "op" &&
+      ["=", "<>", "<", ">", "<=", ">="].includes((this.peek() as { value: string }).value)
+    ) {
       const op = (this.next() as { value: string }).value;
       const right = this.parseConcat();
       left = { type: "binary", op, left, right };
@@ -179,7 +188,10 @@ class Parser {
 
   private parseAdditive(): Node {
     let left = this.parseMultiplicative();
-    while (this.peek()?.kind === "op" && ["+", "-"].includes((this.peek() as { value: string }).value)) {
+    while (
+      this.peek()?.kind === "op" &&
+      ["+", "-"].includes((this.peek() as { value: string }).value)
+    ) {
       const op = (this.next() as { value: string }).value;
       const right = this.parseMultiplicative();
       left = { type: "binary", op, left, right };
@@ -189,7 +201,10 @@ class Parser {
 
   private parseMultiplicative(): Node {
     let left = this.parseUnary();
-    while (this.peek()?.kind === "op" && ["*", "/"].includes((this.peek() as { value: string }).value)) {
+    while (
+      this.peek()?.kind === "op" &&
+      ["*", "/"].includes((this.peek() as { value: string }).value)
+    ) {
       const op = (this.next() as { value: string }).value;
       const right = this.parseUnary();
       left = { type: "binary", op, left, right };
@@ -198,7 +213,10 @@ class Parser {
   }
 
   private parseUnary(): Node {
-    if (this.peek()?.kind === "op" && ["-", "+"].includes((this.peek() as { value: string }).value)) {
+    if (
+      this.peek()?.kind === "op" &&
+      ["-", "+"].includes((this.peek() as { value: string }).value)
+    ) {
       const op = (this.next() as { value: string }).value;
       return { type: "unary", op, arg: this.parseUnary() };
     }
@@ -309,12 +327,18 @@ function matchesCriteria(value: FormulaValue, criteria: FormulaValue): boolean {
     if (num != null && typeof value !== "boolean") {
       const v = toNumber(value);
       switch (op) {
-        case "<=": return v <= num;
-        case ">=": return v >= num;
-        case "<>": return v !== num;
-        case "<": return v < num;
-        case ">": return v > num;
-        case "=": return v === num;
+        case "<=":
+          return v <= num;
+        case ">=":
+          return v >= num;
+        case "<>":
+          return v !== num;
+        case "<":
+          return v < num;
+        case ">":
+          return v > num;
+        case "=":
+          return v === num;
       }
     }
     if (op === "<>") return toText(value).toLowerCase() !== rest.toLowerCase();
@@ -328,9 +352,12 @@ function matchesCriteria(value: FormulaValue, criteria: FormulaValue): boolean {
 
 function evalNode(node: Node, ctx: EvalContext): FormulaValue {
   switch (node.type) {
-    case "num": return node.value;
-    case "str": return node.value;
-    case "bool": return node.value;
+    case "num":
+      return node.value;
+    case "str":
+      return node.value;
+    case "bool":
+      return node.value;
     case "ref": {
       const pos = parseRefStrict(node.ref);
       return ctx.getCell(node.sheet, pos.row, pos.col);
@@ -361,7 +388,8 @@ function evalBinary(node: Extract<Node, { type: "binary" }>, ctx: EvalContext): 
   if (comparisonOps.includes(node.op)) {
     const l = evalNode(node.left, ctx);
     const r = evalNode(node.right, ctx);
-    const bothNumeric = (typeof l === "number" || (typeof l === "string" && parseNumeric(l) != null)) &&
+    const bothNumeric =
+      (typeof l === "number" || (typeof l === "string" && parseNumeric(l) != null)) &&
       (typeof r === "number" || (typeof r === "string" && parseNumeric(r) != null));
     let cmp: number;
     if (bothNumeric) {
@@ -374,24 +402,34 @@ function evalBinary(node: Extract<Node, { type: "binary" }>, ctx: EvalContext): 
       cmp = lt < rt ? -1 : lt > rt ? 1 : 0;
     }
     switch (node.op) {
-      case "=": return cmp === 0;
-      case "<>": return cmp !== 0;
-      case "<": return cmp < 0;
-      case ">": return cmp > 0;
-      case "<=": return cmp <= 0;
-      case ">=": return cmp >= 0;
+      case "=":
+        return cmp === 0;
+      case "<>":
+        return cmp !== 0;
+      case "<":
+        return cmp < 0;
+      case ">":
+        return cmp > 0;
+      case "<=":
+        return cmp <= 0;
+      case ">=":
+        return cmp >= 0;
     }
   }
   const l = toNumber(evalNode(node.left, ctx));
   const r = toNumber(evalNode(node.right, ctx));
   switch (node.op) {
-    case "+": return l + r;
-    case "-": return l - r;
-    case "*": return l * r;
+    case "+":
+      return l + r;
+    case "-":
+      return l - r;
+    case "*":
+      return l * r;
     case "/":
       if (r === 0) throw new FormulaError("#DIV/0!");
       return l / r;
-    case "^": return l ** r;
+    case "^":
+      return l ** r;
   }
   throw new FormulaError("#ERROR!");
 }
@@ -411,28 +449,46 @@ function argValues(args: Node[], ctx: EvalContext): FormulaValue[] {
 
 function round(num: number, digits: number, mode: "nearest" | "up" | "down"): number {
   const factor = 10 ** digits;
-  if (mode === "up") return (num >= 0 ? Math.ceil(num * factor) : Math.floor(num * factor)) / factor;
-  if (mode === "down") return (num >= 0 ? Math.floor(num * factor) : Math.ceil(num * factor)) / factor;
+  if (mode === "up")
+    return (num >= 0 ? Math.ceil(num * factor) : Math.floor(num * factor)) / factor;
+  if (mode === "down")
+    return (num >= 0 ? Math.floor(num * factor) : Math.ceil(num * factor)) / factor;
   return Math.round(num * factor) / factor;
 }
 
 function evalCall(node: Extract<Node, { type: "call" }>, ctx: EvalContext): FormulaValue {
   const { name, args } = node;
   switch (name) {
-    case "SUM": return argValues(args, ctx).reduce<number>((sum, v) => sum + (parseNumeric(toText(v)) ?? (typeof v === "number" ? v : 0)), 0);
+    case "SUM":
+      return argValues(args, ctx).reduce<number>(
+        (sum, v) => sum + (parseNumeric(toText(v)) ?? (typeof v === "number" ? v : 0)),
+        0,
+      );
     case "AVERAGE": {
-      const nums = argValues(args, ctx).filter((v) => typeof v === "number" || (typeof v === "string" && parseNumeric(v) != null)).map(toNumber);
+      const nums = argValues(args, ctx)
+        .filter((v) => typeof v === "number" || (typeof v === "string" && parseNumeric(v) != null))
+        .map(toNumber);
       if (nums.length === 0) throw new FormulaError("#DIV/0!");
       return nums.reduce((a, b) => a + b, 0) / nums.length;
     }
-    case "COUNT": return argValues(args, ctx).filter((v) => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && parseNumeric(v) != null)).length;
-    case "COUNTA": return argValues(args, ctx).filter((v) => !(typeof v === "string" && v.trim() === "")).length;
+    case "COUNT":
+      return argValues(args, ctx).filter(
+        (v) =>
+          typeof v === "number" ||
+          (typeof v === "string" && v.trim() !== "" && parseNumeric(v) != null),
+      ).length;
+    case "COUNTA":
+      return argValues(args, ctx).filter((v) => !(typeof v === "string" && v.trim() === "")).length;
     case "MIN": {
-      const nums = argValues(args, ctx).filter((v) => typeof v === "number" || (typeof v === "string" && parseNumeric(v) != null)).map(toNumber);
+      const nums = argValues(args, ctx)
+        .filter((v) => typeof v === "number" || (typeof v === "string" && parseNumeric(v) != null))
+        .map(toNumber);
       return nums.length ? Math.min(...nums) : 0;
     }
     case "MAX": {
-      const nums = argValues(args, ctx).filter((v) => typeof v === "number" || (typeof v === "string" && parseNumeric(v) != null)).map(toNumber);
+      const nums = argValues(args, ctx)
+        .filter((v) => typeof v === "number" || (typeof v === "string" && parseNumeric(v) != null))
+        .map(toNumber);
       return nums.length ? Math.max(...nums) : 0;
     }
     case "COUNTIF": {
@@ -467,16 +523,28 @@ function evalCall(node: Extract<Node, { type: "call" }>, ctx: EvalContext): Form
         return args[1] ? evalNode(args[1], ctx) : "#N/A";
       }
     }
-    case "AND": return argValues(args, ctx).every((v) => toBool(v));
-    case "OR": return argValues(args, ctx).some((v) => toBool(v));
-    case "NOT": return !toBool(evalNode(args[0], ctx));
+    case "AND":
+      return argValues(args, ctx).every((v) => toBool(v));
+    case "OR":
+      return argValues(args, ctx).some((v) => toBool(v));
+    case "NOT":
+      return !toBool(evalNode(args[0], ctx));
     case "CONCATENATE":
-    case "CONCAT": return argValues(args, ctx).map(toText).join("");
-    case "LEN": return toText(evalNode(args[0], ctx)).length;
-    case "UPPER": return toText(evalNode(args[0], ctx)).toUpperCase();
-    case "LOWER": return toText(evalNode(args[0], ctx)).toLowerCase();
-    case "TRIM": return toText(evalNode(args[0], ctx)).trim();
-    case "LEFT": return toText(evalNode(args[0], ctx)).slice(0, args[1] ? toNumber(evalNode(args[1], ctx)) : 1);
+    case "CONCAT":
+      return argValues(args, ctx).map(toText).join("");
+    case "LEN":
+      return toText(evalNode(args[0], ctx)).length;
+    case "UPPER":
+      return toText(evalNode(args[0], ctx)).toUpperCase();
+    case "LOWER":
+      return toText(evalNode(args[0], ctx)).toLowerCase();
+    case "TRIM":
+      return toText(evalNode(args[0], ctx)).trim();
+    case "LEFT":
+      return toText(evalNode(args[0], ctx)).slice(
+        0,
+        args[1] ? toNumber(evalNode(args[1], ctx)) : 1,
+      );
     case "RIGHT": {
       const text = toText(evalNode(args[0], ctx));
       const n = args[1] ? toNumber(evalNode(args[1], ctx)) : 1;
@@ -498,25 +566,45 @@ function evalCall(node: Extract<Node, { type: "call" }>, ctx: EvalContext): Form
       if (format.includes("0")) return String(Math.round(num));
       return String(num);
     }
-    case "ROUND": return round(toNumber(evalNode(args[0], ctx)), args[1] ? toNumber(evalNode(args[1], ctx)) : 0, "nearest");
-    case "ROUNDUP": return round(toNumber(evalNode(args[0], ctx)), args[1] ? toNumber(evalNode(args[1], ctx)) : 0, "up");
-    case "ROUNDDOWN": return round(toNumber(evalNode(args[0], ctx)), args[1] ? toNumber(evalNode(args[1], ctx)) : 0, "down");
-    case "ABS": return Math.abs(toNumber(evalNode(args[0], ctx)));
+    case "ROUND":
+      return round(
+        toNumber(evalNode(args[0], ctx)),
+        args[1] ? toNumber(evalNode(args[1], ctx)) : 0,
+        "nearest",
+      );
+    case "ROUNDUP":
+      return round(
+        toNumber(evalNode(args[0], ctx)),
+        args[1] ? toNumber(evalNode(args[1], ctx)) : 0,
+        "up",
+      );
+    case "ROUNDDOWN":
+      return round(
+        toNumber(evalNode(args[0], ctx)),
+        args[1] ? toNumber(evalNode(args[1], ctx)) : 0,
+        "down",
+      );
+    case "ABS":
+      return Math.abs(toNumber(evalNode(args[0], ctx)));
     case "SQRT": {
       const v = toNumber(evalNode(args[0], ctx));
       if (v < 0) throw new FormulaError("#NUM!");
       return Math.sqrt(v);
     }
-    case "POWER": return toNumber(evalNode(args[0], ctx)) ** toNumber(evalNode(args[1], ctx));
+    case "POWER":
+      return toNumber(evalNode(args[0], ctx)) ** toNumber(evalNode(args[1], ctx));
     case "MOD": {
       const a = toNumber(evalNode(args[0], ctx));
       const b = toNumber(evalNode(args[1], ctx));
       if (b === 0) throw new FormulaError("#DIV/0!");
       return a - b * Math.floor(a / b);
     }
-    case "INT": return Math.floor(toNumber(evalNode(args[0], ctx)));
-    case "TODAY": return new Date().toISOString().slice(0, 10);
-    case "NOW": return new Date().toISOString().slice(0, 16).replace("T", " ");
+    case "INT":
+      return Math.floor(toNumber(evalNode(args[0], ctx)));
+    case "TODAY":
+      return new Date().toISOString().slice(0, 10);
+    case "NOW":
+      return new Date().toISOString().slice(0, 16).replace("T", " ");
     case "VLOOKUP": {
       if (args.length < 3 || args[1].type !== "range") throw new FormulaError("#VALUE!");
       const lookup = evalNode(args[0], ctx);
@@ -560,7 +648,8 @@ export function evaluateWorkbook(sheets: SheetState[]): Map<string, FormulaValue
   }
 
   function getCell(sheet: SheetState, row: number, col: number): FormulaValue {
-    if (row < 0 || col < 0 || row >= sheet.grid.length || col >= (sheet.grid[0]?.length ?? 0)) return "";
+    if (row < 0 || col < 0 || row >= sheet.grid.length || col >= (sheet.grid[0]?.length ?? 0))
+      return "";
     const key = `${sheet.id}:${row}:${col}`;
     const cached = memo.get(key);
     if (cached) {
@@ -641,7 +730,9 @@ export function shiftFormulaRefs(formula: string, rowDelta: number, colDelta: nu
     const match = SHIFT_REF_RE.exec(formula.slice(i));
     if (match) {
       const [full, colAbs, colLetters, rowAbs, rowDigits] = match;
-      const newCol = colAbs ? colLetters : colIndexToLetters(Math.max(0, lettersToColIndex(colLetters) + colDelta));
+      const newCol = colAbs
+        ? colLetters
+        : colIndexToLetters(Math.max(0, lettersToColIndex(colLetters) + colDelta));
       const newRow = rowAbs ? rowDigits : String(Math.max(1, Number(rowDigits) + rowDelta));
       result += `${colAbs}${newCol}${rowAbs}${newRow}`;
       i += full.length;

@@ -44,9 +44,7 @@ export function resolveTsconfigPath({
       throw new Error(`Invalid tsconfig_path outside app: ${tsconfigPath}`);
     }
     if (!fs.existsSync(resolved)) {
-      throw new Error(
-        `TypeScript configuration file not found: ${tsconfigPath}`,
-      );
+      throw new Error(`TypeScript configuration file not found: ${tsconfigPath}`);
     }
     return resolved;
   }
@@ -119,17 +117,14 @@ function discoverPackageLikeChildren(appPath: string): string[] {
       .readdirSync(appPath, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
       .filter((entry) => entry.name !== "node_modules")
-      .filter((entry) =>
-        fs.existsSync(path.join(appPath, entry.name, "package.json")),
-      )
+      .filter((entry) => fs.existsSync(path.join(appPath, entry.name, "package.json")))
       .map((entry) => entry.name),
   );
 }
 
 function sortWorkspaceConfigChildren(children: string[]): string[] {
   return [...children].sort((left, right) => {
-    const scoreDelta =
-      workspaceConfigChildScore(left) - workspaceConfigChildScore(right);
+    const scoreDelta = workspaceConfigChildScore(left) - workspaceConfigChildScore(right);
     if (scoreDelta !== 0) {
       return scoreDelta;
     }
@@ -143,9 +138,7 @@ function workspaceConfigChildScore(child: string): number {
   if (/\b(web|dashboard|frontend|front|client|app)\b/.test(normalized)) {
     score -= 10;
   }
-  if (
-    /\b(docs?|examples?|storybook|playground|e2e|tests?)\b/.test(normalized)
-  ) {
+  if (/\b(docs?|examples?|storybook|playground|e2e|tests?)\b/.test(normalized)) {
     score += 20;
   }
   return score;
@@ -206,9 +199,7 @@ export function resolveProjectFileSet(
   const rootFileNames = [
     ...new Set(
       tsconfigPaths.flatMap((configPath) =>
-        readConfig(ts, configPath).fileNames.map((fileName) =>
-          path.resolve(fileName),
-        ),
+        readConfig(ts, configPath).fileNames.map((fileName) => path.resolve(fileName)),
       ),
     ),
   ].sort();
@@ -268,14 +259,9 @@ function createProgramFromConfig(
 } {
   const parsed = readConfig(ts, tsconfigPath);
   const options = { ...parsed.options, noEmit: true };
-  const configFileParsingDiagnostics =
-    ts.getConfigFileParsingDiagnostics(parsed);
+  const configFileParsingDiagnostics = ts.getConfigFileParsingDiagnostics(parsed);
 
-  if (
-    tsBuildInfoCacheDir &&
-    !options.tsBuildInfoFile &&
-    options.incremental !== false
-  ) {
+  if (tsBuildInfoCacheDir && !options.tsBuildInfoFile && options.incremental !== false) {
     fs.mkdirSync(tsBuildInfoCacheDir, { recursive: true });
     options.tsBuildInfoFile = path.join(
       tsBuildInfoCacheDir,
@@ -294,22 +280,9 @@ function createProgramFromConfig(
   host.getCurrentDirectory = () => projectRoot;
 
   const originalWriteFile = host.writeFile;
-  host.writeFile = (
-    fileName,
-    data,
-    writeByteOrderMark,
-    onError,
-    sourceFiles,
-  ) => {
+  host.writeFile = (fileName, data, writeByteOrderMark, onError, sourceFiles) => {
     if (fileName.endsWith(".tsbuildinfo")) {
-      originalWriteFile.call(
-        host,
-        fileName,
-        data,
-        writeByteOrderMark,
-        onError,
-        sourceFiles,
-      );
+      originalWriteFile.call(host, fileName, data, writeByteOrderMark, onError, sourceFiles);
     }
   };
 
@@ -341,9 +314,7 @@ function createProgramFromConfig(
 }
 
 function safePathHash(filePath: string): string {
-  return Buffer.from(path.resolve(filePath))
-    .toString("base64")
-    .replace(/[/+=]/g, "_");
+  return Buffer.from(path.resolve(filePath)).toString("base64").replace(/[/+=]/g, "_");
 }
 
 function readConfig(
@@ -388,14 +359,9 @@ function findProjectRoot(appPath: string): string {
   return projectRoot;
 }
 
-function assertInsideProjectRoot(
-  projectRoot: string,
-  targetPath: string,
-): void {
+function assertInsideProjectRoot(projectRoot: string, targetPath: string): void {
   const relative = path.relative(projectRoot, targetPath);
   if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error(
-      `TypeScript project reference escapes project root: ${targetPath}`,
-    );
+    throw new Error(`TypeScript project reference escapes project root: ${targetPath}`);
   }
 }

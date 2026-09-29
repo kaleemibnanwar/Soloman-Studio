@@ -74,9 +74,10 @@ function parseResults(content: string): ImageSearchResult[] {
   }));
 }
 
-export const OctopusStudioImageSearch: React.FC<
-  OctopusStudioImageSearchProps
-> = ({ children, node }) => {
+export const OctopusStudioImageSearch: React.FC<OctopusStudioImageSearchProps> = ({
+  children,
+  node,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -87,8 +88,7 @@ export const OctopusStudioImageSearch: React.FC<
 
   const content = typeof children === "string" ? children : "";
   const results = parseResults(content);
-  const activeResult =
-    lightboxIndex !== null ? results[lightboxIndex] : undefined;
+  const activeResult = lightboxIndex !== null ? results[lightboxIndex] : undefined;
 
   return (
     <>
@@ -98,28 +98,15 @@ export const OctopusStudioImageSearch: React.FC<
         isExpanded={isExpanded}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <OctopusStudioCardHeader
-          icon={<ImageIcon size={15} />}
-          accentColor="violet"
-        >
+        <OctopusStudioCardHeader icon={<ImageIcon size={15} />} accentColor="violet">
           <OctopusStudioBadge color="violet">Image Search</OctopusStudioBadge>
           {!isExpanded && query && (
-            <span className="text-sm text-muted-foreground italic truncate">
-              {query}
-            </span>
+            <span className="text-sm text-muted-foreground italic truncate">{query}</span>
           )}
           {inProgress && (
-            <OctopusStudioStateIndicator
-              state="pending"
-              pendingLabel="Searching..."
-            />
+            <OctopusStudioStateIndicator state="pending" pendingLabel="Searching..." />
           )}
-          {aborted && (
-            <OctopusStudioStateIndicator
-              state="aborted"
-              abortedLabel="Did not finish"
-            />
-          )}
+          {aborted && <OctopusStudioStateIndicator state="aborted" abortedLabel="Did not finish" />}
           <div className="ml-auto flex items-center gap-1">
             <OctopusStudioExpandIcon isExpanded={isExpanded} />
           </div>
@@ -152,9 +139,7 @@ export const OctopusStudioImageSearch: React.FC<
                           {r.title || r.author}
                         </div>
                         {r.author && r.title && (
-                          <div className="truncate text-[10px] text-white/70">
-                            {r.author}
-                          </div>
+                          <div className="truncate text-[10px] text-white/70">{r.author}</div>
                         )}
                       </div>
                     )}
@@ -172,9 +157,7 @@ export const OctopusStudioImageSearch: React.FC<
               </div>
             </>
           ) : (
-            <div className="text-sm text-muted-foreground">
-              {content || "No images found."}
-            </div>
+            <div className="text-sm text-muted-foreground">{content || "No images found."}</div>
           )}
         </OctopusStudioCardContent>
       </OctopusStudioCard>

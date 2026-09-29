@@ -223,11 +223,7 @@ const PLAYWRIGHT_MATCHERS = new Set([
 ]);
 
 function memberName(node: Node): string | undefined {
-  if (
-    node.type !== "MemberExpression" ||
-    node.computed ||
-    node.property.type !== "Identifier"
-  ) {
+  if (node.type !== "MemberExpression" || node.computed || node.property.type !== "Identifier") {
     return undefined;
   }
   return node.property.name;
@@ -250,15 +246,12 @@ function isSafeData(node: Node | null, allowLocator: boolean): boolean {
       return true;
     case "UnaryExpression":
       return (
-        (node.operator === "+" || node.operator === "-") &&
-        node.argument.type === "NumericLiteral"
+        (node.operator === "+" || node.operator === "-") && node.argument.type === "NumericLiteral"
       );
     case "ArrayExpression":
       return node.elements.every(
         (element) =>
-          element !== null &&
-          element.type !== "SpreadElement" &&
-          isSafeData(element, allowLocator),
+          element !== null && element.type !== "SpreadElement" && isSafeData(element, allowLocator),
       );
     case "ObjectExpression":
       return node.properties.every(
@@ -282,15 +275,11 @@ function isSafeLocator(node: Node): boolean {
   if (node.type !== "CallExpression") return false;
   const method = memberName(node.callee);
   if (!method || !LOCATOR_METHODS.has(method)) return false;
-  if (
-    node.callee.type !== "MemberExpression" ||
-    !isSafeLocator(node.callee.object)
-  ) {
+  if (node.callee.type !== "MemberExpression" || !isSafeLocator(node.callee.object)) {
     return false;
   }
   return node.arguments.every(
-    (argument) =>
-      argument.type !== "SpreadElement" && isSafeData(argument, true),
+    (argument) => argument.type !== "SpreadElement" && isSafeData(argument, true),
   );
 }
 
@@ -335,8 +324,7 @@ function hasSafePlaywrightAst(code: string): boolean {
     if (!isExpectCall(receiver)) return false;
 
     return matcherCall.arguments.every(
-      (argument) =>
-        argument.type !== "SpreadElement" && isSafeData(argument, false),
+      (argument) => argument.type !== "SpreadElement" && isSafeData(argument, false),
     );
   } catch {
     return false;
@@ -391,8 +379,5 @@ export function isSingleAssertionStatement(code: string): boolean {
   // Everything from `expect`'s `(` through its matching `)`.
   const expectArgs = scanLine(trimmed, head[0].length - 1);
   if (expectArgs.groupEnd === -1) return false;
-  return (
-    isMatcherChain(trimmed, expectArgs.groupEnd) &&
-    hasSafePlaywrightAst(trimmed)
-  );
+  return isMatcherChain(trimmed, expectArgs.groupEnd) && hasSafePlaywrightAst(trimmed);
 }

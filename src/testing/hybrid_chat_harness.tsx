@@ -68,16 +68,9 @@ import {
 } from "./chat_flow_harness";
 import type { RendererEvent } from "./electron_mock";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
-import {
-  attachmentsAtom,
-  chatInputValuesByIdAtom,
-  selectedChatIdAtom,
-} from "@/atoms/chatAtoms";
+import { attachmentsAtom, chatInputValuesByIdAtom, selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedComponentsPreviewAtom } from "@/atoms/previewAtoms";
-import {
-  clearTestRuntimeForAppAtom,
-  testRunOutputByAppIdAtom,
-} from "@/atoms/testRuntimeAtoms";
+import { clearTestRuntimeForAppAtom, testRunOutputByAppIdAtom } from "@/atoms/testRuntimeAtoms";
 import { clearRecorderForAppAtom } from "@/atoms/recorderAtoms";
 import { planAcceptInNewChatByChatIdAtom } from "@/atoms/planAtoms";
 import { registerRendererIpcListeners } from "@/app_wiring/registerRendererIpcListeners";
@@ -100,15 +93,9 @@ import {
 } from "@/app_wiring/preview_error_facade";
 import { PackageManagerWarningProvider } from "@/package_manager_warnings/PackageManagerWarningProvider";
 import { PackageManagerWarningStore } from "@/package_manager_warnings/store";
-import {
-  ScreenshotProvider,
-  useScreenshotManager,
-} from "@/screenshot/ScreenshotProvider";
+import { ScreenshotProvider, useScreenshotManager } from "@/screenshot/ScreenshotProvider";
 import { AppRunRemoteManager } from "@/app_run/remote_manager";
-import {
-  AppRunRemoteProvider,
-  useAppRunRemoteManager,
-} from "@/app_run/AppRunRemoteProvider";
+import { AppRunRemoteProvider, useAppRunRemoteManager } from "@/app_run/AppRunRemoteProvider";
 import { TestAppRunRemoteConnection } from "@/app_run/testing";
 import { PlanHandoffProvider } from "@/plan_handoff/PlanHandoffProvider";
 import { ChatStreamRemoteManager } from "@/chat_stream/remote_manager";
@@ -136,11 +123,7 @@ import { DeepLinkProvider } from "@/contexts/DeepLinkContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { chats } from "@/db/schema";
 import { ipc } from "@/ipc/types";
-import type {
-  ComponentSelection,
-  FileAttachment,
-  McpServer,
-} from "@/ipc/types";
+import type { ComponentSelection, FileAttachment, McpServer } from "@/ipc/types";
 import { setModelClientFetchForTesting } from "@/ipc/utils/get_model_client";
 // Import from the dedicated schema module, NOT "@/routes/chat": the route file
 // statically imports ChatPage -> PreviewPanel -> Monaco, which would load into
@@ -148,10 +131,7 @@ import { setModelClientFetchForTesting } from "@/ipc/utils/get_model_client";
 import { chatSearchSchema } from "@/routes/chatSearchSchema";
 import { appDetailsSearchSchema } from "@/routes/appDetailsSearchSchema";
 
-import {
-  installRendererIpcBridge,
-  type RendererIpcBridge,
-} from "./renderer_ipc_bridge";
+import { installRendererIpcBridge, type RendererIpcBridge } from "./renderer_ipc_bridge";
 
 const SECOND_SETUP_ERROR =
   "Second harness setup in one process — one harness per test FILE " +
@@ -355,10 +335,7 @@ export interface HybridChatHarness extends ChatFlowHarness {
   findDialog: (name: string | RegExp) => Promise<HTMLElement>;
 
   /** Click a dialog action button and wait for the dialog to close. */
-  confirmDialog: (
-    dialogName: string | RegExp,
-    buttonName: string | RegExp,
-  ) => Promise<void>;
+  confirmDialog: (dialogName: string | RegExp, buttonName: string | RegExp) => Promise<void>;
 
   /** Toggle a Base UI switch and wait for its checked state. */
   setSwitch: (switchElement: HTMLElement, checked: boolean) => Promise<void>;
@@ -405,10 +382,7 @@ export interface HybridChatHarness extends ChatFlowHarness {
    * explicit pre-action baseline (e.g. before a Retry click), use
    * `waitForNextStreamEnd`.
    */
-  waitForStreamEnd: (
-    chatId?: number,
-    timeoutMs?: number,
-  ) => Promise<RendererEvent>;
+  waitForStreamEnd: (chatId?: number, timeoutMs?: number) => Promise<RendererEvent>;
 
   /**
    * Baseline-aware end-of-stream: snapshots the current count of
@@ -418,10 +392,7 @@ export interface HybridChatHarness extends ChatFlowHarness {
    * action that starts the new turn (or capture the returned promise before, and
    * await it after) so a stale end from a prior turn can't satisfy it.
    */
-  waitForNextStreamEnd: (
-    chatId?: number,
-    timeoutMs?: number,
-  ) => Promise<RendererEvent>;
+  waitForNextStreamEnd: (chatId?: number, timeoutMs?: number) => Promise<RendererEvent>;
 
   /** How many events on `channel` the bridge has received so far (a baseline). */
   eventCount: (channel: string) => number;
@@ -438,29 +409,21 @@ export interface HybridChatHarness extends ChatFlowHarness {
    * across two wait ticks. Useful around stream end, where streamed and
    * persisted renderings can briefly overlap.
    */
-  waitForRenderedText: (
-    matcher: string | RegExp,
-    timeoutMs?: number,
-  ) => Promise<HTMLElement[]>;
+  waitForRenderedText: (matcher: string | RegExp, timeoutMs?: number) => Promise<HTMLElement[]>;
 
   /**
    * Drive a Base UI `<Select>` (Radix-style) to an option in happy-dom, where a
    * bare click does nothing. Focuses + ArrowDown to open the popup, then
    * pointerDown+pointerUp+click+Enter on the matched option to commit it.
    */
-  selectFromBaseUiSelect: (
-    trigger: HTMLElement,
-    optionMatcher: string | RegExp,
-  ) => Promise<void>;
+  selectFromBaseUiSelect: (trigger: HTMLElement, optionMatcher: string | RegExp) => Promise<void>;
 
   /**
    * Convenience over `selectFromBaseUiSelect` for the chat-mode selector: opens
    * the `chat-mode-selector` and picks `mode`, then waits for the trigger's
    * aria-label to reflect it (which persists chatMode onto the chat row).
    */
-  selectChatMode: (
-    mode: "build" | "ask" | "plan" | "local-agent",
-  ) => Promise<void>;
+  selectChatMode: (mode: "build" | "ask" | "plan" | "local-agent") => Promise<void>;
 
   /** Insert a new chat row (same app by default) and return its id. */
   createChat: (appId?: number) => Promise<number>;
@@ -474,23 +437,13 @@ export interface HybridChatHarness extends ChatFlowHarness {
   mcp: {
     fakeStdioServerPath: string;
     resetServers: () => Promise<void>;
-    addStdioServer: (opts?: {
-      name?: string;
-      env?: Record<string, string>;
-    }) => Promise<McpServer>;
-    addHttpServer: (opts?: {
-      name?: string;
-      headers?: Record<string, string>;
-    }) => Promise<{
+    addStdioServer: (opts?: { name?: string; env?: Record<string, string> }) => Promise<McpServer>;
+    addHttpServer: (opts?: { name?: string; headers?: Record<string, string> }) => Promise<{
       server: McpServer;
       url: string;
       stop: () => Promise<void>;
     }>;
-    waitForTool: (
-      serverId: number,
-      toolName: string,
-      timeoutMs?: number,
-    ) => Promise<void>;
+    waitForTool: (serverId: number, toolName: string, timeoutMs?: number) => Promise<void>;
   };
 }
 
@@ -519,9 +472,7 @@ function restoreHybridEnv(snapshot: Map<string, string | undefined>): void {
   }
 }
 
-function stopChildProcess(
-  child: ChildProcessWithoutNullStreams,
-): Promise<void> {
+function stopChildProcess(child: ChildProcessWithoutNullStreams): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) {
     return Promise.resolve();
   }
@@ -632,9 +583,7 @@ export async function setupHybridChatHarness(
     process.env.E2E_TEST_BUILD = "true";
   }
   setModelClientFetchForTesting(
-    undiciFetch as unknown as Parameters<
-      typeof setModelClientFetchForTesting
-    >[0],
+    undiciFetch as unknown as Parameters<typeof setModelClientFetchForTesting>[0],
   );
 
   let node: ChatFlowHarness | undefined;
@@ -677,9 +626,7 @@ export async function setupHybridChatHarness(
           }
         : undefined,
     });
-    (
-      globalThis as HybridBridgeDiagnosticGlobal
-    ).__OCTOPUS_STUDIO_HYBRID_BRIDGE__ = bridge;
+    (globalThis as HybridBridgeDiagnosticGlobal).__OCTOPUS_STUDIO_HYBRID_BRIDGE__ = bridge;
 
     let activeStore: JotaiStore | undefined;
     let activeQueryClient: QueryClient | undefined;
@@ -691,9 +638,7 @@ export async function setupHybridChatHarness(
 
     const getActiveStore = (): JotaiStore => {
       if (!activeStore) {
-        throw new Error(
-          "setupHybridChatHarness.mount() must be called before using this helper",
-        );
+        throw new Error("setupHybridChatHarness.mount() must be called before using this helper");
       }
       return activeStore;
     };
@@ -701,16 +646,8 @@ export async function setupHybridChatHarness(
     let activeRouter: HybridRouter | undefined;
     let activeFirstPromptClock: FakeClock | undefined;
     const mcpHttpProcesses = new Set<ChildProcessWithoutNullStreams>();
-    const fakeStdioServerPath = path.join(
-      process.cwd(),
-      "testing",
-      "fake-stdio-mcp-server.mjs",
-    );
-    const fakeHttpServerPath = path.join(
-      process.cwd(),
-      "testing",
-      "fake-http-mcp-server.mjs",
-    );
+    const fakeStdioServerPath = path.join(process.cwd(), "testing", "fake-stdio-mcp-server.mjs");
+    const fakeHttpServerPath = path.join(process.cwd(), "testing", "fake-http-mcp-server.mjs");
 
     const getActiveRouter = (): HybridRouter => {
       if (!activeRouter) {
@@ -778,15 +715,11 @@ export async function setupHybridChatHarness(
             <div data-testid="hybrid-surface-root">
               {opts.wireAppEvents !== false && <HybridAppShellHooks />}
               {opts.withTitleBar && <TitleBar />}
-              {opts.withAppList && (
-                <AppList show onImportClick={() => {}} />
-              )}
+              {opts.withAppList && <AppList show onImportClick={() => {}} />}
               {opts.withChatList && <ChatList show />}
               {opts.withAppSidebar && <AppSidebar />}
               {opts.withPrivacyBanner && <PrivacyBanner />}
-              {opts.withSubscriptionStatusBanner && (
-                <SubscriptionStatusBanner />
-              )}
+              {opts.withSubscriptionStatusBanner && <SubscriptionStatusBanner />}
               <Outlet />
             </div>
           </PlanHandoffProvider>
@@ -894,10 +827,7 @@ export async function setupHybridChatHarness(
           const [open, setOpen] = React.useState(true);
           return (
             <Suspense fallback={<div data-testid="hybrid-surface-loading" />}>
-              <LazyImportAppDialog
-                isOpen={open}
-                onClose={() => setOpen(false)}
-              />
+              <LazyImportAppDialog isOpen={open} onClose={() => setOpen(false)} />
               {!open && <div data-testid="import-app-dialog-closed" />}
             </Suspense>
           );
@@ -1000,10 +930,7 @@ export async function setupHybridChatHarness(
       queryClients.push(queryClient);
       const previewErrors = new DeferredPreviewErrorFacade();
       const packageWarnings = new PackageManagerWarningStore();
-      const appRunManager = new AppRunRemoteManager(
-        uuidIdSource,
-        new TestAppRunRemoteConnection(),
-      );
+      const appRunManager = new AppRunRemoteManager(uuidIdSource, new TestAppRunRemoteConnection());
       const previewIframeManager = new PreviewIframeManager(
         createPreviewIframeCommandAdapter(store),
       );
@@ -1035,14 +962,8 @@ export async function setupHybridChatHarness(
                                           chatStreamManager={chatStreamManager}
                                         />
                                       )}
-                                      <RouterProvider
-                                        router={router as never}
-                                      />
-                                      <Toaster
-                                        richColors
-                                        expand
-                                        duration={500}
-                                      />
+                                      <RouterProvider router={router as never} />
+                                      <Toaster richColors expand duration={500} />
                                     </SidebarProvider>
                                   </DeepLinkProvider>
                                 </ThemeProvider>
@@ -1090,8 +1011,7 @@ export async function setupHybridChatHarness(
       await manager.dispatchQueueEvent(chatId, { type: "PAUSE_QUEUE" });
     };
 
-    const hasChatStreamResidue = (chatId: number) =>
-      hasSessionChatQueue(chatId);
+    const hasChatStreamResidue = (chatId: number) => hasSessionChatQueue(chatId);
 
     const seedAppRuntimeResidue = (appId: number) => {
       const store = getActiveStore();
@@ -1155,9 +1075,7 @@ export async function setupHybridChatHarness(
       });
     };
 
-    const clickMenuItem = async (
-      name: string | RegExp,
-    ): Promise<HTMLElement> => {
+    const clickMenuItem = async (name: string | RegExp): Promise<HTMLElement> => {
       // Scope to the open popup when there is one so a same-named button
       // elsewhere in the page (e.g. a dialog's confirm) can't be matched.
       const popup = document.querySelector<HTMLElement>(OPEN_POPUP_SELECTOR);
@@ -1185,17 +1103,12 @@ export async function setupHybridChatHarness(
       await waitFor(() => expect(dialog.isConnected).toBe(false));
     };
 
-    const setSwitch = async (
-      switchElement: HTMLElement,
-      checked: boolean,
-    ): Promise<void> => {
+    const setSwitch = async (switchElement: HTMLElement, checked: boolean): Promise<void> => {
       if (switchElement.getAttribute("aria-checked") !== String(checked)) {
         fireEvent.click(switchElement);
       }
       await waitFor(() => {
-        expect(switchElement.getAttribute("aria-checked")).toBe(
-          String(checked),
-        );
+        expect(switchElement.getAttribute("aria-checked")).toBe(String(checked));
       });
     };
 
@@ -1214,19 +1127,12 @@ export async function setupHybridChatHarness(
     const getChatInputValue = (chatId: number) =>
       getActiveStore().get(chatInputValuesByIdAtom).get(chatId) ?? "";
 
-    const typeInChat = async (
-      text: string,
-      opts: MountOptions = {},
-    ): Promise<TypeInChatResult> => {
+    const typeInChat = async (text: string, opts: MountOptions = {}): Promise<TypeInChatResult> => {
       seedChatInput(text, opts);
 
-      const sendButton = await screen.findByLabelText(
-        /^(sendMessage|Send message)$/,
-      );
+      const sendButton = await screen.findByLabelText(/^(sendMessage|Send message)$/);
       await waitFor(() => {
-        expect((sendButton as HTMLButtonElement).hasAttribute("disabled")).toBe(
-          false,
-        );
+        expect((sendButton as HTMLButtonElement).hasAttribute("disabled")).toBe(false);
       });
       return {
         sendButton,
@@ -1234,17 +1140,12 @@ export async function setupHybridChatHarness(
       };
     };
 
-    const pressEnterInChat = async (
-      text: string,
-      opts: MountOptions = {},
-    ): Promise<void> => {
+    const pressEnterInChat = async (text: string, opts: MountOptions = {}): Promise<void> => {
       seedChatInput(text, opts);
       const container = screen.getByTestId("chat-input-container");
       const editable = container.querySelector('[contenteditable="true"]');
       if (!editable) {
-        throw new Error(
-          "pressEnterInChat: no contenteditable found inside chat-input-container",
-        );
+        throw new Error("pressEnterInChat: no contenteditable found inside chat-input-container");
       }
       // Lexical's root keydown listener dispatches KEY_ENTER_COMMAND, which
       // EnterKeyPlugin routes to ChatInput.handleSubmit — send when idle,
@@ -1258,8 +1159,7 @@ export async function setupHybridChatHarness(
       timeoutMs = 20_000,
     ): Promise<RendererEvent> => {
       const existing = bridge.sentEvents.find(
-        (e) =>
-          e.channel === channel && (!predicate || predicate(eventPayload(e))),
+        (e) => e.channel === channel && (!predicate || predicate(eventPayload(e))),
       );
       if (existing) {
         return { channel, payload: eventPayload(existing) };
@@ -1285,9 +1185,7 @@ export async function setupHybridChatHarness(
     const matchingStreamEnds = (chatId?: number) => {
       const predicate = streamEndPredicate(chatId);
       return bridge.sentEvents.filter(
-        (e) =>
-          e.channel === "chat:response:end" &&
-          (!predicate || predicate(eventPayload(e))),
+        (e) => e.channel === "chat:response:end" && (!predicate || predicate(eventPayload(e))),
       );
     };
 
@@ -1334,18 +1232,13 @@ export async function setupHybridChatHarness(
       );
       const arrived = resolveAt();
       if (!arrived) {
-        throw new Error(
-          "waitForStreamEnd: matching event disappeared after arrival (bug)",
-        );
+        throw new Error("waitForStreamEnd: matching event disappeared after arrival (bug)");
       }
       consumedStreamEnds.set(key, index + 1);
       return arrived;
     };
 
-    const waitForNextStreamEnd = (
-      chatId?: number,
-      timeoutMs = 20_000,
-    ): Promise<RendererEvent> => {
+    const waitForNextStreamEnd = (chatId?: number, timeoutMs = 20_000): Promise<RendererEvent> => {
       // Snapshot the baseline SYNCHRONOUSLY (before returning the promise) so a
       // stale end from a prior turn can't satisfy the wait; resolve on the first
       // matching end past the baseline.
@@ -1403,9 +1296,7 @@ export async function setupHybridChatHarness(
       };
       const trigger = await screen.findByTestId("chat-mode-selector");
       await selectFromBaseUiSelect(trigger, matcher[mode]);
-      await waitFor(() =>
-        expect(trigger.getAttribute("aria-label")).toMatch(matcher[mode]),
-      );
+      await waitFor(() => expect(trigger.getAttribute("aria-label")).toMatch(matcher[mode]));
     };
 
     const createChat = async (appId?: number): Promise<number> => {
@@ -1552,11 +1443,7 @@ export async function setupHybridChatHarness(
         });
         child.once("exit", (code, signal) => {
           clearTimeout(timeout);
-          reject(
-            new Error(
-              `HTTP MCP server exited before ready: code=${code} signal=${signal}`,
-            ),
-          );
+          reject(new Error(`HTTP MCP server exited before ready: code=${code} signal=${signal}`));
         });
       });
 
@@ -1623,11 +1510,9 @@ export async function setupHybridChatHarness(
         // client left here would be silently reused for a different server.
         // Dynamic import: static top-level imports of the handler graph break
         // module-load ordering (see the ipc_host import above).
-        const { mcpManager } = await import("@/ipc/utils/mcp_manager");
+        const { mcpManager } = await import("@/ipc/mcp/mcp_manager");
         await mcpManager.disposeAll();
-        await Promise.all(
-          Array.from(mcpHttpProcesses, (child) => stopChildProcess(child)),
-        );
+        await Promise.all(Array.from(mcpHttpProcesses, (child) => stopChildProcess(child)));
         mcpHttpProcesses.clear();
         await nodeHarness.dispose();
       } catch (error) {

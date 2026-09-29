@@ -16,18 +16,14 @@ import { isIpcInvokeEnvelope, unwrapIpcEnvelope } from "./ipc/contracts/core";
 const validInvokeChannels = VALID_INVOKE_CHANNELS;
 const validReceiveChannels = VALID_RECEIVE_CHANNELS;
 
-function isValidReceiveChannel(
-  channel: string,
-): channel is ValidReceiveChannel {
+function isValidReceiveChannel(channel: string): channel is ValidReceiveChannel {
   return validReceiveChannels.includes(channel as ValidReceiveChannel);
 }
 
 function isValidDynamicReceiveChannel(channel: string): boolean {
   // Terminal stream suffixes must stay server-generated, unpredictable session
   // IDs. Do not extend this pattern to renderer-controlled channel names.
-  return (
-    channel.startsWith("terminal:data:") || channel.startsWith("terminal:exit:")
-  );
+  return channel.startsWith("terminal:data:") || channel.startsWith("terminal:exit:");
 }
 
 // Expose protected methods that allow the renderer process to use
@@ -45,10 +41,7 @@ contextBridge.exposeInMainWorld("electron", {
       }
       throw new Error(`Invalid channel: ${channel}`);
     },
-    invokeEnvelope: (
-      channel: ValidInvokeChannel | string,
-      ...args: unknown[]
-    ) => {
+    invokeEnvelope: (channel: ValidInvokeChannel | string, ...args: unknown[]) => {
       if ((validInvokeChannels as readonly string[]).includes(channel)) {
         return ipcRenderer.invoke(channel, ...args);
       }
@@ -65,18 +58,10 @@ contextBridge.exposeInMainWorld("electron", {
       }
       throw new Error(`Invalid channel: ${channel}`);
     },
-    on: (
-      channel: ValidReceiveChannel | string,
-      listener: (...args: unknown[]) => void,
-    ) => {
-      if (
-        isValidReceiveChannel(channel) ||
-        isValidDynamicReceiveChannel(channel)
-      ) {
-        const subscription = (
-          _event: Electron.IpcRendererEvent,
-          ...args: unknown[]
-        ) => listener(...args);
+    on: (channel: ValidReceiveChannel | string, listener: (...args: unknown[]) => void) => {
+      if (isValidReceiveChannel(channel) || isValidDynamicReceiveChannel(channel)) {
+        const subscription = (_event: Electron.IpcRendererEvent, ...args: unknown[]) =>
+          listener(...args);
         ipcRenderer.on(channel, subscription);
         return () => {
           ipcRenderer.removeListener(channel, subscription);
@@ -85,10 +70,7 @@ contextBridge.exposeInMainWorld("electron", {
       throw new Error(`Invalid channel: ${channel}`);
     },
     removeAllListeners: (channel: ValidReceiveChannel | string) => {
-      if (
-        isValidReceiveChannel(channel) ||
-        isValidDynamicReceiveChannel(channel)
-      ) {
+      if (isValidReceiveChannel(channel) || isValidDynamicReceiveChannel(channel)) {
         ipcRenderer.removeAllListeners(channel);
       }
     },
@@ -96,10 +78,7 @@ contextBridge.exposeInMainWorld("electron", {
       channel: ValidReceiveChannel | string,
       listener: (...args: unknown[]) => void,
     ) => {
-      if (
-        isValidReceiveChannel(channel) ||
-        isValidDynamicReceiveChannel(channel)
-      ) {
+      if (isValidReceiveChannel(channel) || isValidDynamicReceiveChannel(channel)) {
         ipcRenderer.removeListener(channel, listener);
       }
     },

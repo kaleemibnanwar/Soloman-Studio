@@ -16,18 +16,18 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
 
   // ALWAYS block dangerous/forbidden URLs, even if firewall is disabled
   const DANGEROUS_PREFIXES = [
-    'https://chromewebstore.google.com', // scripts are not allowed to be injected into chrome web store
-    'chrome-extension://',
-    'chrome://',
-    'javascript:',
-    'data:',
-    'file:',
-    'vbscript:',
-    'ws:',
-    'wss:',
+    "https://chromewebstore.google.com", // scripts are not allowed to be injected into chrome web store
+    "chrome-extension://",
+    "chrome://",
+    "javascript:",
+    "data:",
+    "file:",
+    "vbscript:",
+    "ws:",
+    "wss:",
   ];
 
-  if (DANGEROUS_PREFIXES.some(prefix => lowerCaseUrl.startsWith(prefix))) {
+  if (DANGEROUS_PREFIXES.some((prefix) => lowerCaseUrl.startsWith(prefix))) {
     return false;
   }
 
@@ -37,7 +37,7 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
   }
 
   // Special case: Allow 'about:blank' explicitly
-  if (trimmedUrl === 'about:blank') {
+  if (trimmedUrl === "about:blank") {
     return true;
   }
 
@@ -45,7 +45,7 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
     const parsedUrl = new URL(trimmedUrl);
 
     // 1. Remove protocol prefix for further comparisons
-    const urlWithoutProtocol = lowerCaseUrl.replace(/^https?:\/\//, '');
+    const urlWithoutProtocol = lowerCaseUrl.replace(/^https?:\/\//, "");
 
     // 2. First check full URL against deny list
     for (const deniedEntry of denyList) {
@@ -65,7 +65,7 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
     let domain = parsedUrl.hostname.toLowerCase();
 
     // Remove port number if present
-    const portIndex = domain.indexOf(':');
+    const portIndex = domain.indexOf(":");
     if (portIndex > -1) {
       domain = domain.substring(0, portIndex);
     }
@@ -94,12 +94,14 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
 
 // Check if a URL is a new tab page (about:blank or chrome://new-tab-page).
 export function isNewTabPage(url: string): boolean {
-  return url === 'about:blank' || url === 'chrome://new-tab-page' || url === 'chrome://new-tab-page/';
+  return (
+    url === "about:blank" || url === "chrome://new-tab-page" || url === "chrome://new-tab-page/"
+  );
 }
 
 export function capTextLength(text: string, maxLength: number): string {
   if (text.length > maxLength) {
-    return text.slice(0, maxLength) + '...';
+    return text.slice(0, maxLength) + "...";
   }
   return text;
 }

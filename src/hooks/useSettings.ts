@@ -53,14 +53,12 @@ export function useSettings() {
     staleTime: Infinity,
   });
 
-  const {
-    data: initialLoadTelemetryContext,
-    isLoading: isInitialLoadTelemetryContextLoading,
-  } = useQuery({
-    queryKey: queryKeys.system.initialLoadTelemetryContext,
-    queryFn: () => ipc.system.getInitialLoadTelemetryContext(),
-    staleTime: Infinity,
-  });
+  const { data: initialLoadTelemetryContext, isLoading: isInitialLoadTelemetryContextLoading } =
+    useQuery({
+      queryKey: queryKeys.system.initialLoadTelemetryContext,
+      queryFn: () => ipc.system.getInitialLoadTelemetryContext(),
+      staleTime: Infinity,
+    });
 
   useEffect(() => {
     if (!settingsQuery.data) {
@@ -68,9 +66,7 @@ export function useSettings() {
     }
 
     processSettingsForTelemetry(settingsQuery.data);
-    posthog?.people?.set(
-      getSettingsPersonTelemetryProperties(settingsQuery.data),
-    );
+    posthog?.people?.set(getSettingsPersonTelemetryProperties(settingsQuery.data));
 
     if (
       initialLoadTelemetryState !== "idle" ||
@@ -84,10 +80,7 @@ export function useSettings() {
     }
 
     if (platformError) {
-      console.warn(
-        "Failed to get system platform for telemetry",
-        platformError,
-      );
+      console.warn("Failed to get system platform for telemetry", platformError);
     }
 
     posthog.capture(
@@ -118,21 +111,16 @@ export function useSettings() {
     onSuccess: (updatedSettings) => {
       queryClient.setQueryData(queryKeys.settings.user, updatedSettings);
       processSettingsForTelemetry(updatedSettings);
-      posthog?.people?.set(
-        getSettingsPersonTelemetryProperties(updatedSettings),
-      );
+      posthog?.people?.set(getSettingsPersonTelemetryProperties(updatedSettings));
     },
     meta: { showErrorToast: true },
   });
   const updateSettingsMutationRef = useRef(updateSettingsMutation);
   updateSettingsMutationRef.current = updateSettingsMutation;
 
-  const updateSettings = useCallback(
-    async (newSettings: Partial<UserSettings>) => {
-      return updateSettingsMutationRef.current.mutateAsync(newSettings);
-    },
-    [],
-  );
+  const updateSettings = useCallback(async (newSettings: Partial<UserSettings>) => {
+    return updateSettingsMutationRef.current.mutateAsync(newSettings);
+  }, []);
 
   const refreshSettings = useCallback(() => {
     return queryClient.invalidateQueries({
@@ -155,18 +143,12 @@ export function useSettings() {
 
 function processSettingsForTelemetry(settings: UserSettings) {
   if (settings.telemetryConsent) {
-    window.localStorage.setItem(
-      TELEMETRY_CONSENT_KEY,
-      settings.telemetryConsent,
-    );
+    window.localStorage.setItem(TELEMETRY_CONSENT_KEY, settings.telemetryConsent);
   } else {
     window.localStorage.removeItem(TELEMETRY_CONSENT_KEY);
   }
   if (settings.telemetryUserId) {
-    window.localStorage.setItem(
-      TELEMETRY_USER_ID_KEY,
-      settings.telemetryUserId,
-    );
+    window.localStorage.setItem(TELEMETRY_USER_ID_KEY, settings.telemetryUserId);
   } else {
     window.localStorage.removeItem(TELEMETRY_USER_ID_KEY);
   }

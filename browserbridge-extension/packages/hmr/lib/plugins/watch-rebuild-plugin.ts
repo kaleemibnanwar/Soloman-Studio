@@ -1,19 +1,19 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import type { PluginOption } from 'vite';
-import { WebSocket } from 'ws';
-import MessageInterpreter from '../interpreter';
-import { BUILD_COMPLETE, LOCAL_RELOAD_SOCKET_URL } from '../constant';
-import type { PluginConfig } from '../types';
+import fs from "node:fs";
+import path from "node:path";
+import type { PluginOption } from "vite";
+import { WebSocket } from "ws";
+import MessageInterpreter from "../interpreter";
+import { BUILD_COMPLETE, LOCAL_RELOAD_SOCKET_URL } from "../constant";
+import type { PluginConfig } from "../types";
 
-const injectionsPath = path.resolve(__dirname, '..', '..', '..', 'build', 'injections');
+const injectionsPath = path.resolve(__dirname, "..", "..", "..", "build", "injections");
 
-const refreshCode = fs.readFileSync(path.resolve(injectionsPath, 'refresh.js'), 'utf-8');
-const reloadCode = fs.readFileSync(path.resolve(injectionsPath, 'reload.js'), 'utf-8');
+const refreshCode = fs.readFileSync(path.resolve(injectionsPath, "refresh.js"), "utf-8");
+const reloadCode = fs.readFileSync(path.resolve(injectionsPath, "reload.js"), "utf-8");
 
 export function watchRebuildPlugin(config: PluginConfig): PluginOption {
   const { refresh, reload, id: _id, onStart } = config;
-  const hmrCode = (refresh ? refreshCode : '') + (reload ? reloadCode : '');
+  const hmrCode = (refresh ? refreshCode : "") + (reload ? reloadCode : "");
 
   let ws: WebSocket | null = null;
 
@@ -29,7 +29,7 @@ export function watchRebuildPlugin(config: PluginConfig): PluginOption {
 
     ws.onerror = () => {
       console.error(`[HMR] Failed to connect server at ${LOCAL_RELOAD_SOCKET_URL}`);
-      console.warn('Retrying in 3 seconds...');
+      console.warn("Retrying in 3 seconds...");
       ws = null;
 
       if (reconnectTries <= 2) {
@@ -46,7 +46,7 @@ export function watchRebuildPlugin(config: PluginConfig): PluginOption {
   const banner = `(function(){let __HMR_ID="${id}";\n${hmrCode}\n})();`;
 
   return {
-    name: 'watch-rebuild',
+    name: "watch-rebuild",
 
     /**
      * Use Rollup's banner option to inject HMR code before sourcemap generation.
@@ -58,12 +58,12 @@ export function watchRebuildPlugin(config: PluginConfig): PluginOption {
     outputOptions(outputOptions) {
       const existingBanner = outputOptions.banner;
 
-      if (typeof existingBanner === 'string') {
-        outputOptions.banner = existingBanner + '\n' + banner;
-      } else if (typeof existingBanner === 'function') {
+      if (typeof existingBanner === "string") {
+        outputOptions.banner = existingBanner + "\n" + banner;
+      } else if (typeof existingBanner === "function") {
         outputOptions.banner = (...args) => {
           const result = existingBanner(...args);
-          return (result || '') + '\n' + banner;
+          return (result || "") + "\n" + banner;
         };
       } else {
         outputOptions.banner = banner;
