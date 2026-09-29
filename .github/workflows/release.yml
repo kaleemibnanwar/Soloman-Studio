@@ -1,4 +1,4 @@
-name: Build & Publish Release Installers
+name: Build & Publish Multi-Platform Release Installers
 
 on:
   push:
@@ -11,9 +11,11 @@ permissions:
 
 jobs:
   build-release:
+    name: Build on ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -29,6 +31,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # --- Windows Build (Setup .exe & Portable .zip) ---
       - name: Build Windows Installer (.exe Setup)
         if: matrix.os == 'windows-latest'
         run: |
@@ -37,7 +40,19 @@ jobs:
           cp out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-${{ github.ref_name }}.exe 2>$null || cp out/make/*/*/*.exe dist-release/ 2>$null || true
           cp out/make/zip/win32/x64/*.zip dist-release/ 2>$null || true
 
-      - name: Build Linux Installers (.deb / .AppImage)
+      # --- macOS Build (Apple Silicon M-series & Intel) ---
+      - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
+        if: matrix.os == 'macos-latest'
+        run: |
+          npx electron-forge make --platform=darwin --arch=arm64
+          npx electron-forge make --platform=darwin --arch=x64
+          mkdir -p dist-release
+          cp out/make/zip/darwin/arm64/*.zip dist-release/Octopus-Studio-macOS-AppleSilicon-${{ github.ref_name }}.zip 2>/dev/null || true
+          cp out/make/zip/darwin/x64/*.zip dist-release/Octopus-Studio-macOS-Intel-${{ github.ref_name }}.zip 2>/dev/null || true
+          cp out/make/zip/darwin/*/*.zip dist-release/ 2>/dev/null || true
+
+      # --- Linux Build (.deb & .AppImage) ---
+      - name: Build Linux Installers (.deb & .zip)
         if: matrix.os == 'ubuntu-latest'
         run: |
           npx electron-forge make --platform=linux --arch=x64
@@ -45,6 +60,7 @@ jobs:
           cp out/make/deb/x64/*.deb dist-release/ 2>/dev/null || true
           cp out/make/zip/linux/x64/*.zip dist-release/ 2>/dev/null || true
 
+      # --- Publish All Binaries to Public GitHub Release ---
       - name: Upload Binaries to Public GitHub Release
         uses: softprops/action-gh-release@v2
         with:
