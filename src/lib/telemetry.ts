@@ -13,23 +13,40 @@ import clarity from "@microsoft/clarity";
 const CLARITY_PROJECT_ID = "yq5b8j38ea";
 
 let initialized = false;
+let enabled = false;
 
 /**
  * Starts Clarity (injects its loader) exactly once. Call only after the user
  * has opted in to telemetry; capture/identify below no-op until this has run.
  */
 export function initTelemetry(): void {
-  if (initialized) return;
-  initialized = true;
+  enabled = true;
+  if (initialized) {
+    clarity.consent(true);
+    return;
+  }
   try {
     clarity.init(CLARITY_PROJECT_ID);
+    clarity.consent(true);
+    initialized = true;
   } catch (error) {
+    enabled = false;
     console.warn("Failed to initialize Clarity telemetry:", error);
   }
 }
 
-function safe(fn: () => void): void {
+export function disableTelemetry(): void {
+  enabled = false;
   if (!initialized) return;
+  try {
+    clarity.consent(false);
+  } catch {
+    // Telemetry consent changes must never break the app.
+  }
+}
+
+function safe(fn: () => void): void {
+  if (!initialized || !enabled) return;
   try {
     fn();
   } catch {

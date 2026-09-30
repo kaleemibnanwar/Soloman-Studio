@@ -32,6 +32,7 @@ vi.mock("@/lib/telemetry", () => ({
   useTelemetry: () => ({ capture: vi.fn(), captureException: vi.fn() }),
   telemetryClient: { capture: vi.fn(), captureException: vi.fn() },
   initTelemetry: vi.fn(),
+  disableTelemetry: vi.fn(),
   identifyTelemetryUser: vi.fn(),
   captureTelemetryEvent: vi.fn(),
   captureTelemetryException: vi.fn(),

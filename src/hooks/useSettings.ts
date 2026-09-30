@@ -3,7 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ipc } from "@/ipc/types";
 import { type UserSettings, hasOctopusStudioProKey } from "@/lib/schemas";
 import { getInitialLoadTelemetryProperties } from "@/lib/telemetryUtils";
-import { useTelemetry } from "@/lib/telemetry";
+import {
+  disableTelemetry,
+  identifyTelemetryUser,
+  initTelemetry,
+  useTelemetry,
+} from "@/lib/telemetry";
 import { useAppVersion } from "./useAppVersion";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -149,4 +154,11 @@ function processSettingsForTelemetry(settings: UserSettings) {
     OCTOPUS_STUDIO_PRO_STATUS_KEY,
     hasOctopusStudioProKey(settings) ? "true" : "false",
   );
+
+  if (settings.telemetryConsent === "opted_in") {
+    initTelemetry();
+    identifyTelemetryUser(settings.telemetryUserId);
+  } else {
+    disableTelemetry();
+  }
 }
