@@ -31,7 +31,7 @@ const GOOGLE_WORKSPACE_ENTRIES = LOCAL_MCP_CATALOG.filter(
  * consent screen, matching the one client Google issued the tokens to.
  */
 export async function provisionGoogleWorkspaceMcpServers(tokens: GoogleTokenBundle): Promise<void> {
-  const { clientId, clientSecret } = getGoogleDriveOAuthConfig();
+  const { clientId } = getGoogleDriveOAuthConfig();
   const oauthState = encryptToString(
     JSON.stringify({
       tokens: {
@@ -43,11 +43,9 @@ export async function provisionGoogleWorkspaceMcpServers(tokens: GoogleTokenBund
       },
       clientInformation: {
         client_id: clientId,
-        client_secret: clientSecret,
       },
     }),
   );
-  const encryptedClientSecret = encryptToString(clientSecret);
 
   for (const entry of GOOGLE_WORKSPACE_ENTRIES) {
     const existing = await db.query.mcpServers.findFirst({
@@ -61,7 +59,7 @@ export async function provisionGoogleWorkspaceMcpServers(tokens: GoogleTokenBund
       enabled: true,
       oauthEnabled: true,
       oauthClientId: clientId,
-      oauthClientSecret: encryptedClientSecret,
+      oauthClientSecret: null,
       oauthScope: entry.oauth?.scope ?? null,
       oauthState,
       catalogSlug: entry.slug,

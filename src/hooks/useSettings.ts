@@ -2,11 +2,8 @@ import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ipc } from "@/ipc/types";
 import { type UserSettings, hasOctopusStudioProKey } from "@/lib/schemas";
-import {
-  getInitialLoadTelemetryProperties,
-  getSettingsPersonTelemetryProperties,
-} from "@/lib/posthogTelemetry";
-import { usePostHog } from "posthog-js/react";
+import { getInitialLoadTelemetryProperties } from "@/lib/telemetryUtils";
+import { useTelemetry } from "@/lib/telemetry";
 import { useAppVersion } from "./useAppVersion";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -29,7 +26,7 @@ export function isOctopusStudioProUser(): boolean {
 let initialLoadTelemetryState: "idle" | "sent" = "idle";
 
 export function useSettings() {
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const appVersion = useAppVersion();
   const queryClient = useQueryClient();
 
@@ -66,12 +63,10 @@ export function useSettings() {
     }
 
     processSettingsForTelemetry(settingsQuery.data);
-    posthog?.people?.set(getSettingsPersonTelemetryProperties(settingsQuery.data));
 
     if (
       initialLoadTelemetryState !== "idle" ||
       !appVersion ||
-      !posthog ||
       isPlatformLoading ||
       isInitialLoadTelemetryContextLoading ||
       !initialLoadTelemetryContext
@@ -83,7 +78,7 @@ export function useSettings() {
       console.warn("Failed to get system platform for telemetry", platformError);
     }
 
-    posthog.capture(
+    telemetry.capture(
       "app:initial-load",
       getInitialLoadTelemetryProperties({
         settings: settingsQuery.data,
@@ -96,7 +91,6 @@ export function useSettings() {
   }, [
     settingsQuery.data,
     appVersion,
-    posthog,
     isPlatformLoading,
     isInitialLoadTelemetryContextLoading,
     platform,
@@ -111,7 +105,6 @@ export function useSettings() {
     onSuccess: (updatedSettings) => {
       queryClient.setQueryData(queryKeys.settings.user, updatedSettings);
       processSettingsForTelemetry(updatedSettings);
-      posthog?.people?.set(getSettingsPersonTelemetryProperties(updatedSettings));
     },
     meta: { showErrorToast: true },
   });

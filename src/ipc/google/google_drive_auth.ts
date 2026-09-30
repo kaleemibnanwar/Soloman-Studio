@@ -11,19 +11,16 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 // Refresh a bit early so a request started right before expiry doesn't race it.
 const EXPIRY_SAFETY_MARGIN_MS = 60_000;
 
+// Google OAuth client ID for the Drive / Workspace integration. The flow uses
+// PKCE, so no client secret is required — create the client as a "Desktop app"
+// type in Google Cloud Console.
+const GOOGLE_DRIVE_CLIENT_ID =
+  process.env.GOOGLE_DRIVE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+
 export function getGoogleDriveOAuthConfig(): {
   clientId: string;
-  clientSecret: string;
 } {
-  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    throw new OctopusStudioError(
-      "Google Drive is not configured (missing GOOGLE_DRIVE_CLIENT_ID / GOOGLE_DRIVE_CLIENT_SECRET).",
-      OctopusStudioErrorKind.Precondition,
-    );
-  }
-  return { clientId, clientSecret };
+  return { clientId: GOOGLE_DRIVE_CLIENT_ID };
 }
 
 export interface StoredDriveAccount {
@@ -108,13 +105,12 @@ export async function getValidAccessToken(): Promise<string> {
     return account.accessToken!;
   }
 
-  const { clientId, clientSecret } = getGoogleDriveOAuthConfig();
+  const { clientId } = getGoogleDriveOAuthConfig();
   const response = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: clientId,
-      client_secret: clientSecret,
       refresh_token: account.refreshToken,
       grant_type: "refresh_token",
     }),

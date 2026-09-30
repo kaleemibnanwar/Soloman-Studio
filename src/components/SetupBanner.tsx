@@ -10,7 +10,7 @@ import SetupProviderCard from "@/components/SetupProviderCard";
 import { ipc } from "@/ipc/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
 import { useScrollAndNavigateTo } from "@/hooks/useScrollAndNavigateTo";
 // @ts-ignore
@@ -29,7 +29,7 @@ export function SetupBanner({
   forceShow?: boolean;
 }) {
   const { t } = useTranslation("home");
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const navigate = useNavigate();
   const { hasArmedPayload: hasPendingPrompt } = useFirstPromptSaga();
   const { isAnyProviderSetup, isLoading: loading } = useLanguageModelProviders();
@@ -40,7 +40,7 @@ export function SetupBanner({
   });
 
   const handleGoogleSetupClick = () => {
-    posthog.capture("setup-flow:ai-provider-setup:google:click");
+    telemetry.capture("setup-flow:ai-provider-setup:google:click");
     navigate({
       to: providerSettingsRoute.id,
       params: { provider: "google" },
@@ -48,21 +48,21 @@ export function SetupBanner({
   };
 
   const handleOpenRouterSetupClick = () => {
-    posthog.capture("setup-flow:ai-provider-setup:openrouter:click");
+    telemetry.capture("setup-flow:ai-provider-setup:openrouter:click");
     navigate({
       to: providerSettingsRoute.id,
       params: { provider: "openrouter" },
     });
   };
   const handleOctopusStudioProSetupClick = () => {
-    posthog.capture("setup-flow:ai-provider-setup:octopusStudio:click");
+    telemetry.capture("setup-flow:ai-provider-setup:octopusStudio:click");
     ipc.system.openExternalUrl(
       "https://academy.octopusStudio.sh/redirect-to-checkout?trialCode=7PRO30&utm_source=octopus-studio-app&utm_medium=app&utm_campaign=setup-dialog-v2",
     );
   };
 
   const handleOtherProvidersClick = () => {
-    posthog.capture("setup-flow:ai-provider-setup:other:click");
+    telemetry.capture("setup-flow:ai-provider-setup:other:click");
     settingsScrollAndNavigateTo(SECTION_IDS.providers);
   };
 
@@ -204,14 +204,14 @@ function ProviderOptionButton({
 }
 
 export const OpenRouterSetupBanner = ({ className }: { className?: string }) => {
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const navigate = useNavigate();
   return (
     <SetupProviderCard
       className={cn("mt-2", className)}
       variant="openrouter"
       onClick={() => {
-        posthog.capture("setup-flow:ai-provider-setup:openrouter:click");
+        telemetry.capture("setup-flow:ai-provider-setup:openrouter:click");
         navigate({
           to: providerSettingsRoute.id,
           params: { provider: "openrouter" },

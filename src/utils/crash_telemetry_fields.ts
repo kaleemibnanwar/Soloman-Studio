@@ -4,13 +4,13 @@ import type { ActivitySnapshot } from "./memory_activity";
 export type PerformanceSnapshot = NonNullable<UserSettings["lastKnownPerformance"]>;
 
 // Known Electron process types get their own telemetry field; anything else
-// is summed into "other" so the set of PostHog columns stays stable.
+// is summed into "other" so the set of Clarity columns stays stable.
 const KNOWN_PROCESS_TYPES = new Set(["browser", "tab", "gpu", "utility"]);
 
 /**
  * Flat telemetry fields for a performance snapshot, shared by
  * app:crash_detected and renderer:crash_detected. Everything is a scalar
- * because PostHog cannot easily filter or aggregate nested JSON.
+ * because Clarity cannot easily filter or aggregate nested JSON.
  * time_since_last_heartbeat_ms is measured at send time, not crash time.
  */
 export function crashPerformanceEventFields(perf: PerformanceSnapshot): Record<string, unknown> {
@@ -81,7 +81,7 @@ export const ALLOWED_ANNOTATION_KEYS = new Set([
 ]);
 
 // Allowlisted crash annotations as flat telemetry fields, one property per
-// key, because PostHog cannot easily filter nested JSON. Keys are sanitized
+// key, because Clarity cannot easily filter nested JSON. Keys are sanitized
 // to snake case. Dropped keys are reported only as a count.
 export function crashAnnotationEventFields(
   annotations: Record<string, string>,

@@ -160,7 +160,7 @@ async function getSystemDebugInfo({
     telemetryId,
     selectedLanguageModel: serializeModelForDebug(settings.selectedModel) || "unknown",
     telemetryConsent: settings.telemetryConsent || "unknown",
-    telemetryUrl: "https://us.i.posthog.com", // Hardcoded from renderer.tsx
+    telemetryUrl: "https://www.clarity.ms/tag/yq5b8j38ea", // Microsoft Clarity
     octopusStudioVersion,
     platform: process.platform,
     architecture: arch(),

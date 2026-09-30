@@ -357,7 +357,7 @@ export async function detectLegacyAppKey(params: {
  * runs because the user pressed a button: if the file was deleted, made
  * unreadable, or is read-only between detection and the locked rewrite, that
  * has to reach the renderer as a `OctopusStudioError` with a kind, not as a raw `ENOENT`
- * that PostHog then files as an unclassified product exception
+ * that Clarity then files as an unclassified product exception
  * (`rules/octopus-studio-errors.md`).
  */
 async function readClientFile(clientFilePath: string): Promise<string> {

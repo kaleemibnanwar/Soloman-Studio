@@ -65,7 +65,7 @@ export function normalizeGitHubRepoName(repoName: string): string {
 
 // --- GitHub Device Flow Constants ---
 // TODO: Fetch this securely, e.g., from environment variables or a config file
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "Ov23liWV2HdC0RBLecWx";
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "Ov23litltJHC4xcxVXKJ";
 
 function isGitHubTestBuild() {
   return IS_TEST_BUILD || process.env.E2E_TEST_BUILD === "true";

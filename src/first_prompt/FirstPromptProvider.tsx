@@ -12,7 +12,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "jotai";
 import { useTranslation } from "react-i18next";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { ipc } from "@/ipc/types";
 import { generateCuteAppName } from "@/lib/utils";
 import { NEON_TEMPLATE_IDS } from "@/shared/templates";
@@ -91,7 +91,7 @@ export function FirstPromptProvider({
   });
   const queryClient = useQueryClient();
   const { t } = useTranslation("home");
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const { settings, envVars } = useSettings();
   const { quotaStatus } = useFreeAgentQuota();
   const { refreshApps } = useLoadApps();
@@ -155,10 +155,10 @@ export function FirstPromptProvider({
         attachments: payload.attachments,
         requestedChatMode: getRequestedChatModeForFirstPrompt(payload),
       });
-      posthog.capture("home:chat-submit", {
+      telemetry.capture("home:chat-submit", {
         existingApp: payload.selectedApp !== undefined,
       });
-      posthog.capture("chat:home_submit", {
+      telemetry.capture("chat:home_submit", {
         chatMode: payload.chatMode,
         existingApp: payload.selectedApp !== undefined,
       });
@@ -176,7 +176,7 @@ export function FirstPromptProvider({
       selectChat({ appId, chatId });
     },
     showSetupDialog() {
-      posthog.capture("home:ai-setup-dialog-open");
+      telemetry.capture("home:ai-setup-dialog-open");
       setIsSetupDialogOpen(true);
     },
     clearEditingBuffer() {

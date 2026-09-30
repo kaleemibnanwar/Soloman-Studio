@@ -1,12 +1,12 @@
 {
   "name": "octopus-studio",
-  "version": "1.10.0",
+  "version": "2.0.0",
   "description": "Local, AI-powered app builder",
   "keywords": [],
   "license": "MIT",
   "author": {
-    "name": "Will Chen",
-    "email": "willchen90@gmail.com"
+    "name": "Kaleem Ibn Anwar",
+    "email": "kaleemibnanwar@gmail.com"
   },
   "repository": {
     "type": "git",
@@ -84,6 +84,7 @@
     "@huggingface/transformers": "^4.2.0",
     "@lexical/react": "^0.33.1",
     "@lexical/utils": "^0.33.1",
+    "@microsoft/clarity": "^1.0.2",
     "@modelcontextprotocol/sdk": "^1.17.5",
     "@monaco-editor/react": "^4.7.0-rc.0",
     "@mozilla/readability": "^0.6.0",
@@ -143,7 +144,6 @@
     "office-open": "^0.12.3",
     "perfect-freehand": "^1.2.2",
     "pg-schema-classifier": "file:packages/pg-schema-classifier",
-    "posthog-js": "^1.265.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^16.6.6",

@@ -2,7 +2,7 @@ import { atom, useAtom } from "jotai";
 import { AlertTriangle, Clock3, Pause, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ipc, type SubscriptionStatus } from "@/ipc/types";
@@ -21,7 +21,7 @@ function alertFingerprint(status: SubscriptionStatus) {
 
 export function SubscriptionStatusBanner() {
   const { t, i18n } = useTranslation("common");
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const { data: status } = useSubscriptionStatus();
   const { userBudget } = useUserBudgetInfo({
     enabled: status?.alert === "subscription_ending",
@@ -43,7 +43,7 @@ export function SubscriptionStatusBanner() {
           next.add(fingerprint);
           return next;
         });
-        posthog.capture("billing_nudge_shown", {
+        telemetry.capture("billing_nudge_shown", {
           alert: status.alert,
           has_effective_at: status.effectiveAt !== null,
         });
@@ -53,13 +53,13 @@ export function SubscriptionStatusBanner() {
     }
 
     if (status?.alert === null && previousAlert.current?.alert) {
-      posthog.capture("billing_nudge_resolved", {
+      telemetry.capture("billing_nudge_resolved", {
         alert: previousAlert.current.alert,
         has_effective_at: previousAlert.current.effectiveAt !== null,
       });
       previousAlert.current = null;
     }
-  }, [posthog, setShownFingerprints, shownFingerprints, status]);
+  }, [telemetry, setShownFingerprints, shownFingerprints, status]);
 
   if (!status?.alert) {
     return null;
@@ -143,7 +143,7 @@ export function SubscriptionStatusBanner() {
             className="h-8 shrink-0"
             disabled={openBillingAction.isPending}
             onClick={() => {
-              posthog.capture("billing_nudge_clicked", {
+              telemetry.capture("billing_nudge_clicked", {
                 alert: status.alert,
                 has_effective_at: status.effectiveAt !== null,
               });
@@ -161,7 +161,7 @@ export function SubscriptionStatusBanner() {
         className="size-8 shrink-0 text-muted-foreground hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
         aria-label={t("billingNudge.dismiss")}
         onClick={() => {
-          posthog.capture("billing_nudge_dismissed", {
+          telemetry.capture("billing_nudge_dismissed", {
             alert: status.alert,
             has_effective_at: status.effectiveAt !== null,
           });

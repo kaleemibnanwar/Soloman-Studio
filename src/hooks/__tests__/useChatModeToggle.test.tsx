@@ -38,9 +38,10 @@ vi.mock("@tanstack/react-router", () => ({
   }),
 }));
 
-vi.mock("posthog-js/react", () => ({
-  usePostHog: () => ({
+vi.mock("@/lib/telemetry", () => ({
+  useTelemetry: () => ({
     capture: mocks.posthogCapture,
+    captureException: vi.fn(),
   }),
 }));
 

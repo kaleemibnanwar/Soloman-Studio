@@ -28,8 +28,13 @@ vi.mock("electron", async () => {
   return createElectronMock(h);
 });
 
-vi.mock("posthog-js/react", () => ({
-  usePostHog: () => ({ capture: vi.fn() }),
+vi.mock("@/lib/telemetry", () => ({
+  useTelemetry: () => ({ capture: vi.fn(), captureException: vi.fn() }),
+  telemetryClient: { capture: vi.fn(), captureException: vi.fn() },
+  initTelemetry: vi.fn(),
+  identifyTelemetryUser: vi.fn(),
+  captureTelemetryEvent: vi.fn(),
+  captureTelemetryException: vi.fn(),
 }));
 
 // The tsc problem-report worker needs a compiled worker script and Electron

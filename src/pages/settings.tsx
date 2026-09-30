@@ -28,6 +28,7 @@ import { AutoUpdateSwitch } from "@/components/AutoUpdateSwitch";
 import { ReleaseChannelSelector } from "@/components/ReleaseChannelSelector";
 import { NeonIntegration } from "@/components/NeonIntegration";
 import { GoogleWorkspaceIntegration } from "@/components/GoogleWorkspaceIntegration";
+import { GOOGLE_DRIVE_INTEGRATION_ENABLED } from "@/lib/featureFlags";
 import { RuntimeModeSelector } from "@/components/RuntimeModeSelector";
 import { NodePathSelector } from "@/components/NodePathSelector";
 import { AgentToolsSettings } from "@/components/settings/AgentToolsSettings";
@@ -199,9 +200,11 @@ export default function SettingsPage() {
             <div id={SETTING_IDS.neon}>
               <NeonIntegration />
             </div>
-            <div id={SETTING_IDS.googleWorkspace}>
-              <GoogleWorkspaceIntegration />
-            </div>
+            {GOOGLE_DRIVE_INTEGRATION_ENABLED && (
+              <div id={SETTING_IDS.googleWorkspace}>
+                <GoogleWorkspaceIntegration />
+              </div>
+            )}
             <div id={SETTING_IDS.imageSearch}>
               <ImageSearchSettings />
             </div>

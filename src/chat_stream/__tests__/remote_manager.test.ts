@@ -504,7 +504,6 @@ describe("ChatStreamRemoteManager", () => {
         store,
         queryClient: new QueryClient(),
         getSettings: () => null,
-        getPosthog: () => null,
         requestPreviewReload: vi.fn(),
         requestCapture: vi.fn(),
       });

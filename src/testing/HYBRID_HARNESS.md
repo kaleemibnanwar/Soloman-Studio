@@ -33,7 +33,7 @@ If a test would pass with the node harness, use the node harness.
 Hybrid harness tests are named `*.integration.test.ts` or
 `*.integration.test.tsx`. The Vitest `integration` project supplies
 the happy-dom environment, `disableSameOriginPolicy`, the shared `electron` /
-PostHog / i18n mocks, `NODE_ENV=development`, and failure DOM dumps via
+Clarity / i18n mocks, `NODE_ENV=development`, and failure DOM dumps via
 `src/testing/hybrid.setup.ts`.
 
 ```tsx
@@ -75,7 +75,7 @@ Notes:
   `screen.getByText` can see.
 - The setup file's three mocks are the **only** shared mocks needed: `electron`
   (the shared node-mock),
-  `posthog-js/react` (offline telemetry), `react-i18next` (so `t()` works without
+  `@/lib/telemetry` (offline telemetry), `react-i18next` (so `t()` works without
   the renderer's i18next bootstrap). Lexical, framer-motion, and Virtuoso mount
   cleanly — do not mock them.
 - If a test needs genuinely import-time env such as `E2E_TEST_BUILD`, keep a

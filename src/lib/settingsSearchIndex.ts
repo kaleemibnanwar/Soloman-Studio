@@ -1,3 +1,5 @@
+import { GOOGLE_DRIVE_INTEGRATION_ENABLED } from "@/lib/featureFlags";
+
 export const SECTION_IDS = {
   general: "general-settings",
   workflow: "workflow-settings",
@@ -316,27 +318,31 @@ export const SETTINGS_SEARCH_INDEX: SearchableSettingItem[] = [
     sectionId: SECTION_IDS.integrations,
     sectionLabel: "Integrations",
   },
-  {
-    id: SETTING_IDS.googleWorkspace,
-    label: "Google Account",
-    description: "Connect Google Drive, Gmail, Calendar, Docs, Sheets, Slides, Chat, and Contacts",
-    keywords: [
-      "google",
-      "drive",
-      "gmail",
-      "calendar",
-      "docs",
-      "sheets",
-      "slides",
-      "chat",
-      "contacts",
-      "workspace",
-      "mcp",
-      "connect",
-    ],
-    sectionId: SECTION_IDS.integrations,
-    sectionLabel: "Integrations",
-  },
+  ...(GOOGLE_DRIVE_INTEGRATION_ENABLED
+    ? [
+        {
+          id: SETTING_IDS.googleWorkspace,
+          label: "Google Account",
+          description: "Connect Google Drive, Gmail, Calendar, Docs, Sheets, Slides, Chat, and Contacts",
+          keywords: [
+            "google",
+            "drive",
+            "gmail",
+            "calendar",
+            "docs",
+            "sheets",
+            "slides",
+            "chat",
+            "contacts",
+            "workspace",
+            "mcp",
+            "connect",
+          ],
+          sectionId: SECTION_IDS.integrations,
+          sectionLabel: "Integrations",
+        },
+      ]
+    : []),
   {
     id: SETTING_IDS.imageSearch,
     label: "Image Search",

@@ -47,8 +47,8 @@ vi.mock("@/first_prompt/FirstPromptProvider", () => ({
   useFirstPromptSend: () => mocks.send,
 }));
 
-vi.mock("posthog-js/react", () => ({
-  usePostHog: () => ({ capture: mocks.posthogCapture }),
+vi.mock("@/lib/telemetry", () => ({
+  useTelemetry: () => ({ capture: mocks.posthogCapture, captureException: vi.fn() }),
 }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),

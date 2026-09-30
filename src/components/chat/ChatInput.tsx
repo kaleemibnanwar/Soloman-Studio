@@ -44,7 +44,7 @@ import { ActionProposal, Proposal, SuggestedAction, FileChange, SqlQuery } from 
 import { isPreviewOpenAtom } from "@/atoms/viewAtoms";
 import { useRunApp } from "@/hooks/useRunApp";
 import { AutoApproveSwitch } from "../AutoApproveSwitch";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { CodeHighlight } from "./CodeHighlight";
 import { TokenBar } from "./TokenBar";
 
@@ -111,7 +111,7 @@ const showTokenBarAtom = atom(false);
 
 export function ChatInput({ chatId }: { chatId?: number }) {
   const { t } = useTranslation("chat");
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const inputValuesById = useAtomValue(chatInputValuesByIdAtom);
   const setInputValuesById = useSetAtom(chatInputValuesByIdAtom);
   const inputValue = chatId ? (inputValuesById.get(chatId) ?? "") : "";
@@ -546,7 +546,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
         requestedChatMode: "plan",
       });
       clearAttachments();
-      posthog.capture("chat:submit", { chatMode });
+      telemetry.capture("chat:submit", { chatMode });
       return;
     }
 
@@ -610,7 +610,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       requestedChatMode,
     });
     clearAttachments();
-    posthog.capture("chat:submit", { chatMode, classifierRan, classifiedMode });
+    telemetry.capture("chat:submit", { chatMode, classifierRan, classifiedMode });
   };
 
   const handleCancel = () => {
@@ -670,7 +670,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     if (!chatId || !messageId || isApproving || isRejecting || isStreaming) return;
     console.log(`Approving proposal for chatId: ${chatId}, messageId: ${messageId}`);
     setIsApproving(true);
-    posthog.capture("chat:approve");
+    telemetry.capture("chat:approve");
     try {
       const result = await ipc.proposal.approveProposal({
         chatId,
@@ -680,7 +680,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
         showExtraFilesToast({
           files: result.extraFiles,
           error: result.extraFilesError,
-          posthog,
         });
       }
       for (const warningMessage of result.warningMessages ?? []) {
@@ -709,7 +708,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     if (!chatId || !messageId || isApproving || isRejecting || isStreaming) return;
     console.log(`Rejecting proposal for chatId: ${chatId}, messageId: ${messageId}`);
     setIsRejecting(true);
-    posthog.capture("chat:reject");
+    telemetry.capture("chat:reject");
     try {
       await ipc.proposal.rejectProposal({
         chatId,
@@ -1134,15 +1133,15 @@ function WriteCodeProperlyButton() {
 function RebuildButton() {
   const { t } = useTranslation("chat");
   const { restartApp } = useRunApp();
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const selectedAppId = useAtomValue(selectedAppIdAtom);
 
   const onClick = useCallback(async () => {
     if (!selectedAppId) return;
 
-    posthog.capture("action:rebuild");
+    telemetry.capture("action:rebuild");
     await restartApp({ removeNodeModules: true });
-  }, [selectedAppId, posthog, restartApp]);
+  }, [selectedAppId, telemetry, restartApp]);
 
   return (
     <SuggestionButton onClick={onClick} tooltipText={t("rebuildAppDescription")}>
@@ -1154,15 +1153,15 @@ function RebuildButton() {
 function RestartButton() {
   const { t } = useTranslation("chat");
   const { restartApp } = useRunApp();
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const selectedAppId = useAtomValue(selectedAppIdAtom);
 
   const onClick = useCallback(async () => {
     if (!selectedAppId) return;
 
-    posthog.capture("action:restart");
+    telemetry.capture("action:restart");
     await restartApp();
-  }, [selectedAppId, posthog, restartApp]);
+  }, [selectedAppId, telemetry, restartApp]);
 
   return (
     <SuggestionButton onClick={onClick} tooltipText={t("restartAppDescription")}>
@@ -1174,12 +1173,12 @@ function RestartButton() {
 function RefreshButton() {
   const { t } = useTranslation("chat");
   const { refreshAppIframe } = useRunApp();
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
 
   const onClick = useCallback(() => {
-    posthog.capture("action:refresh");
+    telemetry.capture("action:refresh");
     refreshAppIframe();
-  }, [posthog, refreshAppIframe]);
+  }, [telemetry, refreshAppIframe]);
 
   return (
     <SuggestionButton onClick={onClick} tooltipText={t("refreshAppDescription")}>

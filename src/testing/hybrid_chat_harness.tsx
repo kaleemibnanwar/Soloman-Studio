@@ -27,7 +27,7 @@ import path from "node:path";
  * can only be driven through real UI events. See HYBRID_HARNESS.md.
  *
  * Hybrid harness tests run under the `integration` Vitest project, which
- * supplies happy-dom, the shared electron/posthog/i18n mocks, and the hoisted
+ * supplies happy-dom, the shared electron/telemetry/i18n mocks, and the hoisted
  * electron mock handle exported from `src/testing/hybrid.setup.ts`.
  */
 import {

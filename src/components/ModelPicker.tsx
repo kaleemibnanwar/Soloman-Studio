@@ -11,7 +11,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { useLocalModels } from "@/hooks/useLocalModels";
 import { useLocalLMSModels } from "@/hooks/useLMStudioModels";
 import { useLanguageModelsByProviders } from "@/hooks/useLanguageModelsByProviders";
@@ -51,7 +51,7 @@ export function ModelPicker({
     setChatSelection,
   } = useChatMode(isChatRoute ? chatId : null);
   const queryClient = useQueryClient();
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
   const hasEstablishedChat = Boolean(chat && (chat.modelSelection || chat.messages.length > 0));
 
   const onModelSelect = async ({
@@ -78,7 +78,7 @@ export function ModelPicker({
       preferredEffortLevel:
         effortLevel ?? settings.modelEffortPreferences?.[getModelPreferenceKey(model)],
     });
-    posthog.capture("model-picker:select", {
+    telemetry.capture("model-picker:select", {
       provider: model.provider,
       model: model.name,
       effortLevel: modelSelection.effortLevel,
@@ -113,7 +113,7 @@ export function ModelPicker({
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (nextOpen) {
-      posthog.capture("model-picker:open");
+      telemetry.capture("model-picker:open");
     }
   };
 

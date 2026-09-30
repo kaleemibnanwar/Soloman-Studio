@@ -2,12 +2,9 @@ import { StrictMode, useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { router } from "./router";
 import { RouterProvider } from "@tanstack/react-router";
-import { PostHogProvider } from "posthog-js/react";
-import posthog from "posthog-js";
 import {
   getTelemetryUserId,
   isTelemetryOptedIn,
-  isOctopusStudioProUser,
 } from "./hooks/useSettings";
 
 // Initialize i18next before any rendering
@@ -32,12 +29,13 @@ import { showError } from "./lib/toast";
 import { ipc } from "./ipc/types";
 import { useStore } from "jotai";
 import { queryKeys } from "./lib/queryKeys";
+import { createExceptionFromTelemetry } from "./lib/telemetryUtils";
 import {
-  createExceptionFromTelemetry,
-  getExceptionTelemetryContext,
-  shouldBypassNonProTelemetrySampling,
-  shouldFilterPostHogExceptionEvent,
-} from "./lib/posthogTelemetry";
+  captureTelemetryEvent,
+  captureTelemetryException,
+  identifyTelemetryUser,
+  initTelemetry,
+} from "./lib/telemetry";
 import { registerRendererIpcListeners } from "./app_wiring/registerRendererIpcListeners";
 import { ChatStreamProvider, useChatStreamManager } from "./chat_stream/ChatStreamProvider";
 import {
@@ -66,6 +64,13 @@ import { clearRecorderForAppAtom } from "./atoms/recorderAtoms";
 // @ts-ignore
 console.log("Running in mode:", import.meta.env.MODE);
 registerEarlyRendererEvents();
+
+// Start Clarity telemetry only when the user has opted in. `identify` is a
+// no-op until a user id exists (read from localStorage, may be null on first run).
+if (isTelemetryOptedIn()) {
+  initTelemetry();
+  identifyTelemetryUser(getTelemetryUserId());
+}
 
 interface MyMeta extends Record<string, unknown> {
   showErrorToast: boolean;
@@ -102,48 +107,6 @@ const queryClient = new QueryClient({
       }
     },
   }),
-});
-
-const posthogClient = posthog.init("phc_5Vxx0XT8Ug3eWROhP6mm4D6D2DgIIKT232q4AKxC2ab", {
-  api_host: "https://us.i.posthog.com",
-  // @ts-ignore
-  debug: import.meta.env.MODE === "development",
-  autocapture: false,
-  capture_exceptions: true,
-  capture_pageview: false,
-  before_send: (event) => {
-    if (!isTelemetryOptedIn()) {
-      console.debug("Telemetry not opted in, skipping event");
-      return null;
-    }
-
-    if (shouldFilterPostHogExceptionEvent(event)) {
-      console.debug("Filtering generic fetch failed exception from telemetry");
-      return null;
-    }
-    const telemetryUserId = getTelemetryUserId();
-    if (telemetryUserId) {
-      posthogClient.identify(telemetryUserId);
-    }
-
-    if (event?.properties["$ip"]) {
-      event.properties["$ip"] = null;
-    }
-
-    // For non-Pro users, only send 10% of events (but always send errors,
-    // app:initial-load, promo_click, and sandbox.script.* — see
-    // shouldBypassNonProTelemetrySampling).
-    if (!isOctopusStudioProUser()) {
-      if (!shouldBypassNonProTelemetrySampling(event) && Math.random() > 0.1) {
-        console.debug("Non-Pro user: sampling out event", event?.event);
-        return null;
-      }
-    }
-
-    console.debug("Telemetry opted in - UUID:", telemetryUserId, "sending event", event);
-    return event;
-  },
-  persistence: "localStorage",
 });
 
 function App() {
@@ -190,15 +153,10 @@ function RendererServices() {
   useEffect(() => {
     // Subscribe to navigation state changes
     const unsubscribe = router.subscribe("onResolved", (navigation) => {
-      // Capture the navigation event in PostHog
-      posthog.capture("navigation", {
+      // Capture the navigation event in Clarity (pageviews are auto-tracked).
+      captureTelemetryEvent("navigation", {
         toPath: navigation.toLocation.pathname,
         fromPath: navigation.fromLocation?.pathname,
-      });
-
-      // Optionally capture as a standard pageview as well
-      posthog.capture("$pageview", {
-        path: navigation.toLocation.pathname,
       });
     });
 
@@ -212,14 +170,11 @@ function RendererServices() {
     () =>
       earlyTelemetryEvents.subscribe(({ eventName, properties }) => {
         if (eventName === "$exception") {
-          posthog.captureException(
-            createExceptionFromTelemetry(properties),
-            getExceptionTelemetryContext(properties),
-          );
+          captureTelemetryException(createExceptionFromTelemetry(properties));
           return;
         }
 
-        posthog.capture(eventName, properties);
+        captureTelemetryEvent(eventName, properties);
       }),
     [],
   );
@@ -293,11 +248,9 @@ function RendererServices() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <PostHogProvider client={posthogClient}>
-        <EntityDisposalProvider>
-          <App />
-        </EntityDisposalProvider>
-      </PostHogProvider>
+      <EntityDisposalProvider>
+        <App />
+      </EntityDisposalProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

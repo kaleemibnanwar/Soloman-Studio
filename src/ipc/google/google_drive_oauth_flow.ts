@@ -98,7 +98,7 @@ export async function connectGoogleDrive(): Promise<{
   flowInFlight = true;
 
   try {
-    const { clientId, clientSecret } = getGoogleDriveOAuthConfig();
+    const { clientId } = getGoogleDriveOAuthConfig();
     const state = base64UrlEncode(crypto.randomBytes(16));
     const codeVerifier = base64UrlEncode(crypto.randomBytes(32));
     const codeChallenge = base64UrlEncode(
@@ -193,7 +193,6 @@ export async function connectGoogleDrive(): Promise<{
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         client_id: clientId,
-        client_secret: clientSecret,
         code,
         code_verifier: codeVerifier,
         grant_type: "authorization_code",

@@ -42,6 +42,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { GoogleDriveSyncPanel } from "@/components/GoogleDriveSyncPanel";
+import { GOOGLE_DRIVE_INTEGRATION_ENABLED } from "@/lib/featureFlags";
 import { FilePreview } from "@/components/preview_panel/FilePreview";
 import { useFileManager, type FileManagerApi } from "@/components/preview_panel/useFileManager";
 import { NamePromptDialog, ConfirmDeleteDialog } from "@/components/preview_panel/FileTreeDialogs";
@@ -426,7 +427,7 @@ export function ChatProjectPreview({ projectId, projectName }: ChatProjectPrevie
         </div>
       </div>
 
-      {projectId != null && (
+      {projectId != null && GOOGLE_DRIVE_INTEGRATION_ENABLED && (
         <div className="border-b border-border px-3 py-1.5 shrink-0 bg-muted/5">
           <GoogleDriveSyncPanel appId={projectId} />
         </div>

@@ -11,7 +11,7 @@ import {
 import { useSettings } from "@/hooks/useSettings";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { HomeChatInput } from "@/components/chat/HomeChatInput";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { PrivacyBanner } from "@/components/TelemetryBanner";
 import { INSPIRATION_PROMPTS } from "@/prompts/inspiration_prompts";
 
@@ -82,7 +82,7 @@ export default function HomePage() {
     );
   }, [envVars, quotaStatus, settings]);
 
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
 
   // Get the appId from search params
   const appId = search.appId ? Number(search.appId) : null;
@@ -306,7 +306,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => {
-                  posthog.capture("home:setup-pill:click");
+                  telemetry.capture("home:setup-pill:click");
                   sendFirstPrompt({
                     type: "ARM_FOR_SETUP",
                     payload: {

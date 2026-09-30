@@ -4,7 +4,7 @@ import {
   OctopusStudioError,
   isOctopusStudioErrorKindFilteredFromTelemetry,
 } from "@/errors/octopus_studio_error";
-import { isGenericFetchFailedError } from "@/lib/posthogTelemetry";
+import { isGenericFetchFailedError } from "@/lib/telemetryUtils";
 import { TelemetryEventPayload } from "@/ipc/types";
 
 const logger = log.scope("telemetry");
@@ -14,7 +14,7 @@ const FILTERED_EXCEPTION_MESSAGES = new Set([
 
 /**
  * Sends a telemetry event from the main process to the renderer,
- * where PostHog can capture it.
+ * where the renderer's analytics client can capture it.
  */
 export function sendTelemetryEvent(eventName: string, properties?: Record<string, unknown>): void {
   try {
@@ -43,7 +43,7 @@ export function sendTelemetryEventToWindow(
 }
 
 /**
- * Sends an exception from the main process to the renderer as a PostHog $exception event.
+ * Sends an exception from the main process to the renderer as a $exception event.
  */
 export function sendTelemetryException(error: unknown, context?: Record<string, unknown>): void {
   const err = error instanceof Error ? error : new Error(String(error ?? "Unknown error"));

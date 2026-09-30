@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useShortcut } from "./useShortcut";
-import { usePostHog } from "posthog-js/react";
+import { useTelemetry } from "@/lib/telemetry";
 import { ChatModeSchema } from "../lib/schemas";
 import { useChatMode } from "./useChatMode";
 import { useRouterState } from "@tanstack/react-router";
@@ -15,7 +15,7 @@ export function useChatModeToggle() {
       : null;
   const { selectedMode, setChatMode, settings } = useChatMode(routeChatId);
   const setHasManuallySelectedChatMode = useSetAtom(hasManuallySelectedChatModeAtom);
-  const posthog = usePostHog();
+  const telemetry = useTelemetry();
 
   // Detect if user is on mac
   const isMac = useIsMac();
@@ -43,12 +43,12 @@ export function useChatModeToggle() {
       setHasManuallySelectedChatMode(true);
     }
     void setChatMode(newMode).catch(() => {});
-    posthog.capture("chat:mode_toggle", {
+    telemetry.capture("chat:mode_toggle", {
       from: currentMode,
       to: newMode,
       trigger: "keyboard_shortcut",
     });
-  }, [selectedMode, setChatMode, settings, routeChatId, setHasManuallySelectedChatMode, posthog]);
+  }, [selectedMode, setChatMode, settings, routeChatId, setHasManuallySelectedChatMode, telemetry]);
 
   // Add keyboard shortcut with memoized modifiers
   useShortcut(

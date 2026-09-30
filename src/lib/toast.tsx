@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { PostHog } from "posthog-js";
+import { telemetryClient } from "./telemetry";
 import React from "react";
 import { CustomErrorToast } from "../components/CustomErrorToast";
 import { InputRequestToast } from "../components/InputRequestToast";
@@ -116,17 +116,15 @@ export const showInputRequest = (message: string, onResponse: (response: "y" | "
 export const showExtraFilesToast = ({
   files,
   error,
-  posthog,
 }: {
   files: string[];
   error?: string;
-  posthog: PostHog;
 }) => {
   if (error) {
     showError(
       `Error committing files ${files.join(", ")} changed outside of Octopus Studio: ${error}`,
     );
-    posthog.capture("extra-files:error", {
+    telemetryClient.capture("extra-files:error", {
       files: files,
       error,
     });
@@ -135,7 +133,7 @@ export const showExtraFilesToast = ({
       `Files changed outside of Octopus Studio have automatically been committed:
     \n\n${files.join("\n")}`,
     );
-    posthog.capture("extra-files:warning", {
+    telemetryClient.capture("extra-files:warning", {
       files: files,
     });
   }

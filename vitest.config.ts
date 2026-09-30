@@ -24,7 +24,7 @@ const noisyConsolePatterns = [
 ];
 
 // Any `*.integration.test.ts(x)` under src/ runs in the `integration` project
-// (happy-dom + shared electron/posthog/i18n mocks + forks pool), matching the
+// (happy-dom + shared electron/telemetry/i18n mocks + forks pool), matching the
 // naming rule in rules/hybrid-testing.md — a rule-following test anywhere in
 // the tree gets the right environment, not a confusing unit-project failure.
 const hybridIntegrationTests = ["src/**/*.integration.test.{ts,tsx}"];

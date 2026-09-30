@@ -26,8 +26,8 @@ vi.mock("@/ipc/types", () => ({
     system: { openBillingAction: mocks.openBillingAction },
   },
 }));
-vi.mock("posthog-js/react", () => ({
-  usePostHog: () => ({ capture: mocks.capture }),
+vi.mock("@/lib/telemetry", () => ({
+  useTelemetry: () => ({ capture: mocks.capture, captureException: vi.fn() }),
 }));
 vi.mock("sonner", () => ({
   toast: { error: mocks.toastError },

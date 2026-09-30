@@ -12,7 +12,7 @@ export enum OctopusStudioErrorKind {
   Conflict = "conflict",
   UserCancelled = "user_cancelled",
   RateLimited = "rate_limited",
-  /** Upstream failures; reported to PostHog by default unless you add finer metadata later. */
+  /** Upstream failures; reported to Clarity by default unless you add finer metadata later. */
   External = "external",
   /** Bugs, invariant violations, unexpected failures — always reported. */
   Internal = "internal",
@@ -31,7 +31,7 @@ const TELEMETRY_FILTERED_KINDS: ReadonlySet<OctopusStudioErrorKind> = new Set([
 ]);
 
 /**
- * Returns true if this kind should not be sent to PostHog as an `$exception` event.
+ * Returns true if this kind should not be sent to Clarity as an `$exception` event.
  */
 export function isOctopusStudioErrorKindFilteredFromTelemetry(
   kind: OctopusStudioErrorKind,

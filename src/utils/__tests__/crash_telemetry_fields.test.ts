@@ -46,7 +46,7 @@ describe("crashPerformanceEventFields", () => {
     expect(fields.peak_ts_utility_process).toBeNull();
     expect(fields.peak_heap_used_mb).toBe(1024);
 
-    // No object-valued properties: PostHog cannot filter nested JSON.
+    // No object-valued properties: Clarity cannot filter nested JSON.
     for (const value of Object.values(fields)) {
       expect(typeof value === "object" && value !== null).toBe(false);
     }

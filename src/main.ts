@@ -741,8 +741,7 @@ function deliverPendingCrashRecovery(target: BrowserWindow): void {
   });
 
   sendTelemetryEventToWindow(target, "app:crash_detected", {
-    // Mark as error so renderer PostHog before_send sampling does not
-    // drop 90% of events for non-Pro users (see src/renderer.tsx).
+    // Mark as error so the renderer always captures crash events.
     error: true,
     has_performance_data: !!pendingForceCloseData,
     ...(pendingForceCloseData && crashPerformanceEventFields(pendingForceCloseData)),
@@ -770,7 +769,7 @@ function deliverPendingCrashRecovery(target: BrowserWindow): void {
     }),
     ...(nativeCrash?.annotations && crashAnnotationEventFields(nativeCrash.annotations)),
     // The OOM verdict and the signals behind it (see classifyOom).
-    // Comma-joined: crash event properties stay scalar for PostHog.
+    // Comma-joined: crash event properties stay scalar for Clarity.
     oom_verdict: oom.verdict,
     ...(oom.signals.length > 0 && { oom_signals: oom.signals.join(",") }),
   });
@@ -978,13 +977,12 @@ const createWindow = ({
 
     // Forward any pending renderer crash recorded on a previous load. We send
     // this from `did-finish-load` rather than `render-process-gone` because the
-    // renderer (which owns the PostHog client) is dead at crash time.
+    // renderer (which owns the analytics client) is dead at crash time.
     const rendererCrash = readRendererCrashRecord();
     if (rendererCrash) {
       const perf = rendererCrash.performance;
       sendTelemetryEventToWindow(browserWindow, "renderer:crash_detected", {
-        // Mark as error so renderer PostHog before_send sampling does not
-        // drop 90% of events for non-Pro users (see src/renderer.tsx).
+        // Mark as error so the renderer always captures crash events.
         error: true,
         reason: rendererCrash.reason,
         exit_code: rendererCrash.exitCode,
@@ -992,7 +990,7 @@ const createWindow = ({
         crash_timestamp: rendererCrash.timestamp,
         ms_since_crash: Date.now() - rendererCrash.timestamp,
         // Mirror the `app:crash_detected` performance fields so the two
-        // events can be unioned in PostHog without per-event field mapping.
+        // events can be unioned in Clarity without per-event field mapping.
         has_performance_data: !!perf,
         ...(perf && crashPerformanceEventFields(perf)),
       });
@@ -1514,8 +1512,7 @@ app.on("child-process-gone", (_event, details) => {
     details.exitCode,
   );
   sendTelemetryEvent("utility_process:crash_detected", {
-    // Mark as error so renderer PostHog before_send sampling does not
-    // drop 90% of events for non-Pro users (see src/renderer.tsx).
+    // Mark as error so the renderer always captures crash events.
     error: true,
     reason: details.reason,
     exit_code: details.exitCode,
