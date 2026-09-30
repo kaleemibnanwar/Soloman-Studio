@@ -95,13 +95,13 @@ describe("settings actions (integration)", () => {
       name: "Max Tool Calls (Agent)",
     });
 
-    await harness.selectFromBaseUiSelect(trigger, "Low (25)");
-    await waitFor(() => expect(readSettings().maxToolCallSteps).toBe(25));
+    await harness.selectFromBaseUiSelect(trigger, "Low (50)");
+    await waitFor(() => expect(readSettings().maxToolCallSteps).toBe(50));
 
-    await harness.selectFromBaseUiSelect(trigger, "High (200)");
-    await waitFor(() => expect(readSettings().maxToolCallSteps).toBe(200));
+    await harness.selectFromBaseUiSelect(trigger, "Maximum (800)");
+    await waitFor(() => expect(readSettings().maxToolCallSteps).toBe(800));
 
-    await harness.selectFromBaseUiSelect(trigger, "Default (100)");
+    await harness.selectFromBaseUiSelect(trigger, "Default (250)");
     await waitFor(() => expect(readSettings().maxToolCallSteps).toBeUndefined());
   });
 

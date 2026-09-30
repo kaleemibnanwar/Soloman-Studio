@@ -418,7 +418,7 @@ const BaseUserSettingsFields = {
   experiments: ExperimentsSchema.optional(),
   lastShownReleaseNotesVersion: z.string().optional(),
   maxChatTurnsInContext: z.number().optional(),
-  maxToolCallSteps: z.number().optional(),
+  maxToolCallSteps: z.number().int().min(50).max(800).optional(),
   modelEffortPreferences: z.record(z.string(), EffortLevelSchema).optional(),
   enableProLazyEditsMode: z.boolean().optional(),
   proLazyEditsMode: z.enum(["off", "v1", "v2"]).optional(),
@@ -481,6 +481,9 @@ const BaseUserSettingsFields = {
 export const StoredUserSettingsSchema = z
   .object({
     ...BaseUserSettingsFields,
+    // Older builds allowed values below the current 50-800 range. Accept them
+    // here so migration can clamp without treating the whole settings file as corrupt.
+    maxToolCallSteps: z.number().int().optional(),
     // Deprecated: effort is now selected per model.
     thinkingBudget: z.enum(["low", "medium", "high"]).optional(),
     // Use StoredChatModeSchema to allow deprecated "agent" value
@@ -547,6 +550,10 @@ export function migrateStoredSettings(stored: StoredUserSettings): UserSettings 
     ...activeSettings,
     selectedChatMode: migrateStoredChatMode(stored.selectedChatMode),
     defaultChatMode: migrateStoredChatMode(stored.defaultChatMode),
+    maxToolCallSteps:
+      stored.maxToolCallSteps === undefined
+        ? undefined
+        : Math.min(800, Math.max(50, stored.maxToolCallSteps)),
     enableChatEventNotifications:
       stored.enableChatEventNotifications ?? stored.enableChatCompletionNotifications,
     enableAppBlueprint: stored.enableAppBlueprint ?? true,

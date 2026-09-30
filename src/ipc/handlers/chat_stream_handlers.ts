@@ -19,6 +19,7 @@ import { chats, messages } from "../../db/schema";
 const scheduleChatSearchIndexing = () => {};
 import { and, eq, isNull } from "drizzle-orm";
 import type { SmartContextMode } from "../../lib/schemas";
+import { DEFAULT_MAX_TOOL_CALL_STEPS } from "../../constants/settings_constants";
 import { constructSystemPrompt, readAiRules } from "../../prompts/system_prompt";
 import { detectFrameworkType } from "../utils/framework_utils";
 import { getThemePromptById } from "../utils/theme_utils";
@@ -2104,7 +2105,9 @@ This conversation includes one or more image attachments. When the user uploads 
             temperature: await getTemperature(settings.selectedModel),
             maxRetries: 2,
             model: modelClient.model,
-            stopWhen: [stepCountIs(20), hasToolCall("edit-code")],
+            stopWhen: willUseLocalAgentStream
+              ? [stepCountIs(settings.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS)]
+              : [stepCountIs(20), hasToolCall("edit-code")],
             // Avoids the SDK's O(n^2) per-chunk JSON.stringify of the full
             // accumulated text (see fastTextOutput). We read fullStream parts
             // directly and never consume partialOutput.

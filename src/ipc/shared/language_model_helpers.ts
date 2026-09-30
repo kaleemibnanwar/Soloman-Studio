@@ -13,6 +13,9 @@ import {
   PROVIDER_TO_ENV_VAR,
 } from "./language_model_constants";
 import { getBuiltinLanguageModelCatalog } from "./remote_language_model_catalog";
+import { readSettings } from "@/main/settings";
+import { getEnvVar } from "@/ipc/utils/read_env";
+import { fetchGoogleChatModels, mergeDiscoveredGoogleModels } from "./google_model_discovery";
 
 const logger = log.scope("language_model_helpers");
 /**
@@ -163,6 +166,22 @@ export async function getLanguageModels({
       console.warn(
         `Provider "${providerId}" is cloud type but not found in builtin catalog or MODEL_OPTIONS.`,
       );
+    }
+
+    if (providerId === "google") {
+      const settings = readSettings();
+      const apiKey =
+        settings.providerSettings?.google?.apiKey?.value ?? getEnvVar("GEMINI_API_KEY");
+      if (apiKey) {
+        try {
+          hardcodedModels = mergeDiscoveredGoogleModels(
+            hardcodedModels,
+            await fetchGoogleChatModels(apiKey),
+          );
+        } catch (error) {
+          logger.warn("Could not refresh Google model catalog; using the curated catalog", error);
+        }
+      }
     }
   }
 

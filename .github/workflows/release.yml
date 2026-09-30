@@ -55,6 +55,7 @@ jobs:
           if (!(Test-Path dist-release)) { New-Item -ItemType Directory -Path dist-release }
           Copy-Item out/make/squirrel.windows/x64/*.exe dist-release/Octopus-Studio-Setup-1.10.0.exe -ErrorAction SilentlyContinue
           Copy-Item out/make/squirrel.windows/x64/*.nupkg dist-release/ -ErrorAction SilentlyContinue
+          Copy-Item out/make/squirrel.windows/x64/RELEASES dist-release/RELEASES -ErrorAction Stop
           Copy-Item out/make/zip/win32/x64/*.zip dist-release/Octopus-Studio-Windows-Portable.zip -ErrorAction SilentlyContinue
 
       # --- macOS Build (Apple Silicon arm64 & Intel x64) ---
@@ -83,11 +84,16 @@ jobs:
       - name: Upload Binaries to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v1.10.0"; fi
           gh release view "$TAG" || gh release create "$TAG" --title "Octopus Studio $TAG" --notes "Release $TAG"
           gh release upload "$TAG" dist-release/* --clobber
-          gh release view "$TAG" --repo kaleemibnanwar/OctopusStudio || gh release create "$TAG" --repo kaleemibnanwar/OctopusStudio --title "Octopus Studio $TAG" --notes "Release $TAG" || true
-          gh release upload "$TAG" dist-release/* --repo kaleemibnanwar/OctopusStudio --clobber 2>/dev/null || true
+          if [ -z "$PUBLIC_REPO_TOKEN" ]; then
+            echo "PUBLIC_REPO_TOKEN is required to publish updater assets to kaleemibnanwar/OctopusStudio" >&2
+            exit 1
+          fi
+          GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release view "$TAG" --repo kaleemibnanwar/OctopusStudio || GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release create "$TAG" --repo kaleemibnanwar/OctopusStudio --title "Octopus Studio $TAG" --notes "Release $TAG"
+          GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release upload "$TAG" dist-release/* --repo kaleemibnanwar/OctopusStudio --clobber
         shell: bash

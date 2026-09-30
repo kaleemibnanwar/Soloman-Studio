@@ -8,7 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEFAULT_MAX_TOOL_CALL_STEPS } from "@/constants/settings_constants";
+import {
+  DEFAULT_MAX_TOOL_CALL_STEPS,
+  MAX_MAX_TOOL_CALL_STEPS,
+  MIN_MAX_TOOL_CALL_STEPS,
+} from "@/constants/settings_constants";
 import { useTranslation } from "react-i18next";
 
 interface OptionInfo {
@@ -21,14 +25,14 @@ const defaultValue = "default";
 
 const options: OptionInfo[] = [
   {
-    value: "25",
-    label: "Low (25)",
-    description: "Limits tool calls to 25. Good for simple tasks that don't need many steps.",
+    value: String(MIN_MAX_TOOL_CALL_STEPS),
+    label: `Low (${MIN_MAX_TOOL_CALL_STEPS})`,
+    description: `Limits tool calls to ${MIN_MAX_TOOL_CALL_STEPS}. Good for focused tasks.`,
   },
   {
-    value: "50",
-    label: "Medium (50)",
-    description: "Moderate limit for straightforward tasks.",
+    value: "100",
+    label: "Medium (100)",
+    description: "Moderate limit for straightforward multi-step tasks.",
   },
   {
     value: defaultValue,
@@ -36,9 +40,14 @@ const options: OptionInfo[] = [
     description: "Balanced limit for most tasks.",
   },
   {
-    value: "200",
-    label: "High (200)",
-    description: "Extended limit for complex multi-step tasks (may increase cost and time).",
+    value: "500",
+    label: "High (500)",
+    description: "Extended limit for complex, long-running tasks (may increase cost and time).",
+  },
+  {
+    value: String(MAX_MAX_TOOL_CALL_STEPS),
+    label: `Maximum (${MAX_MAX_TOOL_CALL_STEPS})`,
+    description: `Allows up to ${MAX_MAX_TOOL_CALL_STEPS} tool calls for exceptionally large tasks.`,
   },
 ];
 
@@ -50,7 +59,10 @@ export const MaxToolCallStepsSelector: React.FC = () => {
     if (value === "default") {
       updateSettings({ maxToolCallSteps: undefined });
     } else {
-      const numValue = parseInt(value, 10);
+      const numValue = Math.min(
+        MAX_MAX_TOOL_CALL_STEPS,
+        Math.max(MIN_MAX_TOOL_CALL_STEPS, parseInt(value, 10)),
+      );
       updateSettings({ maxToolCallSteps: numValue });
     }
   };

@@ -103,9 +103,11 @@ describe("readSettings", () => {
         {
           "autoApproveNonSchemaSql": true,
           "autoExpandPreviewPanel": true,
+          "defaultChatMode": "local-agent",
           "disablePreviewNodeAutoInstall": false,
           "enableAppBlueprint": true,
           "enableAutoUpdate": true,
+          "enableBrowserLimbBridge": true,
           "enableCodeExplorer": true,
           "enableContextCompaction": true,
           "enableMcpToolSearch": true,
@@ -116,6 +118,11 @@ describe("readSettings", () => {
           "enableSandboxScriptExecution": true,
           "enableTestingForNewApps": false,
           "experiments": {},
+          "guardrails": [
+            "Never force-push or rewrite the main branch's history",
+            "Never delete the project or its apps",
+            "Never commit credentials, API keys, or secrets",
+          ],
           "hasRunBefore": false,
           "isRunning": false,
           "lastKnownPerformance": undefined,
@@ -123,7 +130,7 @@ describe("readSettings", () => {
           "previewIdleTimeoutPolicy": "default",
           "providerSettings": {},
           "releaseChannel": "stable",
-          "selectedChatMode": "build",
+          "selectedChatMode": "local-agent",
           "selectedModel": {
             "name": "auto",
             "provider": "auto",
@@ -443,6 +450,18 @@ describe("readSettings", () => {
       expect(result.defaultChatMode).toBe("ask");
     });
 
+    it("clamps legacy tool-call limits into the supported 50-800 range", () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          selectedModel: { name: "gpt-4", provider: "openai" },
+          maxToolCallSteps: 25,
+        }),
+      );
+
+      expect(readSettings().maxToolCallSteps).toBe(50);
+    });
+
     it("should preserve extra fields not recognized by the schema", () => {
       const mockFileContent = {
         selectedModel: {
@@ -519,9 +538,11 @@ describe("readSettings", () => {
         {
           "autoApproveNonSchemaSql": true,
           "autoExpandPreviewPanel": true,
+          "defaultChatMode": "local-agent",
           "disablePreviewNodeAutoInstall": false,
           "enableAppBlueprint": true,
           "enableAutoUpdate": true,
+          "enableBrowserLimbBridge": true,
           "enableCodeExplorer": true,
           "enableContextCompaction": true,
           "enableMcpToolSearch": true,
@@ -532,6 +553,11 @@ describe("readSettings", () => {
           "enableSandboxScriptExecution": true,
           "enableTestingForNewApps": false,
           "experiments": {},
+          "guardrails": [
+            "Never force-push or rewrite the main branch's history",
+            "Never delete the project or its apps",
+            "Never commit credentials, API keys, or secrets",
+          ],
           "hasRunBefore": false,
           "isRunning": false,
           "lastKnownPerformance": undefined,
@@ -539,7 +565,7 @@ describe("readSettings", () => {
           "previewIdleTimeoutPolicy": "default",
           "providerSettings": {},
           "releaseChannel": "stable",
-          "selectedChatMode": "build",
+          "selectedChatMode": "local-agent",
           "selectedModel": {
             "name": "auto",
             "provider": "auto",

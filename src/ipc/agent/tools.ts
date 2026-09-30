@@ -736,6 +736,13 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         fs.mkdirSync(path.dirname(full), { recursive: true });
         fs.writeFileSync(full, content, "utf8");
         buildOrUpdateFileChunks(openCodeIndexDb(params.appPath), params.appPath, rel);
+        publishQueryInvalidations(
+          [
+            { family: "app", appId: params.appId },
+            { family: "uncommitted-files", appId: params.appId },
+          ],
+          params.event.sender,
+        );
         return `Wrote ${rel} (${Buffer.byteLength(content, "utf8")} bytes).`;
       } catch (e) {
         return `Error writing ${file_path}: ${e instanceof Error ? e.message : String(e)}`;
@@ -781,6 +788,13 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         if (!result.success) return `search_replace failed: ${result.error}`;
         fs.writeFileSync(full, result.content, "utf8");
         buildOrUpdateFileChunks(openCodeIndexDb(params.appPath), params.appPath, rel);
+        publishQueryInvalidations(
+          [
+            { family: "app", appId: params.appId },
+            { family: "uncommitted-files", appId: params.appId },
+          ],
+          params.event.sender,
+        );
         return `Applied edit to ${rel}.`;
       } catch (e) {
         return `Error editing ${file_path}: ${e instanceof Error ? e.message : String(e)}`;
@@ -803,6 +817,13 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         const { relativePath, fullPath } = await prepareDeletePath(params.appPath, file_path);
         fs.rmSync(fullPath, { recursive: true, force: true });
         removeFileChunks(openCodeIndexDb(params.appPath), relativePath);
+        publishQueryInvalidations(
+          [
+            { family: "app", appId: params.appId },
+            { family: "uncommitted-files", appId: params.appId },
+          ],
+          params.event.sender,
+        );
         return `Deleted ${relativePath}.`;
       } catch (e) {
         return `Error deleting ${file_path}: ${e instanceof Error ? e.message : String(e)}`;

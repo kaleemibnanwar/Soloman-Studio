@@ -18,7 +18,7 @@ import { registerIpcHandlers } from "./ipc/ipc_host";
 import dotenv from "dotenv";
 // @ts-ignore
 import started from "electron-squirrel-startup";
-import { updateElectronApp, UpdateSourceType } from "update-electron-app";
+import { updateElectronApp } from "update-electron-app";
 import log from "electron-log";
 import {
   getSettingsFilePath,
@@ -40,6 +40,7 @@ import {
   retryRecoveryWithKeychainUnlock,
 } from "./main/safe_storage_legacy";
 import { recordUpdaterError } from "./main/updater_state";
+import { getAutoUpdateConfig } from "./main/auto_update_config";
 import { sendTelemetryEvent, sendTelemetryEventToWindow } from "./ipc/utils/telemetry";
 import { handleSupabaseOAuthReturn } from "./supabase_admin/supabase_return_handler";
 import { handleOctopusStudioProReturn } from "./main/pro";
@@ -565,9 +566,8 @@ export async function onReady() {
     // Technically we could just pass the releaseChannel directly to the host,
     // but this is more explicit and falls back to stable if there's an unknown
     // release channel.
-    const postfix = settings.releaseChannel === "beta" ? "beta" : "stable";
-    const host = `https://api.octopusStudio.sh/v1/update/${postfix}`;
-    logger.info("Auto-update release channel=", postfix);
+    const updateConfig = getAutoUpdateConfig(settings.releaseChannel);
+    logger.info("Auto-update release channel=", updateConfig.channel);
     // update-electron-app logs updater errors at info level, which the
     // warn-filtered bug-report logs drop — leaving only the orphaned stack
     // trace tail. Log at error level and record for debug bundles.
@@ -577,12 +577,8 @@ export async function onReady() {
     });
     updateElectronApp({
       logger,
-      updateInterval: "60 minutes",
-      updateSource: {
-        type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "octopus-studio-sh/octopusStudio",
-        host,
-      },
+      updateInterval: updateConfig.updateInterval,
+      updateSource: updateConfig.updateSource,
     }); // additional configuration options available
   }
 }

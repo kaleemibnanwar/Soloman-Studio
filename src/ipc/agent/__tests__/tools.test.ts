@@ -6,7 +6,7 @@
 // tools, and the write_file/search_replace execute path really edits files and
 // updates the chunk index.
 
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -15,6 +15,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import { buildBuiltinTools, type BuiltinToolsParams } from "../tools";
 import { AGENT_TOOL_REGISTRY, AGENT_TOOL_NAMES } from "../tool_registry";
 import { parseDocx, parsePptx, parseXlsx } from "../../office/office_open";
+import { queryInvalidationBus } from "@/window_infrastructure/main/query_invalidation_bus";
 
 let dir: string;
 
@@ -105,6 +106,7 @@ describe("buildBuiltinTools", () => {
 
 describe("write_file / search_replace execute", () => {
   it("creates then edits a file and updates the chunk index", async () => {
+    const publish = vi.spyOn(queryInvalidationBus, "publish");
     const tools = buildBuiltinTools(params());
 
     const write = await (
@@ -129,6 +131,13 @@ describe("write_file / search_replace execute", () => {
     const content = fs.readFileSync(path.join(dir, "src/index.ts"), "utf8");
     expect(content).toContain("return a * b;");
     expect(content).not.toContain("return a + b;");
+    expect(publish).toHaveBeenCalledWith(
+      [
+        { family: "app", appId: 1 },
+        { family: "uncommitted-files", appId: 1 },
+      ],
+      expect.objectContaining({ originEndpoint: expect.anything() }),
+    );
   });
 
   it("reports a clear error when search_replace cannot match uniquely", async () => {
