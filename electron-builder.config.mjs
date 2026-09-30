@@ -90,7 +90,7 @@ const config = {
     target: ["zip"],
     icon: "assets/icon/logo.png",
     category: "public.app-category.developer-tools",
-    identity: isEndToEndTestBuild ? null : (process.env.APPLE_TEAM_ID ?? null),
+    identity: isEndToEndTestBuild ? null : (process.env.APPLE_IDENTITY ?? null),
     hardenedRuntime: true,
     gatekeeperAssess: false,
     // Signing is skipped for E2E test builds (matches Forge's

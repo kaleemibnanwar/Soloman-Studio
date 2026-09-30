@@ -13,8 +13,8 @@ export default async function afterSign(context) {
   const appName = context.packager.appInfo.productFilename;
   await notarize({
     appPath: `${context.appOutDir}/${appName}.app`,
-    appleId: process.env.APPLE_ID,
-    appleIdPassword: process.env.APPLE_PASSWORD,
-    teamId: process.env.APPLE_TEAM_ID,
+    appleApiKey: process.env.APPLE_API_KEY_PATH,
+    appleApiKeyId: process.env.APPLE_API_KEY_ID,
+    appleApiIssuer: process.env.APPLE_API_ISSUER,
   });
 }

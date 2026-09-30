@@ -205,10 +205,10 @@ const config: ForgeConfig = {
     icon: "./assets/icon/logo",
 
     osxSign:
-      isEndToEndTestBuild || !process.env.APPLE_TEAM_ID
+      isEndToEndTestBuild || !process.env.APPLE_IDENTITY
         ? undefined
         : ({
-            identity: process.env.APPLE_TEAM_ID,
+            identity: process.env.APPLE_IDENTITY,
             // Surface the actual signing error instead of silently continuing
             // (@electron/packager defaults continueOnError to true, which masks failures)
             continueOnError: false,
@@ -218,14 +218,14 @@ const config: ForgeConfig = {
           } as Record<string, unknown>),
     osxNotarize:
       isEndToEndTestBuild ||
-      !process.env.APPLE_TEAM_ID ||
-      !process.env.APPLE_ID ||
-      !process.env.APPLE_PASSWORD
+      !process.env.APPLE_API_KEY_ID ||
+      !process.env.APPLE_API_ISSUER ||
+      !process.env.APPLE_API_KEY_PATH
         ? undefined
         : {
-            appleId: process.env.APPLE_ID,
-            appleIdPassword: process.env.APPLE_PASSWORD,
-            teamId: process.env.APPLE_TEAM_ID,
+            appleApiKey: process.env.APPLE_API_KEY_PATH,
+            appleApiKeyId: process.env.APPLE_API_KEY_ID,
+            appleApiIssuer: process.env.APPLE_API_ISSUER,
           },
     asar: {
       // Native modules and node-pty helper binaries must be loadable from disk.
