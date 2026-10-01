@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Octopus Studio" width="120" />
+<img src="assets/icon/logo.png" alt="Octopus Studio" width="120" />
 
 # Octopus Studio
 
