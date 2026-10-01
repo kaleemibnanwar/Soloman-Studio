@@ -1,7 +1,7 @@
 import { db } from "../../db";
 import { ensureDefaultChatProject } from "../../db/default_chat_project";
 import { chats, messages } from "../../db/schema";
-import { desc, eq, and, like, inArray, sql } from "drizzle-orm";
+import { desc, eq, and, like } from "drizzle-orm";
 import type { ChatSearchResult, ChatSummary } from "../../lib/schemas";
 
 import log from "electron-log";
@@ -249,30 +249,10 @@ export function registerChatHandlers() {
 
     const allChats = await query;
 
-    const tokenTotals = new Map<number, number>();
-    if (allChats.length > 0) {
-      const rows = await db
-        .select({
-          chatId: messages.chatId,
-          total: sql<number>`coalesce(sum(${messages.maxTokensUsed}), 0)`,
-        })
-        .from(messages)
-        .where(
-          inArray(
-            messages.chatId,
-            allChats.map((chat) => chat.id),
-          ),
-        )
-        .groupBy(messages.chatId);
-      for (const row of rows) {
-        tokenTotals.set(row.chatId, Number(row.total));
-      }
-    }
-
     return allChats.map((chat) => ({
       ...chat,
       chatMode: normalizeStoredChatMode(chat.chatMode),
-      totalTokens: tokenTotals.get(chat.id) ?? 0,
+      totalTokens: 0,
     })) satisfies ChatSummary[];
   });
 

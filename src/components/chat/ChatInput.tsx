@@ -85,7 +85,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ContextLimitBanner, shouldShowContextLimitBanner } from "./ContextLimitBanner";
-import { ChatTokenUsageCap } from "./ChatTokenUsageCap";
 import { useCountTokens } from "@/hooks/useCountTokens";
 import { useChats } from "@/hooks/useChats";
 import { useRouter } from "@tanstack/react-router";
@@ -316,16 +315,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       totalTokens: tokenCountResult.actualMaxTokens,
       contextWindow: tokenCountResult.contextWindow,
     });
-
-  // Sum of AI tokens (input + output) used across this chat's messages.
-  const chatTotalTokens = useMemo(
-    () => messages.reduce((sum, message) => sum + (message.totalTokens ?? 0), 0),
-    [messages],
-  );
-
-  // Token usage cap row on the composer; the context limit warning wins the
-  // slot, otherwise the token usage cap is always visible.
-  const showTokenUsageCap = chatTotalTokens > 0 && !showBanner;
 
   useEffect(() => {
     if (error) {
@@ -756,14 +745,12 @@ export function ChatInput({ chatId }: { chatId?: number }) {
             contextWindow={tokenCountResult.contextWindow}
           />
         )}
-        {/* Token usage cap row fused to the top of the composer */}
-        {showTokenUsageCap && <ChatTokenUsageCap totalTokens={chatTotalTokens} />}
         <div
           className={cn(
             "group/console relative flex flex-col border border-border rounded-lg bg-(--background-lighter) transition-colors duration-200",
             "focus-within:border-primary/30 focus-within:ring-1 focus-within:ring-primary/20",
             isDraggingOver && "ring-2 ring-primary border-primary",
-            (showBanner || showTokenUsageCap) && "rounded-t-none border-t-0",
+            showBanner && "rounded-t-none border-t-0",
           )}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -772,7 +759,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
           {/* Instrument-panel corner ticks, matching the home console — skipped
               at the top when a banner is fused flush above (corners are
               already square there). */}
-          {!(showBanner || showTokenUsageCap) && (
+          {!showBanner && (
             <>
               <span
                 aria-hidden

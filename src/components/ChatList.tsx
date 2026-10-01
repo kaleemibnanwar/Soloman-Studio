@@ -495,13 +495,6 @@ export function ChatList({
                                       addSuffix: true,
                                     })}
                                   </span>
-                                  {chat.totalTokens > 0 && (
-                                    <span>
-                                      {t("tokenUsage", {
-                                        count: chat.totalTokens.toLocaleString(),
-                                      })}
-                                    </span>
-                                  )}
                                 </span>
                               </div>
                             </Button>

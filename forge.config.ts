@@ -25,6 +25,7 @@ const { isPrereleaseVersion } = require("./scripts/release-version-utils.js") as
 const packageJson = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
+const windowsIconUrl = `https://github.com/kaleemibnanwar/OctopusStudio/releases/download/v${packageJson.version}/logo.ico`;
 
 const pgRuntimeDependencies = [
   "pg",
@@ -258,13 +259,11 @@ const config: ForgeConfig = {
             isWindowsSigningEnabled
               ? {
                   windowsSign,
-                  iconUrl:
-                    "https://raw.githubusercontent.com/octopusStudio-sh/octopusStudio/main/assets/icon/logo.ico",
+                  iconUrl: windowsIconUrl,
                   setupIcon: "./assets/icon/logo.ico",
                 }
               : {
-                  iconUrl:
-                    "https://raw.githubusercontent.com/octopusStudio-sh/octopusStudio/main/assets/icon/logo.ico",
+                  iconUrl: windowsIconUrl,
                   setupIcon: "./assets/icon/logo.ico",
                 },
           ),

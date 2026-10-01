@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { eq } from "drizzle-orm";
-import { chats } from "@/db/schema";
+import { chats, messages } from "@/db/schema";
 import { ipc } from "@/ipc/types";
 import { setupHybridChatHarness, type HybridChatHarness } from "@/testing/hybrid_chat_harness";
 import { h } from "@/testing/hybrid.setup";
@@ -36,11 +36,20 @@ describe("ChatList favorites (integration)", () => {
         createdAt: new Date("2025-01-01T00:00:00Z"),
       })
       .returning();
+    await harness.db.insert(messages).values({
+      chatId: harness.chatId,
+      role: "assistant",
+      content: "Finished",
+      maxTokensUsed: 1_457_713,
+    });
 
     harness.mount({ withChatList: true });
     expect(screen.queryByTestId("chat-group-favorites")).toBeNull();
 
     const listContainer = await screen.findByTestId("chat-list-container");
+    expect(screen.getByTestId(`chat-list-item-${harness.chatId}`).textContent).not.toContain(
+      "Tokens:",
+    );
     expect(listContainer.className).toContain("overflow-x-hidden");
     listContainer.scrollTop = 120;
     const olderFavoriteButton = await screen.findByRole("button", {

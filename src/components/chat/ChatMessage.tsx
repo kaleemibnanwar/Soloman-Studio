@@ -10,7 +10,6 @@ import {
   GitCommit,
   Copy,
   Check,
-  Info,
   Bot,
   Ban,
   Undo2,
@@ -87,14 +86,6 @@ function stripAttachmentInfo(content: string): string {
     .trim();
 }
 
-/**
- * Rough output-token estimate used when a provider doesn't report usage (e.g.
- * local Ollama models) and while a response is still streaming.
- */
-function estimateOutputTokens(text: string): number {
-  return Math.max(0, Math.ceil(text.length / 4));
-}
-
 interface ChatMessageProps {
   message: Message;
   isLastMessage: boolean;
@@ -114,19 +105,6 @@ const ChatMessage = ({ message, isLastMessage, isCancelledPrompt }: ChatMessageP
   const isRestoringToMessage = previewState.type === "restoring";
   const assistantTextContent =
     message.role === "assistant" ? stripCancelledResponseNotice(message.content) : "";
-  const isStreamingThisMessage = message.role === "assistant" && isLastMessage && isStreaming;
-  const liveTokenEstimate =
-    message.role === "assistant" ? estimateOutputTokens(assistantTextContent) : 0;
-  // While the last assistant message streams, show a live estimate. Once it
-  // finishes, prefer the provider-reported output (completion) tokens; fall
-  // back to a content-based estimate when the provider didn't report usage.
-  const displayTokens = isStreamingThisMessage
-    ? liveTokenEstimate
-    : message.totalTokens != null && message.totalTokens > 0
-      ? message.totalTokens
-      : message.role === "assistant" && assistantTextContent.length > 0
-        ? liveTokenEstimate
-        : 0;
   // Sidecar tool-input XML preview lives outside message.content. Subscribe
   // to its equality-gated boolean so non-last messages only re-render on the
   // empty/non-empty transition, not on every preview chunk.
@@ -408,24 +386,6 @@ const ChatMessage = ({ message, isLastMessage, isCancelledPrompt }: ChatMessageP
               <Clock className="h-3 w-3" />
               <span>{formatTimestamp(message.createdAt)}</span>
             </div>
-            {(isStreamingThisMessage || displayTokens > 0) && (
-              <div
-                className="flex items-center space-x-1 px-1 py-0.5"
-                title={
-                  isStreamingThisMessage
-                    ? "Streaming token estimate"
-                    : message.totalTokens != null && message.totalTokens > 0
-                      ? `Total tokens: ${displayTokens.toLocaleString()}`
-                      : `Estimated tokens: ${displayTokens.toLocaleString()}`
-                }
-              >
-                <Info className="h-3 w-3" />
-                <span>
-                  {isStreamingThisMessage ? "~" : ""}
-                  {displayTokens.toLocaleString()} tokens
-                </span>
-              </div>
-            )}
             {messageVersion && messageVersion.message && versionNumber && (
               <div className="flex items-center space-x-1">
                 <GitCommit className="h-3 w-3" />
