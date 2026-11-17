@@ -54,10 +54,10 @@ jobs:
           npx electron-forge make --platform=win32 --arch=x64
           if (!(Test-Path dist-release)) { New-Item -ItemType Directory -Path dist-release }
           $version = node -p "require('./package.json').version"
-          Copy-Item out/make/squirrel.windows/x64/*.exe "dist-release/Octopus-Studio-Setup-$version.exe" -ErrorAction Stop
+          Copy-Item out/make/squirrel.windows/x64/*.exe "dist-release/Soloman-Studio-Setup-$version.exe" -ErrorAction Stop
           Copy-Item out/make/squirrel.windows/x64/*.nupkg dist-release/ -ErrorAction SilentlyContinue
           Copy-Item out/make/squirrel.windows/x64/RELEASES dist-release/RELEASES -ErrorAction Stop
-          Copy-Item out/make/zip/win32/x64/*.zip dist-release/Octopus-Studio-Windows-Portable.zip -ErrorAction SilentlyContinue
+          Copy-Item out/make/zip/win32/x64/*.zip dist-release/Soloman-Studio-Windows-Portable.zip -ErrorAction SilentlyContinue
 
       # --- Install Apple signing certificate (macOS only) ---
       - name: Install Apple signing certificate
@@ -99,8 +99,8 @@ jobs:
           npx electron-forge make --platform=darwin --arch=arm64
           npx electron-forge make --platform=darwin --arch=x64
           mkdir -p dist-release
-          cp out/make/zip/darwin/arm64/*.zip dist-release/Octopus-Studio-macOS-AppleSilicon.zip 2>/dev/null || true
-          cp out/make/zip/darwin/x64/*.zip dist-release/Octopus-Studio-macOS-Intel.zip 2>/dev/null || true
+          cp out/make/zip/darwin/arm64/*.zip dist-release/Soloman-Studio-macOS-AppleSilicon.zip 2>/dev/null || true
+          cp out/make/zip/darwin/x64/*.zip dist-release/Soloman-Studio-macOS-Intel.zip 2>/dev/null || true
           cp out/make/zip/darwin/*/*.zip dist-release/ 2>/dev/null || true
         shell: bash
 
