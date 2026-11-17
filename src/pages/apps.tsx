@@ -400,7 +400,7 @@ export default function AppsPage() {
             </DialogTitle>
             <DialogDescription className="text-xs">
               {keepProjectFiles
-                ? "This will remove the selected apps and their chat histories from Octopus Studio, while keeping their project directories intact on disk."
+                ? "This will remove the selected apps and their chat histories from Soloman Studio, while keeping their project directories intact on disk."
                 : "This action is irreversible. All app files, local directories, and chat histories will be permanently deleted."}
             </DialogDescription>
           </DialogHeader>
@@ -434,7 +434,7 @@ export default function AppsPage() {
               </label>
               <p className="text-[11px] text-muted-foreground leading-normal">
                 Preserves all source code and local project folders on disk, removing only the
-                metadata and chats from Octopus Studio.
+                metadata and chats from Soloman Studio.
               </p>
             </div>
           </div>

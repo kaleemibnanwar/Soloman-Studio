@@ -35,11 +35,11 @@ export type AgentRole = (typeof AGENT_ROLES)[number];
  * max model-call count (the sub-agent's `stepCountIs` stop condition).
  */
 export const ROLE_BUDGETS: Record<AgentRole, TokenBudget> = {
-  explorer: { contextBudget: 2000, outputBudget: 500, executionBudget: 3 },
-  executor: { contextBudget: 8000, outputBudget: 2000, executionBudget: 10 },
-  tester: { contextBudget: 5000, outputBudget: 1000, executionBudget: 6 },
-  debugger: { contextBudget: 8000, outputBudget: 2000, executionBudget: 10 },
-  reviewer: { contextBudget: 6000, outputBudget: 1000, executionBudget: 4 },
-  architect: { contextBudget: 10000, outputBudget: 2000, executionBudget: 6 },
-  verifier: { contextBudget: 4000, outputBudget: 800, executionBudget: 4 },
+  explorer: { contextBudget: 6000, outputBudget: 1200, executionBudget: 8 },
+  executor: { contextBudget: 16000, outputBudget: 4000, executionBudget: 20 },
+  tester: { contextBudget: 8000, outputBudget: 1500, executionBudget: 10 },
+  debugger: { contextBudget: 16000, outputBudget: 4000, executionBudget: 20 },
+  reviewer: { contextBudget: 8000, outputBudget: 1500, executionBudget: 8 },
+  architect: { contextBudget: 12000, outputBudget: 2500, executionBudget: 8 },
+  verifier: { contextBudget: 6000, outputBudget: 1200, executionBudget: 8 },
 };

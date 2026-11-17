@@ -3,6 +3,7 @@ import { createStore, Provider } from "jotai";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import "@/i18n";
 import * as parserModule from "@/lib/streamingMessageParser";
 import type { Block as ParserBlock, ParserState } from "@/lib/streamingMessageParser";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
@@ -24,11 +25,11 @@ vi.mock("react-markdown", () => ({
   },
 }));
 
-vi.mock("../preview_panel/FileEditor", () => ({
+vi.mock("../../preview_panel/FileEditor", () => ({
   FileEditor: () => null,
 }));
 
-vi.mock("./CodeHighlight", () => ({
+vi.mock("../CodeHighlight", () => ({
   CodeHighlight: ({ children }: { children: ReactNode }) => <pre>{children}</pre>,
 }));
 
@@ -108,6 +109,71 @@ describe("OctopusStudioMarkdownParser octopus-studio-command", () => {
 
     expect(screen.getByRole("button", { name: /add typescript/i })).toBeTruthy();
     expect(screen.queryByText(/Unsupported:/)).toBeNull();
+  });
+});
+
+describe("OctopusStudioMarkdownParser tool activity", () => {
+  afterEach(() => {
+    mockStreamState.current = { type: "idle" };
+    cleanup();
+  });
+
+  it("groups completed tool calls into one collapsed disclosure", () => {
+    render(
+      <OctopusStudioMarkdownParser
+        content={`Starting work.
+<octopus-studio-mcp-tool-call server="local" tool="read_file" call-id="call-1">{"path":"a.ts"}</octopus-studio-mcp-tool-call>
+<octopus-studio-mcp-tool-result server="local" tool="read_file" call-id="call-1">content</octopus-studio-mcp-tool-result>
+<octopus-studio-mcp-tool-call server="local" tool="execute_command" call-id="call-2">{"command":"npm test"}</octopus-studio-mcp-tool-call>
+<octopus-studio-mcp-tool-result server="local" tool="execute_command" call-id="call-2">passed</octopus-studio-mcp-tool-result>
+Finished.`}
+      />,
+    );
+
+    const disclosure = screen.getByRole("button", { name: /tool activity/i });
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByText("2 calls")).toBeTruthy();
+    expect(screen.getByText("Completed")).toBeTruthy();
+    expect(screen.getAllByTestId("tool-activity-group")).toHaveLength(1);
+
+    fireEvent.click(disclosure);
+    expect(disclosure.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("read_file")).toBeTruthy();
+    expect(screen.getByText("execute_command")).toBeTruthy();
+  });
+
+  it("keeps a streaming tool call inside the collapsed activity disclosure", () => {
+    const store = createStore();
+    store.set(selectedChatIdAtom, 1);
+    mockStreamState.current = { type: "streaming" };
+
+    render(
+      <Provider store={store}>
+        <OctopusStudioMarkdownParser
+          content={
+            '<octopus-studio-mcp-tool-call server="local" tool="read_file" call-id="call-1">{"path":"a.ts"}'
+          }
+        />
+      </Provider>,
+    );
+
+    const disclosure = screen.getByRole("button", { name: /tool activity/i });
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByText("1 running")).toBeTruthy();
+  });
+
+  it("reports failed tool calls in the collapsed activity summary", () => {
+    render(
+      <OctopusStudioMarkdownParser
+        content={`<octopus-studio-mcp-tool-call server="local" tool="execute_command" call-id="call-1">{"command":"exit 1"}</octopus-studio-mcp-tool-call>
+<octopus-studio-mcp-tool-result server="local" tool="execute_command" call-id="call-1" is-error="true">Command failed</octopus-studio-mcp-tool-result>`}
+      />,
+    );
+
+    const disclosure = screen.getByRole("button", { name: /tool activity/i });
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByText("1 call")).toBeTruthy();
+    expect(screen.getByText("1 failed")).toBeTruthy();
   });
 });
 

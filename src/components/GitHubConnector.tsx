@@ -382,7 +382,7 @@ function ConnectedGitHubConnector({ appId, app }: ConnectedGitHubConnectorProps)
                     : conflictRecoveryStage === "checking"
                       ? "Checking the repository for remaining conflicts."
                       : conflictRecoveryStage === "verification-failed"
-                        ? `${conflictVerificationError ?? "Octopus Studio couldn't check the repository."} Your resolved changes are still safe.`
+                        ? `${conflictVerificationError ?? "Soloman Studio couldn't check the repository."} Your resolved changes are still safe.`
                         : conflictRecoveryStage === "ready-to-sync"
                           ? "Your changes are ready to sync to GitHub."
                           : `Resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} to ${isSyncConflict ? "continue syncing" : "finish merging"}.`}

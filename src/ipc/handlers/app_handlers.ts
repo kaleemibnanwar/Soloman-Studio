@@ -37,7 +37,7 @@ import {
   readAppResource,
   type AppOperationDeletion,
 } from "../services/app_operation_coordinator";
-import { getFilesRecursively } from "../utils/file_utils";
+import { getFilesRecursivelyAsync } from "../utils/file_utils";
 import {
   runningApps,
   stopAppByInfo,
@@ -735,7 +735,7 @@ async function deleteAppByIdExclusive(
 
 /**
  * Finds an unused folder name under the given base directory (used for
- * auto-created chat project folders under octopus-studio-projects). Appends a numeric
+ * auto-created chat project folders under ~/Soloman Studio/Projects/Workspaces). Appends a numeric
  * suffix if the slug already exists on disk.
  */
 async function resolveUniqueChatProjectFolder(base: string, slug: string): Promise<string> {
@@ -909,7 +909,7 @@ export function registerAppHandlers() {
   createTypedHandler(appContracts.createChatProject, async (_, { name, directory }) => {
     const appName = name.trim();
     // If the user didn't pick a workspace folder, create one under the
-    // octopus-studio-projects base directory (the chat sibling of octopus-studio-apps), using a
+    // projects base directory (the chat sibling of apps base directory), using a
     // unique slug derived from the project name.
     let resolvedDirectory = directory ? path.resolve(directory) : null;
     if (!resolvedDirectory) {
@@ -1236,7 +1236,7 @@ export function registerAppHandlers() {
     let files: string[] = [];
 
     try {
-      files = getFilesRecursively(appPath, appPath);
+      files = await getFilesRecursivelyAsync(appPath, appPath);
       // Normalize the path to use forward slashes so file tree (UI)
       // can parse it more consistently across platforms.
       files = files.map((path) => normalizePath(path));
@@ -2096,7 +2096,7 @@ export function registerAppHandlers() {
         });
       }
       const octopusStudioAppPath = getDefaultOctopusStudioAppsDirectory();
-      // Delete the default `octopus-studio-apps` folder, even if the user no longer uses it
+      // Delete the default apps folder, even if the user no longer uses it
       if (fs.existsSync(octopusStudioAppPath)) {
         await fsPromises.rm(octopusStudioAppPath, {
           recursive: true,

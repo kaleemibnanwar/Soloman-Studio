@@ -1074,4 +1074,101 @@ pdftoppm -png -r 150 executive_brief.pdf page_preview
 #    - Is leading proportional with no overlapping glyphs?
 \`\`\``,
   },
+  {
+    name: "enterprise-ui-ux",
+    description:
+      "Enterprise UI/UX design standards: 8pt spatial layouts, accessible typography & color tokens (WCAG 2.1 AA/AAA), data-dense tables, complex forms, optimistic asynchronous states, and micro-interactions for mission-critical web and desktop applications.",
+    instructions: `# Enterprise UI/UX Design System & Ergonomics Guide
+
+This skill governs the architecture, layout, interaction design, and visual polish of enterprise-grade desktop and web applications. Enterprise software must balance high information density with exceptional cognitive clarity, unwavering accessibility, and predictable interaction models.
+
+---
+
+## 1. Spatial Foundation & Layout Architecture
+
+1. **8pt Grid Discipline**:
+   - Align all structural layouts, spacing, margins, and component dimensions to an **8pt spatial system** (with 4pt sub-increments for compact iconography, badges, and table padding).
+   - Standard Spacing Scale:
+     - \`2xs\` (2px), \`xs\` (4px), \`sm\` (8px), \`md\` (12px), \`lg\` (16px), \`xl\` (24px), \`2xl\` (32px), \`3xl\` (48px).
+
+2. **Application Shell Architecture**:
+   - **Persistent Navigation Rail / Sidebar**: Collapsible (64px icon-only rail to 240px expanded navigation tree) with active state indicators (accent left edge or high-contrast pill).
+   - **Global Header / Context Bar**: Fixed 48px–56px height. Contains workspace switcher, breadcrumbs, search / command palette trigger (\`Cmd+K\` / \`Ctrl+K\`), and profile / tenant controls.
+   - **Content Canvas**: Bounded container with responsive max-width (\`1440px\` for dashboards, \`100%\` for data grids).
+   - **Inspector / Detail Drawer**: Right-anchored sheet (360px–480px width) for contextual inspection without losing primary list position.
+
+3. **Visual Hierarchy & Chunking**:
+   - Group related controls and metrics into distinct **Cards / Surfaces** (\`border: 1px solid var(--border)\`, \`border-radius: 8px\`, subtle shadow \`0 1px 3px rgba(0,0,0,0.05)\`).
+   - Group information into clear visual tiers: Hero KPI / Status -> Primary Action Controls -> Tabbed Detailed Views.
+
+---
+
+## 2. Typography & Color System (WCAG 2.1 AA Compliant)
+
+1. **Type Scale**:
+   - **Display / Page Title**: 20px–24px (Bold, 600/700 weight, Line-height: 1.25).
+   - **Section Header (H2)**: 16px–18px (Semi-Bold, 600 weight, Line-height: 1.3).
+   - **Subsection / Card Title (H3)**: 14px (Semi-Bold, 600 weight, Line-height: 1.4).
+   - **Primary Body / Data**: 13px–14px (Regular, 400 weight, Line-height: 1.5).
+   - **Metadata / Eyebrow / Badges**: 11px–12px (Medium, 500 weight, Line-height: 1.4, tracking: +0.02em).
+   - **Tabular Numerals**: Always apply \`font-feature-settings: "tnum"\` or \`font-variant-numeric: tabular-nums\` for data columns and numbers.
+
+2. **Color Tokens & Contrast Parity**:
+   - Body text must meet minimum **4.5:1** contrast ratio against its surface.
+   - Large headings (>18pt) must meet minimum **3:1** contrast ratio.
+   - Essential interactive borders and icons must meet minimum **3:1** against adjacent background.
+   - Semantic Status Palettes:
+     - **Success**: Text \`#15803D\`, Surface \`#DCFCE7\`, Border \`#86EFAC\`
+     - **Warning / Pending**: Text \`#B45309\`, Surface \`#FEF3C7\`, Border \`#FCD34D\`
+     - **Danger / Destructive**: Text \`#B91C1C\`, Surface \`#FEE2E2\`, Border \`#FCA5A5\`
+     - **Info / Neutral**: Text \`#1D4ED8\`, Surface \`#DBEAFE\`, Border \`#93C5FD\`
+
+---
+
+## 3. Data Density & Table Ergonomics
+
+1. **Table Anatomy**:
+   - Header row: Sticky top (\`position: sticky; top: 0\`), subtle bottom border, uppercase or small semi-bold font.
+   - Row heights: Standard (40px–48px), Compact (32px–36px for high data density), Comfortable (52px–60px).
+   - Text columns left-aligned; numerical/currency columns right-aligned; badges, dates, and action menus centered or right-aligned.
+   - Provide horizontal scroll container with sticky frozen columns for primary ID and quick action menu.
+
+2. **Batch Actions & Selection**:
+   - Checkbox multi-select in column 0 with floating sticky action bar on selection ("3 items selected — [Export] [Bulk Edit] [Delete]").
+   - Shift-click range selection support.
+
+3. **Empty & Error States**:
+   - Never show a blank table canvas. Provide structured empty states with:
+     - Contextual icon (48px, muted tone).
+     - Clear title ("No items found").
+     - Supportive subtitle describing next step or why the view is empty.
+     - Direct CTA button ("Create your first item" or "Clear filters").
+
+---
+
+## 4. Asynchronous States & Feedback Loops
+
+1. **Loading Skeletons over Full-Screen Spinners**:
+   - Render content-shaped pulse skeletons matching table rows, metric cards, or forms during fetch operations.
+   - Avoid jarring layout shift (Cumulative Layout Shift = 0) by reserving explicit dimensions.
+
+2. **Optimistic Updates**:
+   - For low-latency actions (starring, status toggle, tag assignments), update client UI immediately.
+   - Maintain rollback capability on network or mutation rejection with a descriptive toast notification.
+
+3. **Toasts & Notifications**:
+   - Non-blocking toast notifications in corner for background task completions.
+   - Critical confirmations (destructive deletes, key revocations) require explicit modal dialogs with dual verification.
+
+---
+
+## 5. Keyboard Navigation & Accessibility Standards
+
+1. **Focus Rings**:
+   - Always supply visible, high-contrast focus rings for keyboard navigation (\`focus-visible: ring-2 ring-primary ring-offset-2\`). Never disable \`outline\` without an explicit accessible replacement.
+2. **Shortcuts**:
+   - Standard shortcuts: \`/\` or \`Cmd+K\` for quick search, \`Esc\` to dismiss drawers/modals, \`Cmd+Enter\` to submit forms.
+3. **Form Validation**:
+   - Inline real-time validation with descriptive error strings under the corresponding input field, not solely in a distant banner.`,
+  },
 ];

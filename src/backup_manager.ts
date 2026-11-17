@@ -8,7 +8,7 @@ import { calculateFileChecksum } from "@/utils/file_checksum";
 
 const logger = log.scope("backup_manager");
 
-const MAX_BACKUPS = 3;
+const MAX_BACKUPS = 5;
 
 interface BackupManagerOptions {
   settingsFile: string;
@@ -79,7 +79,7 @@ export class BackupManager {
     logger.debug("Backup directory created/verified");
 
     logger.info(`Version upgrade detected: ${lastVersion} → ${currentVersion}`);
-    await this.createBackup(`upgrade_from_${lastVersion}`);
+    await this.createBackup("pre-migration");
 
     // Save current version
     await this.saveCurrentVersion(currentVersion);
@@ -90,13 +90,36 @@ export class BackupManager {
   }
 
   /**
+   * Explicitly triggers an automatic pre-migration snapshot before schema migrations run.
+   */
+  async createPreMigrationBackup(): Promise<string | null> {
+    const dbExists = await this.fileExists(this.dbFilePath);
+    if (!dbExists) {
+      return null;
+    }
+    await fs.mkdir(this.backupBasePath, { recursive: true });
+    const backupPath = await this.createBackup("pre-migration");
+    await this.cleanupOldBackups();
+    return backupPath;
+  }
+
+  /**
    * Create a backup of settings and database
    */
   async createBackup(reason: string = "manual"): Promise<string> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const cleanReason = reason ? reason.replace(/[^a-zA-Z0-9_-]/g, "-") : "pre-migration";
     const version = app.getVersion();
-    const backupName = `v${version}_${timestamp}_${reason}`;
-    const backupPath = path.join(this.backupBasePath, backupName);
+    let backupName = `v${version}_${dateStr}_${cleanReason}`;
+    let backupPath = path.join(this.backupBasePath, backupName);
+
+    // If a backup with this exact name already exists today, append a timestamp
+    if (await this.fileExists(backupPath)) {
+      const timeStr = now.toISOString().replace(/[:.]/g, "-");
+      backupName = `v${version}_${timeStr}_${cleanReason}`;
+      backupPath = path.join(this.backupBasePath, backupName);
+    }
 
     logger.info(`Creating backup: ${backupName} (reason: ${reason})`);
 
@@ -142,7 +165,8 @@ export class BackupManager {
         },
       };
 
-      await fs.writeFile(path.join(backupPath, "backup.json"), JSON.stringify(metadata, null, 2));
+      // Primary manifest per Soloman Studio AppData specification
+      await fs.writeFile(path.join(backupPath, "manifest.json"), JSON.stringify(metadata, null, 2));
 
       logger.info(`Backup created successfully: ${backupName}`);
       return backupPath;
@@ -176,7 +200,11 @@ export class BackupManager {
 
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const metadataPath = path.join(this.backupBasePath, entry.name, "backup.json");
+          const manifestPath = path.join(this.backupBasePath, entry.name, "manifest.json");
+          const legacyBackupPath = path.join(this.backupBasePath, entry.name, "backup.json");
+          const metadataPath = (await this.fileExists(manifestPath))
+            ? manifestPath
+            : legacyBackupPath;
 
           try {
             const metadataContent = await fs.readFile(metadataPath, "utf8");

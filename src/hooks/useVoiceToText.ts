@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseVoiceToTextOptions {
   onTranscription: (text: string) => void;
+  onTranscriptionComplete?: (text: string) => void;
   onError?: (error: string) => void;
+}
+
+interface StartRecordingOptions {
+  autoStopOnSilence?: boolean;
+  silenceMs?: number;
+  maxDurationMs?: number;
 }
 
 /**
@@ -27,7 +34,7 @@ interface Transcriber {
 // The Whisper checkpoints now ship int4 "MatMulNBits" weights, which
 // onnxruntime-web's WASM backend cannot load ("Missing required scale").
 // Loading `fp32` weights avoids the quantized nodes entirely.
-const WHISPER_MODEL_ID = "onnx-community/whisper-tiny";
+const WHISPER_MODEL_ID = "onnx-community/whisper-base";
 
 // Map a BCP-47 language tag to a Whisper language name. Passing a known
 // language skips auto-detection, which is faster and more accurate.
@@ -123,17 +130,24 @@ function blobTo16kHzMonoFloat32(blob: Blob): Promise<Float32Array> {
 interface RecordingSession {
   mediaRecorder: MediaRecorder;
   stream: MediaStream;
+  discard: boolean;
+  stopMonitoring?: () => void;
 }
 
-export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptions) {
+export function useVoiceToText({
+  onTranscription,
+  onTranscriptionComplete,
+  onError,
+}: UseVoiceToTextOptions) {
   // Voice-to-text is disabled by default; the first toggle turns it on.
   const [isEnabled, setIsEnabled] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const callbacksRef = useRef({ onTranscription, onError });
-  callbacksRef.current = { onTranscription, onError };
+  const callbacksRef = useRef({ onTranscription, onTranscriptionComplete, onError });
+  callbacksRef.current = { onTranscription, onTranscriptionComplete, onError };
 
   const sessionRef = useRef<RecordingSession | null>(null);
+  const startAttemptRef = useRef(0);
 
   const transcribeBlob = useCallback(async (blob: Blob) => {
     setIsTranscribing(true);
@@ -145,10 +159,15 @@ export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptio
         task: "transcribe",
         ...(language ? { language } : {}),
       });
-      const text = (result?.text ?? "").trim();
+      const rawText = (result?.text ?? "")
+        .replace(/\[(?:blank_audio|silence|music|noise)\]/gi, "")
+        .replace(/\((?:blank audio|silence|music|noise)\)/gi, "")
+        .trim();
+      const text = rawText;
       if (text) {
         callbacksRef.current.onTranscription(text);
       }
+      callbacksRef.current.onTranscriptionComplete?.(text);
     } catch (error) {
       callbacksRef.current.onError?.(
         error instanceof Error ? error.message : "Speech recognition failed.",
@@ -162,6 +181,7 @@ export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptio
     const session = sessionRef.current;
     if (!session) return;
     sessionRef.current = null;
+    session.stopMonitoring?.();
     setIsRecording(false);
     setIsTranscribing(true);
     try {
@@ -172,50 +192,149 @@ export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptio
     }
   }, []);
 
-  const startRecording = useCallback(async () => {
-    if (sessionRef.current) return;
-
-    let stream: MediaStream;
+  const cancelRecording = useCallback(() => {
+    startAttemptRef.current += 1;
+    const session = sessionRef.current;
+    if (!session) return;
+    sessionRef.current = null;
+    session.discard = true;
+    session.stopMonitoring?.();
+    setIsRecording(false);
+    setIsTranscribing(false);
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (error) {
-      const message =
-        error instanceof Error && error.name === "NotAllowedError"
-          ? "Microphone access was denied."
-          : "Unable to access the microphone.";
-      callbacksRef.current.onError?.(message);
-      return;
-    }
-
-    let mediaRecorder: MediaRecorder;
-    try {
-      mediaRecorder = new MediaRecorder(stream);
+      session.mediaRecorder.stop();
     } catch {
-      stream.getTracks().forEach((track) => track.stop());
-      callbacksRef.current.onError?.("Audio recording is not supported in this environment.");
-      return;
+      session.stream.getTracks().forEach((track) => track.stop());
     }
+  }, []);
 
-    const chunks: Blob[] = [];
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) chunks.push(event.data);
-    };
-    mediaRecorder.onstop = () => {
-      stream.getTracks().forEach((track) => track.stop());
-      const type = mediaRecorder.mimeType || "audio/webm";
-      void transcribeBlob(new Blob(chunks, { type }));
-    };
-    mediaRecorder.onerror = () => {
-      sessionRef.current = null;
-      setIsRecording(false);
-      stream.getTracks().forEach((track) => track.stop());
-      callbacksRef.current.onError?.("Recording failed.");
-    };
+  const startRecording = useCallback(
+    async (options: StartRecordingOptions = {}) => {
+      if (sessionRef.current) return;
+      const startAttempt = ++startAttemptRef.current;
 
-    sessionRef.current = { mediaRecorder, stream };
-    setIsRecording(true);
-    mediaRecorder.start();
-  }, [transcribeBlob]);
+      // Load Whisper while the user is speaking so model startup does not sit
+      // entirely between the end of their sentence and the sent chat turn.
+      if (options.autoStopOnSilence) void loadTranscriber().catch(() => undefined);
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            autoGainControl: true,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            sampleRate: 48_000,
+          },
+        });
+      } catch (error) {
+        if (startAttempt !== startAttemptRef.current) return;
+        const message =
+          error instanceof Error && error.name === "NotAllowedError"
+            ? "Microphone access was denied."
+            : "Unable to access the microphone.";
+        callbacksRef.current.onError?.(message);
+        return;
+      }
+
+      if (startAttempt !== startAttemptRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream);
+      } catch {
+        stream.getTracks().forEach((track) => track.stop());
+        callbacksRef.current.onError?.("Audio recording is not supported in this environment.");
+        return;
+      }
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) chunks.push(event.data);
+      };
+      const session: RecordingSession = { mediaRecorder, stream, discard: false };
+      mediaRecorder.onstop = () => {
+        session.stopMonitoring?.();
+        stream.getTracks().forEach((track) => track.stop());
+        if (session.discard) return;
+        const type = mediaRecorder.mimeType || "audio/webm";
+        void transcribeBlob(new Blob(chunks, { type }));
+      };
+      mediaRecorder.onerror = () => {
+        sessionRef.current = null;
+        setIsRecording(false);
+        stream.getTracks().forEach((track) => track.stop());
+        callbacksRef.current.onError?.("Recording failed.");
+      };
+
+      sessionRef.current = session;
+      setIsRecording(true);
+      mediaRecorder.start();
+
+      if (options.autoStopOnSilence) {
+        const AudioCtx =
+          window.AudioContext ??
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const context = new AudioCtx();
+          void context.resume?.().catch(() => undefined);
+          const analyser = context.createAnalyser();
+          analyser.fftSize = 1024;
+          context.createMediaStreamSource(stream).connect(analyser);
+          const samples = new Uint8Array(analyser.fftSize);
+          const startedAt = performance.now();
+          let heardSpeech = false;
+          let lastSpeechAt = startedAt;
+          let noiseFloor = 0.015;
+          let animationFrame = 0;
+          let stopped = false;
+          const silenceMs = options.silenceMs ?? 1600;
+          const maxDurationMs = options.maxDurationMs ?? 30_000;
+          const noSpeechTimeoutMs = Math.min(8_000, maxDurationMs);
+
+          const monitor = (now: number) => {
+            if (stopped || sessionRef.current !== session) return;
+            analyser.getByteTimeDomainData(samples);
+            let energy = 0;
+            for (const sample of samples) {
+              const amplitude = (sample - 128) / 128;
+              energy += amplitude * amplitude;
+            }
+            const rms = Math.sqrt(energy / samples.length);
+            const speechThreshold = Math.max(0.028, noiseFloor * 2.2);
+            if (now - startedAt > 150 && rms > speechThreshold) {
+              heardSpeech = true;
+              lastSpeechAt = now;
+            } else {
+              noiseFloor = noiseFloor * 0.95 + rms * 0.05;
+            }
+            if (
+              (heardSpeech && now - lastSpeechAt >= silenceMs) ||
+              (!heardSpeech && now - startedAt >= noSpeechTimeoutMs) ||
+              now - startedAt >= maxDurationMs
+            ) {
+              stopRecording();
+              return;
+            }
+            animationFrame = requestAnimationFrame(monitor);
+          };
+
+          session.stopMonitoring = () => {
+            if (stopped) return;
+            stopped = true;
+            cancelAnimationFrame(animationFrame);
+            void context.close();
+          };
+          animationFrame = requestAnimationFrame(monitor);
+        }
+      }
+    },
+    [stopRecording, transcribeBlob],
+  );
 
   const toggleRecording = useCallback(() => {
     // First click enables voice-to-text and starts recording.
@@ -234,8 +353,11 @@ export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptio
   // Release the microphone and discard any in-flight recording on unmount.
   useEffect(() => {
     return () => {
+      startAttemptRef.current += 1;
       const session = sessionRef.current;
       if (session) {
+        session.discard = true;
+        session.stopMonitoring?.();
         session.mediaRecorder.onstop = null;
         session.stream.getTracks().forEach((track) => track.stop());
       }
@@ -243,5 +365,13 @@ export function useVoiceToText({ onTranscription, onError }: UseVoiceToTextOptio
     };
   }, []);
 
-  return { isEnabled, isRecording, isTranscribing, toggleRecording };
+  return {
+    isEnabled,
+    isRecording,
+    isTranscribing,
+    toggleRecording,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  };
 }

@@ -26,6 +26,13 @@ import { getAiHeaders } from "../utils/provider_options";
 import { estimateTokens, getMaxOutputTokens, getTemperature } from "../utils/token_utils";
 import { mcpManager } from "../mcp/mcp_manager";
 import { buildMcpToolKey, sanitizeMcpName } from "../mcp/mcp_tool_utils";
+import { requireAgentToolConsent } from "./agent_consent";
+import { getMissionHitlPolicy, requestHitlApproval, shouldInterceptTool } from "./hitl_interceptor";
+import {
+  canUseOpenCodeRuntime,
+  OpenCodeRuntimeError,
+  runWithOpenCode,
+} from "./runtime/opencode_runtime";
 
 const logger = log.scope("agent-orchestrator");
 
@@ -72,9 +79,79 @@ export interface AgentOrchestratorDeps {
  */
 function limitContextTokens(content: string, maxTokens: number): string {
   if (estimateTokens(content) <= maxTokens) return content;
-  const notice = "\n\n[context truncated to fit the sub-agent's context budget]";
-  const keepChars = Math.max(0, maxTokens * 4 - notice.length);
-  return content.slice(0, keepChars) + notice;
+  const notice = "\n\n[… context middle truncated to fit the sub-agent's context budget …]\n\n";
+  const budgetChars = Math.max(0, maxTokens * 4 - notice.length);
+  const headChars = Math.floor(budgetChars * 0.65);
+  const tailChars = Math.max(0, budgetChars - headChars);
+  return content.slice(0, headChars) + notice + content.slice(content.length - tailChars);
+}
+
+function summarizeToolOutput(output: unknown, maxChars = 400): string {
+  const raw =
+    typeof output === "string"
+      ? output
+      : output === undefined || output === null
+        ? ""
+        : JSON.stringify(output);
+  const compact = raw.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxChars) return compact;
+  return `${compact.slice(0, maxChars)}…`;
+}
+
+function buildSubAgentSystemPrompt({
+  role,
+  appPath,
+  economyMode,
+  hasOfficeTools,
+}: {
+  role: AgentRole;
+  appPath: string;
+  economyMode: boolean;
+  hasOfficeTools: boolean;
+}): string {
+  const roleDirectives: Record<AgentRole, string> = {
+    explorer:
+      "Your job is fast, accurate codebase discovery. Use list_files, grep, code_search, and read_file (in parallel when reading multiple files) to locate exact files, symbols, and line numbers. Never guess or fabricate file contents.",
+    executor:
+      "Your job is to implement the requested changes completely and cleanly. Read target files before editing, use search_replace for targeted edits or write_file for new/full files, and verify your changes.",
+    tester:
+      "Your job is to verify behavior using type checks, sandbox scripts, and file inspection. Report concrete pass/fail evidence and exact error locations.",
+    debugger:
+      "Your job is root-cause diagnosis and surgical bug fixing. Inspect the relevant code, git diff/status, and type checks, apply the minimal fix, and verify it.",
+    reviewer:
+      "Your job is code review. Inspect the relevant files and diffs for bugs, regressions, security issues, or incomplete logic, and report concrete findings with file paths.",
+    architect:
+      "Your job is technical design. Inspect existing codebase conventions and module boundaries, then return a concise, grounded implementation plan with exact file paths.",
+    verifier:
+      "Your job is post-change verification. Check that all requested files/edits exist, run type checks or verification scripts, and confirm whether the task is truly complete.",
+  };
+
+  return [
+    `You are a specialized ${role} sub-agent in Octopus Studio working on a single bounded subtask.`,
+    `Workspace root: \`${appPath}\``,
+    "",
+    "--- CORE RULES ---",
+    `- ${roleDirectives[role]}`,
+    "- Stay strictly within the scope of your assigned subtask.",
+    "- Ground every claim in actual tool outputs. NEVER hallucinate file paths, code snippets, or tool results, and never claim an edit was made unless the tool call succeeded.",
+    "- Batch independent read/search tool calls in parallel to save steps.",
+    "- Always reserve your final step to output a clear, compact summary of what you found or changed.",
+    "- Minimize tool output: for browser/MCP tools, read the page WITHOUT requesting full body text unless a specific text value is required.",
+    ...(hasOfficeTools
+      ? [
+          "",
+          "--- OFFICE TOOLS ---",
+          "You have direct access to the Office document tools: create_document, create_spreadsheet, create_presentation, create_office_documents_batch, edit_document, edit_spreadsheet, edit_presentation, read_office_file, read_office_template. Use them directly to produce real OOXML binary files (.docx, .xlsx, .pptx) — never delegate again or save raw HTML under .doc/.xls/.ppt.",
+        ]
+      : []),
+    ...(economyMode
+      ? [
+          "",
+          "--- ECONOMY MODE ---",
+          "Be maximally concise. No preamble or filler — output only concrete findings, edits made, and verification status.",
+        ]
+      : []),
+  ].join("\n");
 }
 
 export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
@@ -84,6 +161,10 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
       ? requestedRole
       : "executor";
     const budget = ROLE_BUDGETS[role] ?? ROLE_BUDGETS.executor;
+    const effectiveMaxSteps =
+      spec.maxSteps !== undefined
+        ? Math.min(Math.max(1, spec.maxSteps), 30)
+        : budget.executionBudget;
     const taskId = uuidIdSource.next("agent-task");
     const description = spec.description;
 
@@ -107,7 +188,7 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
       allowedSymbols: null,
       contextBudget: budget.contextBudget,
       outputBudget: budget.outputBudget,
-      executionBudget: budget.executionBudget,
+      executionBudget: effectiveMaxSteps,
       status: "running",
     });
     await db.insert(agentEvents).values({
@@ -177,11 +258,22 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
         chatMode: deps.chatMode,
         agentToolConsents: deps.settings.agentToolConsents,
         event: deps.event,
+        prompt: `${description}\n${spec.context ?? ""}`,
+        requestToolConsent: ({ abortSignal, ...consent }) =>
+          requireAgentToolConsent(deps.event, {
+            chatId: deps.chatId,
+            ...consent,
+            abortSignal: abortSignal ?? deps.abortController.signal,
+          }),
         agentTaskContext: {
           taskId,
           allowedFiles: spec.allowedFiles ?? null,
           allowedSymbols: null,
           agentRole: role,
+          toolAllowlist: spec.toolAllowlist ?? null,
+          isSubAgent: true,
+          missionSlug: spec.missionSlug,
+          botName: spec.botName,
         },
       });
 
@@ -217,6 +309,26 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
                         return `WARNING: you have already called ${toolName} with these exact arguments ${repeats} times. Stop repeating and either try a different action or report your current state.`;
                       }
                       mcpCallHistory.push({ name: toolName, args: argsStr });
+                      const interception = shouldInterceptTool(
+                        toolName,
+                        args as Record<string, unknown>,
+                        spec.missionSlug
+                          ? getMissionHitlPolicy(deps.appPath, spec.missionSlug)
+                          : undefined,
+                      );
+                      if (interception.shouldBlock && spec.missionSlug) {
+                        const approval = await requestHitlApproval({
+                          projectPath: deps.appPath,
+                          missionSlug: spec.missionSlug,
+                          requestingBot: spec.botName ?? role,
+                          toolName,
+                          args: args as Record<string, unknown>,
+                          summary: `${spec.botName ?? role} requested ${interception.category}.`,
+                        });
+                        if (!approval.approved) {
+                          return `BLOCKED: ${approval.reason ?? "The user rejected this action."}`;
+                        }
+                      }
                       return truncateToolResult(
                         await originalExecute(args, options),
                         toolResultCharBudget(budget.contextBudget),
@@ -256,92 +368,159 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
         }
       }
 
-      const result = streamText({
-        headers: getAiHeaders({ builtinProviderId: roleClient.builtinProviderId }),
-        maxOutputTokens: await getMaxOutputTokens(roleModel, deps.economyMode),
-        temperature: await getTemperature(roleModel),
-        providerOptions: roleClient.supportsCacheControl
-          ? { anthropic: { cacheControl: { type: "ephemeral" as const } } }
-          : undefined,
-        maxRetries: 1,
-        model: roleClient.model,
-        stopWhen: [stepCountIs(budget.executionBudget)],
-        system: [
-          deps.getSystemPrompt(),
-          "",
-          "--- SUB-AGENT DIRECTIVES ---",
-          `You are a sub-agent (role: ${role}) in Octopus Studio, working on one bounded subtask delegated by the main agent.`,
-          `Do only this task and do not expand its scope. Read only what you need.`,
-          `Minimize tool output: prefer a tool's compact mode over verbose output. For browser tools, read the page WITHOUT requesting full body text — the indexed interactive elements are enough to decide the next action; request body text only when you must read a specific value.`,
-          ...(role === "executor" || role === "debugger"
-            ? [
-                "",
-                "--- OFFICE TOOLS ---",
-                "You have direct access to the Office document tools: create_document, create_spreadsheet, create_presentation, create_office_documents_batch, edit_document, edit_spreadsheet, edit_presentation, read_office_file, read_office_template. When your task involves creating or editing an Office file, use these tools directly — do NOT delegate again.",
-                "To create a document, spreadsheet, or presentation: you can either use a pre-built template (call read_office_template to list templates and their [placeholders], then pass `template` and `values`), OR create custom-designed files directly (for DOCX pass `markdown`, `title`, or `blocks`; for PPTX pass `slides` with layouts like title/bullets/stats/table/split/quote/closing; for XLSX pass `csv`, `data`, or `sheets`). Both approaches produce beautifully styled, complete OOXML binary files.",
-                "Always produce real OOXML binary files (.docx, .xlsx, .pptx), never raw HTML saved under a legacy .doc/.xls/.ppt extension.",
-              ]
-            : []),
-          `Report your result compactly at the end.`,
-        ].join("\n"),
-        tools: allTools,
-        messages: [
-          {
-            role: "user",
-            content: limitContextTokens(
-              description + (spec.context ? `\n\nContext:\n${spec.context}` : "") + resumeContext,
-              budget.contextBudget,
-            ),
-          },
-        ],
-        abortSignal: deps.abortController.signal,
+      const hasOfficeTools = "create_document" in allTools;
+      const subAgentSystemPrompt = buildSubAgentSystemPrompt({
+        role,
+        appPath: deps.appPath,
+        economyMode: deps.economyMode,
+        hasOfficeTools,
       });
 
-      const text = await result.text;
-      const steps = await result.steps;
-      const usage = await result.totalUsage;
-      let inputTokens = usage?.inputTokens ?? 0;
-      let outputTokens = usage?.outputTokens ?? 0;
+      const boundedContext = spec.context
+        ? `\n\nContext:\n${limitContextTokens(spec.context, budget.contextBudget)}`
+        : "";
+      const userMessageContent = `${description}${boundedContext}${resumeContext}`;
 
-      for (const step of steps ?? []) {
-        for (const tr of step.toolResults ?? []) {
-          if (tr.toolName === "spawn_subagent") {
-            try {
-              const env = JSON.parse(tr.output as string);
-              if (typeof env.inputTokens === "number") inputTokens += env.inputTokens;
-              if (typeof env.outputTokens === "number") outputTokens += env.outputTokens;
-            } catch (e) {
-              // ignore
+      const maxOutputTokens = Math.min(
+        budget.outputBudget,
+        (await getMaxOutputTokens(roleModel, deps.economyMode)) ?? budget.outputBudget,
+      );
+      const temperature = await getTemperature(roleModel);
+      const headers = getAiHeaders({ builtinProviderId: roleClient.builtinProviderId });
+      const providerOptions = roleClient.supportsCacheControl
+        ? { anthropic: { cacheControl: { type: "ephemeral" as const } } }
+        : undefined;
+
+      let inputTokens = 0;
+      let outputTokens = 0;
+      let outputText = "";
+      let status: "complete" | "partial" = "complete";
+      let notes = "Subtask completed successfully.";
+      let actionsTaken: Array<{ tool: string; input: unknown; outputPreview?: string }> = [];
+
+      const useOpenCode = canUseOpenCodeRuntime({
+        model: roleClient.model,
+        requestedMcpServers,
+        toolAllowlist: spec.toolAllowlist,
+      });
+      if (useOpenCode) {
+        try {
+          const openCodeResult = await runWithOpenCode({
+            model: roleClient.model,
+            role,
+            workspacePath: deps.appPath,
+            systemPrompt: subAgentSystemPrompt,
+            prompt: userMessageContent,
+            maxSteps: effectiveMaxSteps,
+            maxOutputTokens,
+            temperature,
+            headers,
+            providerOptions,
+            allowedFiles: spec.allowedFiles,
+            abortSignal: deps.abortController.signal,
+            requestConsent: ({ action, resources, message }) =>
+              requireAgentToolConsent(deps.event, {
+                chatId: deps.chatId,
+                toolName: `opencode:${action}`,
+                toolDescription: message ?? `Allow OpenCode to perform ${action}`,
+                inputPreview: resources.join("\n"),
+                abortSignal: deps.abortController.signal,
+              }),
+          });
+          inputTokens = openCodeResult.inputTokens;
+          outputTokens = openCodeResult.outputTokens;
+          outputText = openCodeResult.text;
+          status = openCodeResult.status;
+          notes = openCodeResult.notes;
+          actionsTaken = openCodeResult.actionsTaken;
+        } catch (error) {
+          if (!(error instanceof OpenCodeRuntimeError) || !error.safeToFallback) throw error;
+          logger.warn("OpenCode failed before executing a tool; using the legacy runtime", error);
+        }
+      }
+
+      if (!outputText) {
+        const result = streamText({
+          headers,
+          maxOutputTokens,
+          temperature,
+          providerOptions,
+          maxRetries: 1,
+          model: roleClient.model,
+          stopWhen: [stepCountIs(effectiveMaxSteps)],
+          system: subAgentSystemPrompt,
+          tools: allTools,
+          messages: [{ role: "user", content: userMessageContent }],
+          abortSignal: deps.abortController.signal,
+        });
+
+        const text = await result.text;
+        const steps = await result.steps;
+        const usage = await result.totalUsage;
+        inputTokens = usage?.inputTokens ?? 0;
+        outputTokens = usage?.outputTokens ?? 0;
+
+        for (const step of steps ?? []) {
+          for (const tr of step.toolResults ?? []) {
+            if (tr.toolName === "spawn_subagent" || tr.toolName === "plan_task_graph") {
+              try {
+                const env = JSON.parse(tr.output as string);
+                if (typeof env.inputTokens === "number") inputTokens += env.inputTokens;
+                if (typeof env.outputTokens === "number") outputTokens += env.outputTokens;
+              } catch {
+                // An invalid nested envelope is already represented in its tool output.
+              }
             }
+          }
+        }
+
+        actionsTaken = (steps ?? [])
+          .flatMap((s) => {
+            const resultsByCallId = new Map(
+              (s.toolResults ?? []).map((tr) => [tr.toolCallId, tr.output]),
+            );
+            return (s.toolCalls ?? []).map((tc) => {
+              const output = resultsByCallId.get(tc.toolCallId);
+              return {
+                tool: tc.toolName,
+                input: tc.input,
+                ...(output !== undefined
+                  ? { outputPreview: summarizeToolOutput(output, 350) }
+                  : {}),
+              };
+            });
+          })
+          .slice(-20);
+
+        const stepTexts = (steps ?? [])
+          .map((s) => s.text?.trim())
+          .filter((value): value is string => Boolean(value));
+        outputText = (text?.trim() || stepTexts.join("\n\n")).trim();
+
+        if (!outputText) {
+          status = "partial";
+          const toolNames =
+            steps && steps.length > 0
+              ? steps.flatMap((s) => s.toolCalls?.map((tc) => tc.toolName) || [])
+              : [];
+          if (toolNames.length > 0) {
+            notes = `Sub-agent reached its step limit (${effectiveMaxSteps} steps). Tools used: ${toolNames.join(", ")}.`;
+            const recentOutputs = actionsTaken
+              .slice(-8)
+              .map(
+                (action, index) =>
+                  `${index + 1}. ${action.tool}(${summarizeToolOutput(action.input, 120)}) -> ${action.outputPreview ?? "completed"}`,
+              )
+              .join("\n");
+            outputText = `Sub-agent reached step limit (${effectiveMaxSteps}) before writing a final summary. Completed tool actions:\n${recentOutputs}`;
+          } else {
+            notes = "Sub-agent terminated without taking action.";
+            outputText = "No outputs.";
           }
         }
       }
 
       const costUsd = estimateAgentCostUsd(roleModel.name, inputTokens, outputTokens);
-      // Action history (tool + args), capped to the most recent 20, so a follow-up
-      // can resume instead of restarting, and the parent can see what was done.
-      const actionsTaken = (steps ?? [])
-        .flatMap((s) => (s.toolCalls ?? []).map((tc) => ({ tool: tc.toolName, input: tc.input })))
-        .slice(-20);
-
-      let status: "complete" | "partial" = "complete";
-      let notes = "Subtask completed successfully.";
-      let outputText = text;
-
-      if (!outputText || outputText.trim() === "") {
-        status = "partial";
-        const toolNames =
-          steps && steps.length > 0
-            ? steps.flatMap((s) => s.toolCalls?.map((tc) => tc.toolName) || [])
-            : [];
-        if (toolNames.length > 0) {
-          notes = `Sub-agent hit its step limit. Tools used: ${toolNames.join(", ")}.`;
-          outputText = "Partial progress made. Check chat history for tool results.";
-        } else {
-          notes = "Sub-agent terminated without taking action.";
-          outputText = "No outputs.";
-        }
-      }
 
       const dbStatus = status === "complete" ? "completed" : "partial";
 
@@ -426,32 +605,81 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
   };
 
   const planTaskGraph = async (spec: any): Promise<string> => {
-    const subtasks = spec.subtasks || [];
+    const subtasks = Array.isArray(spec?.subtasks) ? spec.subtasks : [];
     const completed = new Map<string, string>();
+    const parsedStatuses = new Map<string, "complete" | "partial" | "blocked">();
+    const unwrappedOutputs = new Map<string, string>();
     const running = new Set<string>();
     const promises = new Map<string, Promise<string>>();
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalCostUsd = 0;
+
+    const recordTaskEnvelope = (id: string, envelopeStr: string) => {
+      completed.set(id, envelopeStr);
+      try {
+        const parsed = JSON.parse(envelopeStr);
+        const st =
+          parsed?.status === "blocked"
+            ? "blocked"
+            : parsed?.status === "partial"
+              ? "partial"
+              : "complete";
+        parsedStatuses.set(id, st);
+        const textOut =
+          typeof parsed?.outputs?.result === "string"
+            ? parsed.outputs.result
+            : typeof parsed?.outputs?.error === "string"
+              ? `ERROR: ${parsed.outputs.error}`
+              : envelopeStr;
+        unwrappedOutputs.set(id, textOut);
+        if (typeof parsed?.inputTokens === "number") totalInputTokens += parsed.inputTokens;
+        if (typeof parsed?.outputTokens === "number") totalOutputTokens += parsed.outputTokens;
+        if (typeof parsed?.costUsd === "number") totalCostUsd += parsed.costUsd;
+      } catch {
+        parsedStatuses.set(id, "complete");
+        unwrappedOutputs.set(id, envelopeStr);
+      }
+    };
 
     const startTask = (task: any) => {
       const run = async (): Promise<string> => {
         try {
-          const deps = (task.depends_on || [])
-            .map((id: string) => `[${id}]: ${completed.get(id) ?? ""}`)
-            .join("\n");
-          const context = (task.context || "") + (deps ? `\n\nPrevious outputs:\n${deps}` : "");
+          const depIds: string[] = Array.isArray(task.depends_on) ? task.depends_on : [];
+          const blockedDep = depIds.find((id) => parsedStatuses.get(id) === "blocked");
+          if (blockedDep) {
+            const skipped = JSON.stringify({
+              status: "blocked",
+              outputs: {
+                error: `Skipped "${task.id}" because upstream dependency "${blockedDep}" was blocked.`,
+              },
+              notes: `Blocked by upstream dependency "${blockedDep}".`,
+            });
+            recordTaskEnvelope(task.id, skipped);
+            return skipped;
+          }
+
+          const depsContext = depIds
+            .map((id: string) => `[${id}]: ${unwrappedOutputs.get(id) ?? completed.get(id) ?? ""}`)
+            .join("\n\n");
+          const context =
+            (task.context || "") + (depsContext ? `\n\nPrevious outputs:\n${depsContext}` : "");
           const resultStr = await spawnSubAgent({
             role: task.role,
-            description: task.goal,
+            description: task.goal ?? task.description ?? "",
             context,
             allowedFiles: task.allowed_files,
+            toolAllowlist: task.tool_allowlist,
+            maxSteps: task.max_steps,
           });
-          completed.set(task.id, resultStr);
+          recordTaskEnvelope(task.id, resultStr);
           return resultStr;
         } catch (e) {
           const blocked = JSON.stringify({
             status: "blocked",
             outputs: { error: String(e) },
           });
-          completed.set(task.id, blocked);
+          recordTaskEnvelope(task.id, blocked);
           return blocked;
         } finally {
           running.delete(task.id);
@@ -481,10 +709,28 @@ export function createAgentOrchestrator(deps: AgentOrchestratorDeps) {
       await Promise.race(inFlight);
     }
 
+    const anyBlocked = [...parsedStatuses.values()].some((s) => s === "blocked");
+    const anyPartial = [...parsedStatuses.values()].some((s) => s === "partial");
+    const overallStatus =
+      completed.size < subtasks.length || anyBlocked
+        ? anyBlocked && completed.size === subtasks.length
+          ? "partial"
+          : "partial"
+        : anyPartial
+          ? "partial"
+          : "complete";
+
     return JSON.stringify({
-      status: completed.size === subtasks.length ? "complete" : "partial",
-      outputs: Object.fromEntries(completed.entries()),
-      notes: "DAG execution completed.",
+      status: overallStatus,
+      outputs: Object.fromEntries(unwrappedOutputs.entries()),
+      rawEnvelopes: Object.fromEntries(completed.entries()),
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      costUsd: Math.round(totalCostUsd * 10_000) / 10_000,
+      notes:
+        overallStatus === "complete"
+          ? "DAG execution completed."
+          : "DAG execution finished with partial or blocked subtasks.",
     });
   };
 

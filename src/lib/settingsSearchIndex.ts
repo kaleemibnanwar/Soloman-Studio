@@ -4,6 +4,7 @@ export const SECTION_IDS = {
   general: "general-settings",
   workflow: "workflow-settings",
   ai: "ai-settings",
+  mediaGeneration: "media-generation",
   providers: "provider-settings",
   plugins: "plugin-settings",
   telemetry: "telemetry",
@@ -11,6 +12,7 @@ export const SECTION_IDS = {
   agentPermissions: "agent-permissions",
   advanced: "advanced",
   experiments: "experiments",
+  webAutomation: "web-automation",
   dangerZone: "danger-zone",
 } as const;
 
@@ -35,13 +37,15 @@ export const SETTING_IDS = {
   maxChatTurns: "setting-max-chat-turns",
   maxToolCallSteps: "setting-max-tool-call-steps",
   contextCompaction: "setting-context-compaction",
+  imageModel: "setting-image-model",
+  videoModel: "setting-video-model",
   telemetry: "setting-telemetry",
   github: "setting-github",
   vercel: "setting-vercel",
   supabase: "setting-supabase",
   neon: "setting-neon",
   googleWorkspace: "setting-google-workspace",
-  imageSearch: "setting-image-search",
+  solomanBridge: "setting-soloman-bridge",
   pluginsList: "setting-plugins-list",
   pluginsCatalog: "setting-plugins-catalog",
   enableCloudSandbox: "setting-enable-cloud-sandbox",
@@ -55,6 +59,7 @@ export const SETTING_IDS = {
   enableMultiWindow: "setting-enable-multi-window",
   enableSelectAppFromHomeChatInput: "setting-enable-select-app-from-home-chat-input",
   reset: "setting-reset",
+  webAutomation: "setting-web-automation",
 } as const;
 
 type SearchableSettingItem = {
@@ -67,6 +72,14 @@ type SearchableSettingItem = {
 };
 
 export const SETTINGS_SEARCH_INDEX: SearchableSettingItem[] = [
+  {
+    id: SETTING_IDS.webAutomation,
+    label: "Web Automation",
+    description: "Configure embedded and external browser sessions, profiles, and automation.",
+    keywords: ["browser", "chrome", "firefox", "cookies", "session", "octolimb", "automation"],
+    sectionId: SECTION_IDS.webAutomation,
+    sectionLabel: "Web Automation",
+  },
   // General Settings
   {
     id: SETTING_IDS.theme,
@@ -128,7 +141,15 @@ export const SETTINGS_SEARCH_INDEX: SearchableSettingItem[] = [
     id: SETTING_IDS.customAppsFolder,
     label: "Customize Apps Folder",
     description: "Set the top-level folder that OctopusStudio will store new applications in",
-    keywords: ["customize", "apps", "path", "folder", "directory", "octopus-studio-apps"],
+    keywords: [
+      "customize",
+      "apps",
+      "path",
+      "folder",
+      "directory",
+      "soloman-studio-apps",
+      "projects",
+    ],
     sectionId: SECTION_IDS.general,
     sectionLabel: "General",
   },
@@ -237,6 +258,23 @@ export const SETTINGS_SEARCH_INDEX: SearchableSettingItem[] = [
     sectionId: SECTION_IDS.ai,
     sectionLabel: "AI",
   },
+  // Media Generation
+  {
+    id: SETTING_IDS.imageModel,
+    label: "Image Generation Model",
+    description: "Choose the model used to generate images in chat",
+    keywords: ["image", "generation", "model", "media", "picture", "dalle", "flux", "imagen"],
+    sectionId: SECTION_IDS.mediaGeneration,
+    sectionLabel: "Media Generation",
+  },
+  {
+    id: SETTING_IDS.videoModel,
+    label: "Video Generation Model",
+    description: "Choose the model used to generate videos in chat",
+    keywords: ["video", "generation", "model", "media", "veo", "sora", "clip"],
+    sectionId: SECTION_IDS.mediaGeneration,
+    sectionLabel: "Media Generation",
+  },
   // Provider Settings
   {
     id: SECTION_IDS.providers,
@@ -323,7 +361,8 @@ export const SETTINGS_SEARCH_INDEX: SearchableSettingItem[] = [
         {
           id: SETTING_IDS.googleWorkspace,
           label: "Google Account",
-          description: "Connect Google Drive, Gmail, Calendar, Docs, Sheets, Slides, Chat, and Contacts",
+          description:
+            "Connect Google Drive, Gmail, Calendar, Docs, Sheets, Slides, Chat, and Contacts",
           keywords: [
             "google",
             "drive",
@@ -343,15 +382,6 @@ export const SETTINGS_SEARCH_INDEX: SearchableSettingItem[] = [
         },
       ]
     : []),
-  {
-    id: SETTING_IDS.imageSearch,
-    label: "Image Search",
-    description: "Configure stock image search providers (Pexels, Pixabay, Openverse)",
-    keywords: ["image", "search", "pexels", "pixabay", "openverse", "stock", "photo", "api key"],
-    sectionId: SECTION_IDS.integrations,
-    sectionLabel: "Integrations",
-  },
-
   // Agent Permissions
   {
     id: SECTION_IDS.agentPermissions,

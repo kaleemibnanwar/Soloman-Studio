@@ -17,6 +17,7 @@ import {
   processStreamChunks,
   takePartialResponseForStream,
   collapseStaleOctoLimbSnapshots,
+  collapseStaleAgentToolResults,
 } from "@/ipc/handlers/chat_stream_handlers";
 import type { AsyncIterableStream, TextStreamPart, ToolSet } from "ai";
 import fs from "node:fs";
@@ -1563,5 +1564,30 @@ describe("collapseStaleOctoLimbSnapshots", () => {
     const result = collapseStaleOctoLimbSnapshots(messages);
 
     expect(result[1].content).toContain("failed to read page");
+  });
+});
+
+describe("collapseStaleAgentToolResults", () => {
+  it("compacts oversized tool results in earlier assistant messages while keeping the latest assistant message intact", () => {
+    const hugeBody = "A".repeat(3000);
+    const recentBody = "B".repeat(3000);
+    const messages = [
+      { role: "user", content: "Inspect the file" },
+      {
+        role: "assistant",
+        content: `<octopus-studio-mcp-tool-result server="agent" tool="read_file" call-id="c1">\n${hugeBody}\n</octopus-studio-mcp-tool-result>`,
+      },
+      { role: "user", content: "Now edit it" },
+      {
+        role: "assistant",
+        content: `<octopus-studio-mcp-tool-result server="agent" tool="read_file" call-id="c2">\n${recentBody}\n</octopus-studio-mcp-tool-result>`,
+      },
+    ];
+
+    const collapsed = collapseStaleAgentToolResults(messages);
+    expect(collapsed[1].content).toContain("chars from earlier turn omitted");
+    expect(collapsed[1].content.length).toBeLessThan(1600);
+    expect(collapsed[3].content).toContain(recentBody);
+    expect(collapsed[3].content).not.toContain("chars from earlier turn omitted");
   });
 });

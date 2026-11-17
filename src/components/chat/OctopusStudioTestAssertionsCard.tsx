@@ -255,7 +255,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<OctopusStudioTestAssertio
     if (chatId == null || !generatedSpecPath) return;
     streamMessage({
       prompt: [
-        `I approved the assertions. Octopus Studio generated ${generatedSpecPath} from my recording.`,
+        `I approved the assertions. Soloman Studio generated ${generatedSpecPath} from my recording.`,
         "",
         `Run it with run_tests to make sure it actually works. If it fails, read the failure, decide whether the test or the app is wrong, fix it, and run it again until it passes — or tell me what's blocking it.`,
       ].join("\n"),
@@ -739,7 +739,7 @@ export const OctopusStudioTestAssertionsCard: React.FC<OctopusStudioTestAssertio
               {hasBlankAssertion
                 ? "Describe every check before approving."
                 : isAgentWaiting
-                  ? "Octopus Studio is waiting on this before it continues."
+                  ? "Soloman Studio is waiting on this before it continues."
                   : "Approving generates the test file and runs it."}
             </span>
             {/* Only while the turn is parked on this card: otherwise there is

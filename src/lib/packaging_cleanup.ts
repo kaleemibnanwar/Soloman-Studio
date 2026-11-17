@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -423,12 +424,15 @@ function getResourcePaths(
   electronLocaleResourcePaths: string[];
 } {
   if (platform === "darwin" || platform === "mas") {
+    const appDirName = existsSync(path.join(buildPath, "Soloman Studio.app"))
+      ? "Soloman Studio.app"
+      : "Octopus Studio.app";
     return {
-      appResourcesPath: path.join(buildPath, "Octopus Studio.app", "Contents", "Resources"),
+      appResourcesPath: path.join(buildPath, appDirName, "Contents", "Resources"),
       electronLocaleResourcePaths: [
         path.join(
           buildPath,
-          "Octopus Studio.app",
+          appDirName,
           "Contents",
           "Frameworks",
           "Electron Framework.framework",

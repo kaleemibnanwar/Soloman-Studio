@@ -47,7 +47,6 @@ import { OctopusStudioWebCrawl } from "./OctopusStudioWebCrawl";
 import { OctopusStudioWebFetch } from "./OctopusStudioWebFetch";
 import { OctopusStudioImageGeneration } from "./OctopusStudioImageGeneration";
 import { OctopusStudioVideoGeneration } from "./OctopusStudioVideoGeneration";
-import { OctopusStudioImageSearch } from "./OctopusStudioImageSearch";
 import { OctopusStudioCodeSearchResult } from "./OctopusStudioCodeSearchResult";
 import { OctopusStudioCodeSearch } from "./OctopusStudioCodeSearch";
 import { OctopusStudioRead } from "./OctopusStudioRead";
@@ -71,6 +70,7 @@ import { OctopusStudioGit } from "./OctopusStudioGit";
 import { mapActionToButton } from "./ChatInput";
 import { SuggestedAction } from "@/lib/schemas";
 import { FixAllErrorsButton } from "./FixAllErrorsButton";
+import { ToolActivityGroup } from "./ToolActivityGroup";
 import {
   advanceParser,
   type Block,
@@ -163,12 +163,21 @@ export const OctopusStudioMarkdownParser: React.FC<OctopusStudioMarkdownParserPr
 
   const closedBlocks = parserState.blocks;
   const openBlock = getOpenBlock(parserState);
+  const groupedOpenToolCall =
+    openBlock?.kind === "custom-tag" && openBlock.tag === "octopus-studio-mcp-tool-call"
+      ? openBlock
+      : undefined;
 
   // Pair MCP tool-call blocks with their tool-result blocks by call-id so the
   // renderer can collapse the two into one card. Keyed on `closedBlocks`, which
   // only changes when a block closes (not per streamed token), so the scan
   // stays off the streaming hot path.
   const mcpPairing = useMemo(() => buildMcpPairing(closedBlocks), [closedBlocks]);
+  const hideOpenToolResult =
+    openBlock?.kind === "custom-tag" &&
+    openBlock.tag === "octopus-studio-mcp-tool-result" &&
+    !!openBlock.attributes["call-id"] &&
+    mcpPairing.callIds.has(openBlock.attributes["call-id"]);
 
   // The button is hidden while streaming, so avoid scanning the block list on
   // every chunk. Do the full scan only for settled content.
@@ -211,8 +220,11 @@ export const OctopusStudioMarkdownParser: React.FC<OctopusStudioMarkdownParserPr
         resultByCallId={mcpPairing.resultByCallId}
         callIds={mcpPairing.callIds}
         isStreaming={isStreaming}
+        openToolCall={groupedOpenToolCall}
       />
-      {openBlock ? renderOpenBlock(openBlock, isStreaming, mcpPairing) : null}
+      {openBlock && !groupedOpenToolCall && !hideOpenToolResult
+        ? renderOpenBlock(openBlock, isStreaming, mcpPairing)
+        : null}
       {showStreamingPreview && chatId !== null && chatId !== undefined && (
         <StreamingPreviewBlocks chatId={chatId} isStreaming={isStreaming} />
       )}
@@ -388,6 +400,7 @@ const MemoClosedBlocks = React.memo(function MemoClosedBlocks({
   resultByCallId,
   callIds,
   isStreaming,
+  openToolCall,
 }: {
   blocks: Block[];
   lastErrorIndex: number;
@@ -397,21 +410,79 @@ const MemoClosedBlocks = React.memo(function MemoClosedBlocks({
   resultByCallId: Map<string, CustomTagBlock>;
   callIds: Set<string>;
   isStreaming: boolean;
+  openToolCall?: CustomTagBlock;
 }) {
   // Hoisted once per render rather than allocated per block in the map.
   const mcpCtx = { resultByCallId, callIds, isStreaming };
+  const closedToolCalls = blocks.filter(
+    (block): block is CustomTagBlock =>
+      block.kind === "custom-tag" && block.tag === "octopus-studio-mcp-tool-call",
+  );
+  const toolCalls = openToolCall ? [...closedToolCalls, openToolCall] : closedToolCalls;
+  const firstToolCallId = closedToolCalls[0]?.id;
+  let completed = 0;
+  let failed = 0;
+  let running = 0;
+  for (const callBlock of toolCalls) {
+    const callId = callBlock.attributes["call-id"];
+    const result = callId ? resultByCallId.get(callId) : undefined;
+    if (!callId) completed++;
+    else if (!result && isStreaming) running++;
+    else if (!result) failed++;
+    else if (result.attributes["is-error"] === "true") failed++;
+    else completed++;
+  }
+
+  const activityGroup = toolCalls.length ? (
+    <ToolActivityGroup
+      total={toolCalls.length}
+      completed={completed}
+      failed={failed}
+      running={running}
+    >
+      {toolCalls.map((callBlock) => {
+        const callId = callBlock.attributes["call-id"];
+        return (
+          <React.Fragment key={`tool-${callBlock.id}`}>
+            {callId ? (
+              <MemoMcpToolPair
+                callBlock={callBlock}
+                resultBlock={resultByCallId.get(callId)}
+                isStreaming={isStreaming}
+              />
+            ) : (
+              renderBlock(callBlock, isStreaming)
+            )}
+          </React.Fragment>
+        );
+      })}
+    </ToolActivityGroup>
+  ) : null;
+
   return (
     <>
-      {blocks.map((block, index) => (
-        <React.Fragment key={block.id}>
-          {renderClosedBlock(block, mcpCtx)}
-          {showFixAll && index === lastErrorIndex && chatId !== null && chatId !== undefined && (
-            <div className="mt-3 w-full flex">
-              <FixAllErrorsButton errorMessages={errorMessages} chatId={chatId} />
-            </div>
-          )}
-        </React.Fragment>
-      ))}
+      {blocks.map((block, index) => {
+        const isToolCall =
+          block.kind === "custom-tag" && block.tag === "octopus-studio-mcp-tool-call";
+        const isGroupedResult =
+          block.kind === "custom-tag" &&
+          block.tag === "octopus-studio-mcp-tool-result" &&
+          !!block.attributes["call-id"] &&
+          callIds.has(block.attributes["call-id"]);
+
+        return (
+          <React.Fragment key={block.id}>
+            {block.id === firstToolCallId && activityGroup}
+            {!isToolCall && !isGroupedResult ? renderClosedBlock(block, mcpCtx) : null}
+            {showFixAll && index === lastErrorIndex && chatId !== null && chatId !== undefined && (
+              <div className="mt-3 w-full flex">
+                <FixAllErrorsButton errorMessages={errorMessages} chatId={chatId} />
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
+      {closedToolCalls.length === 0 && activityGroup}
     </>
   );
 });
@@ -643,19 +714,6 @@ function renderCustomTag(
         >
           {content}
         </OctopusStudioWebSearchResult>
-      );
-    case "octopus-studio-image-search":
-      return (
-        <OctopusStudioImageSearch
-          node={{
-            properties: {
-              query: attributes.query || "",
-              state: getState({ isStreaming, inProgress }),
-            },
-          }}
-        >
-          {content}
-        </OctopusStudioImageSearch>
       );
     case "think":
       return (

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { assertMutationPathAllowed, safeJoin } from "@/ipc/utils/path_utils";
 import {
-  getOctopusStudioMediaDir,
+  getOctopusStudioMediaDirs,
   listStoredAttachments,
   resolveAttachmentLogicalPath,
   toAttachmentLogicalPath,
@@ -256,9 +256,22 @@ async function assertResolvedPathAllowed(params: {
     );
   }
   if (params.displayPath.startsWith("attachments:")) {
-    const realMediaPath = await fs.realpath(getOctopusStudioMediaDir(params.appPath));
-    const mediaRelative = path.relative(realMediaPath, realFilePath);
-    if (mediaRelative.startsWith("..") || path.isAbsolute(mediaRelative)) {
+    let isWithinMedia = false;
+    for (const mediaDir of getOctopusStudioMediaDirs(params.appPath)) {
+      try {
+        const realMediaPath = await fs.realpath(mediaDir);
+        const mediaRelative = path.relative(realMediaPath, realFilePath);
+        if (!mediaRelative.startsWith("..") && !path.isAbsolute(mediaRelative)) {
+          isWithinMedia = true;
+          break;
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          throw error;
+        }
+      }
+    }
+    if (!isWithinMedia) {
       throw new OctopusStudioError(
         `Sandbox scripts cannot access files outside attachment storage: ${params.displayPath}`,
         OctopusStudioErrorKind.Precondition,

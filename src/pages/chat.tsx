@@ -8,6 +8,7 @@ import {
 import { ChatPanel } from "../components/ChatPanel";
 import { PreviewPanel } from "../components/preview_panel/PreviewPanel";
 import { ChatProjectPreview } from "../components/chat_project/ChatProjectPreview";
+import { BrowserAutomationPanel } from "../components/browser/BrowserAutomationPanel";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -18,8 +19,11 @@ import { useSelectChat } from "@/hooks/useSelectChat";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { ipc } from "@/ipc/types";
+import { useChatMessages } from "@/hooks/useChatMessages";
+import type { BrowserAutomationPayload } from "@/ipc/types/browser";
 
 const DEFAULT_CHAT_PANEL_SIZE = 50;
+type RightTab = "chats" | "browser";
 
 export default function ChatPage() {
   const { id: chatId, appId: routeAppId } = useSearch({ from: "/chat" });
@@ -27,11 +31,14 @@ export default function ChatPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
   const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(isChatPanelHiddenAtom);
   const [isChatProject, setIsChatProject] = useState<boolean | undefined>(undefined);
+  const [isBrowserAutomationOpen, setIsBrowserAutomationOpen] = useState(false);
+  const [rightTab, setRightTab] = useState<RightTab>("chats");
   const setSelectedChatId = useSetAtom(selectedChatIdAtom);
   const [isResizing, setIsResizing] = useState(false);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const setSelectedAppId = useSetAtom(selectedAppIdAtom);
   const { chats, loading } = useChats(selectedAppId);
+  const messages = useChatMessages(chatId);
   const { apps } = useLoadApps();
   const selectedApp = apps.find((app) => app.id === selectedAppId);
   const chatProjectName = selectedApp?.name ?? undefined;
@@ -40,6 +47,30 @@ export default function ChatPage() {
   // app preview/build panel.
   const selectedAppIsChatProject =
     selectedApp?.type === "chat" || !!selectedApp?.isDefaultChatProject;
+
+  // Browser tool calls arrive as streamed assistant markup. Keep the browser
+  // surface open for the whole task so the user can watch it and take over.
+  useEffect(() => {
+    const hasBrowserTool = messages.some((message) =>
+      /OctoLimb|search_google|go_to_url|read_page|click_element|input_text|run_recipe/.test(
+        message.content,
+      ),
+    );
+    if (hasBrowserTool) {
+      setIsBrowserAutomationOpen(true);
+      setRightTab("browser");
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const unsubscribe = ipc.events.browser.onAutomation((event: BrowserAutomationPayload) => {
+      if (event.phase === "started") {
+        setIsBrowserAutomationOpen(true);
+        setRightTab("browser");
+      }
+    });
+    return unsubscribe;
+  }, []);
   const previousSizeRef = useRef<number>(DEFAULT_CHAT_PANEL_SIZE);
   const isInitialMountRef = useRef(true);
   const selectedAppIdRef = useRef(selectedAppId);
@@ -252,11 +283,57 @@ export default function ChatPage() {
         minSize={20}
         className={cn(!isResizing && "transition-all duration-100 ease-in-out")}
       >
-        {isChatProject ? (
-          <ChatProjectPreview projectId={selectedAppId} projectName={chatProjectName} />
-        ) : (
-          <PreviewPanel />
-        )}
+        <div className="flex h-full min-h-0 flex-col bg-background">
+          <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border bg-background px-2">
+            <button
+              type="button"
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs transition-colors",
+                rightTab === "chats"
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+              onClick={() => setRightTab("chats")}
+            >
+              Chats
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition-colors",
+                rightTab === "browser"
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+              onClick={() => {
+                setIsBrowserAutomationOpen(true);
+                setRightTab("browser");
+              }}
+            >
+              Browser
+              {isBrowserAutomationOpen && (
+                <span className="size-1.5 rounded-full bg-blue-500" aria-label="Browser active" />
+              )}
+            </button>
+            <span className="ml-auto pr-2 text-[10px] text-muted-foreground">
+              {rightTab === "browser" ? "Interactive session" : "Workspace files"}
+            </span>
+          </div>
+          <div className="min-h-0 flex-1">
+            {rightTab === "browser" && isBrowserAutomationOpen ? (
+              <BrowserAutomationPanel
+                onClose={() => {
+                  setIsBrowserAutomationOpen(false);
+                  setRightTab("chats");
+                }}
+              />
+            ) : isChatProject ? (
+              <ChatProjectPreview projectId={selectedAppId} projectName={chatProjectName} />
+            ) : (
+              <PreviewPanel />
+            )}
+          </div>
+        </div>
       </Panel>
     </PanelGroup>
   );

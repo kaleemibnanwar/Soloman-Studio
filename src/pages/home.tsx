@@ -27,7 +27,7 @@ import {
 } from "@/lib/freeProModel";
 import { useFreeAgentQuota } from "@/hooks/useFreeAgentQuota";
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
-import { Compass, Hammer, Loader2, Play, RefreshCw, ShieldCheck, Zap } from "lucide-react";
+import { Loader2, RefreshCw, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { useFirstPromptSaga, useFirstPromptSend } from "@/first_prompt/FirstPromptProvider";
 import { getHomeDefaultChatMode } from "@/lib/homeChatMode";
 import { useLoadApps } from "@/hooks/useLoadApps";
@@ -40,6 +40,7 @@ import { showError } from "@/lib/toast";
 export interface HomeSubmitOptions {
   attachments?: FileAttachment[];
   selectedApp?: ListedApp;
+  includePlannerTasks?: boolean;
 }
 
 /** A short project/task title derived from the prompt's first clause. */
@@ -187,6 +188,7 @@ export default function HomePage() {
           selectedApp: effectiveSelectedApp,
           chatMode: "ask",
           isChatModeExplicit: true,
+          includePlannerTasks: options?.includePlannerTasks,
         },
       });
     },
@@ -232,71 +234,31 @@ export default function HomePage() {
 
   // Main Home Page Content
   return (
-    <div className="flex min-h-full w-full flex-col pb-28">
-      <div className="flex flex-col items-center justify-center max-w-3xl w-full m-auto p-8 relative">
+    <div className="flex min-h-full w-full flex-col pb-24">
+      <div className="relative m-auto flex w-full max-w-[900px] flex-col items-center justify-center px-6 py-12 md:px-8">
         <div className="w-full">
-          <div className="mb-6 text-center">
-            <svg
-              width="56"
-              height="56"
-              viewBox="0 0 56 56"
-              aria-hidden
-              className="mx-auto mb-5 text-primary"
-            >
-              <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.9">
-                {Array.from({ length: 8 }).map((_, i) => {
-                  const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
-                  const x1 = 28 + 13 * Math.cos(angle);
-                  const y1 = 28 + 13 * Math.sin(angle);
-                  const x2 = 28 + 23 * Math.cos(angle);
-                  const y2 = 28 + 23 * Math.sin(angle);
-                  return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />;
-                })}
-              </g>
-              <circle cx="28" cy="28" r="5" fill="currentColor" />
-            </svg>
-            <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-primary">
-              Agentic AI
-            </p>
-            <h1 className="mt-3 font-display text-4xl font-normal tracking-tight text-foreground md:text-5xl">
-              What do you want to automate?
-            </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
-              Describe the outcome. Your agents plan it, build it, and run it — on your machine,
-              with your approval at every step.
-            </p>
-
-            {/* Signature: the literal Plan → Build → Run lifecycle from the
-                subhead above, rendered as a schematic — the approval gate
-                (not autopilot) is the thing worth showing, not saying. */}
-            <div
-              role="img"
-              aria-label="Your agent plans, then builds, then waits for your approval before it runs anything."
-              className="mx-auto mt-6 flex max-w-md flex-wrap items-center justify-center gap-y-2 rounded-md border border-border bg-background-lighter px-2 py-2"
-            >
-              <span className="flex items-center gap-1.5 px-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                <Compass className="size-3.5 text-primary/70" aria-hidden />
-                Plan
-              </span>
-              <span aria-hidden className="h-px w-4 bg-border" />
-              <span className="flex items-center gap-1.5 px-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                <Hammer className="size-3.5 text-primary/70" aria-hidden />
-                Build
-              </span>
-              <span aria-hidden className="h-px w-4 bg-border" />
-              <span className="flex items-center gap-1.5 rounded-sm bg-primary/10 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
-                <ShieldCheck className="size-3.5" aria-hidden />
-                You approve
-              </span>
-              <span aria-hidden className="h-px w-4 bg-border" />
-              <span className="flex items-center gap-1.5 px-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                <Play className="size-3.5 text-primary/70" aria-hidden />
-                Run
-              </span>
+          <div className="mb-8 text-left">
+            <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.145em] text-muted-foreground">
+              <Sparkles className="size-3" aria-hidden />
+              Soloman / Command center
             </div>
-
-            <div className="mt-4 flex justify-center">
-              <ImportAppButton className="px-0 pb-0" variant="outline" size="sm" />
+            <h1 className="mt-3 max-w-2xl font-display text-[31px] font-semibold leading-[1.2] text-foreground">
+              Your workspace, in focus.
+            </h1>
+            <p className="mt-2 max-w-xl text-[13px] leading-6 text-muted-foreground">
+              Manage projects, coordinate agents, and continue work across devices.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5 text-primary" aria-hidden />
+                Approval before action
+              </span>
+              <span aria-hidden className="hidden size-1 rounded-full bg-border sm:block" />
+              <ImportAppButton
+                className="h-auto border-0 bg-transparent p-0 shadow-none hover:bg-transparent hover:text-foreground"
+                variant="outline"
+                size="sm"
+              />
             </div>
           </div>
           <HomeChatInput onSubmit={handleSubmit} disabled={isCheckingProviders} />
@@ -320,8 +282,8 @@ export default function HomePage() {
                 }}
                 className={
                   hasConfiguredAiProvider
-                    ? "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                    : "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 font-mono text-[11px] uppercase tracking-wide text-primary transition-colors hover:bg-primary/10"
+                    ? "flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                    : "flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
                 }
               >
                 <Zap aria-hidden="true" className="size-3.5" />
@@ -339,7 +301,7 @@ export default function HomePage() {
                 key={item.label}
                 disabled={isCheckingProviders}
                 onClick={() => setInputValue(item.prompt)}
-                className="flex cursor-pointer items-center gap-2 rounded-sm border border-border/70 bg-transparent px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:cursor-default disabled:opacity-50"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/80 bg-card/80 px-3 py-1.5 text-sm text-muted-foreground shadow-[0_1px_1px_color-mix(in_oklab,var(--foreground)_3%,transparent)] transition-[border-color,background-color,color] hover:border-primary/30 hover:bg-card hover:text-foreground disabled:cursor-default disabled:opacity-50"
               >
                 <span aria-hidden="true" className="text-primary/70 [&_svg]:size-4">
                   {item.icon}
@@ -351,7 +313,7 @@ export default function HomePage() {
               type="button"
               disabled={isCheckingProviders}
               onClick={() => setRandomPrompts(getRandomPrompts())}
-              className="group flex cursor-pointer items-center gap-2 rounded-sm border border-dashed border-border/70 bg-transparent px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:cursor-default disabled:opacity-50"
+              className="group flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:bg-card hover:text-foreground disabled:cursor-default disabled:opacity-50"
             >
               <RefreshCw className="size-4 transition-transform duration-200 group-hover:rotate-[-25deg]" />
               {t("moreIdeas")}

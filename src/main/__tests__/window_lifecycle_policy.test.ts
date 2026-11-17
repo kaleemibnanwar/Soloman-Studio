@@ -103,4 +103,12 @@ describe("window lifecycle policy", () => {
   it.each(["win32", "linux"] as const)("quits after the last window closes on %s", (platform) => {
     expect(shouldQuitAfterAllWindowsClosed(platform)).toBe(true);
   });
+
+  it.each(["win32", "linux", "darwin"] as const)(
+    "keeps an enrolled background host running after the last window closes on %s",
+    (platform) => {
+      expect(shouldQuitAfterAllWindowsClosed(platform, false, true)).toBe(false);
+      expect(shouldQuitAfterAllWindowsClosed(platform, true, true)).toBe(true);
+    },
+  );
 });

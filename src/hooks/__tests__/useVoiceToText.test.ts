@@ -1,10 +1,11 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { useVoiceToText } from "@/hooks/useVoiceToText";
 
-const { pipelineMock, envMock } = vi.hoisted(() => ({
+const { pipelineMock, transcriberMock, envMock } = vi.hoisted(() => ({
   pipelineMock: vi.fn(),
+  transcriberMock: vi.fn(),
   envMock: {} as Record<string, unknown>,
 }));
 
@@ -77,6 +78,8 @@ describe("useVoiceToText", () => {
   beforeEach(() => {
     vi.useRealTimers();
     pipelineMock.mockReset();
+    transcriberMock.mockReset();
+    pipelineMock.mockResolvedValue(transcriberMock);
     envMock.useBrowserCache = false;
 
     tracks = [{ stop: vi.fn() }];
@@ -133,8 +136,7 @@ describe("useVoiceToText", () => {
   });
 
   it("records audio and transcribes it locally via Whisper", async () => {
-    const transcriberMock = vi.fn().mockResolvedValue({ text: "  hello world  " });
-    pipelineMock.mockResolvedValue(transcriberMock);
+    transcriberMock.mockResolvedValue({ text: "  hello world  " });
     const onTranscription = vi.fn();
     const { result } = renderHook(() => useVoiceToText({ onTranscription }));
     const { instances } = installMediaRecorderMock();
@@ -158,10 +160,12 @@ describe("useVoiceToText", () => {
     await act(async () => {
       recorder.onstop?.();
     });
-    expect(pipelineMock).toHaveBeenCalledWith(
-      "automatic-speech-recognition",
-      expect.any(String),
-      expect.any(Object),
+    await waitFor(() =>
+      expect(pipelineMock).toHaveBeenCalledWith(
+        "automatic-speech-recognition",
+        expect.any(String),
+        expect.any(Object),
+      ),
     );
     expect(transcriberMock).toHaveBeenCalledTimes(1);
     expect(onTranscription).toHaveBeenCalledWith("hello world");
@@ -174,6 +178,8 @@ describe("useVoiceToText", () => {
 
     await act(async () => {
       result.current.toggleRecording(); // enable + start
+    });
+    await act(async () => {
       result.current.toggleRecording(); // stop
       instances[0].onstop?.();
     });
@@ -188,21 +194,22 @@ describe("useVoiceToText", () => {
   });
 
   it("surfaces transcription errors through onError", async () => {
-    const transcriberMock = vi.fn().mockRejectedValue(new Error("decode failed"));
-    pipelineMock.mockResolvedValue(transcriberMock);
+    transcriberMock.mockRejectedValue(new Error("decode failed"));
     const onError = vi.fn();
     const { result } = renderHook(() => useVoiceToText({ onTranscription: vi.fn(), onError }));
     const { instances } = installMediaRecorderMock();
 
     await act(async () => {
       result.current.toggleRecording();
+    });
+    await act(async () => {
       result.current.toggleRecording();
     });
     await act(async () => {
       instances[0].onstop?.();
     });
 
-    expect(onError).toHaveBeenCalledWith("decode failed");
+    await waitFor(() => expect(onError).toHaveBeenCalledWith("decode failed"));
     expect(result.current.isTranscribing).toBe(false);
   });
 
@@ -216,6 +223,25 @@ describe("useVoiceToText", () => {
 
     unmount();
     expect(tracks[0].stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels a recording start while microphone permission is still resolving", async () => {
+    let resolveStream: ((stream: MediaStream) => void) | undefined;
+    getUserMediaMock.mockReturnValue(
+      new Promise<MediaStream>((resolve) => {
+        resolveStream = resolve;
+      }),
+    );
+    const { result } = renderHook(() => useVoiceToText({ onTranscription: vi.fn() }));
+
+    act(() => {
+      void result.current.startRecording();
+    });
+    act(() => result.current.cancelRecording());
+    await act(async () => resolveStream?.(streamMock));
+
+    expect(tracks[0].stop).toHaveBeenCalledTimes(1);
+    expect(result.current.isRecording).toBe(false);
   });
 
   it("survives StrictMode effect replay and disposes on final unmount", async () => {

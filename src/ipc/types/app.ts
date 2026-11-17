@@ -438,7 +438,7 @@ export const appContracts = {
     channel: "create-chat-project",
     input: z.object({
       name: z.string().min(1),
-      /** Optional workspace folder. When omitted, OctopusStudio creates one under the octopus-studio-projects base directory. */
+      /** Optional workspace folder. When omitted, Soloman Studio creates one under ~/Soloman Studio/Projects/Workspaces. */
       directory: z.string().nullable().optional(),
     }),
     output: z.object({ appId: z.number() }),

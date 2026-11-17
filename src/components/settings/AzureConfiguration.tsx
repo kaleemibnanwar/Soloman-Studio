@@ -107,7 +107,7 @@ export function AzureConfiguration({ settings, envVars, updateSettings }: AzureC
         variant: "default" as const,
         title: "Azure OpenAI Configured",
         description:
-          "Octopus Studio will use the credentials saved in Settings for Azure OpenAI models.",
+          "Soloman Studio will use the credentials saved in Settings for Azure OpenAI models.",
         icon: KeyRound,
         titleClassName: "",
         descriptionClassName: "",
@@ -244,7 +244,7 @@ export function AzureConfiguration({ settings, envVars, updateSettings }: AzureC
             <div className="text-sm text-muted-foreground space-y-2">
               <p>
                 You can continue to configure Azure via environment variables. If both variables are
-                present and no settings are saved, Octopus Studio will use them automatically.
+                present and no settings are saved, Soloman Studio will use them automatically.
               </p>
               <p>
                 Values saved in Settings take precedence over environment variables. Restart Octopus

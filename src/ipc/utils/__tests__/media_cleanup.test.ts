@@ -58,6 +58,7 @@ vi.mock("@/db/schema", () => ({
 vi.mock("@/ipc/media/media_path_utils", () => ({
   ATTACHMENTS_MANIFEST_FILE: "attachments-manifest.json",
   OCTOPUS_STUDIO_MEDIA_DIR_NAME: ".octopusStudio/media",
+  SOLOMAN_MEDIA_DIR_NAME: ".soloman/media",
   pruneAttachmentManifest: mediaPathMocks.pruneAttachmentManifest,
 }));
 
@@ -233,7 +234,7 @@ describe("cleanupOldMediaFiles", () => {
 
     expect(fsMocks.unlink).toHaveBeenCalledTimes(1);
     expect(logMocks.warn).toHaveBeenCalledWith(
-      `Failed to prune attachment manifest for ${mediaDir}:`,
+      `Failed to prune attachment manifest for ${path.join("/home/user/octopus-studio-apps", "my-app")}:`,
       pruneError,
     );
     expect(logMocks.log).toHaveBeenCalledWith("Cleaned up 1 old media files");

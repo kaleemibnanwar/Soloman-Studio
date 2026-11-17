@@ -1,3 +1,4 @@
+import path from "path";
 import { windowsSign } from "./windowsSign";
 import {
   removeUnusedAppPackageFiles,
@@ -13,7 +14,7 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { createRequire } from "module";
 
 console.log("AZURE_CODE_SIGNING_DLIB", process.env.AZURE_CODE_SIGNING_DLIB);
@@ -25,7 +26,7 @@ const { isPrereleaseVersion } = require("./scripts/release-version-utils.js") as
 const packageJson = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
-const windowsIconUrl = `https://github.com/kaleemibnanwar/OctopusStudio/releases/download/v${packageJson.version}/logo.ico`;
+const windowsIconUrl = `https://github.com/kaleemibnanwar/Soloman-Studio/releases/download/v${packageJson.version}/logo.ico`;
 
 const pgRuntimeDependencies = [
   "pg",
@@ -51,6 +52,63 @@ function isPgRuntimeDependency(file: string): boolean {
   });
 }
 
+const opencodeRootPackages = new Set<string>();
+opencodeRootPackages.add("@opencode");
+
+function addOpenCodeDep(dep: string): void {
+  const parts = dep.split("/");
+  opencodeRootPackages.add(parts[0]);
+  if (parts.length > 1) opencodeRootPackages.add(parts[0] + "/" + parts[1]);
+  const rootDepPkg = path.join(__dirname, "node_modules", dep, "package.json");
+  if (existsSync(rootDepPkg)) {
+    try {
+      const json = JSON.parse(readFileSync(rootDepPkg, "utf8")) as {
+        dependencies?: Record<string, string>;
+        optionalDependencies?: Record<string, string>;
+      };
+      for (const d of Object.keys({ ...json.dependencies, ...json.optionalDependencies })) {
+        if (!opencodeRootPackages.has(d)) addOpenCodeDep(d);
+      }
+    } catch {}
+  }
+}
+
+function scanOpenCodePackageJsons(dir: string): void {
+  if (!existsSync(dir)) return;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      scanOpenCodePackageJsons(full);
+    } else if (entry.name === "package.json") {
+      try {
+        const json = JSON.parse(readFileSync(full, "utf8")) as {
+          dependencies?: Record<string, string>;
+          optionalDependencies?: Record<string, string>;
+        };
+        for (const dep of Object.keys({ ...json.dependencies, ...json.optionalDependencies })) {
+          addOpenCodeDep(dep);
+        }
+      } catch {}
+    }
+  }
+}
+
+scanOpenCodePackageJsons(path.join(__dirname, "node_modules", "@opencode"));
+
+function isOpenCodeRuntimeDependency(file: string): boolean {
+  if (!file.startsWith("/node_modules/")) return false;
+  const relative = file.slice("/node_modules/".length);
+  const slashIdx = relative.indexOf("/");
+  const firstPart = slashIdx === -1 ? relative : relative.slice(0, slashIdx);
+  if (firstPart.startsWith("@")) {
+    if (opencodeRootPackages.has(firstPart)) return true;
+    const secondSlashIdx = relative.indexOf("/", slashIdx + 1);
+    const scopePart = secondSlashIdx === -1 ? relative : relative.slice(0, secondSlashIdx);
+    return opencodeRootPackages.has(scopePart);
+  }
+  return opencodeRootPackages.has(firstPart);
+}
+
 // Based on https://github.com/electron/forge/blob/6b2d547a7216c30fde1e1fddd1118eee5d872945/packages/plugin/vite/src/VitePlugin.ts#L124
 const ignore = (file: string) => {
   if (!file) return false;
@@ -60,6 +118,9 @@ const ignore = (file: string) => {
     return false;
   }
   if (file.startsWith("/drizzle")) {
+    return false;
+  }
+  if (file.startsWith("/assets")) {
     return false;
   }
   if (file.startsWith("/scaffold")) {
@@ -144,6 +205,9 @@ const ignore = (file: string) => {
   if (isPgRuntimeDependency(file)) {
     return false;
   }
+  if (isOpenCodeRuntimeDependency(file)) {
+    return false;
+  }
   if (file.startsWith("/.vite")) {
     return false;
   }
@@ -154,6 +218,7 @@ const ignore = (file: string) => {
 const isEndToEndTestBuild = process.env.E2E_TEST_BUILD === "true";
 const isWindowsSigningEnabled = process.env.WINDOWS_SIGN === "true";
 const shouldSkipNativeRebuild = process.env.OCTOPUS_STUDIO_SKIP_NATIVE_REBUILD === "true";
+const electronZipDir = process.env.ELECTRON_ZIP_DIR?.trim();
 const nativeRebuildModules = [
   "better-sqlite3",
   "node-pty",
@@ -168,13 +233,28 @@ if (isWindowsSigningEnabled && !process.env.AZURE_CODE_SIGNING_DLIB) {
   );
 }
 
+const debIconConfig = {
+  "16x16": path.resolve(__dirname, "assets/icon/16x16.png"),
+  "24x24": path.resolve(__dirname, "assets/icon/24x24.png"),
+  "32x32": path.resolve(__dirname, "assets/icon/32x32.png"),
+  "48x48": path.resolve(__dirname, "assets/icon/48x48.png"),
+  "64x64": path.resolve(__dirname, "assets/icon/64x64.png"),
+  "128x128": path.resolve(__dirname, "assets/icon/128x128.png"),
+  "256x256": path.resolve(__dirname, "assets/icon/256x256.png"),
+  "512x512": path.resolve(__dirname, "assets/icon/512x512.png"),
+  "1024x1024": path.resolve(__dirname, "assets/icon/logo.png"),
+};
+
 const config: ForgeConfig = {
   packagerConfig: {
-    // productName ("Octopus Studio") has a space, which Linux binaries and
+    // Allow fully offline packaging from a directory containing the matching
+    // electron-v<version>-<platform>-<arch>.zip.
+    ...(electronZipDir ? { electronZipDir } : {}),
+    // productName ("Soloman Studio") has a space, which Linux binaries and
     // .deb packaging conventions don't want. Pin the on-disk executable name
     // to the sanitized package name so MakerDeb/electron-installer-debian
     // (which expect a binary named after package.json's `name`) find it.
-    executableName: "octopus-studio",
+    executableName: "soloman-studio",
     // E2E test builds install local file: dependencies as links on Windows.
     // Dereference them so packaging does not require symlink privileges in the temp app.
     // Local file: native packages install as symlinks; dereference them so the
@@ -199,11 +279,11 @@ const config: ForgeConfig = {
     ],
     protocols: [
       {
-        name: "Octopus Studio",
-        schemes: ["octopusStudio"],
+        name: "Soloman Studio",
+        schemes: ["solomanStudio", "soloman", "octopusStudio"],
       },
     ],
-    icon: "./assets/icon/logo",
+    icon: path.resolve(__dirname, "assets/icon/logo"),
 
     osxSign:
       isEndToEndTestBuild || !process.env.APPLE_IDENTITY
@@ -248,8 +328,16 @@ const config: ForgeConfig = {
       ? [
           new MakerDeb({
             options: {
-              mimeType: ["x-scheme-handler/octopusStudio"],
-              icon: "./assets/icon/logo.png",
+              name: "soloman-studio",
+              productName: "Soloman Studio",
+              genericName: "Soloman Studio",
+              desktopTemplate: path.resolve(__dirname, "scripts/desktop.ejs"),
+              mimeType: [
+                "x-scheme-handler/solomanStudio",
+                "x-scheme-handler/soloman",
+                "x-scheme-handler/octopusStudio",
+              ],
+              icon: debIconConfig,
             },
           }),
         ]
@@ -260,28 +348,40 @@ const config: ForgeConfig = {
               ? {
                   windowsSign,
                   iconUrl: windowsIconUrl,
-                  setupIcon: "./assets/icon/logo.ico",
+                  setupIcon: path.resolve(__dirname, "assets/icon/logo.ico"),
                 }
               : {
                   iconUrl: windowsIconUrl,
-                  setupIcon: "./assets/icon/logo.ico",
+                  setupIcon: path.resolve(__dirname, "assets/icon/logo.ico"),
                 },
           ),
           new MakerZIP({}, ["darwin", "win32"]),
           new MakerRpm({
             options: {
-              mimeType: ["x-scheme-handler/octopusStudio"],
-              icon: "./assets/icon/logo.png",
+              mimeType: [
+                "x-scheme-handler/solomanStudio",
+                "x-scheme-handler/soloman",
+                "x-scheme-handler/octopusStudio",
+              ],
+              icon: debIconConfig,
             },
           }),
           new MakerDeb({
             options: {
-              mimeType: ["x-scheme-handler/octopusStudio"],
-              icon: "./assets/icon/logo.png",
+              name: "soloman-studio",
+              productName: "Soloman Studio",
+              genericName: "Soloman Studio",
+              desktopTemplate: path.resolve(__dirname, "scripts/desktop.ejs"),
+              mimeType: [
+                "x-scheme-handler/solomanStudio",
+                "x-scheme-handler/soloman",
+                "x-scheme-handler/octopusStudio",
+              ],
+              icon: debIconConfig,
             },
           }),
           new MakerAppImage({
-            icon: "./assets/icon/logo.png",
+            icon: path.resolve(__dirname, "assets/icon/logo.png"),
           }),
         ],
   publishers: [

@@ -2,14 +2,13 @@ import { ImageGenerationApiResponseSchema, type ImageThemeMode } from "../types/
 import { db } from "../../db";
 import { apps } from "../../db/schema";
 import { getOctopusStudioAppPath } from "../../paths/paths";
-import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../media/media_path_utils";
+import { getOctopusStudioMediaDir } from "../media/media_path_utils";
 import { safeJoin } from "../utils/path_utils";
 import { appOperationCoordinator, readAppResource } from "./app_operation_coordinator";
 import { assertNoActiveRecording } from "./recording_registry";
 import { readSettings } from "../../main/settings";
 import { eq } from "drizzle-orm";
 import fs from "node:fs";
-import path from "node:path";
 import log from "electron-log";
 import {
   OctopusStudioError,
@@ -261,7 +260,7 @@ export class ImageGenerationService {
         }
         const resolvedAppPath = getOctopusStudioAppPath(currentApp.path);
         await ensureOctopusStudioGitignored(resolvedAppPath);
-        const mediaDir = path.join(resolvedAppPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+        const mediaDir = getOctopusStudioMediaDir(resolvedAppPath);
         await fs.promises.mkdir(mediaDir, { recursive: true });
 
         const timestamp = Date.now();

@@ -115,7 +115,7 @@ describe("distributed machine IPC handlers", () => {
     ).resolves.toMatchObject({
       ok: false,
       error: {
-        message: expect.stringContaining("trusted Octopus Studio renderer"),
+        message: expect.stringContaining("trusted Soloman Studio renderer"),
       },
     });
   });

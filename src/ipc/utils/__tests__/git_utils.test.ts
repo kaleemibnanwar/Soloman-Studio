@@ -114,6 +114,13 @@ describe("gitLog", () => {
 
     expect(commits[0].commit.message).toContain("branch commit");
   });
+
+  it("returns an empty history when the repository has an unborn HEAD", async () => {
+    repoDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "git-log-empty-"));
+    await runGit(repoDir, ["init", "-b", "main"]);
+
+    await expect(gitLog({ path: repoDir })).resolves.toEqual([]);
+  });
 });
 
 describe("ensureGitLineEndingPolicy", () => {

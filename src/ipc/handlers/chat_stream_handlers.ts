@@ -15,7 +15,7 @@ import {
 } from "ai";
 
 import { db } from "../../db";
-import { chats, messages } from "../../db/schema";
+import { chats, messages, plannerTasks } from "../../db/schema";
 const scheduleChatSearchIndexing = () => {};
 import { and, eq, isNull } from "drizzle-orm";
 import type { SmartContextMode } from "../../lib/schemas";
@@ -73,6 +73,7 @@ import { ECONOMY_MAX_CHAT_TURNS, MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/s
 import { validateChatContext } from "../utils/context_paths_utils";
 import { getProviderOptions, getAiHeaders } from "../utils/provider_options";
 import { sanitizeMcpToolResult } from "../mcp/mcp_result_sanitizer";
+import { requireAgentToolConsent } from "../agent/agent_consent";
 import { buildBuiltinTools } from "../agent/tools";
 import { createAgentOrchestrator } from "../agent/orchestrator";
 
@@ -112,7 +113,8 @@ import { ensureOctopusStudioGitignored } from "./gitignoreUtils";
 import {
   appendAttachmentManifestEntriesWithLogicalNames,
   createUniqueAttachmentLogicalName,
-  OCTOPUS_STUDIO_MEDIA_DIR_NAME,
+  getOctopusStudioMediaDir,
+  SOLOMAN_MEDIA_DIR_NAME,
   type AttachmentManifestEntryInput,
 } from "../media/media_path_utils";
 import {
@@ -165,6 +167,8 @@ const logger = log.scope("chat_stream_handlers");
 export interface ChatStreamExecutionObserver {
   intent: SerializableChatTurnIntent;
   sessionQueued: boolean;
+  /** Observe the exact renderer stream without taking ownership away from it. */
+  onEvent?(channel: string, payload: unknown): void;
   onAccepted?(acceptedMessageId: number): void;
   onEnd?(response: ChatStreamEndPayload): void;
   onError?(error: ChatStreamErrorPayload): void;
@@ -213,6 +217,7 @@ export function settleUnobservedChatStreamResult(
 export function createObservedChatStreamSender(
   sender: WebContents,
   observeTerminal: (channel: string, payload: unknown) => void,
+  forceDirectDelivery = false,
 ): WebContents {
   const targetIsUnavailable = (): boolean => {
     if (sender.isDestroyed()) return true;
@@ -221,9 +226,10 @@ export function createObservedChatStreamSender(
     };
     return senderWithCrashState.isCrashed?.() ?? false;
   };
-  return new Proxy(sender, {
-    get(target, property, receiver) {
-      if (property === "id" && targetIsUnavailable()) {
+  const proxyTarget = Object.create(sender);
+  return new Proxy(proxyTarget, {
+    get(_target, property, receiver) {
+      if (property === "id" && (targetIsUnavailable() || forceDirectDelivery)) {
         // High-volume routing treats non-integer endpoints as non-producers.
         // This prevents a real webContents that closed after route selection
         // from being re-registered through this observation proxy.
@@ -240,15 +246,15 @@ export function createObservedChatStreamSender(
           observeTerminal(channel, payload);
           if (targetIsUnavailable()) return;
           try {
-            target.send(channel, payload);
+            sender.send(channel, payload);
           } catch {
             // Presentation delivery is best effort. The observer above is the
             // main-owned lifecycle authority and has already been notified.
           }
         };
       }
-      const value = Reflect.get(target, property, receiver);
-      return typeof value === "function" ? value.bind(target) : value;
+      const value = Reflect.get(sender, property);
+      return typeof value === "function" ? value.bind(sender) : value;
     },
   });
 }
@@ -284,6 +290,7 @@ export async function executeChatStreamFromActor(
   let terminalObserved = false;
   let deferredCancellation: ChatStreamEndPayload | undefined;
   const observeTerminal = (channel: string, payload: unknown) => {
+    observer.onEvent?.(channel, payload);
     if (terminalObserved) return;
     if (channel === "chat:response:end") {
       terminalObserved = true;
@@ -302,7 +309,11 @@ export async function executeChatStreamFromActor(
       observer.onError?.(payload as ChatStreamErrorPayload);
     }
   };
-  const observedSender = createObservedChatStreamSender(sender, observeTerminal);
+  const observedSender = createObservedChatStreamSender(
+    sender,
+    observeTerminal,
+    Boolean(observer.onEvent),
+  );
   try {
     const result =
       (await internalChatStreamHandler(
@@ -723,6 +734,51 @@ export function collapseStaleOctoLimbSnapshots<T extends { role: string; content
   });
 }
 
+const MCP_TOOL_RESULT_BLOCK_RE =
+  /(<octopus-studio-mcp-tool-result\b[^>]*>)([\s\S]*?)(<\/octopus-studio-mcp-tool-result>)/g;
+const STALE_TOOL_RESULT_MAX_CHARS = 1800;
+
+/**
+ * Compact oversized `<octopus-studio-mcp-tool-result>` payloads from earlier
+ * assistant turns (all turns except the most recent assistant message) so large
+ * `read_file`, `grep`, or `execute_sandbox_script` outputs don't get re-sent in
+ * full on every subsequent turn.
+ */
+export function collapseStaleAgentToolResults<T extends { role: string; content: unknown }>(
+  messages: T[],
+): T[] {
+  let lastAssistantIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "assistant") {
+      lastAssistantIdx = i;
+      break;
+    }
+  }
+  if (lastAssistantIdx <= 0) return messages;
+
+  return messages.map((message, idx) => {
+    if (
+      idx >= lastAssistantIdx ||
+      message.role !== "assistant" ||
+      typeof message.content !== "string" ||
+      !message.content.includes("<octopus-studio-mcp-tool-result")
+    ) {
+      return message;
+    }
+    const content = message.content.replace(
+      MCP_TOOL_RESULT_BLOCK_RE,
+      (fullMatch, openTag: string, body: string, closeTag: string) => {
+        if (body.length <= STALE_TOOL_RESULT_MAX_CHARS) return fullMatch;
+        const head = body.slice(0, 900);
+        const tail = body.slice(-400);
+        const omitted = body.length - 1300;
+        return `${openTag}${head}\n[… ${omitted} chars from earlier turn omitted …]\n${tail}${closeTag}`;
+      },
+    );
+    return { ...message, content };
+  });
+}
+
 // Helper function to process stream chunks
 export async function processStreamChunks({
   fullStream,
@@ -1048,8 +1104,8 @@ export function registerChatStreamHandlers() {
       if (incomingAttachments && incomingAttachments.length > 0) {
         attachmentInfo = "\n\nAttachments:\n";
 
-        // Create persistent .octopusStudio/media directory for this app
-        const mediaDir = path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+        // Create persistent .soloman/media directory for this app
+        const mediaDir = getOctopusStudioMediaDir(appPath);
         if (!fs.existsSync(mediaDir)) {
           fs.mkdirSync(mediaDir, { recursive: true });
         }
@@ -1070,7 +1126,7 @@ export function registerChatStreamHandlers() {
           const filename = `${hash}${fileExtension}`;
           const logicalName = createUniqueAttachmentLogicalName(attachment.name, usedLogicalNames);
 
-          // Save to .octopusStudio/media dir
+          // Save to .soloman/media dir
           const persistentPath = path.join(mediaDir, filename);
           await writeFile(persistentPath, fileBuffer);
           attachmentPaths.push(persistentPath);
@@ -1098,13 +1154,13 @@ export function registerChatStreamHandlers() {
           // Use a fixed hostname to avoid URL hostname normalization (lowercasing)
           // Encode path segments so special characters (spaces, #, ?, %) don't
           // break URL parsing. The protocol handler already decodeURIComponent's.
-          const mediaUrl = `octopus-studio-media://media/${encodeURIComponent(chat.app.path)}/.octopusStudio/media/${encodeURIComponent(filename)}`;
+          const mediaUrl = `octopus-studio-media://media/${encodeURIComponent(chat.app.path)}/${SOLOMAN_MEDIA_DIR_NAME}/${encodeURIComponent(filename)}`;
 
           // Build display tag for inline rendering (escape attribute values)
           displayAttachmentInfo += `\n<octopus-studio-attachment name="${escapeXmlAttr(attachment.name)}" type="${escapeXmlAttr(attachment.type)}" url="${escapeXmlAttr(mediaUrl)}" path="${escapeXmlAttr(persistentPath)}" attachment-type="${escapeXmlAttr(attachment.attachmentType)}"></octopus-studio-attachment>\n`;
 
           if (attachment.attachmentType === "upload-to-codebase") {
-            // Provide the .octopusStudio/media path so the AI can copy it into the codebase
+            // Provide the .soloman/media path so the AI can copy it into the codebase
             attachmentInfo += `\n\nFile to upload to codebase: "${attachment.name}" (path: ${persistentPath})\nUse the copy_file tool when tools are available, or emit a <octopus-studio-copy> tag otherwise, to copy this file into the codebase at the appropriate location.\n`;
           } else {
             // For chat-context, provide file info for reference (no path to avoid auto-copying)
@@ -1315,6 +1371,26 @@ ${componentSnippet}
         }
       }
 
+      // Planner access is deliberately prompt-scoped. The renderer only sets
+      // this flag when the user enables the Planner control in the composer;
+      // otherwise no planner rows are queried or exposed to the model.
+      if (req.includePlannerTasks) {
+        const projectTasks = await db.query.plannerTasks.findMany({
+          where: eq(plannerTasks.appId, chat.app.id),
+          orderBy: (table, { asc }) => [asc(table.status), asc(table.position)],
+          limit: 200,
+        });
+        const plannerContext = projectTasks.length
+          ? projectTasks
+              .map(
+                (task) =>
+                  `- [${task.status}] ${task.title} | priority=${task.priority} | to_do_by=${task.dueAt?.toISOString() ?? "none"}${task.description ? ` | ${task.description}` : ""}`,
+              )
+              .join("\n")
+          : "No planner tasks exist for this project.";
+        userPrompt += `\n\n<system-reminder>\nThe user explicitly enabled access to this project's Planner for this turn. Use this context when it helps answer the request. You can create and update planner cards with the create_planner_task and update_planner_task tools.\n${plannerContext}\n</system-reminder>`;
+      }
+
       const defaultAiUserPrompt = userPrompt + (attachmentInfo ? attachmentInfo : "");
 
       const baseSettings = readSettings();
@@ -1448,7 +1524,7 @@ ${componentSnippet}
               ? null
               : await getCurrentCommitHash({
                   path: getOctopusStudioAppPath(chat.app.path),
-                }),
+                }).catch(() => null),
         })
         .returning();
 
@@ -1532,10 +1608,18 @@ ${componentSnippet}
               }
             : validateChatContext(updatedChat.app.chatContext);
 
-        // Extract codebase for current app if not a chat-only project
+        const economyMode = !!settings.economyMode;
+        const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
+
+        // Extract codebase for current app if not a chat-only project.
+        // In local-agent/ask/plan modes without the OctopusStudio Engine, the model
+        // reads files on demand via built-in tools (`list_files`, `read_file`,
+        // `grep`, `code_search`) and `codebasePrefix` is never injected into the
+        // prompt — so reading the entire project tree into memory every turn is
+        // pure CPU/IO waste.
         let codebaseInfo = "";
         let files: CodebaseFile[] = [];
-        if (updatedChat.app.type !== "chat") {
+        if (updatedChat.app.type !== "chat" && !(willUseLocalAgentStream && !isEngineEnabled)) {
           const extracted = await extractCodebase({
             appPath,
             chatContext,
@@ -1558,9 +1642,6 @@ ${componentSnippet}
           }
         }
 
-        const economyMode = !!settings.economyMode;
-        const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
-
         // The built-in tools (read_file, list_files, grep, code_search,
         // write_file, search_replace, git_*, …) that `ask`/`plan`/`local-agent`
         // modes advertise in their system prompt. These were never wired before,
@@ -1581,6 +1662,7 @@ ${componentSnippet}
           event,
         });
 
+        let activeTodos: Array<{ id: string; content: string; status: string }> = [];
         const builtinTools = willUseLocalAgentStream
           ? buildBuiltinTools({
               appPath,
@@ -1589,6 +1671,10 @@ ${componentSnippet}
               chatMode: selectedChatMode,
               agentToolConsents: settings.agentToolConsents,
               event,
+              prompt: req.prompt,
+              onTodosUpdate: (todos) => {
+                activeTodos = todos;
+              },
               requestQuestionnaire: (questions, abortSignal) => {
                 rememberUserInputSubscriber(event.sender);
                 const requestId = userInputRegistry.request({
@@ -1603,6 +1689,12 @@ ${componentSnippet}
                     response?.kind === "questionnaire" ? response.answers : null,
                   );
               },
+              requestToolConsent: ({ abortSignal, ...consent }) =>
+                requireAgentToolConsent(event, {
+                  chatId: req.chatId,
+                  ...consent,
+                  abortSignal: abortSignal ?? abortController.signal,
+                }),
 
               spawnSubAgent,
               planTaskGraph,
@@ -1795,6 +1887,7 @@ ${componentSnippet}
         }
 
         limitedMessageHistory = collapseStaleOctoLimbSnapshots(limitedMessageHistory);
+        limitedMessageHistory = collapseStaleAgentToolResults(limitedMessageHistory);
 
         const aiRules = await readAiRules(appPath);
 
@@ -1921,7 +2014,7 @@ ${componentSnippet}
 
 When files are attached to this conversation for upload to the codebase, copy them into the project using this exact format:
 
-<octopus-studio-copy from="/absolute/path/to/.octopusStudio/media/source.ext" to="path/to/destination/filename.ext" description="Upload file to codebase"></octopus-studio-copy>
+<octopus-studio-copy from="/absolute/path/to/.soloman/media/source.ext" to="path/to/destination/filename.ext" description="Upload file to codebase"></octopus-studio-copy>
 
 Use the attached file path from the user's message as the \`from\` value. Choose an appropriate project-relative \`to\` path.
 
@@ -2121,7 +2214,7 @@ This conversation includes one or more image attachments. When the user uploads 
               accumulatedModelCalls += 1;
               if (step.toolResults) {
                 for (const tr of step.toolResults) {
-                  if (tr.toolName === "spawn_subagent") {
+                  if (tr.toolName === "spawn_subagent" || tr.toolName === "plan_task_graph") {
                     try {
                       const env = JSON.parse(tr.output as string);
                       if (typeof env.inputTokens === "number")
@@ -2439,6 +2532,75 @@ This conversation includes one or more image attachments. When the user uploads 
               fullResponse = result.fullResponse;
               if (result.modelRefused) {
                 modelRefused = true;
+                break;
+              }
+            }
+          }
+
+          // In local-agent mode, if the model created a todo checklist via
+          // `update_todos` and ended its stream cycle while items are still
+          // `pending` or `in_progress` (without waiting on user input),
+          // automatically resume up to 2 times so the cycle doesn't end mid-task.
+          const getRemainingTodos = () =>
+            activeTodos.filter((t) => t.status === "pending" || t.status === "in_progress");
+          if (
+            willUseLocalAgentStream &&
+            selectedChatMode === "local-agent" &&
+            !modelRefused &&
+            !abortController.signal.aborted &&
+            getRemainingTodos().length > 0
+          ) {
+            let todoContinuationAttempts = 0;
+            while (
+              getRemainingTodos().length > 0 &&
+              todoContinuationAttempts < 2 &&
+              !abortController.signal.aborted &&
+              !modelRefused
+            ) {
+              const remainingBefore = getRemainingTodos();
+              todoContinuationAttempts++;
+              logger.info(
+                `Local agent stopped with ${remainingBefore.length} incomplete todo(s); continuing (attempt #${todoContinuationAttempts})`,
+              );
+              const remainingList = remainingBefore
+                .map((t) => `- [${t.status}] (${t.id}) ${t.content}`)
+                .join("\n");
+
+              const { fullStream: todoContStream } = await simpleStreamText({
+                chatMessages: [
+                  ...chatMessages,
+                  {
+                    role: "assistant",
+                    content: fullResponse,
+                  },
+                  {
+                    role: "user",
+                    content: `You stopped before completing all items on your task checklist:\n${remainingList}\n\nContinue executing the remaining tasks now, mark each item as "completed" via \`update_todos\` as you finish it, and then provide your final summary.`,
+                  },
+                ],
+                modelClient,
+                files: files,
+                tools: mergedTools,
+              });
+              const contResult = await processStreamChunks({
+                fullStream: todoContStream,
+                fullResponse: fullResponse ? `${fullResponse}\n\n` : fullResponse,
+                abortController,
+                chatId: req.chatId,
+                processResponseChunkUpdate,
+              });
+              fullResponse = contResult.fullResponse;
+              if (contResult.modelRefused) {
+                modelRefused = true;
+                break;
+              }
+              // If the model made no tool calls and didn't reduce remaining todos,
+              // stop continuing so we don't loop when genuinely blocked on the user.
+              const remainingAfter = getRemainingTodos();
+              if (
+                remainingAfter.length >= remainingBefore.length &&
+                !contResult.incrementalResponse.includes("<octopus-studio-mcp-tool-call")
+              ) {
                 break;
               }
             }

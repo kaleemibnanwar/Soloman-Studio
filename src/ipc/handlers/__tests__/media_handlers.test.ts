@@ -6,7 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apps } from "@/db/schema";
 import { OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { activeRecordings } from "@/ipc/services/recording_registry";
-import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "@/ipc/media/media_path_utils";
+import {
+  OCTOPUS_STUDIO_MEDIA_DIR_NAME,
+  SOLOMAN_MEDIA_DIR_NAME,
+} from "@/ipc/media/media_path_utils";
 import { type HandlerTestHarness, setupHandlerTestHarness } from "@/testing/handler_test_harness";
 
 vi.mock("electron", () => ({
@@ -83,8 +86,6 @@ describe("media move recording admission", () => {
     ).resolves.toBeUndefined();
 
     expect(fs.existsSync(path.join(sourceMediaPath, "image.png"))).toBe(false);
-    expect(fs.existsSync(path.join(targetPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME, "image.png"))).toBe(
-      true,
-    );
+    expect(fs.existsSync(path.join(targetPath, SOLOMAN_MEDIA_DIR_NAME, "image.png"))).toBe(true);
   });
 });

@@ -42,6 +42,7 @@ import { useSyncDefaultChatMode } from "@/hooks/useSyncDefaultChatMode";
 import { PreviewErrorFacadeProvider } from "@/app_wiring/preview_error_facade";
 import { usePreviewErrorFacade } from "@/app_wiring/preview_error_facade";
 import { PackageManagerWarningProvider } from "@/package_manager_warnings/PackageManagerWarningProvider";
+import { SolomanAuthGate } from "@/components/auth/SolomanAuthGate";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const { streamMessage } = useStreamChat({ hasChatId: false });
@@ -207,20 +208,22 @@ function RootLayoutContent({ children }: { children: ReactNode }) {
                   it, rather than relying on AppSidebar to just not offer a
                   trigger for it. */}
               <SidebarProvider open={true} onOpenChange={() => {}}>
-                <TitleBar />
-                <AppSidebar />
-                <div className="flex h-screenish min-w-0 flex-1 flex-col overflow-hidden mt-[var(--layout-title-bar-offset)] border-l border-border bg-background">
-                  <SubscriptionStatusBanner />
-                  <div
-                    id="layout-main-content-container"
-                    className="flex min-h-0 w-full flex-1 overflow-x-hidden"
-                  >
-                    {children}
+                <SolomanAuthGate>
+                  <TitleBar />
+                  <AppSidebar />
+                  <div className="studio-canvas mt-[var(--layout-title-bar-offset)] flex h-screenish min-w-0 flex-1 flex-col overflow-hidden border-l border-border/80">
+                    <SubscriptionStatusBanner />
+                    <div
+                      id="layout-main-content-container"
+                      className="flex min-h-0 w-full flex-1 overflow-x-hidden"
+                    >
+                      {children}
+                    </div>
                   </div>
-                </div>
+                  <ReleaseNotesDialog />
+                  <ForceCloseDialog />
+                </SolomanAuthGate>
                 <Toaster richColors expand duration={settings?.isTestMode ? 500 : undefined} />
-                <ReleaseNotesDialog />
-                <ForceCloseDialog />
               </SidebarProvider>
             </DeepLinkProvider>
           </ThemeProvider>

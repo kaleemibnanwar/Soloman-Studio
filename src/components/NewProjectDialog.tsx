@@ -148,7 +148,7 @@ export function NewProjectDialog({ open, onOpenChange, defaultType }: NewProject
               <DialogTitle>New chat project</DialogTitle>
               <DialogDescription>
                 Create a codeless workspace. Pick a folder for your documents, or leave it empty to
-                use your octopus-studio-projects folder.
+                use your Soloman Studio workspaces folder.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 py-2">
@@ -197,8 +197,8 @@ export function NewProjectDialog({ open, onOpenChange, defaultType }: NewProject
                       Choose folder
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Optional. If skipped, a folder will be created in your octopus-studio-projects
-                      directory.
+                      Optional. If skipped, a folder will be created under ~/Soloman
+                      Studio/Projects/Workspaces.
                     </p>
                   </div>
                 )}

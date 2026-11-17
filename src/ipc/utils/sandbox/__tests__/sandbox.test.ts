@@ -42,6 +42,9 @@ describe("sandbox capabilities", () => {
     const mediaDir = getOctopusStudioMediaDir(appPath);
     await fs.mkdir(mediaDir, { recursive: true });
     await fs.writeFile(path.join(mediaDir, "stored-log.txt"), "line1\nline2\n");
+    const legacyMediaDir = path.join(appPath, ".octopusStudio", "media");
+    await fs.mkdir(legacyMediaDir, { recursive: true });
+    await fs.writeFile(path.join(legacyMediaDir, "legacy-log.txt"), "legacy\n");
     await appendAttachmentManifestEntries(appPath, [
       {
         logicalName: "server.log",
@@ -186,18 +189,24 @@ describe("sandbox capabilities", () => {
     );
   });
 
-  it("allows reading and listing under .octopusStudio/", async () => {
-    await expect(sandboxReadFile(appPath, ".octopusStudio/media/stored-log.txt")).resolves.toBe(
+  it("allows reading and listing under .soloman/ and legacy .octopusStudio/", async () => {
+    await expect(sandboxReadFile(appPath, ".soloman/media/stored-log.txt")).resolves.toBe(
       "line1\nline2\n",
     );
     await expect(
-      sandboxReadFile(appPath, ".octopusStudio/media/attachments-manifest.json"),
+      sandboxReadFile(appPath, ".soloman/media/attachments-manifest.json"),
     ).resolves.toContain("server.log");
-    await expect(sandboxListFiles(appPath, ".octopusStudio/media")).resolves.toEqual(
+    await expect(sandboxReadFile(appPath, ".octopusStudio/media/legacy-log.txt")).resolves.toBe(
+      "legacy\n",
+    );
+    await expect(sandboxListFiles(appPath, ".soloman/media")).resolves.toEqual(
       expect.arrayContaining([
-        ".octopusStudio/media/attachments-manifest.json",
-        ".octopusStudio/media/stored-log.txt",
+        ".soloman/media/attachments-manifest.json",
+        ".soloman/media/stored-log.txt",
       ]),
+    );
+    await expect(sandboxListFiles(appPath, ".octopusStudio/media")).resolves.toEqual(
+      expect.arrayContaining([".octopusStudio/media/legacy-log.txt"]),
     );
   });
 

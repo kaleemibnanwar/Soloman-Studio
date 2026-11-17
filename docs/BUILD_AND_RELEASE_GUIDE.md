@@ -14,17 +14,17 @@
 Octopus Studio is an **Electron** app (React renderer, Vite bundler) with three native
 Node add-ons. Five subsystems cooperate to ship a release:
 
-| Subsystem | Tool / File | Job |
-|---|---|---|
-| **Bundler** | Vite (`vite.*.config.mts`, Electron Forge Vite plugin) | Compile main/preload/renderer/worker processes |
-| **Packager** | **Electron Forge** (`forge.config.ts`) | Produce per-platform installers |
-| **Signer** | Azure Trusted Signing (Win) / Apple `codesign`+`notarytool` (mac) | Sign + notarize binaries |
-| **Updater** | `update-electron-app` + `update.electronjs.org` | In-app updates (mac/Windows) |
-| **Distributor** | GitHub Actions (`release.yml`) + GitHub Releases | Host artifacts, feed the updater |
+| Subsystem       | Tool / File                                                       | Job                                            |
+| --------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
+| **Bundler**     | Vite (`vite.*.config.mts`, Electron Forge Vite plugin)            | Compile main/preload/renderer/worker processes |
+| **Packager**    | **Electron Forge** (`forge.config.ts`)                            | Produce per-platform installers                |
+| **Signer**      | Azure Trusted Signing (Win) / Apple `codesign`+`notarytool` (mac) | Sign + notarize binaries                       |
+| **Updater**     | `update-electron-app` + `update.electronjs.org`                   | In-app updates (mac/Windows)                   |
+| **Distributor** | GitHub Actions (`release.yml`) + GitHub Releases                  | Host artifacts, feed the updater               |
 
-**Authoritative build system:** Electron Forge. A second, *experimental* config —
+**Authoritative build system:** Electron Forge. A second, _experimental_ config —
 `electron-builder.config.mjs` — exists in the repo but is **not** wired into CI or the
-`package.json` scripts yet. Its top-of-file comment says it is intended to *replace*
+`package.json` scripts yet. Its top-of-file comment says it is intended to _replace_
 `forge.config.ts` but is "NOT verifiable here." Treat Forge as the source of truth; the
 `release/` directory you'll see (e.g. `latest-linux.yml`, `octopus-studio_1.10.0_amd64.deb`)
 is output from that electron-builder experiment, not from the shipped Forge pipeline.
@@ -41,16 +41,16 @@ git remote -v
 # public   https://github.com/kaleemibnanwar/OctopusStudio.git       (PUBLIC — releases only)
 ```
 
-| Repo | Purpose | Contents | Visibility |
-|---|---|---|---|
-| `OctopusStudio-source` (remote `origin`) | Development | Full source, history, CI, issues | **Private** |
-| `OctopusStudio` (remote `public`) | Distribution | `main` branch mirror (README, download page) + GitHub Releases with binaries | **Public** |
+| Repo                                     | Purpose      | Contents                                                                     | Visibility  |
+| ---------------------------------------- | ------------ | ---------------------------------------------------------------------------- | ----------- |
+| `OctopusStudio-source` (remote `origin`) | Development  | Full source, history, CI, issues                                             | **Private** |
+| `OctopusStudio` (remote `public`)        | Distribution | `main` branch mirror (README, download page) + GitHub Releases with binaries | **Public**  |
 
 ### Why two repos?
 
 1. **The auto-updater requires a public repo.** `update.electronjs.org` (the free
    Electron update service) can only read GitHub Releases from a **public** repository.
-   You can't keep the code private *and* point the updater at a private repo.
+   You can't keep the code private _and_ point the updater at a private repo.
 2. **Separation of concerns.** Contributors clone `OctopusStudio` (public) and get a
    working download + README. Only maintainers with write access see `-source`.
 3. **Release hygiene.** The public repo never contains the actual application source in
@@ -62,7 +62,7 @@ git remote -v
 The `public` repo's `main` branch is a lightweight mirror (README, license, screenshots —
 see the clone URL baked into `README.md`'s "Getting Started"). There is **no automated
 bidirectional sync** in this repo; the `public` remote is pushed manually. Release
-*binary* distribution, however, **is** automated — see §6.
+_binary_ distribution, however, **is** automated — see §6.
 
 > **For your own project:** create two GitHub repos, add both as remotes, and mirror the
 > branch you want public (`git push public main`). The rest of the pipeline just needs a
@@ -77,25 +77,25 @@ touching any platform.
 
 ### 3.1 `packagerConfig` — the packaged app
 
-| Setting | Value | Why |
-|---|---|---|
-| `executableName` | `octopus-studio` | `productName` ("Octopus Studio") has a space; Linux binaries/.deb conventions reject that |
-| `derefSymlinks` | `true` | Local `file:` native deps install as symlinks; dereference so packaged app has real files |
-| `windowsSign` | Azure signing (only when `WINDOWS_SIGN=true`) | see §4.3 |
-| `osxSign` / `osxNotarize` | Apple team ID / notarization (when env vars set) | see §4.2 |
-| `asar.unpackDir` | native modules + node-pty | native `.node` binaries can't load from inside an ASAR archive |
-| `extraResource` | `node_modules/dugite/git`, `node_modules/@vscode` | bundle a real `git` + ripgrep (`@vscode/ripgrep`) so the app works offline |
-| `protocols` | `octopusStudio://` deep link | register a custom URL scheme |
-| `ignore` | whitelist of native/kept modules | shrink the package to what's actually needed |
-| `afterCopy` / `afterCopyExtraResources` | `src/lib/packaging_cleanup.ts` | prune native build junk, Electron locales, git credential manager |
+| Setting                                 | Value                                             | Why                                                                                       |
+| --------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `executableName`                        | `octopus-studio`                                  | `productName` ("Octopus Studio") has a space; Linux binaries/.deb conventions reject that |
+| `derefSymlinks`                         | `true`                                            | Local `file:` native deps install as symlinks; dereference so packaged app has real files |
+| `windowsSign`                           | Azure signing (only when `WINDOWS_SIGN=true`)     | see §4.3                                                                                  |
+| `osxSign` / `osxNotarize`               | Apple team ID / notarization (when env vars set)  | see §4.2                                                                                  |
+| `asar.unpackDir`                        | native modules + node-pty                         | native `.node` binaries can't load from inside an ASAR archive                            |
+| `extraResource`                         | `node_modules/dugite/git`, `node_modules/@vscode` | bundle a real `git` + ripgrep (`@vscode/ripgrep`) so the app works offline                |
+| `protocols`                             | `octopusStudio://` deep link                      | register a custom URL scheme                                                              |
+| `ignore`                                | whitelist of native/kept modules                  | shrink the package to what's actually needed                                              |
+| `afterCopy` / `afterCopyExtraResources` | `src/lib/packaging_cleanup.ts`                    | prune native build junk, Electron locales, git credential manager                         |
 
 ### 3.2 `rebuildConfig` — native modules
 
 ```ts
 const nativeRebuildModules = [
-  "better-sqlite3",   // SQLite database (local DB for the app)
-  "node-pty",         // terminal emulation
-  "mustardscript",    // scripting runtime
+  "better-sqlite3", // SQLite database (local DB for the app)
+  "node-pty", // terminal emulation
+  "mustardscript", // scripting runtime
   ...(process.platform === "darwin" ? ["octopusStudio-keychain-reader"] : []),
 ];
 ```
@@ -149,6 +149,7 @@ A prerelease version (e.g. `1.11.0-beta.1`) is detected by `scripts/release-vers
 ### 4.1 Linux (`ubuntu-latest`)
 
 **Command (CI):**
+
 ```bash
 npx electron-forge make --platform=linux --arch=x64
 ```
@@ -157,6 +158,7 @@ npx electron-forge make --platform=linux --arch=x64
 
 The **AppImage** is a custom maker (`makers/MakerAppImage.ts`) because Forge has no
 built-in AppImage maker. It:
+
 1. Downloads the AppImage `type2-runtime` and **verifies its SHA-256** against a pinned
    hash (`RUNTIME_SHA256`) before using it — a supply-chain guard.
 2. Builds the `AppDir`, writes a `.desktop` file, and runs `mksquashfs`
@@ -170,6 +172,7 @@ maker uses `verbatimSymlinks: true` when copying.
 ### 4.2 macOS (`macos-latest`)
 
 **Command (CI):**
+
 ```bash
 npx electron-forge make --platform=darwin --arch=arm64   # Apple Silicon
 npx electron-forge make --platform=darwin --arch=x64     # Intel
@@ -178,13 +181,13 @@ npx electron-forge make --platform=darwin --arch=x64     # Intel
 **Outputs:** two `.zip` archives (one per architecture). macOS uses a **zip** (not DMG)
 because that's what `update-electron-app` / `update.electronjs.org` consumes.
 
-**Signing + notarization** — both are *conditional* on env vars being present:
+**Signing + notarization** — both are _conditional_ on env vars being present:
 
-| Env var | Role |
-|---|---|
-| `APPLE_TEAM_ID` | `osxSign.identity` — Developer ID code signing |
-| `APPLE_ID` | Notarization Apple account |
-| `APPLE_PASSWORD` | Notarization app-specific password |
+| Env var          | Role                                           |
+| ---------------- | ---------------------------------------------- |
+| `APPLE_TEAM_ID`  | `osxSign.identity` — Developer ID code signing |
+| `APPLE_ID`       | Notarization Apple account                     |
+| `APPLE_PASSWORD` | Notarization app-specific password             |
 
 ```ts
 osxSign: isEndToEndTestBuild || !process.env.APPLE_TEAM_ID ? undefined : {
@@ -196,6 +199,7 @@ osxNotarize: /* requires APPLE_TEAM_ID + APPLE_ID + APPLE_PASSWORD */
 ```
 
 Key behaviors:
+
 - `continueOnError: false` — a signing failure **fails the build** rather than silently
   shipping an unsigned app.
 - `hardenedRuntime` is implied by Forge's notarization path; **Gatekeeper requires
@@ -211,6 +215,7 @@ can build unsigned apps for Playwright tests.
 ### 4.3 Windows (`windows-latest`)
 
 **Command (CI, PowerShell):**
+
 ```powershell
 $env:SpectreMitigation = "false"
 $env:VCPKG_DISABLE_SPECTRE_MITIGATION = "1"
@@ -251,14 +256,15 @@ unset). The `.exe`, `.nupkg`, and `RELEASES` must all be signed for Squirrel upd
 
 ## 5. Native modules: the recurring theme
 
-Every native add-on in this project is handled the same way — **rebuild for Electron ABI
-+ unpack from the ASAR**:
+Every native add-on in this project is handled the same way — \*\*rebuild for Electron ABI
 
-| Module | Platform | Why it's native |
-|---|---|---|
-| `better-sqlite3` | all | SQLite via C++ bindings (local app DB) |
-| `node-pty` | all | fork a real PTY for the terminal |
-| `mustardscript` | all | native scripting runtime |
+- unpack from the ASAR\*\*:
+
+| Module                           | Platform   | Why it's native                                                 |
+| -------------------------------- | ---------- | --------------------------------------------------------------- |
+| `better-sqlite3`                 | all        | SQLite via C++ bindings (local app DB)                          |
+| `node-pty`                       | all        | fork a real PTY for the terminal                                |
+| `mustardscript`                  | all        | native scripting runtime                                        |
 | `octopus-studio-keychain-reader` | macOS only | `Security.framework` keychain access for `safeStorage` recovery |
 
 The packaging cleanup module (`src/lib/packaging_cleanup.ts`) then **strips the build
@@ -297,11 +303,11 @@ updateElectronApp({ logger, updateInterval, updateSource });
 
 ### What the updater needs per platform
 
-| Platform | Required artifacts in the release | Notes |
-|---|---|---|
-| **macOS** | a `.zip` | **must be code-signed** — update.electronjs.org refuses unsigned mac builds |
+| Platform    | Required artifacts in the release   | Notes                                                                                                                  |
+| ----------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **macOS**   | a `.zip`                            | **must be code-signed** — update.electronjs.org refuses unsigned mac builds                                            |
 | **Windows** | `Setup.exe` + `.nupkg` + `RELEASES` | Squirrel.Windows update feed; `electron-squirrel-startup` (already a dependency) suppresses the double-launch artifact |
-| **Linux** | — | **not supported** by update-electron-app / update.electronjs.org; Linux users install manually |
+| **Linux**   | —                                   | **not supported** by update-electron-app / update.electronjs.org; Linux users install manually                         |
 
 > **⚠️ Naming matters.** `update.electronjs.org` matches assets by a fixed naming
 > convention, and Squirrel's `RELEASES` file embeds the exact filenames of the `.nupkg`
@@ -360,12 +366,12 @@ GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release upload "$TAG" dist-release/* --repo kal
 The repo carries several scripts inherited from a richer upstream workflow. They are
 **not** invoked by the current `release.yml`, but you may want to re-enable them:
 
-| Script | Purpose |
-|---|---|
-| `scripts/verify-release-assets.js` | Assert every expected asset (deb/rpm/AppImage/nupkg/exe/zip/RELEASES + provenance) is present, and that the release's prerelease flag matches the version. **Note:** hardcodes `octopusStudio-sh/octopus-studio` as owner — update for your org. |
-| `scripts/generate-release-provenance.js` | Emit a per-platform JSON manifest (schema v1) of artifact name→SHA-256→size, for supply-chain verification. |
-| `scripts/prepare-release-tag.js` | Pin the `vX.Y.Z` tag to the exact commit SHA before release, and refuse to move a published release's tag. |
-| `scripts/unauthorized-release-alert.mjs` | If a release is published by anyone other than `github-actions[bot]`, delete it and email the maintainers (Mailgun). |
+| Script                                   | Purpose                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/verify-release-assets.js`       | Assert every expected asset (deb/rpm/AppImage/nupkg/exe/zip/RELEASES + provenance) is present, and that the release's prerelease flag matches the version. **Note:** hardcodes `octopusStudio-sh/octopus-studio` as owner — update for your org. |
+| `scripts/generate-release-provenance.js` | Emit a per-platform JSON manifest (schema v1) of artifact name→SHA-256→size, for supply-chain verification.                                                                                                                                      |
+| `scripts/prepare-release-tag.js`         | Pin the `vX.Y.Z` tag to the exact commit SHA before release, and refuse to move a published release's tag.                                                                                                                                       |
+| `scripts/unauthorized-release-alert.mjs` | If a release is published by anyone other than `github-actions[bot]`, delete it and email the maintainers (Mailgun).                                                                                                                             |
 
 ---
 
@@ -373,53 +379,53 @@ The repo carries several scripts inherited from a richer upstream workflow. They
 
 ### GitHub Actions secrets
 
-| Secret | Used by | Required? |
-|---|---|---|
-| `GITHUB_TOKEN` | checkout + source-repo release upload | auto-provided |
-| `PUBLIC_REPO_TOKEN` | upload to the public release repo (`kaleemibnanwar/OctopusStudio`) | **yes** (workflow hard-fails without it) |
-| `APPLE_TEAM_ID` | macOS signing + notarization | for mac releases |
-| `APPLE_ID` | notarization | for mac releases |
-| `APPLE_PASSWORD` | notarization app-specific password | for mac releases |
-| `AZURE_CODE_SIGNING_DLIB` | Windows Azure Trusted Signing | only with `WINDOWS_SIGN=true` |
-| `AZURE_METADATA_JSON` | Windows Azure Trusted Signing | only with `WINDOWS_SIGN=true` |
-| `SIGNTOOL_PATH` | path to `signtool.exe` | optional (defaults to `signtool.exe`) |
-| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM_EMAIL` / `UNAUTHORIZED_RELEASE_ALERT_EMAILS` | unauthorized-release alert | only if you re-enable that script |
+| Secret                                                                                            | Used by                                                            | Required?                                |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------- |
+| `GITHUB_TOKEN`                                                                                    | checkout + source-repo release upload                              | auto-provided                            |
+| `PUBLIC_REPO_TOKEN`                                                                               | upload to the public release repo (`kaleemibnanwar/OctopusStudio`) | **yes** (workflow hard-fails without it) |
+| `APPLE_TEAM_ID`                                                                                   | macOS signing + notarization                                       | for mac releases                         |
+| `APPLE_ID`                                                                                        | notarization                                                       | for mac releases                         |
+| `APPLE_PASSWORD`                                                                                  | notarization app-specific password                                 | for mac releases                         |
+| `AZURE_CODE_SIGNING_DLIB`                                                                         | Windows Azure Trusted Signing                                      | only with `WINDOWS_SIGN=true`            |
+| `AZURE_METADATA_JSON`                                                                             | Windows Azure Trusted Signing                                      | only with `WINDOWS_SIGN=true`            |
+| `SIGNTOOL_PATH`                                                                                   | path to `signtool.exe`                                             | optional (defaults to `signtool.exe`)    |
+| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM_EMAIL` / `UNAUTHORIZED_RELEASE_ALERT_EMAILS` | unauthorized-release alert                                         | only if you re-enable that script        |
 
 ### Local build flags
 
-| Env var | Effect |
-|---|---|
-| `WINDOWS_SIGN=true` | enable Windows signing (throws if Azure vars unset) |
-| `E2E_TEST_BUILD=true` | unsigned, un-notarized build for Playwright (also enables inspect fuses) |
-| `MAKE_TARGET=deb` | `npm run make:deb` — build only the `.deb` (used for local Linux iteration) |
-| `OCTOPUS_STUDIO_SKIP_NATIVE_REBUILD=true` | skip `electron-rebuild` (fast iteration when native code is unchanged) |
+| Env var                                   | Effect                                                                      |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `WINDOWS_SIGN=true`                       | enable Windows signing (throws if Azure vars unset)                         |
+| `E2E_TEST_BUILD=true`                     | unsigned, un-notarized build for Playwright (also enables inspect fuses)    |
+| `MAKE_TARGET=deb`                         | `npm run make:deb` — build only the `.deb` (used for local Linux iteration) |
+| `OCTOPUS_STUDIO_SKIP_NATIVE_REBUILD=true` | skip `electron-rebuild` (fast iteration when native code is unchanged)      |
 
 ### App runtime config (hardcoded IDs & feature flags)
 
 These are baked into the app rather than passed as CI secrets. They were all
 updated as part of the PostHog→Clarity / upstream→fork rebrand:
 
-| Concern | Where | Current state |
-|---|---|---|
-| **Analytics** | `src/lib/telemetry.ts` | Microsoft Clarity, project `yq5b8j38ea`. Replaced PostHog entirely (`posthog-js` removed). Custom events map to `clarity.event(name)` — **event properties are dropped**; identity maps to `clarity.identify`; opt-in is honored by only calling `initTelemetry()` when the user opted in. |
-| **GitHub OAuth** | `src/ipc/handlers/github_handlers.ts:68` | Client ID `Ov23litltJHC4xcxVXKJ` (env `GITHUB_CLIENT_ID` overrides). Uses **Device Flow** — no client secret, no redirect URI. The OAuth app must have "Enable Device Flow" ticked. |
-| **Google Drive OAuth** | `src/ipc/google/google_drive_auth.ts:14` | Client ID placeholder `YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com`. **Client secret removed** — the flow uses PKCE (`code_verifier`) + loopback redirect, so the client must be created as a **"Desktop app"** type. |
-| **Drive sync UI** | `src/lib/featureFlags.ts` | `GOOGLE_DRIVE_INTEGRATION_ENABLED = false` hides the Settings "Google Account" card, the chat-preview Drive-sync panel, and its Settings search entry. Flip to `true` (and fill in the client ID) to re-enable. |
+| Concern                | Where                                    | Current state                                                                                                                                                                                                                                                                              |
+| ---------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Analytics**          | `src/lib/telemetry.ts`                   | Microsoft Clarity, project `yq5b8j38ea`. Replaced PostHog entirely (`posthog-js` removed). Custom events map to `clarity.event(name)` — **event properties are dropped**; identity maps to `clarity.identify`; opt-in is honored by only calling `initTelemetry()` when the user opted in. |
+| **GitHub OAuth**       | `src/ipc/handlers/github_handlers.ts:68` | Client ID `Ov23litltJHC4xcxVXKJ` (env `GITHUB_CLIENT_ID` overrides). Uses **Device Flow** — no client secret, no redirect URI. The OAuth app must have "Enable Device Flow" ticked.                                                                                                        |
+| **Google Drive OAuth** | `src/ipc/google/google_drive_auth.ts:14` | Client ID placeholder `YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com`. **Client secret removed** — the flow uses PKCE (`code_verifier`) + loopback redirect, so the client must be created as a **"Desktop app"** type.                                                                 |
+| **Drive sync UI**      | `src/lib/featureFlags.ts`                | `GOOGLE_DRIVE_INTEGRATION_ENABLED = false` hides the Settings "Google Account" card, the chat-preview Drive-sync panel, and its Settings search entry. Flip to `true` (and fill in the client ID) to re-enable.                                                                            |
 
 ---
 
 ## 9. Troubleshooting — gotchas this repo actually hit
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| Running app's DB breaks after running tests | `npm rebuild better-sqlite3` rebuilt against **Node** ABI, not Electron | Rebuild for Electron ABI (`npx electron-rebuild -f -w better-sqlite3`) or re-run `npm run make` |
-| Windows native build fails on Spectre libs | node-gyp defaults to `Spectre` mitigation | `$env:SpectreMitigation="false"` + `patch-node-gyp.js` (auto via `postinstall`) |
-| Windows build can't find VS 2026/18 toolset | node-gyp only maps VS 17→v143 | `patch-node-gyp.js` maps `>=18`→v143 |
-| macOS signing silently "succeeds" but ships unsigned | Forge default `continueOnError: true` | Set `osxSign.continueOnError: false` (already done here) |
-| Packaged app can't load `git` / `ripgrep` | They weren't shipped | `extraResource: ["node_modules/dugite/git", "node_modules/@vscode"]` + cleanup preserves their layout |
-| AppImage fails to build | `mksquashfs` not installed | install `squashfs-tools` on the Linux build host |
-| Auto-update never finds a mac update | mac app not code-signed | update.electronjs.org only serves signed mac builds; sign + notarize |
-| `.deb`/Linux binary name mismatch | `productName` has a space | `executableName: "octopus-studio"` pins a sanitized name |
+| Symptom                                              | Cause                                                                   | Fix                                                                                                   |
+| ---------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Running app's DB breaks after running tests          | `npm rebuild better-sqlite3` rebuilt against **Node** ABI, not Electron | Rebuild for Electron ABI (`npx electron-rebuild -f -w better-sqlite3`) or re-run `npm run make`       |
+| Windows native build fails on Spectre libs           | node-gyp defaults to `Spectre` mitigation                               | `$env:SpectreMitigation="false"` + `patch-node-gyp.js` (auto via `postinstall`)                       |
+| Windows build can't find VS 2026/18 toolset          | node-gyp only maps VS 17→v143                                           | `patch-node-gyp.js` maps `>=18`→v143                                                                  |
+| macOS signing silently "succeeds" but ships unsigned | Forge default `continueOnError: true`                                   | Set `osxSign.continueOnError: false` (already done here)                                              |
+| Packaged app can't load `git` / `ripgrep`            | They weren't shipped                                                    | `extraResource: ["node_modules/dugite/git", "node_modules/@vscode"]` + cleanup preserves their layout |
+| AppImage fails to build                              | `mksquashfs` not installed                                              | install `squashfs-tools` on the Linux build host                                                      |
+| Auto-update never finds a mac update                 | mac app not code-signed                                                 | update.electronjs.org only serves signed mac builds; sign + notarize                                  |
+| `.deb`/Linux binary name mismatch                    | `productName` has a space                                               | `executableName: "octopus-studio"` pins a sanitized name                                              |
 
 ---
 
@@ -443,7 +449,10 @@ A copy-paste checklist of the decisions that make this pipeline work:
    mapping, DevShell activation) — they're the difference between "works locally" and
    "works on CI".
 9. **Gate the release on a tag** (`v*`), build in a 3-OS matrix with
-   `fail-fast: false`, and upload to *both* repos.
-10. **Add verification** (asset presence + provenance) *before* you trust the pipeline,
+   `fail-fast: false`, and upload to _both_ repos.
+10. **Add verification** (asset presence + provenance) _before_ you trust the pipeline,
     not after a bad release ships.
+
+```
+
 ```

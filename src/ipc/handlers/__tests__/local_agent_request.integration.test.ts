@@ -90,6 +90,7 @@ describe("local-agent default request (integration)", () => {
       "copy_file",
       "delete_file",
       "enable_nitro",
+      "execute_command",
       "execute_sandbox_script",
       "explore_chat_history",
       "generate_image",

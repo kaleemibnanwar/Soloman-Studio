@@ -224,20 +224,6 @@ export const NeonSchema = z.object({
 });
 export type Neon = z.infer<typeof NeonSchema>;
 
-/**
- * Credentials for the stock-image search providers exposed through the
- * `search_images` agent tool. Pexels and Pixabay take a plain API key;
- * Openverse uses OAuth2 client credentials (exchanged for a short-lived
- * access token at search time).
- */
-export const ImageSearchSettingsSchema = z.object({
-  pexelsApiKey: SecretSchema.optional(),
-  pixabayApiKey: SecretSchema.optional(),
-  openverseClientId: SecretSchema.optional(),
-  openverseClientSecret: SecretSchema.optional(),
-});
-export type ImageSearchSettings = z.infer<typeof ImageSearchSettingsSchema>;
-
 // IMPORTANT: Do NOT add any new experiments here. Instead, add them to BaseUserSettingsFields.
 // It's hard to turn experiments on by default when you put them in
 // ExperimentsSchema.
@@ -409,7 +395,6 @@ const BaseUserSettingsFields = {
   vercelAccessToken: SecretSchema.optional(),
   supabase: SupabaseSchema.optional(),
   neon: NeonSchema.optional(),
-  imageSearch: ImageSearchSettingsSchema.optional(),
   autoApproveChanges: z.boolean().optional(),
   telemetryConsent: z.enum(["opted_in", "opted_out", "unset"]).optional(),
   telemetryUserId: z.string().optional(),
@@ -472,6 +457,13 @@ const BaseUserSettingsFields = {
   // instructions, reduced chat-history context) while preserving result quality.
   economyMode: z.boolean().optional(),
   enableBrowserLimbBridge: z.boolean().optional(),
+  /** Web automation source and optional installed-browser profile metadata. */
+  webAutomationSessionSource: z.enum(["embedded", "external"]).optional(),
+  webAutomationBrowser: z
+    .enum(["auto", "chrome", "chromium", "brave", "edge", "opera", "firefox", "safari"])
+    .optional(),
+  webAutomationExecutablePath: z.string().optional().nullable(),
+  webAutomationProfilePath: z.string().optional().nullable(),
 };
 
 /**

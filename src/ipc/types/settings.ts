@@ -59,6 +59,23 @@ export const settingsContracts = {
       lastError: z.string().nullable(),
     }),
   }),
+
+  /** Detect installed browsers and their common profile locations. */
+  getInstalledBrowsers: defineContract({
+    channel: "get-installed-browsers",
+    input: z.void(),
+    output: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        executablePath: z.string().nullable(),
+        profilePath: z.string().nullable(),
+        detected: z.boolean(),
+        sessionImport: z.enum(["embedded-profile", "external-bridge", "unsupported"]),
+        note: z.string(),
+      }),
+    ),
+  }),
 } as const;
 
 // =============================================================================
@@ -108,4 +125,9 @@ export type ValidateProviderApiKeyInput = z.infer<
 /** Output type for validateProviderApiKey */
 export type ValidateProviderApiKeyOutput = z.infer<
   (typeof settingsContracts)["validateProviderApiKey"]["output"]
+>;
+
+/** Installed browser candidates and profile locations for Web Automation. */
+export type GetInstalledBrowsersOutput = z.infer<
+  (typeof settingsContracts)["getInstalledBrowsers"]["output"]
 >;

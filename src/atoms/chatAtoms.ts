@@ -489,6 +489,7 @@ export interface QueuedMessageItem {
   redo?: boolean;
   appId?: number;
   requestedChatMode?: Chat["chatMode"] | null;
+  includePlannerTasks?: boolean;
   editable?: boolean;
   removable?: boolean;
   /** Legacy persisted marker; never written by current queue code. */

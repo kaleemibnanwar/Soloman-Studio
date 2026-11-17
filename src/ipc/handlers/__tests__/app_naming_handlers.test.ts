@@ -14,6 +14,7 @@ import { appOperationCoordinator } from "@/ipc/services/app_operation_coordinato
 // All app folders live under one throwaway base so the filesystem-probing
 // conflict checks (and actual folder moves) run against real directories.
 const TEMP_BASE = path.join(os.tmpdir(), "octopus-studio-app-naming-handler-tests");
+const IMPORT_SOURCE_BASE = path.join(os.tmpdir(), "octopus-studio-import-source-tests");
 
 // Captures handlers registered through createLoggedHandler (import_handlers
 // uses it instead of createTypedHandler, so the harness registry misses it).
@@ -38,6 +39,8 @@ vi.mock("electron", () => ({
   app: {
     getPath: vi.fn(() => path.join(os.tmpdir(), "octopus-studio-app-naming-user-data")),
     getAppPath: vi.fn(() => process.cwd()),
+    isReady: vi.fn(() => false),
+    whenReady: vi.fn(() => Promise.resolve()),
   },
   dialog: { showOpenDialog: vi.fn() },
 }));
@@ -54,6 +57,10 @@ vi.mock("@/paths/paths", async (importOriginal) => {
     getOctopusStudioAppPath: (appPath: string) =>
       nodePath.isAbsolute(appPath) ? appPath : nodePath.join(base, appPath),
     isAppLocationAccessible: () => true,
+    isPathInsideOctopusStudioAppsDirectory: (candidatePath: string) => {
+      const relative = nodePath.relative(base, candidatePath);
+      return relative !== "" && !relative.startsWith("..") && !nodePath.isAbsolute(relative);
+    },
   };
 });
 
@@ -144,7 +151,9 @@ describe("app naming handlers", () => {
       packagedRendererUrl: "file:///app/renderer/main_window/index.html",
     });
     fs.rmSync(TEMP_BASE, { recursive: true, force: true });
+    fs.rmSync(IMPORT_SOURCE_BASE, { recursive: true, force: true });
     fs.mkdirSync(TEMP_BASE, { recursive: true });
+    fs.mkdirSync(IMPORT_SOURCE_BASE, { recursive: true });
     harness = setupHandlerTestHarness();
     activeRecordings.clear();
     deletionOrder.length = 0;
@@ -160,6 +169,7 @@ describe("app naming handlers", () => {
     activeRecordings.clear();
     harness.dispose();
     fs.rmSync(TEMP_BASE, { recursive: true, force: true });
+    fs.rmSync(IMPORT_SOURCE_BASE, { recursive: true, force: true });
   });
 
   function seedApp(name: string, appPath: string): number {
@@ -481,7 +491,7 @@ describe("app naming handlers", () => {
 
   describe("import-app", () => {
     function makeSourceDir(): string {
-      const sourcePath = path.join(TEMP_BASE, "outside-source");
+      const sourcePath = path.join(IMPORT_SOURCE_BASE, "outside-source");
       fs.mkdirSync(sourcePath, { recursive: true });
       fs.writeFileSync(path.join(sourcePath, "index.ts"), "// app");
       return sourcePath;
@@ -497,7 +507,7 @@ describe("app naming handlers", () => {
 
       const row = getAppRow(result.appId);
       expect(row?.name).toBe("My Imported App");
-      expect(row?.path).toBe("my-imported-app");
+      expect(row?.path).toBe(path.join(TEMP_BASE, "my-imported-app"));
       expect(fs.existsSync(path.join(TEMP_BASE, "my-imported-app", "index.ts"))).toBe(true);
     });
 
@@ -510,7 +520,21 @@ describe("app naming handlers", () => {
         appName: "My Imported App!",
       });
 
-      expect(getAppRow(result.appId)?.path).toBe("my-imported-app-2");
+      expect(getAppRow(result.appId)?.path).toBe(path.join(TEMP_BASE, "my-imported-app-2"));
+    });
+
+    it("registers a source already inside the managed apps root in place", async () => {
+      const sourcePath = path.join(TEMP_BASE, "managed-source");
+      fs.mkdirSync(sourcePath, { recursive: true });
+      fs.writeFileSync(path.join(sourcePath, "index.ts"), "// app");
+
+      const result = await invokeImportHandler<{ appId: number }>("import-app", {
+        path: sourcePath,
+        appName: "Managed Source",
+      });
+
+      expect(getAppRow(result.appId)?.path).toBe(sourcePath);
+      expect(fs.existsSync(path.join(TEMP_BASE, "managed-source-2"))).toBe(false);
     });
 
     it("rejects duplicate display names", async () => {

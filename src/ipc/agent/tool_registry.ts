@@ -105,6 +105,12 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     isAllowedByDefault: false,
   },
   {
+    name: "execute_command",
+    description:
+      "Run an approved local command in the project, including SSH and deployment commands.",
+    isAllowedByDefault: false,
+  },
+  {
     name: "add_integration",
     description: "Add a third-party integration (e.g. Supabase, GitHub) to the project.",
     isAllowedByDefault: false,
@@ -254,6 +260,45 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
     description: "Create a recurring scheduled task that runs the agent on a prompt.",
     isAllowedByDefault: false,
   },
+  {
+    name: "list_coworker_bots",
+    description:
+      "List all autonomous coworker bots, their archetypes (Sentinel/Scout/Steward/Operator), schedule, project scope, and status.",
+    isAllowedByDefault: true,
+  },
+  {
+    name: "create_coworker_bot",
+    description:
+      "Deploy an autonomous coworker bot (Sentinel=QA/tests, Scout=web/docs research, Steward=code health/linting, Operator=daily workflows) assigned to a specific project or the default workspace.",
+    isAllowedByDefault: false,
+  },
+  {
+    name: "run_coworker_bot",
+    description: "Immediately trigger an autonomous mission run for a coworker bot.",
+    isAllowedByDefault: false,
+  },
+  {
+    name: "get_coworker_report",
+    description:
+      "Retrieve the execution report, findings, and logs from a coworker bot's latest run.",
+    isAllowedByDefault: true,
+  },
+  {
+    name: "list_planner_tasks",
+    description: "List the current project's Planner (kanban) cards.",
+    isAllowedByDefault: true,
+  },
+  {
+    name: "create_planner_task",
+    description: "Create a new card on the project's Planner (kanban board).",
+    isAllowedByDefault: false,
+  },
+  {
+    name: "update_planner_task",
+    description:
+      "Update an existing Planner card's status, priority, title, description, or due date.",
+    isAllowedByDefault: false,
+  },
 
   // --- Skills ----------------------------------------------------------------
   {
@@ -299,6 +344,12 @@ export const AGENT_TOOL_REGISTRY: AgentToolDefinition[] = [
   {
     name: "web_crawl",
     description: "Crawl a website starting from a URL and collect page contents.",
+    isAllowedByDefault: true,
+  },
+  {
+    name: "browser_automation",
+    description:
+      "Discover and run mapped-element operations in Studio's embedded browser. The single dispatcher keeps browser schemas out of unrelated requests.",
     isAllowedByDefault: true,
   },
 ];

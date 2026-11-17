@@ -42,7 +42,9 @@ const PACKAGED_RENDERER_STATIC_PATHS = new Set([
   "/library",
   "/library/media",
   "/library/prompts",
+  "/library/skills",
   "/library/themes",
+  "/planner",
   "/plugins",
   "/settings",
   "/tasks",
@@ -152,7 +154,7 @@ export function assertTrustedRenderer(event: IpcMainInvokeEvent): void {
   const frame = event.senderFrame;
   if (!frame || !isSenderMainFrame(event) || !isTrustedRendererUrl(frame.url)) {
     throw new OctopusStudioError(
-      "IPC requests must originate from the trusted Octopus Studio renderer.",
+      "IPC requests must originate from the trusted Soloman Studio renderer.",
       OctopusStudioErrorKind.Validation,
     );
   }

@@ -20,7 +20,7 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../../main/settings", () => ({
+vi.mock("../../../main/settings", () => ({
   readEffectiveSettings: mocks.readEffectiveSettings,
   writeSettings: mocks.writeSettings,
 }));

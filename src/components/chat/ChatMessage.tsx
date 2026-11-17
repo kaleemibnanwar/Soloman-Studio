@@ -14,6 +14,7 @@ import {
   Ban,
   Undo2,
   Loader2,
+  ArrowDown,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useVersions } from "@/hooks/useVersions";
@@ -329,7 +330,7 @@ const ChatMessage = ({ message, isLastMessage, isCancelledPrompt }: ChatMessageP
                     <TooltipContent>{copied ? "Copied!" : "Copy"}</TooltipContent>
                   </Tooltip>
                 )}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {message.approvalState && (
                     <div className="flex items-center space-x-1">
                       {message.approvalState === "approved" ? (
@@ -343,6 +344,28 @@ const ChatMessage = ({ message, isLastMessage, isCancelledPrompt }: ChatMessageP
                           <span>Rejected</span>
                         </>
                       ) : null}
+                    </div>
+                  )}
+                  {message.role === "assistant" && (
+                    <div
+                      data-testid="token-usage-badge"
+                      className="flex items-center gap-1 text-muted-foreground text-[11px] font-mono bg-muted/30 px-2 py-0.5 rounded border border-border/40"
+                      title="Output token usage"
+                    >
+                      <ArrowDown className="h-3 w-3 flex-shrink-0 text-muted-foreground/80" />
+                      <span>
+                        {(() => {
+                          const output =
+                            message.outputTokens ??
+                            (message.totalTokens != null && message.inputTokens != null
+                              ? Math.max(0, message.totalTokens - message.inputTokens)
+                              : Math.max(
+                                  1,
+                                  Math.ceil(((assistantTextContent?.length ?? 0) * 0.7) / 4),
+                                ));
+                          return `${output.toLocaleString()} tokens`;
+                        })()}
+                      </span>
                     </div>
                   )}
                   {message.role === "assistant" && message.model && (

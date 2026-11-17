@@ -14,10 +14,49 @@ const logger = log.scope("db");
 let _db: ReturnType<typeof drizzle> | null = null;
 
 /**
- * Get the database path based on the current environment
+ * Get the database path based on the current environment.
+ * Uses `soloman.db`, automatically migrating from legacy `sqlite.db` or `database.sqlite`
+ * if found in the userData directory.
  */
 export function getDatabasePath(): string {
-  return path.join(getUserDataPath(), "sqlite.db");
+  const userData = getUserDataPath();
+  const primaryDbPath = path.join(userData, "soloman.db");
+  const legacySqliteDbPath = path.join(userData, "sqlite.db");
+  const legacyDatabaseSqlitePath = path.join(userData, "database.sqlite");
+
+  // If primary db already exists, return it
+  if (fs.existsSync(primaryDbPath)) {
+    return primaryDbPath;
+  }
+
+  // Check if legacy sqlite.db exists and migrate it
+  const legacyToMigrate = fs.existsSync(legacySqliteDbPath)
+    ? legacySqliteDbPath
+    : fs.existsSync(legacyDatabaseSqlitePath)
+      ? legacyDatabaseSqlitePath
+      : null;
+
+  if (legacyToMigrate) {
+    try {
+      logger.info(`Migrating legacy database from ${legacyToMigrate} to ${primaryDbPath}`);
+      fs.copyFileSync(legacyToMigrate, primaryDbPath);
+
+      // Also copy WAL and SHM if present
+      for (const ext of ["-wal", "-shm"]) {
+        const legacyAux = `${legacyToMigrate}${ext}`;
+        const newAux = `${primaryDbPath}${ext}`;
+        if (fs.existsSync(legacyAux)) {
+          fs.copyFileSync(legacyAux, newAux);
+        }
+      }
+      return primaryDbPath;
+    } catch (err) {
+      logger.warn("Failed to copy legacy database file, falling back to legacy path:", err);
+      return legacyToMigrate;
+    }
+  }
+
+  return primaryDbPath;
 }
 
 export function getDatabaseFilePaths(): string[] {

@@ -48,6 +48,7 @@ export function useStreamChat({ hasChatId = true }: { hasChatId?: boolean } = {}
         redo: entry.redo,
         appId: entry.appId,
         requestedChatMode: entry.requestedChatMode,
+        includePlannerTasks: entry.includePlannerTasks,
         editable: entry.editable,
         removable: entry.removable,
       })) ?? [],
@@ -64,6 +65,7 @@ export function useStreamChat({ hasChatId = true }: { hasChatId?: boolean } = {}
       selectedComponents,
       requestedChatMode,
       planAcceptInNewChat,
+      includePlannerTasks,
       onSettled,
     }: {
       prompt: string;
@@ -74,6 +76,7 @@ export function useStreamChat({ hasChatId = true }: { hasChatId?: boolean } = {}
       selectedComponents?: ComponentSelection[];
       requestedChatMode?: Chat["chatMode"] | null;
       planAcceptInNewChat?: boolean;
+      includePlannerTasks?: boolean;
       onSettled?: (result: StreamSettledResult) => void;
     }) => {
       if ((!prompt.trim() && (!attachments || attachments.length === 0)) || !chatId) {
@@ -110,6 +113,7 @@ export function useStreamChat({ hasChatId = true }: { hasChatId?: boolean } = {}
           selectedComponents,
           requestedChatMode,
           planAcceptInNewChat,
+          includePlannerTasks,
           onSettled,
         },
       });

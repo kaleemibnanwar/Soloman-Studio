@@ -100,6 +100,7 @@ export function toQueueEntry(intent: SerializableChatTurnIntent): ChatQueueEntry
     redo: intent.redo,
     appId: intent.appId,
     requestedChatMode: intent.requestedChatMode,
+    includePlannerTasks: intent.includePlannerTasks,
     persistence: "main-session",
     editable: intent.owner === undefined,
     removable: intent.owner?.kind !== "plan-handoff",

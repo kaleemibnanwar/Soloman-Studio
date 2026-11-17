@@ -42,6 +42,47 @@ export function getFilesRecursively(dir: string, baseDir: string): string[] {
   return files.sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * Async counterpart used by renderer-facing IPC handlers. File discovery can
+ * walk a user-owned project tree, so it must not monopolize Electron's main
+ * process with synchronous filesystem calls while the agent and renderer are
+ * active.
+ */
+export async function getFilesRecursivelyAsync(dir: string, baseDir: string): Promise<string[]> {
+  let dirents: fs.Dirent[];
+  try {
+    dirents = await fsPromises.readdir(dir, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+
+  dirents.sort((a, b) => a.name.localeCompare(b.name));
+  const nestedFiles = await Promise.all(
+    dirents.map(async (dirent) => {
+      const resolvedPath = path.join(dir, dirent.name);
+      const isDirectory = dirent.isDirectory();
+
+      if (isDirectory && EXCLUDED_DIRS.includes(dirent.name)) return [];
+      if (
+        dirent.name !== ".git" &&
+        (await isPathIgnoredByGitIgnore({
+          basePath: baseDir,
+          filePath: resolvedPath,
+          isDirectory,
+        }))
+      ) {
+        return [];
+      }
+
+      if (isDirectory) return getFilesRecursivelyAsync(resolvedPath, baseDir);
+      return [normalizePath(path.relative(baseDir, resolvedPath))];
+    }),
+  );
+
+  return nestedFiles.flat().sort((a, b) => a.localeCompare(b));
+}
+
 // Electron's patched `fs` module virtualizes any `.asar` path as a directory
 // (so packaged app code can `readdir`/`readFile` into it), which breaks
 // `fs.copyFile` on it. If a source tree being imported happens to contain a

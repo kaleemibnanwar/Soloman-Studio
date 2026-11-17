@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="assets/icon/logo.png" alt="Octopus Studio" width="120" />
+<img src="assets/icon/logo.png" alt="Soloman Studio" width="120" />
 
-# Octopus Studio
+# Soloman Studio
 
-**A local, open-source AI agentic octopus — your friend, doing everything with its eight hands. Describe what you want, watch it fetch it up from the bottom of the ocean, and ship it yourself.**
+**A local, open-source AI agentic workspace and app builder. Describe what you want, watch it build, and ship it yourself.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#download)
@@ -17,10 +17,10 @@
 
 ---
 
-Most tools hand you one hand's worth of help. Octopus Studio hands you eight: one arm scaffolds the app while another wires up the plugin you asked for, one keeps a scheduled task running in the background while another reviews the diff a squad of agents just produced. You describe what you want built, it dives down and comes back with the thing — a real, running codebase, not a mockup — and every bit of it happens on your machine. Your code, your API keys, your data, never someone else's server.
+Soloman Studio empowers you with full-stack agentic capabilities: scaffolding apps, wiring plugins, managing scheduled tasks, and coordinating squads of agents. You describe what you want built, it delivers a real, running codebase — not a mockup — entirely on your machine. Your code, your API keys, your data, never someone else's server.
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="Octopus Studio home screen" width="820" />
+  <img src="assets/screenshots/home.png" alt="Soloman Studio home screen" width="820" />
 </p>
 
 ## Features
@@ -29,7 +29,7 @@ Eight arms, eight jobs. Here's what each one is doing.
 
 ### Build apps by describing them
 
-The first arm sketches the plan and lays the scaffold. Type what you want, pick a template (React, Next.js, or a full-stack starter), and Octopus Studio scaffolds a real project, opens a live preview, and iterates with you turn by turn — every AI edit is committed to a real git history you can branch from or roll back.
+The first arm sketches the plan and lays the scaffold. Type what you want, pick a template (React, Next.js, or a full-stack starter), and Soloman Studio scaffolds a real project, opens a live preview, and iterates with you turn by turn — every AI edit is committed to a real git history you can branch from or roll back.
 
 ### Chat Projects
 
@@ -89,7 +89,7 @@ npm install
 npm start
 ```
 
-Octopus Studio opens as a desktop app on first launch. Add a model provider API key (or point it at a local Ollama/LM Studio instance) from **Manage AI setup**, and you're building.
+Soloman Studio opens as a desktop app on first launch. Add a model provider API key (or point it at a local Ollama/LM Studio instance) from **Manage AI setup**, and you're building.
 
 ### Building a distributable
 

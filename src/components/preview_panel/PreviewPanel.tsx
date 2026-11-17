@@ -464,7 +464,7 @@ function PreviewNodeRequirement({
                     Installing Node.js
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-foreground/80">
-                    Octopus Studio is setting up a private Node.js runtime for previews.
+                    Soloman Studio is setting up a private Node.js runtime for previews.
                   </p>
                   <div className="mt-4">
                     <div className="h-2 overflow-hidden rounded-full bg-(--background-darker)">
@@ -541,7 +541,7 @@ function PreviewNodeRequirement({
               {isCheckFailed && (
                 <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                   <AlertCircle className="mr-1.5 inline size-3.5 align-[-2px]" />
-                  Octopus Studio couldn't check for Node.js. It will keep trying.
+                  Soloman Studio couldn't check for Node.js. It will keep trying.
                 </p>
               )}
 

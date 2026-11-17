@@ -19,7 +19,7 @@ export class ChatActions {
 
   getChatInput() {
     return this.page.locator(
-      '[data-testid="chat-input-container"]:visible [data-lexical-editor="true"][aria-placeholder^="Ask Octopus Studio to build"], [data-testid="home-chat-input-container"]:visible [data-lexical-editor="true"][aria-placeholder^="Ask Octopus Studio to build"]',
+      '[data-testid="chat-input-container"]:visible [data-lexical-editor="true"][aria-placeholder*="Studio to build"], [data-testid="home-chat-input-container"]:visible [data-lexical-editor="true"][aria-placeholder*="Studio to build"]',
     );
   }
 

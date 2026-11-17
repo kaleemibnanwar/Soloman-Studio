@@ -81,7 +81,21 @@
     }
   },
   "dismissError": "Dismiss error",
-  "askOctopusStudioToBuild": "Ask Octopus Studio to build...",
+  "askOctopusStudioToBuild": "Ask Soloman Studio to build...",
+  "voiceCall": {
+    "title": "Voice conversation",
+    "start": "Start voice conversation",
+    "end": "End voice conversation",
+    "interrupt": "Interrupt",
+    "youSaid": "You said: {{transcript}}",
+    "status": {
+      "idle": "Ready",
+      "listening": "Listening — speak naturally",
+      "transcribing": "Understanding you...",
+      "thinking": "Thinking...",
+      "speaking": "Speaking"
+    }
+  },
   "cancelGeneration": "Cancel generation",
   "sendMessage": "Send message",
   "loadingProposal": "Loading proposal...",
@@ -257,7 +271,7 @@
   "total": "Total",
   "failedCountTokens": "Failed to count tokens",
   "optimizeTokens": "Optimize your tokens with",
-  "octopus-studioProSmartContext": "OctopusStudio Pro's Smart Context",
+  "octopus-studioProSmartContext": "Soloman Studio Pro's Smart Context",
   "attachFiles": "Attach files",
   "themes": "Themes",
   "noTheme": "No Theme",
@@ -333,29 +347,29 @@
     "versionCount": "Version {{count}}"
   },
   "errorBox": {
-    "accessWithOctopusStudioPro": "Access with OctopusStudio Pro",
+    "accessWithOctopusStudioPro": "Access with Soloman Studio Pro",
     "orSwitchModel": "or switch to another model.",
-    "upgradeToOctopusStudioPro": "Upgrade to OctopusStudio Pro",
+    "upgradeToOctopusStudioPro": "Upgrade to Soloman Studio Pro",
     "troubleshootingGuide": "Troubleshooting guide",
-    "invalidProKey": "Looks like you don't have a valid OctopusStudio Pro key.",
+    "invalidProKey": "Looks like you don't have a valid Soloman Studio Pro key.",
     "today": "today.",
-    "creditsUsed": "You have used all of your OctopusStudio AI credits this month.",
+    "creditsUsed": "You have used all of your Soloman Studio AI credits this month.",
     "reloadOrUpgrade": "Reload or upgrade your subscription",
     "getMoreCredits": "and get more AI credits",
     "readDocs": "Read docs"
   },
   "promo": {
     "tiredOfWaiting": "Tired of waiting on AI?",
-    "getOctopusStudioPro": "Get OctopusStudio Pro",
+    "getOctopusStudioPro": "Get Soloman Studio Pro",
     "fasterEdits": "for faster edits with Turbo Edits.",
     "saveOnCosts": "Save up to 3x on AI costs with",
     "debuggingLoop": "Getting stuck in a debugging loop? Try a different model.",
     "joinBuilders": "Join 600+ builders in the",
-    "octopus-studioSubreddit": "OctopusStudio subreddit",
+    "octopus-studioSubreddit": "Soloman Studio community",
     "foundBug": "Found a bug? Click Help > Report a Bug",
     "reportBadResponse": "Want to report a bad AI response? Upload the chat by clicking Help",
     "watch": "Watch",
-    "creatorBuildApp": "the creator of OctopusStudio build a Bible app step-by-step",
+    "creatorBuildApp": "the creator of Soloman Studio build a Bible app step-by-step",
     "gettingStuck": "Getting stuck? Read our",
     "debuggingTips": "debugging tips",
     "advancedTip": "Advanced tip: Customize your",
@@ -363,7 +377,7 @@
     "keepFocused": "Want to keep the AI focused? Start a new chat.",
     "whatsNext": "Want to know what's next? Check out our",
     "roadmap": "roadmap",
-    "likeOctopusStudio": "Like OctopusStudio? Star it on",
+    "likeOctopusStudio": "Like Soloman Studio? Star it on",
     "gitHub": "GitHub"
   },
   "consent": {

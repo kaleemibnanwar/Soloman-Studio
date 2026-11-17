@@ -336,7 +336,7 @@ export function OctopusStudioAppMediaFolder({
           <ImageLightbox
             imageUrl={buildOctopusStudioMediaUrl(appPath, previewFile.fileName)}
             alt={previewFile.fileName}
-            filePath={`${appPath}/.octopusStudio/media/${previewFile.fileName}`}
+            filePath={`${appPath}/.soloman/media/${previewFile.fileName}`}
             onClose={() => setPreviewFile(null)}
           />
         )}

@@ -2,19 +2,14 @@ import { StrictMode, useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { router } from "./router";
 import { RouterProvider } from "@tanstack/react-router";
-import {
-  getTelemetryUserId,
-  isTelemetryOptedIn,
-} from "./hooks/useSettings";
+import { getTelemetryUserId, isTelemetryOptedIn } from "./hooks/useSettings";
 
 // Initialize i18next before any rendering
 import "./i18n";
 
-// Typefaces — self-hosted via Fontsource. UI body = Instrument Sans (variable),
-// display = Instrument Serif, technical readouts = IBM Plex Mono.
+// Typefaces — self-hosted via Fontsource. Instrument Sans carries the interface
+// and IBM Plex Mono is reserved for code, paths, and technical readouts.
 import "@fontsource-variable/instrument-sans";
-import "@fontsource/instrument-serif/400.css";
-import "@fontsource/instrument-serif/400-italic.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/600.css";

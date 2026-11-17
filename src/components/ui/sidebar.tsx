@@ -9,9 +9,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-// Expanded width = labeled rail (4rem) + the inline panel column (14rem).
-const SIDEBAR_WIDTH = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+// Compact navigation shell shared with the mobile workspace language.
+const SIDEBAR_WIDTH = "15.625rem";
+const SIDEBAR_WIDTH_ICON = "3.375rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContextProps = {

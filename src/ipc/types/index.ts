@@ -66,11 +66,15 @@ export { appCollectionContracts } from "./app_collections";
 export { terminalContracts } from "./terminal";
 export { testsContracts, testsEvents } from "./tests";
 export { taskContracts } from "./task";
+export { plannerContracts } from "./planner";
+export { missionContracts } from "./mission";
 export { workerContracts } from "./worker";
 export { userInputContracts, userInputEvents } from "./user_input";
 export { firstPromptSendContracts } from "./first_prompt";
 export { windowInfrastructureContracts, windowInfrastructureEvents } from "./window_infrastructure";
 export { distributedMachineContracts, distributedMachineEvents } from "./distributed_machines";
+export { solomanContracts, solomanEvents } from "./soloman";
+export { browserContracts, browserEvents, browserClient, browserEventClient } from "./browser";
 
 // =============================================================================
 // Client Exports
@@ -111,6 +115,8 @@ export { appCollectionClient } from "./app_collections";
 export { terminalClient } from "./terminal";
 export { testsClient, testsEventClient } from "./tests";
 export { taskClient } from "./task";
+export { plannerClient } from "./planner";
+export { missionClient } from "./mission";
 export { skillClient } from "./skill";
 export { workerClient } from "./worker";
 export { workerProposalClient } from "./worker_proposal";
@@ -132,10 +138,17 @@ export {
   recordingEventClient,
   recordingEvents,
 } from "./recording";
+export { solomanClient, solomanEventClient } from "./soloman";
 
 // =============================================================================
 // Type Exports
 // =============================================================================
+
+export type {
+  SolomanHostStatusPayload,
+  SolomanPairingPayload,
+  DeviceConnectionGrantPayload,
+} from "./soloman";
 
 // Settings types
 export type {
@@ -446,6 +459,8 @@ import { settingsClient } from "./settings";
 import { appClient } from "./app";
 import { chatClient, chatStreamClient } from "./chat";
 import { taskClient } from "./task";
+import { plannerClient } from "./planner";
+import { missionClient } from "./mission";
 import { skillClient } from "./skill";
 import { fileManagerClient } from "./file_manager";
 import { workerClient } from "./worker";
@@ -495,6 +510,8 @@ import {
   windowInfrastructureEventClient,
 } from "./window_infrastructure";
 import { distributedMachineClient, distributedMachineEventClient } from "./distributed_machines";
+import { solomanClient, solomanEventClient } from "./soloman";
+import { browserClient, browserEventClient } from "./browser";
 
 /**
  * Unified IPC client with all domains organized by namespace.
@@ -521,6 +538,8 @@ export const ipc = {
   app: appClient,
   chat: chatClient,
   task: taskClient,
+  planner: plannerClient,
+  mission: missionClient,
   skill: skillClient,
   fileManager: fileManagerClient,
   worker: workerClient,
@@ -576,6 +595,8 @@ export const ipc = {
   windowInfrastructure: windowInfrastructureClient,
   distributedMachine: distributedMachineClient,
   imageGeneration: imageGenerationClient,
+  soloman: solomanClient,
+  browser: browserClient,
 
   // Event clients for main->renderer pub/sub
   events: {
@@ -590,5 +611,7 @@ export const ipc = {
     windowInfrastructure: windowInfrastructureEventClient,
     distributedMachine: distributedMachineEventClient,
     recording: recordingEventClient,
+    soloman: solomanEventClient,
+    browser: browserEventClient,
   },
 } as const;

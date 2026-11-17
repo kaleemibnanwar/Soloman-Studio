@@ -2,13 +2,24 @@ import fs from "node:fs";
 import path from "node:path";
 import { jsonSchema, type Tool, type ToolSet } from "ai";
 import type { IpcMainInvokeEvent } from "electron";
-import { eq } from "drizzle-orm";
+import { BrowserWindow } from "electron";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { mcpManager } from "../mcp/mcp_manager";
+import { getEmbeddedBrowserUrl, runEmbeddedBrowserTool } from "../handlers/browser_handlers";
+import {
+  getRecipeByFingerprint,
+  listRecipesForDomain,
+  recordRecipeOutcome,
+  upsertRecipe,
+  type RecipeStep,
+} from "../../main/octolimb_recipes";
 
 import { db } from "../../db";
-import { chats, tasks, mcpServers } from "../../db/schema";
+import { chats, messages, tasks, mcpServers, plannerTasks } from "../../db/schema";
+import { getUserDataPath } from "../../paths/paths";
 import { AGENT_TOOL_REGISTRY } from "./tool_registry";
 import { ROLE_BUDGETS, type AgentRole } from "./task_types";
+import { getMissionHitlPolicy, requestHitlApproval, shouldInterceptTool } from "./hitl_interceptor";
 import { readTextFileLines, AGENT_READ_FILE_TRUNCATION_NOTICE } from "../utils/bounded_text_file";
 import { searchAppFilesWithRipgrep } from "../handlers/app_handlers";
 import { runCodeExplorer } from "../processors/code_explorer";
@@ -17,6 +28,9 @@ import { installPackages } from "../processors/executeAddDependency";
 import { runTypeScriptCheck } from "../processors/tsc";
 import { restartApp } from "../services/restart_app";
 import { runSandboxScript } from "../utils/sandbox/runner";
+import { runBufferedProcess } from "../process/buffered_process";
+import { buildWindowsCommandInvocation } from "../utils/windows_command";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
 import { executeCopyFile } from "../utils/copy_file_utils";
 import { safeJoin, assertMutationPathAllowed, prepareDeletePath } from "../utils/path_utils";
 import {
@@ -37,9 +51,10 @@ import {
 import { agentEvents } from "../types/agent";
 import { publishQueryInvalidations } from "../utils/query_invalidation_delivery";
 import { readSettings } from "../../main/settings";
+import { callOctoLimbTool } from "../../main/octolimb_bridge";
 import { generateImageWithFallback } from "../utils/get_image_model_client";
 import { generateVideo } from "../utils/get_video_model_client";
-import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../media/media_path_utils";
+import { getOctopusStudioMediaDir, SOLOMAN_MEDIA_DIR_NAME } from "../media/media_path_utils";
 import { createSkill, deleteSkill, findSkill, listSkills, updateSkill } from "../utils/skill_store";
 import {
   generateDocx,
@@ -116,6 +131,15 @@ const STUB_MESSAGE = "not available in this build";
 // Registry lookups for consent defaults (default approval lives in the same
 // table that powers the Settings tool-visibility UI).
 const registryByName = new Map(AGENT_TOOL_REGISTRY.map((t) => [t.name, t]));
+const browserRecipeStepsByWindow = new Map<number, RecipeStep[]>();
+
+function domainFromUrl(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).hostname || "embedded";
+  } catch {
+    return "embedded";
+  }
+}
 
 type JsonSchemaProperties = Record<
   string,
@@ -411,6 +435,9 @@ export interface SubAgentSpec {
   maxSteps?: number;
   /** Resume from a prior sub-task's id — injects its action history as context. */
   resumeFromTaskId?: string;
+  /** Mission ledger used for sensitive-action approval and attribution. */
+  missionSlug?: string;
+  botName?: string;
 }
 
 export interface BuiltinToolsParams {
@@ -430,16 +457,29 @@ export interface BuiltinToolsParams {
     allowedFiles?: string[] | null;
     allowedSymbols?: string[] | null;
     agentRole?: string;
+    toolAllowlist?: string[] | null;
+    isSubAgent?: boolean;
+    missionSlug?: string;
+    botName?: string;
   };
   /** Ask the user a set of structured questions and await their answers. */
   requestQuestionnaire?: (
     questions: QuestionnaireQuestion[],
     abortSignal?: AbortSignal,
   ) => Promise<Record<string, string> | null>;
+  /** Request approval immediately before a sensitive built-in tool executes. */
+  requestToolConsent?: (request: {
+    toolName: string;
+    toolDescription: string;
+    inputPreview: string;
+    abortSignal?: AbortSignal;
+  }) => Promise<boolean>;
   /** Run a bounded sub-agent and return its result text. */
   spawnSubAgent?: (spec: SubAgentSpec) => Promise<string>;
   planTaskGraph?: (spec: any) => Promise<string>;
   onSubAgentStream?: (stream: any, abortController: AbortController) => Promise<void>;
+  /** Track todo updates in the active turn so incomplete todos can be continued. */
+  onTodosUpdate?: (todos: Array<{ id: string; content: string; status: string }>) => void;
   /** Session budget for this tool set (tool-call cap, enforced in blockReason). */
   budget?: {
     maxToolCalls?: number;
@@ -499,6 +539,38 @@ function ensureIndexed(appPath: string): void {
   }
 }
 
+/**
+ * Best-effort code-index helpers. A SQLite index error (e.g. native binary
+ * mismatch in tests or locked index DB) must NEVER cause a completed file
+ * write/edit/delete/rename to report an error to the model or skip UI query
+ * invalidation.
+ */
+function tryUpdateCodeIndex(appPath: string, relPath: string): void {
+  try {
+    buildOrUpdateFileChunks(openCodeIndexDb(appPath), appPath, relPath);
+  } catch {
+    // Non-fatal: file mutation on disk already succeeded.
+  }
+}
+
+function tryRemoveCodeIndex(appPath: string, relPath: string): void {
+  try {
+    removeFileChunks(openCodeIndexDb(appPath), relPath);
+  } catch {
+    // Non-fatal: file deletion on disk already succeeded.
+  }
+}
+
+function tryRenameCodeIndex(appPath: string, fromRel: string, toRel: string): void {
+  try {
+    const indexDb = openCodeIndexDb(appPath);
+    removeFileChunks(indexDb, fromRel);
+    buildOrUpdateFileChunks(indexDb, appPath, toRel);
+  } catch {
+    // Non-fatal: file rename on disk already succeeded.
+  }
+}
+
 // A single tool result may consume at most this fraction of the role's context
 // budget, so one oversized page dump can't crowd out the rest of the loop.
 const TOOL_RESULT_BUDGET_FRACTION = 0.25;
@@ -551,6 +623,238 @@ export function truncateToolResult(result: unknown, maxChars: number, keepTail =
 
 export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
   const tools: Record<string, Tool> = {};
+
+  // --- Embedded browser ----------------------------------------------------
+  // Keep browser automation behind one small, discovery-first tool. Exposing
+  // every browser operation as a separate schema on every request adds a lot
+  // of prompt/tool overhead and makes the model reach for browser controls on
+  // unrelated tasks. The model can discover the operations once, then invoke
+  // them through this dispatcher. This is the same mapped-element workflow as
+  // OctoLimb, but runs directly against Studio's embedded browser (no MCP or
+  // external bridge is required).
+  const runEmbedded = async (tool: string, args: Record<string, unknown>) => {
+    const settings = readSettings();
+    const external =
+      settings.enableBrowserLimbBridge === true &&
+      settings.webAutomationSessionSource === "external";
+    const externalNames: Record<string, string> = {
+      browser_go_to_url: "go_to_url",
+      browser_search: "search_google",
+      browser_read_page: "read_page",
+      browser_click: "click_element",
+      browser_input: "input_text",
+      browser_back: "go_back",
+      browser_wait: "wait",
+      browser_scroll_to_percent: "scroll_to_percent",
+      browser_scroll_to_top: "scroll_to_top",
+      browser_scroll_to_bottom: "scroll_to_bottom",
+      browser_previous_page: "previous_page",
+      browser_next_page: "next_page",
+      browser_scroll_to_text: "scroll_to_text",
+      browser_send_keys: "send_keys",
+      browser_get_dropdown_options: "get_dropdown_options",
+      browser_select_dropdown_option: "select_dropdown_option",
+      browser_execute_js: "execute_js",
+      browser_cache_content: "cache_content",
+      browser_open_tab: "open_tab",
+      browser_switch_tab: "switch_tab",
+      browser_close_tab: "close_tab",
+      browser_done: "done",
+    };
+    if (external && externalNames[tool]) {
+      return stringify(await callOctoLimbTool(externalNames[tool], args));
+    }
+    const owner = BrowserWindow.fromWebContents(params.event.sender);
+    if (!owner) return "Embedded browser is unavailable for this window.";
+    return stringify(await runEmbeddedBrowserTool(owner, tool, args));
+  };
+  tools.browser_automation = {
+    description:
+      "Embedded browser automation. First call action=discover when a task needs a website. It returns the available operations and the mapped-element workflow. Then call action=run with one operation at a time. After navigation or a page change, run read_page before click/input. This is direct Studio browser control; OctoLimb's optional external bridge is not needed.",
+    inputSchema: jsonSchema({
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["discover", "run"],
+          description: "Use discover first, then run for browser operations.",
+        },
+        tool: {
+          type: "string",
+          description:
+            "Operation for run: go_to_url, search_google, read_page, click_element, input_text, go_back, wait, tab controls, scrolling, keys, dropdowns, execute_js, cache_content, find_recipe, run_recipe, or done.",
+        },
+        args: {
+          type: "object",
+          description:
+            "Operation arguments: go_to_url {url}; search {query}; click {index}; input {index,text}; others {}.",
+          additionalProperties: true,
+        },
+      },
+      required: ["action"],
+      additionalProperties: false,
+    } as never),
+    execute: async (raw: { action?: string; tool?: string; args?: Record<string, unknown> }) => {
+      if (raw.action === "discover") {
+        return JSON.stringify({
+          browser: "Studio embedded browser",
+          externalOctoLimbBridge: "optional and disabled by default",
+          operations: [
+            { tool: "go_to_url", args: "{url}" },
+            { tool: "search_google", args: "{query}" },
+            {
+              tool: "read_page",
+              args: "{}",
+              note: "labels visible interactive elements with indexes",
+            },
+            { tool: "click_element", args: "{index}" },
+            { tool: "input_text", args: "{index,text}" },
+            { tool: "go_back", args: "{}" },
+            { tool: "forward", args: "{}" },
+            { tool: "reload", args: "{}" },
+            { tool: "wait", args: "{seconds}", note: "only when explicitly requested" },
+            { tool: "scroll_to_percent", args: "{percent,index?}" },
+            { tool: "scroll_to_top", args: "{index?}" },
+            { tool: "scroll_to_bottom", args: "{index?}" },
+            { tool: "previous_page", args: "{index?}" },
+            { tool: "next_page", args: "{index?}" },
+            { tool: "scroll_to_text", args: "{text}" },
+            { tool: "send_keys", args: "{keys}" },
+            { tool: "get_dropdown_options", args: "{index}" },
+            { tool: "select_dropdown_option", args: "{index,option}" },
+            { tool: "execute_js", args: "{code}" },
+            { tool: "cache_content", args: "{}" },
+            { tool: "open_tab", args: "{url}" },
+            { tool: "switch_tab", args: "{tabId}" },
+            { tool: "close_tab", args: "{tabId}" },
+            { tool: "find_recipe", args: "{domain?}" },
+            { tool: "run_recipe", args: "{fingerprint,variables?}" },
+            {
+              tool: "done",
+              args: "{text,success}",
+              note: "always call this to finish; success saves the recipe",
+            },
+          ],
+          workflow: [
+            "find_recipe first for a repeatable domain task",
+            "go_to_url or search_google",
+            "read_page",
+            "click_element or input_text using the latest mapped index",
+            "read_page again after navigation",
+            "done when the task is complete",
+          ],
+        });
+      }
+      if (raw.action !== "run") {
+        return "Use action=discover to load browser capabilities, or action=run with tool and args.";
+      }
+      const operationMap: Record<string, string> = {
+        go_to_url: "browser_go_to_url",
+        search_google: "browser_search",
+        search: "browser_search",
+        read_page: "browser_read_page",
+        click: "browser_click",
+        click_element: "browser_click",
+        input: "browser_input",
+        input_text: "browser_input",
+        go_back: "browser_back",
+        back: "browser_back",
+        forward: "browser_forward",
+        reload: "browser_reload",
+        wait: "browser_wait",
+        scroll_to_percent: "browser_scroll_to_percent",
+        scroll_to_top: "browser_scroll_to_top",
+        scroll_to_bottom: "browser_scroll_to_bottom",
+        previous_page: "browser_previous_page",
+        next_page: "browser_next_page",
+        scroll_to_text: "browser_scroll_to_text",
+        send_keys: "browser_send_keys",
+        get_dropdown_options: "browser_get_dropdown_options",
+        select_dropdown_option: "browser_select_dropdown_option",
+        execute_js: "browser_execute_js",
+        cache_content: "browser_cache_content",
+        open_tab: "browser_open_tab",
+        switch_tab: "browser_switch_tab",
+        close_tab: "browser_close_tab",
+        done: "browser_done",
+      };
+      if (raw.tool === "find_recipe") {
+        const owner = BrowserWindow.fromWebContents(params.event.sender);
+        if (!owner) return "Embedded browser is unavailable for this window.";
+        const currentUrl = getEmbeddedBrowserUrl(owner);
+        const domain = String(raw.args?.domain ?? domainFromUrl(currentUrl));
+        return stringify(listRecipesForDomain(domain));
+      }
+      if (raw.tool === "run_recipe") {
+        const fingerprint = String(raw.args?.fingerprint ?? "");
+        const recipe = getRecipeByFingerprint(fingerprint);
+        if (!recipe) return `No saved browser recipe was found for fingerprint ${fingerprint}.`;
+        const variables = (raw.args?.variables ?? {}) as Record<string, unknown>;
+        const owner = BrowserWindow.fromWebContents(params.event.sender);
+        if (!owner) return "Embedded browser is unavailable for this window.";
+        const interpolate = (value: unknown): unknown => {
+          if (typeof value === "string")
+            return value.replace(/\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}/g, (_, key) =>
+              String(variables[key] ?? ""),
+            );
+          if (Array.isArray(value)) return value.map(interpolate);
+          if (value && typeof value === "object")
+            return Object.fromEntries(
+              Object.entries(value).map(([key, child]) => [key, interpolate(child)]),
+            );
+          return value;
+        };
+        const outputs: unknown[] = [];
+        try {
+          for (const step of recipe.steps) {
+            const mapped = operationMap[step.tool] ?? step.tool;
+            if (!mapped) throw new Error(`Unknown recipe operation ${step.tool}`);
+            outputs.push(
+              await runEmbedded(mapped, interpolate(step.args) as Record<string, unknown>),
+            );
+          }
+          recordRecipeOutcome(fingerprint, true);
+          return stringify({ fingerprint, completed: true, outputs });
+        } catch (error) {
+          recordRecipeOutcome(fingerprint, false);
+          return stringify({ fingerprint, completed: false, outputs, error: String(error) });
+        }
+      }
+      const embeddedTool = raw.tool ? operationMap[raw.tool] : undefined;
+      if (!embeddedTool) {
+        return `Unknown browser operation ${String(raw.tool)}. Call action=discover for the supported operations.`;
+      }
+      const owner = BrowserWindow.fromWebContents(params.event.sender);
+      const stepArgs = raw.args ?? {};
+      if (owner && raw.tool !== "done") {
+        const steps = browserRecipeStepsByWindow.get(owner.id) ?? [];
+        const recipeTool =
+          (
+            {
+              search: "search_google",
+              click: "click_element",
+              input: "input_text",
+              back: "go_back",
+            } as Record<string, string>
+          )[raw.tool!] ?? raw.tool!;
+        steps.push({ tool: recipeTool, args: stepArgs });
+        browserRecipeStepsByWindow.set(owner.id, steps);
+      }
+      const output = await runEmbedded(embeddedTool, stepArgs);
+      if (owner && raw.tool === "done") {
+        const doneText = String(stepArgs.text ?? "").trim();
+        const success =
+          stepArgs.success !== false && !output.startsWith("Browser automation failed:");
+        const steps = browserRecipeStepsByWindow.get(owner.id) ?? [];
+        if (success && doneText && steps.length > 0) {
+          const domain = String(stepArgs.domain ?? domainFromUrl(getEmbeddedBrowserUrl(owner)));
+          upsertRecipe({ instruction: doneText, domain, steps });
+        }
+        browserRecipeStepsByWindow.delete(owner.id);
+      }
+      return output;
+    },
+  };
 
   // --- MCP Servers ---------------------------------------------------------
   tools.list_mcp_servers = {
@@ -687,8 +991,15 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
             dependencies: r.dependencies ? JSON.parse(r.dependencies) : [],
           })),
         );
-      } catch (e) {
-        return `Error searching code index: ${e instanceof Error ? e.message : String(e)}`;
+      } catch {
+        // Fallback to ripgrep search if the SQLite code index is unavailable
+        try {
+          const results = await searchAppFilesWithRipgrep({ appPath: params.appPath, query });
+          if (results.length === 0) return `No symbols matched "${query}".`;
+          return stringify(results);
+        } catch (fallbackErr) {
+          return `Error searching code index: ${fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)}`;
+        }
       }
     },
   };
@@ -735,7 +1046,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         const full = safeJoin(params.appPath, rel);
         fs.mkdirSync(path.dirname(full), { recursive: true });
         fs.writeFileSync(full, content, "utf8");
-        buildOrUpdateFileChunks(openCodeIndexDb(params.appPath), params.appPath, rel);
+        tryUpdateCodeIndex(params.appPath, rel);
         publishQueryInvalidations(
           [
             { family: "app", appId: params.appId },
@@ -787,7 +1098,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         const result = applySearchReplace(original, diff);
         if (!result.success) return `search_replace failed: ${result.error}`;
         fs.writeFileSync(full, result.content, "utf8");
-        buildOrUpdateFileChunks(openCodeIndexDb(params.appPath), params.appPath, rel);
+        tryUpdateCodeIndex(params.appPath, rel);
         publishQueryInvalidations(
           [
             { family: "app", appId: params.appId },
@@ -816,7 +1127,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       try {
         const { relativePath, fullPath } = await prepareDeletePath(params.appPath, file_path);
         fs.rmSync(fullPath, { recursive: true, force: true });
-        removeFileChunks(openCodeIndexDb(params.appPath), relativePath);
+        tryRemoveCodeIndex(params.appPath, relativePath);
         publishQueryInvalidations(
           [
             { family: "app", appId: params.appId },
@@ -858,9 +1169,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         const toFull = safeJoin(params.appPath, toRel);
         fs.mkdirSync(path.dirname(toFull), { recursive: true });
         fs.renameSync(fromFull, toFull);
-        const indexDb = openCodeIndexDb(params.appPath);
-        removeFileChunks(indexDb, fromRel);
-        buildOrUpdateFileChunks(indexDb, params.appPath, toRel);
+        tryRenameCodeIndex(params.appPath, fromRel, toRel);
         return `Renamed ${fromRel} to ${toRel}.`;
       } catch (e) {
         return `Error renaming ${from}: ${e instanceof Error ? e.message : String(e)}`;
@@ -888,7 +1197,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
           appPath: params.appPath,
           relativePath: to,
         });
-        buildOrUpdateFileChunks(openCodeIndexDb(params.appPath), params.appPath, toRel);
+        tryUpdateCodeIndex(params.appPath, toRel);
         return `Copied ${from} to ${to}.`;
       } catch (e) {
         return `Error copying ${from}: ${e instanceof Error ? e.message : String(e)}`;
@@ -985,6 +1294,106 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         return result.truncated ? result.value : result.value;
       } catch (e) {
         return `Error running sandbox script: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.execute_command = {
+    description:
+      "Run a local executable in the project after user approval. Use this for shell scripts, SSH, SCP, deployment commands, and other terminal work instead of asking the user to run it. Arguments are passed exactly as an array without a local shell; when shell syntax is required, invoke the shell explicitly (for example, bash with -lc).",
+    inputSchema: schema(
+      {
+        command: { type: "string", description: "Executable name or absolute path." },
+        args: {
+          type: "array",
+          description: "Arguments passed exactly to the executable.",
+          items: { type: "string" },
+        },
+        timeout_seconds: {
+          type: "number",
+          description: "Timeout in seconds (default 300, maximum 1800).",
+        },
+      },
+      ["command"],
+    ),
+    execute: async (
+      {
+        command,
+        args = [],
+        timeout_seconds = 300,
+      }: { command: string; args?: string[]; timeout_seconds?: number },
+      options?: { abortSignal?: AbortSignal },
+    ) => {
+      const blocked = blockReason("execute_command", params);
+      if (blocked) return blocked;
+
+      const executable = command.trim();
+      if (!executable) return "Error running command: command must not be empty.";
+      if (!Array.isArray(args) || args.some((arg) => typeof arg !== "string")) {
+        return "Error running command: args must be an array of strings.";
+      }
+
+      const configuredConsent = params.agentToolConsents?.execute_command ?? "ask";
+      if (configuredConsent !== "always") {
+        if (!params.requestToolConsent) {
+          return "Command was not run because user approval is unavailable.";
+        }
+        const approved = await params.requestToolConsent({
+          toolName: "execute_command",
+          toolDescription:
+            "Run a command on this computer. SSH and deployment commands may change remote systems.",
+          inputPreview: JSON.stringify(
+            {
+              command: executable,
+              args,
+              workingDirectory: params.appPath,
+              timeoutSeconds: Math.min(Math.max(1, timeout_seconds), 1800),
+            },
+            null,
+            2,
+          ),
+          abortSignal: options?.abortSignal,
+        });
+        if (!approved) return "Command was declined and was not run.";
+      }
+
+      try {
+        const invocation = buildWindowsCommandInvocation(executable, args);
+        // An approved command is intentionally opaque: it can edit files, run
+        // Git, change provider configuration, or start/stop app processes. Own
+        // every potentially affected app domain until the child has exited so
+        // deletion, recording, and other main-process operations cannot race it.
+        const result = await appOperationCoordinator.run(
+          {
+            appId: params.appId,
+            operation: "run-agent-command",
+            resources: [
+              readAppResource("app-path"),
+              "repository",
+              "provider",
+              "runtime",
+              "runtime-config",
+              "test-files",
+            ],
+            refuseWhenRecording: "run a command",
+          },
+          () =>
+            runBufferedProcess({
+              command: invocation.command,
+              args: invocation.args,
+              cwd: params.appPath,
+              signal: options?.abortSignal,
+              timeoutMs: Math.min(Math.max(1, timeout_seconds), 1800) * 1000,
+              shell: false,
+              captureOutputOnSuccess: true,
+            }),
+        );
+        const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n");
+        if (result.aborted) return `Command was cancelled.${output ? `\n${output}` : ""}`;
+        if (result.timedOut) return `Command timed out.${output ? `\n${output}` : ""}`;
+        return `Command exited with code ${result.code ?? "unknown"}.${output ? `\n${output}` : ""}`;
+      } catch (e) {
+        return `Error running command: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   };
@@ -1142,7 +1551,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
           filePath: file_path,
         });
         const rel = result.path;
-        buildOrUpdateFileChunks(openCodeIndexDb(params.appPath), params.appPath, rel);
+        tryUpdateCodeIndex(params.appPath, rel);
         return `Restored ${rel} to ${revision}.`;
       } catch (e) {
         return `Error restoring file: ${e instanceof Error ? e.message : String(e)}`;
@@ -1171,12 +1580,24 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
   };
 
   tools.update_todos = {
-    description: "Update the agent's task checklist for this chat.",
+    description:
+      "Update the agent's task checklist for this chat. Each todo item must have id (string), content (string), and status ('pending' | 'in_progress' | 'completed').",
     inputSchema: schema(
       {
         todos: {
           type: "array",
-          items: { type: "object" },
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              content: { type: "string" },
+              status: {
+                type: "string",
+                description: "'pending' | 'in_progress' | 'completed'",
+              },
+            },
+            required: ["id", "content", "status"],
+          },
         },
       },
       ["todos"],
@@ -1189,8 +1610,13 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       const blocked = blockReason("update_todos", params);
       if (blocked) return blocked;
       try {
+        params.onTodosUpdate?.(todos);
         params.event.sender.send(agentEvents.todosUpdate.channel, { chatId: params.chatId, todos });
-        return "Updated todos.";
+        const pendingCount = todos.filter(
+          (t) => t.status === "pending" || t.status === "in_progress",
+        ).length;
+        const completedCount = todos.filter((t) => t.status === "completed").length;
+        return `Updated todos (${completedCount}/${todos.length} completed, ${pendingCount} remaining).`;
       } catch (e) {
         return `Error updating todos: ${e instanceof Error ? e.message : String(e)}`;
       }
@@ -1244,6 +1670,398 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         }.`;
       } catch (e) {
         return `Error creating task: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.list_coworker_bots = {
+    description:
+      "List deployed autonomous coworker bots, their archetypes (Sentinel/Scout/Steward/Operator), schedule, assigned project/scope, and latest run status.",
+    inputSchema: schema({
+      scope: {
+        type: "string",
+        description:
+          "Filter by scope: 'current_project', 'default_workspace', or 'all' (default: all).",
+      },
+    }),
+    execute: async ({ scope }: { scope?: string }) => {
+      const blocked = blockReason("list_coworker_bots", params);
+      if (blocked) return blocked;
+      try {
+        const rows = await db.query.tasks.findMany({
+          orderBy: [desc(tasks.createdAt)],
+          limit: 100,
+        });
+        const filtered = rows.filter((r) => {
+          if (scope === "current_project") return r.projectId === params.appId;
+          if (scope === "default_workspace") return r.projectId == null;
+          return true;
+        });
+        if (filtered.length === 0) return "No coworker bots found for this scope.";
+        return filtered
+          .map((b) => {
+            const scopeLabel = b.projectId ? `Project #${b.projectId}` : "Default Workspace";
+            const sched = b.scheduleMinutes ? `every ${b.scheduleMinutes}m` : "manual";
+            return `Bot #${b.id} "${b.title}" [type=${b.botType}, role=${b.role}, status=${b.lastStatus}] | scope=${scopeLabel} | sched=${sched} | lastRun=${b.lastRunAt?.toISOString() ?? "never"}`;
+          })
+          .join("\n");
+      } catch (e) {
+        return `Error listing coworker bots: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_coworker_bot = {
+    description:
+      "Deploy an autonomous coworker bot with an archetype (Sentinel=QA/testing guardian, Scout=web & API documentation intelligence, Steward=code health & refactoring, Operator=daily workflows, Custom=custom mission). Can be assigned to the current project (isolated work) or the default workspace.",
+    inputSchema: schema(
+      {
+        title: { type: "string", description: "Descriptive name for the coworker bot." },
+        prompt: {
+          type: "string",
+          description: "Autonomous instructions and mission prompt for the bot.",
+        },
+        bot_type: {
+          type: "string",
+          description: "sentinel | scout | steward | operator | custom (default: custom)",
+        },
+        role: {
+          type: "string",
+          description:
+            "OpenCode role: tester | explorer | executor | debugger | reviewer | architect (default: executor)",
+        },
+        schedule_minutes: {
+          type: "number",
+          description:
+            "Schedule interval in minutes (60=hourly, 1440=daily, null/undefined=manual on-demand)",
+        },
+        isolate_to_current_project: {
+          type: "boolean",
+          description:
+            "True to isolate this bot to the current project codebase, false/omitted to assign to default general workspace.",
+        },
+      },
+      ["title", "prompt"],
+    ),
+    execute: async ({
+      title,
+      prompt,
+      bot_type,
+      role,
+      schedule_minutes,
+      isolate_to_current_project,
+    }: {
+      title: string;
+      prompt: string;
+      bot_type?: string;
+      role?: string;
+      schedule_minutes?: number;
+      isolate_to_current_project?: boolean;
+    }) => {
+      const blocked = blockReason("create_coworker_bot", params);
+      if (blocked) return blocked;
+      try {
+        const validTypes = ["sentinel", "scout", "steward", "operator", "custom"] as const;
+        const validRoles = [
+          "executor",
+          "tester",
+          "explorer",
+          "debugger",
+          "reviewer",
+          "architect",
+        ] as const;
+        const resolvedType = (validTypes as readonly string[]).includes(bot_type ?? "")
+          ? (bot_type as (typeof validTypes)[number])
+          : "custom";
+        const resolvedRole = (validRoles as readonly string[]).includes(role ?? "")
+          ? (role as (typeof validRoles)[number])
+          : "executor";
+        const targetProjectId = isolate_to_current_project ? params.appId : null;
+
+        const [created] = await db
+          .insert(tasks)
+          .values({
+            title,
+            prompt,
+            botType: resolvedType,
+            role: resolvedRole,
+            scheduleMinutes: schedule_minutes ?? null,
+            projectId: targetProjectId,
+            lastStatus: "idle",
+          })
+          .returning();
+        publishQueryInvalidations([{ family: "tasks" }], params.event.sender);
+        return `Successfully deployed coworker bot #${created.id} "${created.title}" [${created.botType}, role=${created.role}] assigned to ${
+          targetProjectId ? `project #${targetProjectId}` : "default general workspace"
+        }. Schedule: ${created.scheduleMinutes ? `every ${created.scheduleMinutes} minutes` : "manual on-demand"}.`;
+      } catch (e) {
+        return `Error creating coworker bot: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.run_coworker_bot = {
+    description: "Immediately trigger an autonomous mission run for a coworker bot by its id.",
+    inputSchema: schema(
+      {
+        bot_id: { type: "number", description: "The numeric id of the coworker bot to run." },
+      },
+      ["bot_id"],
+    ),
+    execute: async ({ bot_id }: { bot_id: number }) => {
+      const blocked = blockReason("run_coworker_bot", params);
+      if (blocked) return blocked;
+      try {
+        const { runTask } = await import("../services/task_scheduler");
+        const outcome = await runTask(bot_id);
+        publishQueryInvalidations([{ family: "tasks" }], params.event.sender);
+        return `Coworker bot #${bot_id} mission triggered successfully! Running in chat session #${outcome.chatId} on OpenCode runtime.`;
+      } catch (e) {
+        return `Error running coworker bot: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.get_coworker_report = {
+    description: "Get the latest execution report, status, and findings from a coworker bot.",
+    inputSchema: schema(
+      {
+        bot_id: { type: "number", description: "The numeric id of the coworker bot." },
+      },
+      ["bot_id"],
+    ),
+    execute: async ({ bot_id }: { bot_id: number }) => {
+      const blocked = blockReason("get_coworker_report", params);
+      if (blocked) return blocked;
+      try {
+        const bot = await db.query.tasks.findFirst({ where: eq(tasks.id, bot_id) });
+        if (!bot) return `Coworker bot #${bot_id} not found.`;
+        let latestOutput = "No output available yet.";
+        if (bot.lastChatId != null) {
+          const recent = await db.query.messages.findMany({
+            where: eq(messages.chatId, bot.lastChatId),
+            orderBy: [desc(messages.id)],
+            limit: 3,
+          });
+          const assistantMsg = recent.find((m) => m.role === "assistant" && m.content?.trim());
+          if (assistantMsg?.content) latestOutput = assistantMsg.content.slice(0, 1500);
+        }
+        return `=== Report for Coworker Bot #${bot.id}: ${bot.title} ===\nStatus: ${bot.lastStatus}\nLast Run: ${bot.lastRunAt?.toISOString() ?? "Never"}\nSummary: ${bot.lastResultSummary ?? "None"}\nLatest Output Snippet:\n${latestOutput}`;
+      } catch (e) {
+        return `Error getting coworker report: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Planner --------------------------------------------------------------
+
+  const PLANNER_STATUSES = ["backlog", "todo", "in_progress", "done"] as const;
+  const PLANNER_PRIORITIES = ["low", "medium", "high"] as const;
+
+  tools.list_planner_tasks = {
+    description:
+      "List the current project's Planner cards (kanban tasks) with their id, status, priority, due date, and description. Call this to see what's already on the board before creating or updating cards.",
+    inputSchema: schema({
+      status: {
+        type: "string",
+        description: "Optional filter: backlog, todo, in_progress, or done.",
+      },
+    }),
+    execute: async ({ status }: { status?: string }) => {
+      const blocked = blockReason("list_planner_tasks", params);
+      if (blocked) return blocked;
+      try {
+        const statusFilter =
+          status && (PLANNER_STATUSES as readonly string[]).includes(status)
+            ? eq(plannerTasks.status, status as (typeof PLANNER_STATUSES)[number])
+            : undefined;
+        const rows = await db.query.plannerTasks.findMany({
+          where: statusFilter
+            ? and(eq(plannerTasks.appId, params.appId), statusFilter)
+            : eq(plannerTasks.appId, params.appId),
+          orderBy: [asc(plannerTasks.status), asc(plannerTasks.position)],
+          limit: 200,
+        });
+        if (rows.length === 0) return "No planner cards exist for this project yet.";
+        return rows
+          .map(
+            (t) =>
+              `#${t.id} [${t.status}] ${t.title} | priority=${t.priority} | due=${t.dueAt?.toISOString() ?? "none"}${t.description ? ` | ${t.description}` : ""}`,
+          )
+          .join("\n");
+      } catch (e) {
+        return `Error listing planner tasks: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_planner_task = {
+    description:
+      "Create a new card on the current project's Planner (kanban board). Provide a title and optionally a description, status (backlog/todo/in_progress/done), priority (low/medium/high), and a due date (ISO 8601 string).",
+    inputSchema: schema(
+      {
+        title: { type: "string", description: "Short card title (1–180 characters)." },
+        description: { type: "string", description: "Optional longer details for the card." },
+        status: {
+          type: "string",
+          description: "backlog | todo | in_progress | done (default: todo).",
+        },
+        priority: { type: "string", description: "low | medium | high (default: medium)." },
+        dueAt: {
+          type: "string",
+          description: "Optional due date as an ISO 8601 string, e.g. 2026-10-28T09:00:00Z.",
+        },
+      },
+      ["title"],
+    ),
+    execute: async ({
+      title,
+      description,
+      status,
+      priority,
+      dueAt,
+    }: {
+      title: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      dueAt?: string;
+    }) => {
+      const blocked = blockReason("create_planner_task", params);
+      if (blocked) return blocked;
+      try {
+        const cleanTitle = (title ?? "").trim();
+        if (!cleanTitle || cleanTitle.length > 180) {
+          return "Planner card title must be 1–180 characters.";
+        }
+        const statusVal = (
+          (PLANNER_STATUSES as readonly string[]).includes(status ?? "") ? status : "todo"
+        ) as (typeof PLANNER_STATUSES)[number];
+        const priorityVal = (
+          (PLANNER_PRIORITIES as readonly string[]).includes(priority ?? "") ? priority : "medium"
+        ) as (typeof PLANNER_PRIORITIES)[number];
+        let due: Date | null = null;
+        if (dueAt) {
+          const parsed = new Date(dueAt);
+          if (Number.isNaN(parsed.getTime())) return `Invalid dueAt date: ${dueAt}`;
+          due = parsed;
+        }
+        const [{ nextPosition }] = await db
+          .select({ nextPosition: sql<number>`coalesce(max(${plannerTasks.position}), -1) + 1` })
+          .from(plannerTasks)
+          .where(and(eq(plannerTasks.appId, params.appId), eq(plannerTasks.status, statusVal)));
+        const [created] = await db
+          .insert(plannerTasks)
+          .values({
+            appId: params.appId,
+            title: cleanTitle,
+            description: (description ?? "").trim(),
+            status: statusVal,
+            priority: priorityVal,
+            dueAt: due,
+            position: Number(nextPosition),
+          })
+          .returning();
+        publishQueryInvalidations(
+          [{ family: "planner", appId: params.appId }],
+          params.event.sender,
+        );
+        return `Created planner card #${created.id} "${created.title}" [${created.status}]${created.dueAt ? ` due ${created.dueAt.toISOString()}` : ""}.`;
+      } catch (e) {
+        return `Error creating planner task: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.update_planner_task = {
+    description:
+      "Update an existing Planner card by its id (from list_planner_tasks): change its status, priority, title, description, or due date.",
+    inputSchema: schema(
+      {
+        taskId: { type: "number", description: "The planner card id to update." },
+        status: { type: "string", description: "backlog | todo | in_progress | done." },
+        priority: { type: "string", description: "low | medium | high." },
+        title: { type: "string", description: "New title (1–180 characters)." },
+        description: { type: "string", description: "New description." },
+        dueAt: {
+          type: "string",
+          description: "New due date as ISO 8601, or an empty string to clear it.",
+        },
+      },
+      ["taskId"],
+    ),
+    execute: async ({
+      taskId,
+      status,
+      priority,
+      title,
+      description,
+      dueAt,
+    }: {
+      taskId: number;
+      status?: string;
+      priority?: string;
+      title?: string;
+      description?: string;
+      dueAt?: string;
+    }) => {
+      const blocked = blockReason("update_planner_task", params);
+      if (blocked) return blocked;
+      try {
+        const existing = await db.query.plannerTasks.findFirst({
+          where: eq(plannerTasks.id, taskId),
+        });
+        if (!existing) return `Planner card #${taskId} not found.`;
+
+        const statusVal =
+          status !== undefined && (PLANNER_STATUSES as readonly string[]).includes(status)
+            ? (status as (typeof PLANNER_STATUSES)[number])
+            : existing.status;
+        const priorityVal =
+          priority !== undefined && (PLANNER_PRIORITIES as readonly string[]).includes(priority)
+            ? (priority as (typeof PLANNER_PRIORITIES)[number])
+            : existing.priority;
+
+        let due: Date | null;
+        if (dueAt === "") {
+          due = null;
+        } else if (dueAt !== undefined) {
+          const parsed = new Date(dueAt);
+          if (Number.isNaN(parsed.getTime())) return `Invalid dueAt date: ${dueAt}`;
+          due = parsed;
+        } else {
+          due = existing.dueAt;
+        }
+
+        let position = existing.position;
+        if (statusVal !== existing.status) {
+          const [{ nextPosition }] = await db
+            .select({ nextPosition: sql<number>`coalesce(max(${plannerTasks.position}), -1) + 1` })
+            .from(plannerTasks)
+            .where(and(eq(plannerTasks.appId, params.appId), eq(plannerTasks.status, statusVal)));
+          position = Number(nextPosition);
+        }
+
+        const [updated] = await db
+          .update(plannerTasks)
+          .set({
+            status: statusVal,
+            priority: priorityVal,
+            title: title !== undefined ? title.trim() || existing.title : existing.title,
+            description: description !== undefined ? description.trim() : existing.description,
+            dueAt: due,
+            position,
+            updatedAt: new Date(),
+          })
+          .where(eq(plannerTasks.id, taskId))
+          .returning();
+        publishQueryInvalidations(
+          [{ family: "planner", appId: params.appId }],
+          params.event.sender,
+        );
+        return `Updated planner card #${updated.id} "${updated.title}" [${updated.status}]${updated.dueAt ? ` due ${updated.dueAt.toISOString()}` : ""}.`;
+      } catch (e) {
+        return `Error updating planner task: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   };
@@ -1394,6 +2212,44 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
 
   // --- Web -----------------------------------------------------------------
 
+  tools.web_search = {
+    description: "Search the web for documentation, API references, or current information.",
+    inputSchema: schema(
+      {
+        query: { type: "string", description: "Search query." },
+      },
+      ["query"],
+    ),
+    execute: async ({ query }: { query: string }) => {
+      const blocked = blockReason("web_search", params);
+      if (blocked) return blocked;
+      try {
+        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+        const res = await fetch(searchUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; OctopusStudio/1.0)" },
+        });
+        const html = await res.text();
+        const matches: string[] = [];
+        const linkRegex =
+          /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+        let match: RegExpExecArray | null;
+        while ((match = linkRegex.exec(html)) !== null && matches.length < 8) {
+          const href = match[1].replace(/&amp;/g, "&");
+          const title = match[2].replace(/<[^>]+>/g, "").trim();
+          if (title && href) {
+            matches.push(`- ${title}: ${href}`);
+          }
+        }
+        if (matches.length === 0) {
+          return `No search results found for "${query}".`;
+        }
+        return matches.join("\n");
+      } catch (e) {
+        return `Error searching the web for "${query}": ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
   tools.web_fetch = {
     description: "Fetch the contents of a URL and return its text.",
     inputSchema: schema({ url: { type: "string", description: "The URL to fetch." } }, ["url"]),
@@ -1407,6 +2263,30 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         return bounded.length < text.length ? `${bounded}\n[truncated]` : bounded;
       } catch (e) {
         return `Error fetching ${url}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.web_crawl = {
+    description:
+      "Crawl a URL and extract its readable text content (stripping scripts, styles, and HTML tags).",
+    inputSchema: schema({ url: { type: "string", description: "The URL to crawl." } }, ["url"]),
+    execute: async ({ url }: { url: string }) => {
+      const blocked = blockReason("web_crawl", params);
+      if (blocked) return blocked;
+      try {
+        const res = await fetch(url);
+        const html = await res.text();
+        const cleaned = html
+          .replace(/<script[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        const bounded = cleaned.slice(0, 32 * 1024);
+        return bounded.length < cleaned.length ? `${bounded}\n[truncated]` : bounded;
+      } catch (e) {
+        return `Error crawling ${url}: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   };
@@ -2348,7 +3228,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
 
         const { base64 } = await generateImageWithFallback(model, settings, prompt);
 
-        const mediaDir = path.join(params.appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+        const mediaDir = getOctopusStudioMediaDir(params.appPath);
         await fs.promises.mkdir(mediaDir, { recursive: true });
 
         const buffer = Buffer.from(base64, "base64");
@@ -2357,7 +3237,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
 
         await fs.promises.writeFile(destPath, buffer);
 
-        const relPath = `${OCTOPUS_STUDIO_MEDIA_DIR_NAME}/${filename}`;
+        const relPath = `${SOLOMAN_MEDIA_DIR_NAME}/${filename}`;
         return (
           `Successfully generated image for prompt: "${prompt}".\n\n` +
           `Saved to: ${relPath}\n\n` +
@@ -2389,7 +3269,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
         const { base64, mediaType } = await generateVideo(model, settings, prompt);
 
         const extension = mediaTypeToExtension(mediaType);
-        const mediaDir = path.join(params.appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+        const mediaDir = getOctopusStudioMediaDir(params.appPath);
         await fs.promises.mkdir(mediaDir, { recursive: true });
 
         const buffer = Buffer.from(base64, "base64");
@@ -2398,7 +3278,7 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
 
         await fs.promises.writeFile(destPath, buffer);
 
-        const relPath = `${OCTOPUS_STUDIO_MEDIA_DIR_NAME}/${filename}`;
+        const relPath = `${SOLOMAN_MEDIA_DIR_NAME}/${filename}`;
         return (
           `Successfully generated video for prompt: "${prompt}".\n\n` +
           `Saved to: ${relPath}\n\n` +
@@ -2485,6 +3365,8 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       },
     }),
     execute: async (args) => {
+      const blocked = blockReason("plan_task_graph", params);
+      if (blocked) return blocked;
       if (params.planTaskGraph) {
         return await params.planTaskGraph(args);
       }
@@ -2527,6 +3409,14 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
           description:
             "A prior sub-task id to resume from. Injects that sub-task's action history so this run continues instead of restarting (do not repeat those actions).",
         },
+        mission_slug: {
+          type: "string",
+          description: "Mission slug whose consensus ledger owns this worker action.",
+        },
+        bot_name: {
+          type: "string",
+          description: "Worker persona name shown in approval requests and the ledger.",
+        },
       },
       ["description"],
     ),
@@ -2539,6 +3429,8 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       mcp_servers?: string[];
       max_steps?: number;
       resume_from?: string;
+      mission_slug?: string;
+      bot_name?: string;
     }) => {
       const blocked = blockReason("spawn_subagent", params);
       if (blocked) return blocked;
@@ -2565,19 +3457,202 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
           maxSteps:
             args.max_steps !== undefined ? Math.min(Math.max(1, args.max_steps), 30) : undefined,
           resumeFromTaskId: args.resume_from,
+          missionSlug: args.mission_slug,
+          botName: args.bot_name,
         });
       } catch (e) {
         return `Error running sub-agent: ${e instanceof Error ? e.message : String(e)}`;
       }
     },
   };
-  tools.read_chat = stub("Read a specific past chat message and its surrounding context.");
-  tools.search_chats = stub("Search this app's chat history by keyword.");
-  tools.explore_chat_history = stub(
-    "Search prior chats for this app for relevant decisions and report a summary.",
-  );
-  tools.read_guide = stub("Read a project guide or documentation file (e.g. AGENTS.md).");
-  tools.read_logs = stub("Read the app's recent runtime logs.");
+
+  tools.read_chat = {
+    description:
+      "Read messages from a past chat in this project (by chat_id, or the most recent chat if omitted).",
+    inputSchema: schema({
+      chat_id: { type: "number", description: "Chat ID to read (optional)." },
+      limit: { type: "number", description: "Maximum number of messages to return (default 20)." },
+    }),
+    execute: async ({ chat_id, limit = 20 }: { chat_id?: number; limit?: number }) => {
+      const blocked = blockReason("read_chat", params);
+      if (blocked) return blocked;
+      try {
+        const targetChatId = chat_id ?? params.chatId;
+        const chatRow = await db.query.chats.findFirst({
+          where: and(eq(chats.id, targetChatId), eq(chats.appId, params.appId)),
+        });
+        if (!chatRow) {
+          return `No chat #${targetChatId} found in this project.`;
+        }
+        const rows = await db
+          .select()
+          .from(messages)
+          .where(eq(messages.chatId, targetChatId))
+          .orderBy(asc(messages.id))
+          .limit(Math.min(Math.max(1, limit), 50));
+        if (rows.length === 0) {
+          return `Chat #${targetChatId} ("${chatRow.title ?? "Untitled"}") has no messages.`;
+        }
+        return [
+          `Chat #${targetChatId}: ${chatRow.title ?? "Untitled"}`,
+          ...rows.map((m) => `[${m.role}] ${m.content.slice(0, 600)}`),
+        ].join("\n\n");
+      } catch (e) {
+        return `Error reading chat: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.search_chats = {
+    description: "Search this project's chat history by keyword.",
+    inputSchema: schema(
+      {
+        query: { type: "string", description: "Keyword or phrase to search for." },
+      },
+      ["query"],
+    ),
+    execute: async ({ query }: { query: string }) => {
+      const blocked = blockReason("search_chats", params);
+      if (blocked) return blocked;
+      try {
+        const appChats = await db
+          .select()
+          .from(chats)
+          .where(eq(chats.appId, params.appId))
+          .orderBy(desc(chats.createdAt))
+          .limit(30);
+        if (appChats.length === 0) return "No chats found for this project.";
+        const needle = query.toLowerCase();
+        const hits: string[] = [];
+        for (const c of appChats) {
+          const chatMessages = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.chatId, c.id))
+            .orderBy(asc(messages.id));
+          for (const m of chatMessages) {
+            if (m.content.toLowerCase().includes(needle)) {
+              const idx = m.content.toLowerCase().indexOf(needle);
+              const start = Math.max(0, idx - 80);
+              const snippet = m.content.slice(start, idx + 160).replace(/\s+/g, " ");
+              hits.push(
+                `- Chat #${c.id} ("${c.title ?? "Untitled"}") [${m.role}]: ...${snippet}...`,
+              );
+              if (hits.length >= 15) break;
+            }
+          }
+          if (hits.length >= 15) break;
+        }
+        return hits.length > 0 ? hits.join("\n") : `No chat messages matched "${query}".`;
+      } catch (e) {
+        return `Error searching chats: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.explore_chat_history = {
+    description: "List recent chats in this project and their summaries/recent messages.",
+    inputSchema: schema({
+      limit: { type: "number", description: "Number of recent chats to inspect (default 10)." },
+    }),
+    execute: async ({ limit = 10 }: { limit?: number }) => {
+      const blocked = blockReason("explore_chat_history", params);
+      if (blocked) return blocked;
+      try {
+        const appChats = await db
+          .select()
+          .from(chats)
+          .where(eq(chats.appId, params.appId))
+          .orderBy(desc(chats.createdAt))
+          .limit(Math.min(Math.max(1, limit), 25));
+        if (appChats.length === 0) return "No prior chats found for this project.";
+        const lines: string[] = [];
+        for (const c of appChats) {
+          const recentMsgs = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.chatId, c.id))
+            .orderBy(desc(messages.id))
+            .limit(2);
+          const preview = recentMsgs
+            .reverse()
+            .map((m) => `${m.role}: ${m.content.slice(0, 200).replace(/\s+/g, " ")}`)
+            .join(" | ");
+          lines.push(`- Chat #${c.id} "${c.title ?? "Untitled"}": ${preview || "(empty)"}`);
+        }
+        return lines.join("\n");
+      } catch (e) {
+        return `Error exploring chat history: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_guide = {
+    description:
+      "Read a project guide or documentation file (e.g. AI_RULES.md, AGENTS.md, README.md). Omit path to auto-discover project guides.",
+    inputSchema: schema({
+      path: {
+        type: "string",
+        description: "Optional relative path to a guide/documentation file.",
+      },
+    }),
+    execute: async ({ path: guidePath }: { path?: string }) => {
+      const blocked = blockReason("read_guide", params);
+      if (blocked) return blocked;
+      try {
+        const candidates = guidePath
+          ? [guidePath]
+          : ["AI_RULES.md", "AGENTS.md", "CLAUDE.md", "README.md", "CONTRIBUTING.md"];
+        const found: string[] = [];
+        for (const rel of candidates) {
+          const accessBlocked = fileAccessBlock(params, rel);
+          if (accessBlocked) continue;
+          const full = safeJoin(params.appPath, rel);
+          if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+            const content = fs.readFileSync(full, "utf8").slice(0, 16 * 1024);
+            found.push(`# ${rel}\n${content}`);
+          }
+        }
+        if (found.length === 0) {
+          return guidePath
+            ? `Guide file "${guidePath}" not found.`
+            : "No project guide files (AI_RULES.md, AGENTS.md, README.md) found in the project root.";
+        }
+        return found.join("\n\n---\n\n");
+      } catch (e) {
+        return `Error reading guide: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_logs = {
+    description: "Read the application's recent runtime logs.",
+    inputSchema: schema({
+      lines: { type: "number", description: "Number of recent log lines to return (default 100)." },
+    }),
+    execute: async ({ lines = 100 }: { lines?: number }) => {
+      const blocked = blockReason("read_logs", params);
+      if (blocked) return blocked;
+      try {
+        const cap = Math.min(Math.max(10, lines), 500);
+        const candidates = [
+          path.join(params.appPath, ".octopusStudio", "logs", "app.log"),
+          path.join(params.appPath, "logs", "main.log"),
+          path.join(getUserDataPath(), "logs", "main.log"),
+        ];
+        for (const logPath of candidates) {
+          if (fs.existsSync(logPath) && fs.statSync(logPath).isFile()) {
+            const text = fs.readFileSync(logPath, "utf8");
+            const tail = text.split(/\r?\n/).slice(-cap).join("\n");
+            return tail || "(log file is empty)";
+          }
+        }
+        return "No recent runtime logs found.";
+      } catch (e) {
+        return `Error reading logs: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
 
   // Read-only Ask mode blocks every write/mutating tool at execution time, so
   // their schemas are pure token waste. Attach only the tools the model can
@@ -2621,6 +3696,29 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
   const contextBudget = agentRole ? (ROLE_BUDGETS[agentRole]?.contextBudget ?? 8000) : 8000;
   const toolResultMaxChars = toolResultCharBudget(contextBudget);
 
+  // Tools that mutate filesystem or git state. When one of these succeeds,
+  // re-running read/verification tools (e.g. `run_type_checks`, `read_file`,
+  // `git_diff`, `grep`) with the same arguments is legitimate verification,
+  // NOT an infinite loop.
+  const STATE_MUTATING_TOOLS = new Set([
+    "write_file",
+    "search_replace",
+    "delete_file",
+    "rename_file",
+    "copy_file",
+    "add_dependency",
+    "execute_sandbox_script",
+    "execute_command",
+    "git_commit",
+    "git_checkout",
+    "git_merge",
+    "git_rebase",
+    "git_cherry_pick",
+    "git_restore_file",
+    "spawn_subagent",
+    "plan_task_graph",
+  ]);
+
   for (const [name, tool] of Object.entries(tools)) {
     const originalExecute = tool.execute;
     if (!originalExecute) continue;
@@ -2637,13 +3735,53 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       }
 
       params.budget.callHistory.push({ name, args: argsStr });
-      return truncateToolResult(await originalExecute(args, options), toolResultMaxChars);
+      const missionContext = params.agentTaskContext;
+      const interception = shouldInterceptTool(
+        name,
+        args as Record<string, unknown>,
+        missionContext?.missionSlug
+          ? getMissionHitlPolicy(params.appPath, missionContext.missionSlug)
+          : undefined,
+      );
+      if (interception.shouldBlock && missionContext?.missionSlug) {
+        const approval = await requestHitlApproval({
+          projectPath: params.appPath,
+          missionSlug: missionContext.missionSlug,
+          requestingBot: missionContext.botName ?? missionContext.agentRole ?? "Mission worker",
+          toolName: name,
+          args: args as Record<string, unknown>,
+          summary: `${missionContext.botName ?? "Mission worker"} requested ${interception.category}.`,
+        });
+        if (!approval.approved) {
+          return `BLOCKED: ${approval.reason ?? "The user rejected this action."}`;
+        }
+      }
+      const rawResult = await originalExecute(args, options);
+      if (STATE_MUTATING_TOOLS.has(name)) {
+        // Clear prior read/check tool call entries so verifying after an edit
+        // never triggers the repeat blocker.
+        params.budget.callHistory = params.budget.callHistory.filter((c) =>
+          STATE_MUTATING_TOOLS.has(c.name),
+        );
+      }
+      return truncateToolResult(rawResult, toolResultMaxChars);
     };
   }
 
-  // Filter based on agent role profiles. Each role gets a minimal tool
-  // allowlist — smaller schema (fewer tokens) and structural scope containment
-  // (an explorer literally cannot call write_file).
+  // Filter based on explicit toolAllowlist or agent role profiles. Each role
+  // gets a minimal tool allowlist — smaller schema (fewer tokens) and
+  // structural scope containment (an explorer literally cannot call write_file).
+  const explicitAllowlist = params.agentTaskContext?.toolAllowlist;
+  if (explicitAllowlist && explicitAllowlist.length > 0) {
+    const allowedSet = new Set(explicitAllowlist);
+    for (const key of Object.keys(tools)) {
+      if (!allowedSet.has(key)) {
+        delete tools[key];
+      }
+    }
+    return tools;
+  }
+
   const role = params.agentTaskContext?.agentRole;
   if (role) {
     const readOnlyTools = new Set([
@@ -2653,8 +3791,29 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       "code_search",
       "explore_code",
       "read_logs",
+      "read_guide",
+      "git_status",
+      "git_diff",
+      "git_log",
+      "git_show_revision",
+      "git_branch_list",
+      "read_chat",
+      "search_chats",
+      "explore_chat_history",
+      "list_skills",
+      "read_skill",
     ]);
-    const verifyTools = new Set(["read_file", "execute_sandbox_script"]);
+    const verifyTools = new Set([
+      "list_files",
+      "read_file",
+      "grep",
+      "code_search",
+      "run_type_checks",
+      "execute_sandbox_script",
+      "read_logs",
+      "git_status",
+      "git_diff",
+    ]);
 
     let allowedTools: Set<string> | null = null;
 
@@ -2662,8 +3821,58 @@ export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
       allowedTools = readOnlyTools;
     } else if (role === "tester" || role === "verifier") {
       allowedTools = verifyTools;
+    } else if (params.agentTaskContext?.isSubAgent) {
+      // Sub-agents in executor / debugger roles should not recursively spawn
+      // sub-agents, ask user questionnaires, or carry heavy Office/Media schemas
+      // unless the task description actually mentions those domains.
+      const subAgentExcluded = [
+        "spawn_subagent",
+        "plan_task_graph",
+        "planning_questionnaire",
+        "set_chat_summary",
+        "update_todos",
+        "create_scheduled_task",
+        "list_coworker_bots",
+        "create_coworker_bot",
+        "run_coworker_bot",
+        "get_coworker_report",
+        "list_planner_tasks",
+        "create_planner_task",
+        "update_planner_task",
+        "add_integration",
+        "enable_nitro",
+      ];
+      for (const excluded of subAgentExcluded) {
+        delete tools[excluded];
+      }
+      const promptLower = (params.prompt ?? "").toLowerCase();
+      const mentionsOffice =
+        /\b(docx|xlsx|pptx|word|excel|spreadsheet|powerpoint|presentation|slide|document|office|template|csv)\b/.test(
+          promptLower,
+        );
+      if (!mentionsOffice) {
+        for (const officeTool of [
+          "create_document",
+          "create_spreadsheet",
+          "create_presentation",
+          "create_office_documents_batch",
+          "edit_document",
+          "edit_spreadsheet",
+          "edit_presentation",
+          "read_office_file",
+          "read_office_template",
+        ]) {
+          delete tools[officeTool];
+        }
+      }
+      const mentionsMedia = /\b(image|video|picture|photo|illustration|icon|banner|clip)\b/.test(
+        promptLower,
+      );
+      if (!mentionsMedia) {
+        delete tools.generate_image;
+        delete tools.generate_video;
+      }
     }
-    // executor / debugger keep the full tool set.
 
     if (allowedTools) {
       for (const key of Object.keys(tools)) {

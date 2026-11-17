@@ -77,7 +77,7 @@ export function getProcessesUsingDataDirectories(
     try {
       const output = runSync(
         "tasklist",
-        ["/FI", "IMAGENAME eq octopusStudio.exe", "/FO", "CSV", "/NH"],
+        ["/FI", "IMAGENAME eq soloman-studio.exe", "/FO", "CSV", "/NH"],
         {
           encoding: "utf8",
           stdio: ["ignore", "pipe", "ignore"],
@@ -85,11 +85,16 @@ export function getProcessesUsingDataDirectories(
       );
       return output
         .split(/\r?\n/)
-        .map((line) => line.match(/^"octopus-studio\.exe","(\d+)"/i)?.[1])
+        .map(
+          (line) =>
+            line.match(
+              /^"(?:soloman-studio|solomanStudio|octopus-studio|octopusStudio)\.exe","(\d+)"/i,
+            )?.[1],
+        )
         .filter(Boolean);
     } catch (error) {
       throw new Error(
-        "Could not check whether OctopusStudio is running. Close OctopusStudio and try again.",
+        "Could not check whether Soloman Studio is running. Close Soloman Studio and try again.",
         { cause: error },
       );
     }

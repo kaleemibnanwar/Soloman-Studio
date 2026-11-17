@@ -18,6 +18,8 @@ import {
   Lock,
   Mic,
   MicOff,
+  PhoneCall,
+  ClipboardList,
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
@@ -92,6 +94,7 @@ import { useSelectChat } from "@/hooks/useSelectChat";
 import { showError as showErrorToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useVoiceToText } from "@/hooks/useVoiceToText";
+import { useVoiceConversation } from "@/hooks/useVoiceConversation";
 import { isOctopusStudioProEnabled, isLocalAgentBackedMode, type ChatMode } from "@/lib/schemas";
 import { ReferencedAppsBar } from "./ReferencedAppsBar";
 import { useChatMode } from "@/hooks/useChatMode";
@@ -105,6 +108,7 @@ import {
   CHAT_PROMPT_LENGTH_LIMIT_MESSAGE,
   MAX_CHAT_PROMPT_CHARS,
 } from "@/shared/chatAttachmentLimits";
+import { VoiceConversationBar } from "./VoiceConversationBar";
 
 const showTokenBarAtom = atom(false);
 
@@ -156,6 +160,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     resumeQueue,
   } = useStreamChat();
   const [showError, setShowError] = useState(true);
+  const [includePlannerTasks, setIncludePlannerTasks] = useState(false);
   const [isApproving, setIsApproving] = useState(false); // State for approving
   const [isRejecting, setIsRejecting] = useState(false); // State for rejecting
   const [editingQueuedMessageId, setEditingQueuedMessageId] = useState<string | null>(null);
@@ -473,27 +478,30 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     [editingQueuedMessageId, removeQueuedMessage, resetEditingState],
   );
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (voiceTurn?: { text: string }) => {
+    const draftInput = voiceTurn?.text ?? inputValue;
+    const submissionAttachments = voiceTurn ? [] : attachments;
+    const includeGeneratedImages = !voiceTurn && hasSuccessfulImageJobs;
     if (
-      (!inputValue.trim() && attachments.length === 0 && !hasSuccessfulImageJobs) ||
+      (!draftInput.trim() && submissionAttachments.length === 0 && !includeGeneratedImages) ||
       !chatId ||
       pendingFiles
     ) {
       return;
     }
 
-    if (isRecording) {
+    if (isRecording && !voiceTurn) {
       await toggleRecording();
     }
 
     // Build prompt with auto-added image mentions
-    const imageMentions = visibleSuccessfulImageJobs
+    const imageMentions = (includeGeneratedImages ? visibleSuccessfulImageJobs : [])
       .map((job) => `@media:${encodeURIComponent(job.result!.fileName)}`)
       .join(" ");
-    const promptWithImages = inputValue.trim()
+    const promptWithImages = draftInput.trim()
       ? imageMentions
-        ? `${inputValue} ${imageMentions}`
-        : inputValue
+        ? `${draftInput} ${imageMentions}`
+        : draftInput
       : imageMentions;
 
     if (promptWithImages.length > MAX_CHAT_PROMPT_CHARS) {
@@ -502,7 +510,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     }
 
     // Dismiss image jobs that were auto-added
-    if (visibleSuccessfulImageJobs.length > 0) {
+    if (includeGeneratedImages && visibleSuccessfulImageJobs.length > 0) {
       setDismissedImageJobIds((prev) => {
         const next = new Set(prev);
         for (const job of visibleSuccessfulImageJobs) {
@@ -515,7 +523,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     // If switching to plan mode from another mode in a chat with messages,
     // create a new chat for a clean context.
     if (needsFreshPlanChat && chatMode === "plan" && appId) {
-      clearComposerAfterSubmit();
+      if (!voiceTurn) clearComposerAfterSubmit();
       setNeedsFreshPlanChat(false);
 
       const newChatId = await ipc.chat.createChat({
@@ -530,11 +538,12 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       await streamMessage({
         prompt: promptWithImages,
         chatId: newChatId,
-        attachments,
+        attachments: submissionAttachments,
         redo: false,
         requestedChatMode: "plan",
+        includePlannerTasks,
       });
-      clearAttachments();
+      if (!voiceTurn) clearAttachments();
       telemetry.capture("chat:submit", { chatMode });
       return;
     }
@@ -543,13 +552,13 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
     // Use all selected components for multi-component editing
     const componentsToSend =
-      selectedComponents && selectedComponents.length > 0 ? selectedComponents : [];
+      !voiceTurn && selectedComponents && selectedComponents.length > 0 ? selectedComponents : [];
 
     // Handle editing a queued message
     if (editingQueuedMessageId) {
       updateQueuedMessage(editingQueuedMessageId, {
         prompt: currentInput,
-        attachments,
+        attachments: submissionAttachments,
         selectedComponents: componentsToSend,
       });
       resetEditingState();
@@ -561,13 +570,16 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     if (isStreaming) {
       const queued = queueMessage({
         prompt: currentInput,
-        attachments,
+        attachments: submissionAttachments,
         selectedComponents: componentsToSend,
+        includePlannerTasks,
       });
       if (queued) {
         // Only clear input, attachments, and components on successful queue
-        clearComposerAfterSubmit();
-        clearAttachments();
+        if (!voiceTurn) {
+          clearComposerAfterSubmit();
+          clearAttachments();
+        }
       }
       // If queue failed, leave input/attachments intact for the user
       return;
@@ -575,7 +587,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
     // Not streaming - send immediately
     // Clear input and components before sending
-    clearComposerAfterSubmit();
+    if (!voiceTurn) clearComposerAfterSubmit();
 
     let requestedChatMode = isChatModeLoading ? null : storedChatMode;
     let classifierRan = false;
@@ -593,14 +605,22 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     await streamMessage({
       prompt: currentInput,
       chatId,
-      attachments,
+      attachments: submissionAttachments,
       redo: false,
       selectedComponents: componentsToSend,
       requestedChatMode,
+      includePlannerTasks,
     });
-    clearAttachments();
+    if (!voiceTurn) clearAttachments();
     telemetry.capture("chat:submit", { chatMode, classifierRan, classifiedMode });
   };
+
+  const voiceConversation = useVoiceConversation({
+    messages,
+    isStreaming,
+    onTurn: (text) => handleSubmit({ text }),
+    onError: showErrorToast,
+  });
 
   const handleCancel = () => {
     // Stopping is non-destructive: queued prompts are parked, never deleted.
@@ -912,6 +932,15 @@ export function ChatInput({ chatId }: { chatId?: number }) {
             onCancel={cancelPendingFiles}
           />
 
+          {voiceConversation.isActive && (
+            <VoiceConversationBar
+              status={voiceConversation.status}
+              lastTranscript={voiceConversation.lastTranscript}
+              onEnd={voiceConversation.endCall}
+              onInterrupt={voiceConversation.interrupt}
+            />
+          )}
+
           <div className="flex items-end gap-1">
             <LexicalChatInput
               value={inputValue}
@@ -921,6 +950,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
               placeholder={t("askOctopusStudioToBuild")}
               excludeCurrentApp={true}
               disableSendButton={disableSendButton}
+              disabled={voiceConversation.isActive}
               messageHistory={userMessageHistory}
             />
 
@@ -930,7 +960,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
                 render={
                   <button
                     onClick={toggleRecording}
-                    disabled={isTranscribing}
+                    disabled={isTranscribing || voiceConversation.isActive}
                     aria-label={
                       isRecording
                         ? t("stopRecording", "Stop recording")
@@ -968,6 +998,35 @@ export function ChatInput({ chatId }: { chatId?: number }) {
               </TooltipContent>
             </Tooltip>
 
+            {/* Hands-free voice conversation */}
+            {!voiceConversation.isActive && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      onClick={voiceConversation.startCall}
+                      disabled={
+                        isStreaming ||
+                        isRecording ||
+                        isTranscribing ||
+                        !chatId ||
+                        !!pendingToolConsent ||
+                        !!pendingFiles ||
+                        !!editingQueuedMessageId ||
+                        needsFreshPlanChat
+                      }
+                      aria-label={t("voiceCall.start")}
+                      className="mb-0.5 rounded-lg px-2 py-2 text-muted-foreground transition-colors duration-150 hover:bg-primary/8 hover:text-primary disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                    />
+                  }
+                >
+                  <PhoneCall size={19} />
+                </TooltipTrigger>
+                <TooltipContent>{t("voiceCall.start")}</TooltipContent>
+              </Tooltip>
+            )}
+
             {isStreaming ? (
               <Tooltip>
                 <TooltipTrigger
@@ -988,7 +1047,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
                 <TooltipTrigger
                   render={
                     <button
-                      onClick={handleSubmit}
+                      onClick={() => void handleSubmit()}
                       disabled={
                         (!inputValue.trim() &&
                           attachments.length === 0 &&
@@ -1009,6 +1068,39 @@ export function ChatInput({ chatId }: { chatId?: number }) {
           <div className="px-2 flex items-center justify-between pb-0.5 pt-0.5">
             <div className="flex items-center">
               <ChatInputControls showContextFilesPicker={false} />
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      aria-pressed={includePlannerTasks}
+                      aria-label={`Planner task access ${includePlannerTasks ? "enabled" : "disabled"}`}
+                      onClick={() => setIncludePlannerTasks((enabled) => !enabled)}
+                      className={cn(
+                        "ml-1 inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-colors",
+                        includePlannerTasks
+                          ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground",
+                      )}
+                    />
+                  }
+                >
+                  <ClipboardList className="size-3.5" />
+                  Tasks
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full bg-muted-foreground/45",
+                      includePlannerTasks && "bg-primary",
+                    )}
+                  />
+                  <span>{includePlannerTasks ? "On" : "Off"}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {includePlannerTasks
+                    ? "This message can read tasks assigned to the current project"
+                    : "Turn on to share this project's planner tasks with the chat"}
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             <AuxiliaryActionsMenu

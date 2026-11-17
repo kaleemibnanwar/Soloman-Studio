@@ -18,7 +18,7 @@ export function EconomyModeSwitch() {
     updateSettings({ economyMode: next });
     showInfo(
       next
-        ? "Economy mode enabled — Octopus Studio will use fewer tokens."
+        ? "Economy mode enabled — Soloman Studio will use fewer tokens."
         : "Economy mode disabled.",
     );
   };

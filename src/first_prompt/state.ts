@@ -33,6 +33,7 @@ export interface FirstPromptPayload {
   readonly selectedApp?: FirstPromptSelectedApp;
   readonly chatMode?: FirstPromptChatMode;
   readonly isChatModeExplicit: boolean;
+  readonly includePlannerTasks?: boolean;
 }
 
 export type FirstPromptState =

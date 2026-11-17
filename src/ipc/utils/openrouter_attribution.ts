@@ -1,5 +1,5 @@
 export const OPENROUTER_APP_REFERER = "https://www.octopusStudio.sh";
-export const OPENROUTER_APP_TITLE = "Octopus Studio";
+export const OPENROUTER_APP_TITLE = "Soloman Studio";
 export const OPENROUTER_APP_CATEGORIES = "native-app-builder,programming-app";
 
 export function getOpenRouterAppAttributionHeaders(): Record<string, string> {

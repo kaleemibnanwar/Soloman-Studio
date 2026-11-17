@@ -59,8 +59,9 @@ export function shouldOfferLegacyImport(): boolean {
   if (fs.existsSync(getImportMarkerPath())) {
     return false;
   }
-  const currentDbPath = path.join(app.getPath("userData"), LEGACY_DB_FILE);
-  if (fs.existsSync(currentDbPath)) {
+  const currentDbPath = path.join(app.getPath("userData"), "soloman.db");
+  const currentLegacyDbPath = path.join(app.getPath("userData"), LEGACY_DB_FILE);
+  if (fs.existsSync(currentDbPath) || fs.existsSync(currentLegacyDbPath)) {
     return false;
   }
   return findLegacyOctopusStudioData() !== null;
@@ -85,7 +86,7 @@ async function importLegacyDatabase(
   currentUserDataPath: string,
 ): Promise<boolean> {
   const legacyDbPath = path.join(legacyUserDataPath, LEGACY_DB_FILE);
-  const currentDbPath = path.join(currentUserDataPath, LEGACY_DB_FILE);
+  const currentDbPath = path.join(currentUserDataPath, "soloman.db");
   const sourceDb = new Database(legacyDbPath, { timeout: 10000 });
   try {
     sourceDb.pragma("wal_checkpoint(TRUNCATE)");
@@ -151,7 +152,7 @@ export async function maybeOfferLegacyOctopusStudioImport(): Promise<void> {
       title: "Import from OctopusStudio?",
       message: "We found an existing OctopusStudio installation on this computer.",
       detail:
-        "Octopus Studio can import your settings, chats, and app history from it so you don't have to set up again.\n\n" +
+        "Soloman Studio can import your settings, chats, and app history from it so you don't have to set up again.\n\n" +
         "Note: because of how your operating system secures saved credentials, provider API keys and connected-service logins (GitHub, Supabase, Neon, etc.) will need to be re-entered after importing.",
     });
 

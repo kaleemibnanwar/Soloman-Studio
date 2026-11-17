@@ -5,6 +5,56 @@ import { octolimbTaskRecipes } from "../db/schema";
 
 export type RecipeStep = { tool: string; args: Record<string, unknown> };
 
+const TEMPLATE_RE = /^\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}$/;
+
+function templateValue(value: unknown, variables: string[], prefix: string): unknown {
+  if (Array.isArray(value))
+    return value.map((item, index) => templateValue(item, variables, `${prefix}_${index + 1}`));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [key, templateValue(child, variables, prefix)]),
+  );
+}
+
+/** Convert user-provided browser inputs into reusable recipe slots. */
+export function templateRecipeSteps(steps: RecipeStep[]): {
+  steps: RecipeStep[];
+  variables: string[];
+} {
+  let inputNumber = 0;
+  const variables: string[] = [];
+  const templated = steps.map((step) => {
+    if (step.tool === "input_text" && typeof step.args.text === "string") {
+      inputNumber += 1;
+      const name = `input_${inputNumber}`;
+      variables.push(name);
+      return { ...step, args: { ...step.args, text: `{{${name}}}` } };
+    }
+    if (step.tool === "search_google" && typeof step.args.query === "string") {
+      variables.push("query");
+      return { ...step, args: { ...step.args, query: "{{query}}" } };
+    }
+    return {
+      ...step,
+      args: templateValue(step.args, variables, step.tool) as Record<string, unknown>,
+    };
+  });
+  return { steps: templated, variables: [...new Set(variables)] };
+}
+
+export function recipeVariables(steps: RecipeStep[]): string[] {
+  const found = new Set<string>();
+  const visit = (value: unknown) => {
+    if (typeof value === "string") {
+      const match = value.match(TEMPLATE_RE);
+      if (match) found.add(match[1]);
+    } else if (Array.isArray(value)) value.forEach(visit);
+    else if (value && typeof value === "object") Object.values(value).forEach(visit);
+  };
+  steps.forEach((step) => visit(step.args));
+  return [...found];
+}
+
 export type OctoLimbRecipe = {
   fingerprint: string;
   domain: string;
@@ -51,6 +101,7 @@ export type RecipeSummary = {
   successCount: number;
   failureCount: number;
   lastUsedAt: Date | null;
+  variables: string[];
 };
 
 // A domain rarely accumulates more than a handful of distinct saved tasks;
@@ -81,6 +132,7 @@ export function listRecipesForDomain(domain: string): RecipeSummary[] {
         successCount: octolimbTaskRecipes.successCount,
         failureCount: octolimbTaskRecipes.failureCount,
         lastUsedAt: octolimbTaskRecipes.lastUsedAt,
+        steps: octolimbTaskRecipes.steps,
       })
       .from(octolimbTaskRecipes)
       // `domain` is stored as given by the model (see upsertRecipe), not
@@ -90,6 +142,7 @@ export function listRecipesForDomain(domain: string): RecipeSummary[] {
       .orderBy(desc(octolimbTaskRecipes.successCount), desc(octolimbTaskRecipes.lastUsedAt))
       .limit(MAX_RECIPES_PER_DOMAIN)
       .all()
+      .map(({ steps, ...row }) => ({ ...row, variables: recipeVariables(steps) }))
   );
 }
 
@@ -99,6 +152,7 @@ export function upsertRecipe(params: {
   domain: string;
   steps: RecipeStep[];
 }): string {
+  const templated = templateRecipeSteps(params.steps);
   const fingerprint = computeFingerprint(params.instruction, params.domain);
   const db = getDb();
   const existing = db
@@ -110,7 +164,7 @@ export function upsertRecipe(params: {
   if (existing) {
     db.update(octolimbTaskRecipes)
       .set({
-        steps: params.steps,
+        steps: templated.steps,
         successCount: 1,
         failureCount: 0,
         lastUsedAt: new Date(),
@@ -124,7 +178,7 @@ export function upsertRecipe(params: {
         fingerprint,
         domain: params.domain,
         instruction: params.instruction,
-        steps: params.steps,
+        steps: templated.steps,
         successCount: 1,
         lastUsedAt: new Date(),
       })

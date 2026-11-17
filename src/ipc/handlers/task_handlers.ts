@@ -49,6 +49,38 @@ export function registerTaskHandlers() {
     return chatTokenTotal(task?.lastChatId ?? null);
   });
 
+  createTypedHandler(taskContracts.getTaskReport, async (_, taskId) => {
+    const task = await db.query.tasks.findFirst({
+      where: eq(tasks.id, taskId),
+    });
+    if (!task) return null;
+
+    let outputPreview = "No output recorded yet.";
+    if (task.lastChatId != null) {
+      const recentMessages = await db.query.messages.findMany({
+        where: eq(messages.chatId, task.lastChatId),
+        orderBy: [desc(messages.id)],
+        limit: 5,
+      });
+      const assistantMsg = recentMessages.find((m) => m.role === "assistant" && m.content?.trim());
+      if (assistantMsg?.content) {
+        outputPreview = assistantMsg.content;
+      }
+    }
+
+    return {
+      taskId: task.id,
+      title: task.title,
+      botType: task.botType,
+      status: task.lastStatus,
+      lastRunAt: task.lastRunAt,
+      totalTokens: await chatTokenTotal(task.lastChatId),
+      lastChatId: task.lastChatId,
+      summary: task.lastResultSummary || (task.lastRunAt ? "Completed run." : "Never run yet."),
+      outputPreview,
+    };
+  });
+
   createTypedHandler(taskContracts.createTask, async (_, params) => {
     const [created] = await db
       .insert(tasks)
@@ -59,6 +91,10 @@ export function registerTaskHandlers() {
         projectId: params.projectId ?? null,
         mcpServerIds: params.mcpServerIds ?? null,
         modelSelection: params.modelSelection ?? null,
+        botType: params.botType ?? "custom",
+        role: params.role ?? "executor",
+        lastStatus: "idle",
+        lastResultSummary: null,
       })
       .returning();
     return { ...created, totalTokens: 0 };
@@ -79,6 +115,12 @@ export function registerTaskHandlers() {
     }
     if (fields.modelSelection !== undefined) {
       updates.modelSelection = fields.modelSelection;
+    }
+    if (fields.botType !== undefined) updates.botType = fields.botType;
+    if (fields.role !== undefined) updates.role = fields.role;
+    if (fields.lastStatus !== undefined) updates.lastStatus = fields.lastStatus;
+    if (fields.lastResultSummary !== undefined) {
+      updates.lastResultSummary = fields.lastResultSummary;
     }
     updates.updatedAt = new Date();
 

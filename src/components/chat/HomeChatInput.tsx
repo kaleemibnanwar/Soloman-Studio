@@ -6,6 +6,7 @@ import {
   Mic,
   MicOff,
   Loader2,
+  ClipboardList,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -60,6 +61,7 @@ export function HomeChatInput({
   });
 
   const [appSearchOpen, setAppSearchOpen] = useState(false);
+  const [includePlannerTasks, setIncludePlannerTasks] = useState(false);
   const { apps } = useLoadApps();
 
   // Clear selected app when the experiment flag is disabled
@@ -76,7 +78,7 @@ export function HomeChatInput({
   ]);
   const placeholder = selectedApp
     ? `Send a message to ${selectedApp.name}...`
-    : `Ask Octopus Studio to build ${typingText ?? ""}`;
+    : `Ask Soloman Studio to build ${typingText ?? ""}`;
 
   // Use the attachments hook
   const {
@@ -120,6 +122,7 @@ export function HomeChatInput({
     const didSubmit = await onSubmit({
       attachments,
       selectedApp: selectedApp ?? undefined,
+      includePlannerTasks,
     });
 
     if (!didSubmit) {
@@ -136,14 +139,14 @@ export function HomeChatInput({
 
   return (
     <>
-      <div className="p-4" data-testid="home-chat-input-container">
+      <div className="px-4 pb-4" data-testid="home-chat-input-container">
         <div
           aria-disabled={disabled}
           inert={disabled}
           className={cn(
-            "group/console relative flex flex-col border border-border rounded-lg bg-(--background-lighter) transition-colors duration-200",
-            "hover:border-primary/30",
-            "focus-within:border-primary/30 focus-within:ring-1 focus-within:ring-primary/20",
+            "group/console studio-surface relative flex flex-col rounded-[11px] transition-[border-color,box-shadow] duration-200",
+            "hover:border-foreground/15",
+            "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/15",
             isDraggingOver && "ring-2 ring-primary border-primary",
             disabled && "pointer-events-none opacity-70",
           )}
@@ -151,25 +154,6 @@ export function HomeChatInput({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {/* Instrument-panel corner ticks — this is a console addressing a
-              local machine, not a chat bubble. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -top-px -left-px size-2.5 border-t-2 border-l-2 border-primary/25 transition-colors group-focus-within/console:border-primary/70"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -top-px -right-px size-2.5 border-t-2 border-r-2 border-primary/25 transition-colors group-focus-within/console:border-primary/70"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -bottom-px -left-px size-2.5 border-b-2 border-l-2 border-primary/25 transition-colors group-focus-within/console:border-primary/70"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -bottom-px -right-px size-2.5 border-b-2 border-r-2 border-primary/25 transition-colors group-focus-within/console:border-primary/70"
-          />
-
           {/* Attachments list */}
           <AttachmentsList attachments={attachments} onRemove={removeAttachment} />
 
@@ -263,9 +247,9 @@ export function HomeChatInput({
                       disabled={disabled || (!inputValue.trim() && attachments.length === 0)}
                       aria-label="Send message"
                       className={cn(
-                        "px-2.5 py-2 mb-0.5 mr-1 rounded-md transition-colors duration-150",
+                        "mb-0.5 mr-1 rounded-lg px-2.5 py-2 transition-[background-color,box-shadow,transform] duration-150",
                         !disabled && (inputValue.trim() || attachments.length > 0)
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer signal-breathe"
+                          ? "cursor-pointer bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 active:translate-y-px"
                           : "text-muted-foreground opacity-30 cursor-not-allowed",
                       )}
                     />
@@ -280,6 +264,39 @@ export function HomeChatInput({
           <div className="px-2 flex items-center justify-between pb-0.5 pt-0.5">
             <div className="flex items-center">
               <ChatInputControls showContextFilesPicker={false} />
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      aria-pressed={includePlannerTasks}
+                      aria-label={`Planner task access ${includePlannerTasks ? "enabled" : "disabled"}`}
+                      onClick={() => setIncludePlannerTasks((enabled) => !enabled)}
+                      className={cn(
+                        "ml-1 inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition-colors",
+                        includePlannerTasks
+                          ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground",
+                      )}
+                    />
+                  }
+                >
+                  <ClipboardList className="size-3.5" />
+                  Tasks
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full bg-muted-foreground/45",
+                      includePlannerTasks && "bg-primary",
+                    )}
+                  />
+                  <span>{includePlannerTasks ? "On" : "Off"}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {includePlannerTasks
+                    ? "This message can read tasks assigned to the current project"
+                    : "Turn on to share this project's planner tasks with the chat"}
+                </TooltipContent>
+              </Tooltip>
               <HomeActionTypeSelector />
               {settings?.enableSelectAppFromHomeChatInput && (
                 <Tooltip>

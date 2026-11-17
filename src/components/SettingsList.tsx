@@ -1,31 +1,53 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useScrollAndNavigateTo } from "@/hooks/useScrollAndNavigateTo";
 import { useAtom } from "jotai";
 import { activeSettingsSectionAtom } from "@/atoms/viewAtoms";
 import { SECTION_IDS, SETTINGS_SEARCH_INDEX } from "@/lib/settingsSearchIndex";
 import Fuse from "fuse.js";
-import { ArrowLeft, SearchIcon, XIcon } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowLeft,
+  Blocks,
+  Cpu,
+  Film,
+  FlaskConical,
+  Link2,
+  type LucideIcon,
+  SearchIcon,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Workflow,
+  Globe2,
+  XIcon,
+} from "lucide-react";
 
-type SettingsSection = {
+type SettingsSectionItem = {
   id: string;
   label: string;
+  icon: LucideIcon;
+  tone?: "default" | "danger";
 };
 
-const SETTINGS_SECTIONS: SettingsSection[] = [
-  { id: SECTION_IDS.general, label: "General" },
-  { id: SECTION_IDS.workflow, label: "Workflow" },
-  { id: SECTION_IDS.ai, label: "AI" },
-  { id: SECTION_IDS.providers, label: "Model Providers" },
-  { id: SECTION_IDS.plugins, label: "Plugins" },
-  { id: SECTION_IDS.telemetry, label: "Telemetry" },
-  { id: SECTION_IDS.integrations, label: "Integrations" },
-  { id: SECTION_IDS.agentPermissions, label: "Agent Permissions" },
-  { id: SECTION_IDS.advanced, label: "Advanced" },
-  { id: SECTION_IDS.experiments, label: "Experiments" },
-  { id: SECTION_IDS.dangerZone, label: "Danger Zone" },
+export const SETTINGS_SECTIONS: SettingsSectionItem[] = [
+  { id: SECTION_IDS.general, label: "General", icon: Settings2 },
+  { id: SECTION_IDS.workflow, label: "Workflow", icon: Workflow },
+  { id: SECTION_IDS.ai, label: "AI", icon: Sparkles },
+  { id: SECTION_IDS.mediaGeneration, label: "Media Generation", icon: Film },
+  { id: SECTION_IDS.providers, label: "Model Providers", icon: Cpu },
+  { id: SECTION_IDS.plugins, label: "Plugins", icon: Blocks },
+  { id: SECTION_IDS.integrations, label: "Integrations", icon: Link2 },
+  { id: SECTION_IDS.agentPermissions, label: "Agent Permissions", icon: ShieldCheck },
+  { id: SECTION_IDS.telemetry, label: "Telemetry", icon: Activity },
+  { id: SECTION_IDS.advanced, label: "Advanced", icon: SlidersHorizontal },
+  { id: SECTION_IDS.webAutomation, label: "Web Automation", icon: Globe2 },
+  { id: SECTION_IDS.experiments, label: "Experiments", icon: FlaskConical },
+  { id: SECTION_IDS.dangerZone, label: "Danger Zone", icon: AlertTriangle, tone: "danger" },
 ];
 
 const fuse = new Fuse(SETTINGS_SEARCH_INDEX, {
@@ -46,11 +68,6 @@ export function SettingsList({ show }: { show: boolean }) {
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const scrollAndNavigateTo = useScrollAndNavigateTo("/settings", {
-    behavior: "smooth",
-    block: "start",
-  });
-
   const scrollAndNavigateToWithHighlight = useScrollAndNavigateTo("/settings", {
     behavior: "smooth",
     block: "start",
@@ -62,36 +79,17 @@ export function SettingsList({ show }: { show: boolean }) {
     return fuse.search(searchQuery.trim());
   }, [searchQuery]);
 
-  useEffect(() => {
-    if (!show) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-            return;
-          }
-        }
-      },
-      { rootMargin: "-20% 0px -80% 0px", threshold: 0 },
-    );
-
-    for (const section of SETTINGS_SECTIONS) {
-      const el = document.getElementById(section.id);
-      if (el) {
-        observer.observe(el);
-      }
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [show, setActiveSection]);
-
   if (!show) {
     return null;
   }
+
+  const currentSection = activeSection ?? SECTION_IDS.general;
+
+  const handleSelectSection = async (sectionId: string) => {
+    setActiveSection(sectionId);
+    await navigate({ to: "/settings" });
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -107,7 +105,7 @@ export function SettingsList({ show }: { show: boolean }) {
         </button>
         <h2 className="text-[13px] font-semibold tracking-tight">Settings</h2>
       </div>
-      <div className="flex-shrink-0 px-4 pb-2">
+      <div className="flex-shrink-0 px-3 pb-2 pt-1">
         <div className="relative">
           <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
@@ -134,7 +132,7 @@ export function SettingsList({ show }: { show: boolean }) {
         </div>
       </div>
       <ScrollArea className="flex-grow">
-        <div className="space-y-1 p-4 pt-0">
+        <div className="space-y-0.5 px-2 pb-4 pt-0">
           {searchResults !== null ? (
             searchResults.length > 0 ? (
               searchResults.map((result) => (
@@ -156,20 +154,39 @@ export function SettingsList({ show }: { show: boolean }) {
               </div>
             )
           ) : (
-            SETTINGS_SECTIONS.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => scrollAndNavigateTo(section.id)}
-                className={cn(
-                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                  activeSection === section.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                    : "hover:bg-sidebar-accent",
-                )}
-              >
-                {section.label}
-              </button>
-            ))
+            SETTINGS_SECTIONS.map((section) => {
+              const Icon = section.icon;
+              const isActive = currentSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => handleSelectSection(section.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] transition-colors",
+                    isActive
+                      ? section.tone === "danger"
+                        ? "bg-destructive/10 text-destructive font-semibold"
+                        : "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                      : section.tone === "danger"
+                        ? "text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      isActive
+                        ? section.tone === "danger"
+                          ? "text-destructive"
+                          : "text-primary"
+                        : "opacity-75",
+                    )}
+                  />
+                  <span className="truncate">{section.label}</span>
+                </button>
+              );
+            })
           )}
         </div>
       </ScrollArea>

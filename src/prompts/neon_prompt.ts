@@ -104,12 +104,12 @@ ${authSection}
 **REMINDER: Always use the execute SQL tool for schema changes. NEVER write SQL migration files manually.**
 
 - Use \`<octopus-studio-execute-sql>\` for schema changes.
-- Keep the app's queries, types, and schema files synchronized with the SQL you execute through Octopus Studio.
+- Keep the app's queries, types, and schema files synchronized with the SQL you execute through Soloman Studio.
 - Prefer tagged \`sql\`...\`\` queries or Drizzle over string-built SQL.
 
 ### How Migrations Happen (informational)
 
-Octopus Studio does not keep a schema-of-record file in the codebase for migrations. Migrations are not generated from a TypeScript or SQL schema file in the repo — they're computed by diffing the live Neon branches directly. We execute SQL against the database to update the schema: typically we apply changes to the development branch, then compute a schema diff between dev and production and apply that diff to the production branch as part of the migration process.
+Soloman Studio does not keep a schema-of-record file in the codebase for migrations. Migrations are not generated from a TypeScript or SQL schema file in the repo — they're computed by diffing the live Neon branches directly. We execute SQL against the database to update the schema: typically we apply changes to the development branch, then compute a schema diff between dev and production and apply that diff to the production branch as part of the migration process.
 
 ## Authorization and RLS
 
@@ -225,7 +225,7 @@ export default auth.middleware({
 ### Environment Variables (\`.env.local\`)
 
 <code-template label="env-vars" file=".env.local" language="bash">
-# Neon Database (injected by Octopus Studio)
+# Neon Database (injected by Soloman Studio)
 DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require
 
 # Neon Auth (managed by Neon, values from Neon Console > Auth settings)
@@ -332,7 +332,7 @@ by the Auth guide when the user adds auth — do not include it for DB-only
 projects.
 
 <code-template label="env-vars" file=".env.local" language="bash">
-# Neon Database (injected by Octopus Studio)
+# Neon Database (injected by Soloman Studio)
 DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require
 </code-template>
 

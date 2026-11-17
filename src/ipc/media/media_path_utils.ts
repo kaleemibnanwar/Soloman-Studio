@@ -4,17 +4,19 @@ import crypto from "node:crypto";
 import { withLock } from "../utils/lock_utils";
 
 /**
- * The root ".octopusStudio" directory within each app that holds OctopusStudio-managed files.
+ * The root internal directories within each app that hold Soloman-managed files.
+ * Default is ".soloman", with ".octopusStudio" supported as legacy fallback.
  */
+export const SOLOMAN_INTERNAL_DIR_NAME = ".soloman";
 export const OCTOPUS_STUDIO_INTERNAL_DIR_NAME = ".octopusStudio";
 
 /**
- * The ".octopusStudio"-relative subdir for uploaded media files.
+ * The internal-relative subdir for uploaded media files.
  */
 export const OCTOPUS_STUDIO_MEDIA_SUBDIR = "media";
 
 /**
- * The ".octopusStudio"-relative subdir for screenshot files.
+ * The internal-relative subdir for screenshot files.
  */
 export const OCTOPUS_STUDIO_SCREENSHOT_SUBDIR = "screenshot";
 
@@ -22,12 +24,14 @@ export const OCTOPUS_STUDIO_SCREENSHOT_SUBDIR = "screenshot";
  * The subdirectory within each app where uploaded media files are stored.
  */
 export const OCTOPUS_STUDIO_MEDIA_DIR_NAME = `${OCTOPUS_STUDIO_INTERNAL_DIR_NAME}/${OCTOPUS_STUDIO_MEDIA_SUBDIR}`;
+export const SOLOMAN_MEDIA_DIR_NAME = `${SOLOMAN_INTERNAL_DIR_NAME}/${OCTOPUS_STUDIO_MEDIA_SUBDIR}`;
 export const ATTACHMENTS_MANIFEST_FILE = "attachments-manifest.json";
 
 /**
  * The subdirectory within each app where screenshot files are stored.
  */
 export const OCTOPUS_STUDIO_SCREENSHOT_DIR_NAME = `${OCTOPUS_STUDIO_INTERNAL_DIR_NAME}/${OCTOPUS_STUDIO_SCREENSHOT_SUBDIR}`;
+export const SOLOMAN_SCREENSHOT_DIR_NAME = `${SOLOMAN_INTERNAL_DIR_NAME}/${OCTOPUS_STUDIO_SCREENSHOT_SUBDIR}`;
 
 /**
  * Maximum number of per-commit screenshots retained per app.
@@ -62,20 +66,25 @@ export type AttachmentManifestEntryInput = Omit<AttachmentManifestEntry, "logica
 };
 
 /**
- * Check if an absolute path falls within the app's .octopusStudio/media directory.
+ * Check if an absolute path falls within the app's media directory (.soloman/media or .octopusStudio/media).
  * Used to validate that file copy operations only read from the allowed media dir.
  */
 export function isWithinOctopusStudioMediaDir(absPath: string, appPath: string): boolean {
   const resolved = path.resolve(absPath);
-  const resolvedMediaDir = path.resolve(path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME));
-  const relativePath = path.relative(resolvedMediaDir, resolved);
-  return !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
+  const resolvedMediaDir = path.resolve(getOctopusStudioMediaDir(appPath));
+  const legacyMediaDir = path.resolve(path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME));
+
+  const relNew = path.relative(resolvedMediaDir, resolved);
+  if (!relNew.startsWith("..") && !path.isAbsolute(relNew)) return true;
+
+  const relLegacy = path.relative(legacyMediaDir, resolved);
+  return !relLegacy.startsWith("..") && !path.isAbsolute(relLegacy);
 }
 
 /**
- * Check if an absolute path is a file inside a .octopusStudio/media directory
+ * Check if an absolute path is a file inside a .soloman/media or .octopusStudio/media directory
  * (without requiring a known app path). Validates by finding consecutive
- * ".octopusStudio" + "media" path segments with at least one segment (filename) after,
+ * internal dir + "media" path segments with at least one segment (filename) after,
  * then confirms the resolved path doesn't escape via ".." traversal.
  */
 export function isFileWithinAnyOctopusStudioMediaDir(absPath: string): boolean {
@@ -84,7 +93,10 @@ export function isFileWithinAnyOctopusStudioMediaDir(absPath: string): boolean {
 
   let mediaIdx = -1;
   for (let i = 0; i < segments.length - 2; i++) {
-    if (segments[i] === ".octopusStudio" && segments[i + 1] === "media") {
+    if (
+      (segments[i] === ".soloman" || segments[i] === ".octopusStudio") &&
+      segments[i + 1] === "media"
+    ) {
       mediaIdx = i + 1;
       break;
     }
@@ -99,11 +111,43 @@ export function isFileWithinAnyOctopusStudioMediaDir(absPath: string): boolean {
 }
 
 export function getOctopusStudioMediaDir(appPath: string): string {
+  return path.join(appPath, SOLOMAN_MEDIA_DIR_NAME);
+}
+
+/** Legacy media root from pre-rename builds. Read-only compatibility path. */
+export function getLegacyOctopusStudioMediaDir(appPath: string): string {
   return path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+}
+
+/**
+ * Directories that may contain media for an app, newest first. New files are
+ * always written to the Soloman path; legacy files remain readable in place.
+ */
+export function getOctopusStudioMediaDirs(appPath: string): string[] {
+  return [getOctopusStudioMediaDir(appPath), getLegacyOctopusStudioMediaDir(appPath)];
 }
 
 export function getAttachmentsManifestPath(appPath: string): string {
   return path.join(getOctopusStudioMediaDir(appPath), ATTACHMENTS_MANIFEST_FILE);
+}
+
+async function getReadableAttachmentsManifestPath(appPath: string): Promise<string> {
+  const currentPath = getAttachmentsManifestPath(appPath);
+  try {
+    await fs.access(currentPath);
+    return currentPath;
+  } catch {
+    const legacyPath = path.join(
+      getLegacyOctopusStudioMediaDir(appPath),
+      ATTACHMENTS_MANIFEST_FILE,
+    );
+    try {
+      await fs.access(legacyPath);
+      return legacyPath;
+    } catch {
+      return currentPath;
+    }
+  }
 }
 
 export function toAttachmentLogicalPath(logicalName: string): string {
@@ -149,9 +193,9 @@ export function createUniqueAttachmentLogicalName(
   }
 }
 
-async function readAttachmentManifest(appPath: string): Promise<AttachmentManifestEntry[]> {
+async function readAttachmentManifestAt(manifestPath: string): Promise<AttachmentManifestEntry[]> {
   try {
-    const raw = await fs.readFile(getAttachmentsManifestPath(appPath), "utf8");
+    const raw = await fs.readFile(manifestPath, "utf8");
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
       return [];
@@ -172,6 +216,10 @@ async function readAttachmentManifest(appPath: string): Promise<AttachmentManife
     }
     throw error;
   }
+}
+
+async function readAttachmentManifest(appPath: string): Promise<AttachmentManifestEntry[]> {
+  return readAttachmentManifestAt(await getReadableAttachmentsManifestPath(appPath));
 }
 
 async function appendAttachmentManifestEntriesUnlocked(
@@ -280,10 +328,9 @@ async function pruneAttachmentManifestUnlocked(appPath: string): Promise<number>
     return 0;
   }
 
-  const mediaDir = getOctopusStudioMediaDir(appPath);
   const keptEntries: AttachmentManifestEntry[] = [];
   for (const entry of entries) {
-    const storedAttachment = await toStoredAttachmentInfoIfPresent(mediaDir, entry);
+    const storedAttachment = await toStoredAttachmentInfoIfPresent(appPath, entry);
     if (storedAttachment) {
       keptEntries.push(entry);
     }
@@ -291,7 +338,10 @@ async function pruneAttachmentManifestUnlocked(appPath: string): Promise<number>
 
   const removedCount = entries.length - keptEntries.length;
   if (removedCount > 0) {
-    await writeAttachmentManifestAtomic(getAttachmentsManifestPath(appPath), keptEntries);
+    await writeAttachmentManifestAtomic(
+      await getReadableAttachmentsManifestPath(appPath),
+      keptEntries,
+    );
   }
 
   return removedCount;
@@ -304,33 +354,35 @@ export async function pruneAttachmentManifest(appPath: string): Promise<number> 
 }
 
 async function toStoredAttachmentInfoIfPresent(
-  mediaDir: string,
+  appPath: string,
   entry: AttachmentManifestEntry,
 ): Promise<StoredAttachmentInfo | null> {
-  const filePath = path.join(mediaDir, path.basename(entry.storedFileName));
-  try {
-    const stat = await fs.stat(filePath);
-    if (!stat.isFile()) {
-      return null;
+  for (const mediaDir of getOctopusStudioMediaDirs(appPath)) {
+    const filePath = path.join(mediaDir, path.basename(entry.storedFileName));
+    try {
+      const stat = await fs.stat(filePath);
+      if (!stat.isFile()) {
+        continue;
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        continue;
+      }
+      throw error;
     }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return null;
-    }
-    throw error;
+    return {
+      ...entry,
+      filePath,
+    };
   }
-  return {
-    ...entry,
-    filePath,
-  };
+  return null;
 }
 
 export async function listStoredAttachments(appPath: string): Promise<StoredAttachmentInfo[]> {
-  const mediaDir = getOctopusStudioMediaDir(appPath);
   const entries = await readAttachmentManifest(appPath);
   const storedAttachments: StoredAttachmentInfo[] = [];
   for (const entry of entries) {
-    const storedAttachment = await toStoredAttachmentInfoIfPresent(mediaDir, entry);
+    const storedAttachment = await toStoredAttachmentInfoIfPresent(appPath, entry);
     if (storedAttachment) {
       storedAttachments.push(storedAttachment);
     }
@@ -350,5 +402,5 @@ export async function resolveAttachmentLogicalPath(
   if (!entry) {
     return null;
   }
-  return toStoredAttachmentInfoIfPresent(getOctopusStudioMediaDir(appPath), entry);
+  return toStoredAttachmentInfoIfPresent(appPath, entry);
 }

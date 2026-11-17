@@ -4,8 +4,7 @@ import { useLoadApps } from "@/hooks/useLoadApps";
 import { useRouter } from "@tanstack/react-router";
 import { useSettings } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
-// @ts-ignore
-import logo from "../../assets/logo.png";
+import { solomanLogo } from "@/constants/branding";
 import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
 import { cn } from "@/lib/utils";
 import { useDeepLink } from "@/contexts/DeepLinkContext";
@@ -67,7 +66,7 @@ export const TitleBar = () => {
   ]);
 
   const selectedApp = apps.find((app) => app.id === selectedAppId);
-  const displayText = selectedApp ? selectedApp.name : "Octopus";
+  const displayText = selectedApp ? selectedApp.name : "Soloman";
   const tooltipText = selectedApp ? `Manage ${selectedApp.name}` : "No app selected";
 
   const handleAppClick = () => {
@@ -81,7 +80,7 @@ export const TitleBar = () => {
 
   return (
     <>
-      <div className="@container z-11 w-full h-[calc(var(--layout-title-bar-offset)+1px)] pt-1 bg-(--sidebar) absolute top-0 left-0 app-region-drag flex items-center">
+      <div className="app-region-drag @container absolute top-0 left-0 z-11 flex h-[var(--layout-title-bar-offset)] w-full items-center border-b border-sidebar-border bg-sidebar px-1">
         {/*
          * Left region matches the sidebar's expanded width so chat tabs always
          * start past the sidebar panel's right edge. Without this, an active
@@ -103,7 +102,7 @@ export const TitleBar = () => {
                   size="sm"
                   disabled={!selectedApp}
                   className={cn(
-                    "no-app-region-drag ml-2 h-7 px-1.5 gap-1.5 flex items-center font-medium text-xs",
+                    "no-app-region-drag ml-2 flex h-8 items-center gap-2 border-transparent bg-transparent px-1.5 text-xs font-semibold shadow-none hover:border-sidebar-border hover:bg-sidebar-accent",
                     selectedApp
                       ? "cursor-pointer"
                       : "opacity-70 cursor-default disabled:opacity-70",
@@ -112,8 +111,15 @@ export const TitleBar = () => {
                 />
               }
             >
-              <img src={logo} alt="Octopus Studio" className="w-5 h-5 shrink-0" />
+              <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-md bg-foreground">
+                <img
+                  src={solomanLogo}
+                  alt="Soloman Studio"
+                  className="size-5 brightness-0 invert dark:brightness-0 dark:invert"
+                />
+              </span>
               <span className="hidden @2xl:inline max-w-40 truncate">{displayText}</span>
+              <span className="hidden @4xl:inline font-normal text-muted-foreground">Studio</span>
             </TooltipTrigger>
             <TooltipContent>{tooltipText}</TooltipContent>
           </Tooltip>
@@ -153,7 +159,7 @@ function WindowsControls() {
   };
 
   return (
-    <div className="ml-auto flex no-app-region-drag -mt-1 h-[var(--layout-title-bar-offset)] self-start">
+    <div className="ml-auto flex no-app-region-drag h-[var(--layout-title-bar-offset)] self-start">
       <button
         className="w-12 h-full flex items-center justify-center hover:bg-muted dark:hover:bg-muted transition-colors"
         onClick={minimizeWindow}

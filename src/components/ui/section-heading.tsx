@@ -2,7 +2,7 @@ import type { ElementType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * The app's standard section/page header: an optional mono-caps eyebrow over
+ * The app's standard section/page header: an optional quiet eyebrow over
  * the title, an optional trailing action, and an optional top hairline for
  * separating stacked sections — hierarchy comes from the rule, not a shadow.
  */
@@ -35,16 +35,14 @@ export function SectionHeading({
     >
       <div>
         {eyebrow && (
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            {eyebrow}
-          </p>
+          <p className="text-xs font-medium tracking-wide text-muted-foreground">{eyebrow}</p>
         )}
         <Heading
           className={cn(
             eyebrow && "mt-1",
             size === "page"
-              ? "text-3xl font-bold text-foreground"
-              : "text-lg font-semibold text-foreground",
+              ? "font-display text-[2rem] font-semibold leading-tight text-foreground"
+              : "text-lg font-semibold tracking-[-0.015em] text-foreground",
           )}
         >
           {title}

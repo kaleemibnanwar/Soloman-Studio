@@ -30,7 +30,7 @@ export function showUserInputNotification({
 
   const app = appId ? queryClient.getQueryData<App | null>(queryKeys.apps.detail({ appId })) : null;
 
-  new Notification(app?.name ?? "Octopus Studio", {
+  new Notification(app?.name ?? "Soloman Studio", {
     body,
     requireInteraction,
   });

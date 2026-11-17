@@ -5,6 +5,7 @@ import { assertMutationPathAllowed, safeJoin } from "./path_utils";
 import { gitAdd } from "../git/git_utils";
 import {
   OCTOPUS_STUDIO_MEDIA_DIR_NAME,
+  SOLOMAN_MEDIA_DIR_NAME,
   isWithinOctopusStudioMediaDir,
   resolveAttachmentLogicalPath,
 } from "../media/media_path_utils";
@@ -36,7 +37,7 @@ export interface CopyFileResult {
  * Copy a file within a OctopusStudio app, with security validation, git staging,
  * and optional Supabase function deployment.
  *
- * @throws Error if an absolute source path is outside the app's .octopusStudio/media directory.
+ * @throws Error if an absolute source path is outside the app's .soloman/media directory.
  *   Relative paths are resolved within the app root (consistent with write_file access).
  * @throws Error if the source file does not exist
  */
@@ -56,7 +57,9 @@ export async function executeCopyFile({
     from.startsWith("attachments:") ||
     path.isAbsolute(from) ||
     normalizedSource === OCTOPUS_STUDIO_MEDIA_DIR_NAME ||
-    normalizedSource.startsWith(`${OCTOPUS_STUDIO_MEDIA_DIR_NAME}/`);
+    normalizedSource.startsWith(`${OCTOPUS_STUDIO_MEDIA_DIR_NAME}/`) ||
+    normalizedSource === SOLOMAN_MEDIA_DIR_NAME ||
+    normalizedSource.startsWith(`${SOLOMAN_MEDIA_DIR_NAME}/`);
   return appOperationCoordinator.run(
     {
       appId,
@@ -85,7 +88,7 @@ export async function executeCopyFile({
           : getOctopusStudioAppPath(app.path);
       const { supabaseProjectId, supabaseOrganizationSlug } = app;
 
-      // Resolve the source path: allow both .octopusStudio/media paths and app-relative paths
+      // Resolve the source path: allow both .soloman/media and app-relative paths
       let fromFullPath: string;
       if (from.startsWith("attachments:")) {
         const attachment = await resolveAttachmentLogicalPath(appPath, from);
@@ -97,10 +100,10 @@ export async function executeCopyFile({
         }
         fromFullPath = attachment.filePath;
       } else if (path.isAbsolute(from)) {
-        // Security: only allow absolute paths within the app's .octopusStudio/media directory
+        // Security: only allow absolute paths within the app's media directory
         if (!isWithinOctopusStudioMediaDir(from, appPath)) {
           throw new Error(
-            `Absolute source paths are only allowed within the .octopusStudio/media directory`,
+            `Absolute source paths are only allowed within the .soloman/media directory`,
           );
         }
         fromFullPath = path.resolve(from);
@@ -128,7 +131,7 @@ export async function executeCopyFile({
       const resolvedAppPath = fs.realpathSync(appPath);
       if (path.isAbsolute(from) && !isWithinOctopusStudioMediaDir(realFromPath, resolvedAppPath)) {
         throw new Error(
-          `Source path resolves to a location outside the .octopusStudio/media directory (possible symlink traversal)`,
+          `Source path resolves to a location outside the .soloman/media directory (possible symlink traversal)`,
         );
       }
       if (

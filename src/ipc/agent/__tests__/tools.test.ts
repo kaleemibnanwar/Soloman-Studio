@@ -154,6 +154,69 @@ describe("write_file / search_replace execute", () => {
   });
 });
 
+describe("execute_command", () => {
+  it("shows the exact command for approval and does not run it when declined", async () => {
+    let preview = "";
+    const tools = buildBuiltinTools(
+      params({
+        requestToolConsent: async (request) => {
+          preview = request.inputPreview;
+          return false;
+        },
+      }),
+    );
+
+    const result = await (
+      tools.execute_command as unknown as {
+        execute: (input: unknown) => Promise<string>;
+      }
+    ).execute({
+      command: process.execPath,
+      args: ["-e", "process.stdout.write('must-not-run')"],
+    });
+
+    expect(result).toBe("Command was declined and was not run.");
+    expect(JSON.parse(preview)).toMatchObject({
+      command: process.execPath,
+      args: ["-e", "process.stdout.write('must-not-run')"],
+      workingDirectory: dir,
+    });
+    expect(result).not.toContain("must-not-run");
+  });
+
+  it("runs an approved command and returns its exit status", async () => {
+    const requestToolConsent = vi.fn().mockResolvedValue(true);
+    const tools = buildBuiltinTools(params({ requestToolConsent }));
+
+    const result = await (
+      tools.execute_command as unknown as {
+        execute: (input: unknown) => Promise<string>;
+      }
+    ).execute({
+      command: process.execPath,
+      args: ["-e", "process.exit(7)"],
+    });
+
+    expect(requestToolConsent).toHaveBeenCalledOnce();
+    expect(result).toBe("Command exited with code 7.");
+  });
+
+  it("runs without prompting only when the user configured always-allow", async () => {
+    const tools = buildBuiltinTools(params({ agentToolConsents: { execute_command: "always" } }));
+
+    const result = await (
+      tools.execute_command as unknown as {
+        execute: (input: unknown) => Promise<string>;
+      }
+    ).execute({
+      command: process.execPath,
+      args: ["-e", "process.exit(8)"],
+    });
+
+    expect(result).toBe("Command exited with code 8.");
+  });
+});
+
 describe("agentTaskContext enforcement", () => {
   it("blocks a write outside the task's allowed_files", async () => {
     const tools = buildBuiltinTools(
@@ -671,5 +734,119 @@ describe("create_office_documents_batch", () => {
       outputDir: "empty",
     });
     expect(out).toContain('Provide either "records"');
+  });
+});
+
+describe("agentic loop reliability & sub-agent scoping", () => {
+  it("resets read/verification repeat history after a state-mutating tool executes", async () => {
+    fs.writeFileSync(path.join(dir, "app.ts"), "export const v = 1;\n");
+    const tools = buildBuiltinTools(params());
+    const readExec = (tools.read_file as unknown as { execute: (i: unknown) => Promise<string> })
+      .execute;
+    const writeExec = (tools.write_file as unknown as { execute: (i: unknown) => Promise<string> })
+      .execute;
+
+    // 3 identical reads without any mutation between them should succeed, and a 4th would be blocked
+    await readExec({ file_path: "app.ts" });
+    await readExec({ file_path: "app.ts" });
+    await readExec({ file_path: "app.ts" });
+
+    // Mutating state resets the read call history so re-reading after an edit is never blocked
+    await writeExec({ file_path: "app.ts", content: "export const v = 2;\n" });
+
+    const afterWrite = await readExec({ file_path: "app.ts" });
+    expect(afterWrite).toContain("export const v = 2;");
+    expect(afterWrite).not.toContain("ERROR: You have repeatedly called");
+  });
+
+  it("blocks a read tool called 4 times in a row with identical arguments when no mutation occurs", async () => {
+    fs.writeFileSync(path.join(dir, "stuck.ts"), "export const stuck = true;\n");
+    const tools = buildBuiltinTools(params());
+    const readExec = (tools.read_file as unknown as { execute: (i: unknown) => Promise<string> })
+      .execute;
+
+    await readExec({ file_path: "stuck.ts" });
+    await readExec({ file_path: "stuck.ts" });
+    await readExec({ file_path: "stuck.ts" });
+    const fourth = await readExec({ file_path: "stuck.ts" });
+    expect(fourth).toContain("ERROR: You have repeatedly called read_file");
+  });
+
+  it("strips recursive orchestration and unrelated office/media tools for sub-agents unless mentioned in prompt", () => {
+    const codingSubAgentTools = buildBuiltinTools(
+      params({
+        prompt: "Fix TypeScript error in src/components/Button.tsx",
+        agentTaskContext: {
+          taskId: "sub-1",
+          allowedFiles: null,
+          agentRole: "executor",
+          isSubAgent: true,
+        },
+      }),
+    );
+    expect(codingSubAgentTools.spawn_subagent).toBeUndefined();
+    expect(codingSubAgentTools.plan_task_graph).toBeUndefined();
+    expect(codingSubAgentTools.planning_questionnaire).toBeUndefined();
+    expect(codingSubAgentTools.create_document).toBeUndefined();
+    expect(codingSubAgentTools.generate_image).toBeUndefined();
+    expect(codingSubAgentTools.write_file).toBeDefined();
+    expect(codingSubAgentTools.search_replace).toBeDefined();
+
+    const officeSubAgentTools = buildBuiltinTools(
+      params({
+        prompt: "Create a quarterly budget spreadsheet in xlsx format",
+        agentTaskContext: {
+          taskId: "sub-2",
+          allowedFiles: null,
+          agentRole: "executor",
+          isSubAgent: true,
+        },
+      }),
+    );
+    expect(officeSubAgentTools.create_spreadsheet).toBeDefined();
+  });
+
+  it("honors explicit toolAllowlist on agentTaskContext", () => {
+    const tools = buildBuiltinTools(
+      params({
+        agentTaskContext: {
+          taskId: "sub-allow",
+          allowedFiles: null,
+          agentRole: "executor",
+          toolAllowlist: ["read_file", "grep"],
+          isSubAgent: true,
+        },
+      }),
+    );
+    expect(Object.keys(tools).sort()).toEqual(["grep", "read_file"]);
+  });
+
+  it("implements read_guide and tracks todos via onTodosUpdate", async () => {
+    fs.writeFileSync(path.join(dir, "AGENTS.md"), "# Agent Rules\nAlways run tests.\n");
+    let capturedTodos: Array<{ id: string; content: string; status: string }> = [];
+    const tools = buildBuiltinTools(
+      params({
+        onTodosUpdate: (todos) => {
+          capturedTodos = todos;
+        },
+      }),
+    );
+
+    const guideOut = await (
+      tools.read_guide as unknown as { execute: (i: unknown) => Promise<string> }
+    ).execute({});
+    expect(guideOut).toContain("# AGENTS.md");
+    expect(guideOut).toContain("Always run tests.");
+
+    const todoOut = await (
+      tools.update_todos as unknown as { execute: (i: unknown) => Promise<string> }
+    ).execute({
+      todos: [
+        { id: "1", content: "Inspect files", status: "completed" },
+        { id: "2", content: "Write fix", status: "in_progress" },
+      ],
+    });
+    expect(todoOut).toContain("1/2 completed, 1 remaining");
+    expect(capturedTodos).toHaveLength(2);
   });
 });

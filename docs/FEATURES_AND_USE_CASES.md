@@ -1,12 +1,12 @@
-# Octopus Studio — Features & Use Cases
+# Soloman Studio — Features & Use Cases
 
-A single reference covering every feature of Octopus Studio, with the concrete use cases each one exists to serve.
+A single reference covering every feature of Soloman Studio, with the concrete use cases each one exists to serve.
 
 ---
 
-## What is Octopus Studio?
+## What is Soloman Studio?
 
-Octopus Studio is a **local, open-source AI app builder**. You describe an app in plain language; the AI generates real, running code and opens a live preview on your machine. It runs entirely on your hardware — your code, your API keys, your data never leave your machine.
+Soloman Studio is a **local, open-source AI app builder**. You describe an app in plain language; the AI generates real, running code and opens a live preview on your machine. It runs entirely on your hardware — your code, your API keys, your data never leave your machine.
 
 The product is named for the octopus metaphor: **eight arms, eight jobs.** One arm scaffolds the app while another wires a plugin, one keeps a scheduled task running in the background while another reviews the diff a squad of agents just produced. You describe what you want built; it dives down and comes back with the thing — a real codebase, not a mockup.
 

@@ -78,4 +78,18 @@ describe("chat input proposal gating (integration)", () => {
     expect(await screen.findByText(CHAT_PROMPT_LENGTH_LIMIT_MESSAGE)).toBeTruthy();
     expect(harness.getChatInputValue(chatId)).toBe(prompt);
   });
+
+  it("requires an explicit composer opt-in before sharing planner tasks", async () => {
+    const chatId = await harness.createChat();
+    harness.mount({ chatId });
+
+    const taskAccess = await screen.findByRole("button", {
+      name: "Planner task access disabled",
+    });
+    expect(taskAccess.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(taskAccess);
+
+    expect(await screen.findByRole("button", { name: "Planner task access enabled" })).toBeTruthy();
+  });
 });

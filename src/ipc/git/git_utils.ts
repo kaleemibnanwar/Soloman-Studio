@@ -1456,6 +1456,23 @@ export async function gitLogNative(
   depth = 100_000,
   ref = "HEAD",
 ): Promise<GitCommit[]> {
+  // A freshly initialized repository has a branch name but no commit for HEAD
+  // yet. Treat that valid "unborn branch" state as an empty history so version
+  // polling does not repeatedly surface `fatal: bad revision 'HEAD'` to users.
+  // Keep errors for explicit invalid refs and non-repository paths unchanged.
+  if (ref === "HEAD") {
+    const headResult = await execGit(["rev-parse", "--verify", "--quiet", "HEAD^{commit}"], path);
+    if (headResult.exitCode === 1) {
+      return [];
+    }
+    if (headResult.exitCode !== 0) {
+      throw new OctopusStudioError(
+        headResult.stderr.toString() || headResult.stdout.toString(),
+        OctopusStudioErrorKind.Conflict,
+      );
+    }
+  }
+
   // Use git log with custom format to get all data in a single process
   // Format: %H = commit hash, %at = author timestamp (unix), %B = raw body (message)
   // Using null byte as field separator and custom delimiter between commits

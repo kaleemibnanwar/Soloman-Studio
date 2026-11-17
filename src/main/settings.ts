@@ -78,7 +78,9 @@ export const DEFAULT_SETTINGS: UserSettings = {
   previewIdleTimeoutPolicy: "default",
   nodeRuntimePreference: "system",
   disablePreviewNodeAutoInstall: false,
-  enableBrowserLimbBridge: true,
+  // The embedded Studio browser is the default automation surface. The
+  // external Chrome/OctoLimb MCP bridge is opt-in for compatibility users.
+  enableBrowserLimbBridge: false,
 };
 
 const CRASH_SENTINEL_FILE = "session.lock";
@@ -283,12 +285,30 @@ export function readSettings(): UserSettings {
   try {
     const filePath = getSettingsFilePath();
     if (!fs.existsSync(filePath)) {
+      const backupPath = `${filePath}.bak`;
+      if (fs.existsSync(backupPath)) {
+        try {
+          fs.copyFileSync(backupPath, filePath);
+          return readExistingSettingsFile(filePath).settings;
+        } catch {
+          // fall through
+        }
+      }
       fs.writeFileSync(filePath, JSON.stringify(DEFAULT_SETTINGS, null, 2));
       return DEFAULT_SETTINGS;
     }
     return readExistingSettingsFile(filePath).settings;
   } catch (error) {
     logger.error("Error reading settings:", error);
+    try {
+      const backupPath = `${getSettingsFilePath()}.bak`;
+      if (fs.existsSync(backupPath)) {
+        logger.info("Recovering settings from user-settings.json.bak");
+        return readExistingSettingsFile(backupPath).settings;
+      }
+    } catch {
+      // fall through
+    }
     return DEFAULT_SETTINGS;
   }
 }
@@ -354,6 +374,8 @@ export function writeSettings(settings: Partial<UserSettings>): void {
     const filePath = getSettingsFilePath();
     const settingsForWrite = readSettingsForWrite(filePath);
     const newSettings = { ...settingsForWrite.settings, ...settings };
+    // Removed provider integration: do not retain legacy API keys in settings.
+    delete (newSettings as Record<string, unknown>).imageSearch;
     // Decide which still-locked ciphertext secrets must survive this write, and
     // strip untouched ones out so the encryption pass below can't corrupt them.
     const preservedToReinject = reconcilePreservedSecrets(
@@ -397,26 +419,6 @@ export function writeSettings(settings: Partial<UserSettings>): void {
         newSettings.neon.refreshToken = encrypt(newSettings.neon.refreshToken.value);
       }
     }
-    if (newSettings.imageSearch) {
-      if (newSettings.imageSearch.pexelsApiKey) {
-        newSettings.imageSearch.pexelsApiKey = encrypt(newSettings.imageSearch.pexelsApiKey.value);
-      }
-      if (newSettings.imageSearch.pixabayApiKey) {
-        newSettings.imageSearch.pixabayApiKey = encrypt(
-          newSettings.imageSearch.pixabayApiKey.value,
-        );
-      }
-      if (newSettings.imageSearch.openverseClientId) {
-        newSettings.imageSearch.openverseClientId = encrypt(
-          newSettings.imageSearch.openverseClientId.value,
-        );
-      }
-      if (newSettings.imageSearch.openverseClientSecret) {
-        newSettings.imageSearch.openverseClientSecret = encrypt(
-          newSettings.imageSearch.openverseClientSecret.value,
-        );
-      }
-    }
     for (const provider in newSettings.providerSettings) {
       if (newSettings.providerSettings[provider].apiKey) {
         newSettings.providerSettings[provider].apiKey = encrypt(
@@ -437,6 +439,8 @@ export function writeSettings(settings: Partial<UserSettings>): void {
         encryptionType: secret.encryptionType,
       });
     }
+    // Ensure preserved-secret reconciliation cannot resurrect removed provider keys.
+    delete (newSettings as Record<string, unknown>).imageSearch;
     // Use StoredUserSettingsSchema for writing to maintain backwards compatibility
     const validatedSettings = StoredUserSettingsSchema.parse(newSettings);
     writeSettingsFileAtomically(filePath, JSON.stringify(validatedSettings, null, 2), {
@@ -501,6 +505,8 @@ function readExistingSettingsFile(
     ...rawSettings,
     hasRunBefore: rawSettings.hasRunBefore ?? true,
   };
+  // Removed provider integration: scrub legacy credentials on read as well.
+  delete (combinedSettings as Record<string, unknown>).imageSearch;
   const ctx: DecryptContext = {
     preserveUndecryptable: options.preserveUndecryptable ?? false,
     preserved: [],
@@ -623,41 +629,6 @@ function readExistingSettingsFile(
     } else {
       delete combinedSettings.vercelAccessToken;
     }
-  }
-  if (combinedSettings.imageSearch) {
-    const is = combinedSettings.imageSearch;
-    const resolveNested = (
-      secret: Secret | undefined,
-      label: string,
-      key: string,
-    ): Secret | undefined => {
-      if (!secret) return undefined;
-      const resolved = resolveStoredSecret(secret, label, ["imageSearch", key], ctx);
-      return resolved;
-    };
-    const pexels = resolveNested(is.pexelsApiKey, "Pexels API key", "pexelsApiKey");
-    if (pexels) is.pexelsApiKey = pexels;
-    else delete is.pexelsApiKey;
-
-    const pixabay = resolveNested(is.pixabayApiKey, "Pixabay API key", "pixabayApiKey");
-    if (pixabay) is.pixabayApiKey = pixabay;
-    else delete is.pixabayApiKey;
-
-    const openverseClientId = resolveNested(
-      is.openverseClientId,
-      "Openverse client ID",
-      "openverseClientId",
-    );
-    if (openverseClientId) is.openverseClientId = openverseClientId;
-    else delete is.openverseClientId;
-
-    const openverseClientSecret = resolveNested(
-      is.openverseClientSecret,
-      "Openverse client secret",
-      "openverseClientSecret",
-    );
-    if (openverseClientSecret) is.openverseClientSecret = openverseClientSecret;
-    else delete is.openverseClientSecret;
   }
   for (const provider in combinedSettings.providerSettings) {
     if (combinedSettings.providerSettings[provider].apiKey) {
@@ -943,6 +914,17 @@ function readSettingsForWrite(filePath: string): {
   preserved: PreservedSecret[];
 } {
   if (!fs.existsSync(filePath)) {
+    const backupPath = `${filePath}.bak`;
+    if (fs.existsSync(backupPath)) {
+      try {
+        const { settings, preserved } = readExistingSettingsFile(backupPath, {
+          preserveUndecryptable: true,
+        });
+        return { settings, wasUnreadable: false, preserved };
+      } catch {
+        // fall through
+      }
+    }
     return { settings: DEFAULT_SETTINGS, wasUnreadable: false, preserved: [] };
   }
 
@@ -955,9 +937,21 @@ function readSettingsForWrite(filePath: string): {
     return { settings, wasUnreadable: false, preserved };
   } catch (error) {
     logger.error("Existing settings file is unreadable:", error);
+    const backupPath = `${filePath}.bak`;
+    if (fs.existsSync(backupPath)) {
+      try {
+        const { settings, preserved } = readExistingSettingsFile(backupPath, {
+          preserveUndecryptable: true,
+        });
+        logger.info("Recovered unreadable settings from user-settings.json.bak");
+        return { settings, wasUnreadable: false, preserved };
+      } catch {
+        // fall through
+      }
+    }
     notifyRendererError({
       message:
-        "Octopus Studio could not read your existing settings file, so it fell back to default settings.",
+        "Soloman Studio could not read your existing settings file, so it fell back to default settings.",
       action: {
         label: "Read restore docs",
         url: RESTORE_SETTINGS_DOCS_URL,

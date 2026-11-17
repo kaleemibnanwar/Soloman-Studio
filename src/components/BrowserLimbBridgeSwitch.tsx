@@ -28,7 +28,7 @@ function statusLabel(
 
 export function BrowserLimbBridgeSwitch() {
   const { settings, updateSettings } = useSettings();
-  const isEnabled = settings?.enableBrowserLimbBridge !== false;
+  const isEnabled = settings?.enableBrowserLimbBridge === true;
   const { data: status } = useOctoLimbBridgeStatus(isEnabled);
 
   return (
@@ -47,8 +47,8 @@ export function BrowserLimbBridgeSwitch() {
         <Label htmlFor="enable-browser-limb-bridge">Enable OctoLimb MCP Bridge</Label>
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
-        Automatically run the background local HTTP bridge for Octopus Studio OctoLimb extension and
-        register its MCP server endpoint.
+        Optional compatibility mode for the external Chrome/OctoLimb extension. Studio's embedded
+        browser automation is used by default and does not require this bridge.
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
         Status: {statusLabel(isEnabled, status)}

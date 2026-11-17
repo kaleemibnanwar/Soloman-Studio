@@ -44,7 +44,7 @@ function buildAssertionsPrompt(
     // user who says "step 3" means the statement listed as 2 here.
     'Note: I see these numbered from 1, not 0 — if I ask for a check after "step N", that\'s the statement you see as N-1.',
     "",
-    "Call generate_test_assertions with that recording id, a test name, one plain-English step description per statement, plus the assertions you'd propose. There's nothing to read and nothing to run — I'll review the proposal, and Octopus Studio generates the test file when I approve it.",
+    "Call generate_test_assertions with that recording id, a test name, one plain-English step description per statement, plus the assertions you'd propose. There's nothing to read and nothing to run — I'll review the proposal, and Soloman Studio generates the test file when I approve it.",
   ].join("\n");
 }
 

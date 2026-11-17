@@ -405,14 +405,14 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
 
                     <div className="flex items-center space-x-2">
                       <Checkbox
-                        id="copy-to-octopus-studio-apps"
-                        aria-label="Copy to the octopus-studio-apps folder"
+                        id="copy-to-soloman-studio-apps"
+                        aria-label="Copy to the Soloman Studio Projects folder"
                         checked={copyToOctopusStudioApps}
                         onCheckedChange={(checked) => setCopyToOctopusStudioApps(checked === true)}
                         disabled={importAppMutation.isPending}
                       />
                       <label
-                        htmlFor="copy-to-octopus-studio-apps"
+                        htmlFor="copy-to-soloman-studio-apps"
                         className="text-xs sm:text-sm cursor-pointer"
                       >
                         {t("home:copyToOctopusStudioApps")}

@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getFilesRecursively } from "../file_utils";
+import { getFilesRecursively, getFilesRecursivelyAsync } from "../file_utils";
 
 describe("getFilesRecursively", () => {
   let tempDir: string | undefined;
@@ -28,6 +28,18 @@ describe("getFilesRecursively", () => {
       "a-dir/c.txt",
       "root.txt",
       "z-dir/b.txt",
+    ]);
+  });
+
+  it("returns the same paths asynchronously without blocking the event loop", async () => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "file-utils-async-test-"));
+    fs.mkdirSync(path.join(tempDir, "nested"), { recursive: true });
+    fs.writeFileSync(path.join(tempDir, "nested", "b.txt"), "b");
+    fs.writeFileSync(path.join(tempDir, "a.txt"), "a");
+
+    await expect(getFilesRecursivelyAsync(tempDir, tempDir)).resolves.toEqual([
+      "a.txt",
+      "nested/b.txt",
     ]);
   });
 });

@@ -293,7 +293,7 @@ export function LexicalChatInput({
   onSubmit,
   onPaste,
   excludeCurrentApp,
-  placeholder = "Ask Octopus Studio to build...",
+  placeholder = "Ask Soloman Studio to build...",
   disabled = false,
   disableSendButton,
   messageHistory = [],

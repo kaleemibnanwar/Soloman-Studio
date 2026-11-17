@@ -60,7 +60,7 @@ describe("two-window infrastructure harness", () => {
     expect(() => assertTrustedRenderer(harness.trustedInvokeEvent(first) as any)).not.toThrow();
     expect(() => assertTrustedRenderer(harness.trustedInvokeEvent(second) as any)).not.toThrow();
     expect(() => assertTrustedRenderer(harness.trustedInvokeEvent(first, second) as any)).toThrow(
-      "trusted Octopus Studio renderer",
+      "trusted Soloman Studio renderer",
     );
   });
 

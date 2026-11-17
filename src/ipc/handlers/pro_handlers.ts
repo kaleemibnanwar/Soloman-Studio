@@ -109,7 +109,7 @@ export function parseBillingActionUrl(value: string) {
   }
   if (
     url.protocol !== "https:" ||
-    url.hostname !== "academy.octopusStudio.sh" ||
+    url.hostname.toLowerCase() !== "academy.octopusstudio.sh" ||
     url.username !== "" ||
     url.password !== "" ||
     url.port !== ""

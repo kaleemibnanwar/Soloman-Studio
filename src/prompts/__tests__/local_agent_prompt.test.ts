@@ -29,6 +29,10 @@ describe("local_agent_prompt", () => {
       '<octopus-studio-command type="rebuild"></octopus-studio-command>',
     );
     expect(prompt).toContain('<octopus-studio-command type="refresh"></octopus-studio-command>');
+    expect(prompt).toContain(
+      "When completing the task requires a terminal command, shell script, SSH/SCP operation, or deployment",
+    );
+    expect(prompt).toContain("shows the command to the user for approval before it runs");
   });
 
   it("agent mode system prompt with code explorer available", () => {

@@ -1,6 +1,8 @@
 import { registerAppHandlers } from "./handlers/app_handlers";
 import { registerChatHandlers } from "./handlers/chat_handlers";
 import { registerTaskHandlers } from "./handlers/task_handlers";
+import { registerPlannerHandlers } from "./handlers/planner_handlers";
+import { registerMissionHandlers } from "./handlers/mission_handlers";
 import { registerSkillHandlers } from "./handlers/skill_handlers";
 import { registerFileManagerHandlers } from "./handlers/file_manager_handlers";
 import { registerWorkerHandlers } from "./handlers/worker_handlers";
@@ -70,12 +72,21 @@ import { registerChatProjectHandlers } from "./handlers/chat_project_handlers";
 import { registerThemesHandlers } from "./handlers/themes_handlers";
 import { registerVisualEditingHandlers } from "./handlers/visual_editing_handlers";
 import { registerAgentToolHandlers } from "./agent/tool_handlers";
+import { registerSolomanHandlers } from "./handlers/soloman_handlers";
+import { registerSpeechHandlers } from "./handlers/speech_handlers";
+import { registerBrowserHandlers } from "./handlers/browser_handlers";
+import { recoverMissionRuntimes } from "./services/mission_runtime";
 
 export function registerIpcHandlers() {
   // Register all IPC handlers by category
   registerAppHandlers();
   registerChatHandlers();
   registerTaskHandlers();
+  registerPlannerHandlers();
+  registerMissionHandlers();
+  void recoverMissionRuntimes().catch(() => {
+    // Some focused handler tests register IPC before installing their test DB.
+  });
   registerSkillHandlers();
   registerFileManagerHandlers();
   registerWorkerHandlers();
@@ -145,4 +156,7 @@ export function registerIpcHandlers() {
   registerThemesHandlers();
   registerVisualEditingHandlers();
   registerAgentToolHandlers();
+  registerSolomanHandlers();
+  registerSpeechHandlers();
+  registerBrowserHandlers();
 }

@@ -30,12 +30,12 @@ const config = {
   // VERIFY this against a real prior Forge-built .app's
   // Contents/Info.plist CFBundleIdentifier before shipping; if it differs,
   // use the actual value instead.
-  appId: "com.electron.octopus-studio",
-  productName: "Octopus Studio",
-  // productName ("Octopus Studio") has a space, which Linux binaries and
+  appId: "com.electron.soloman-studio",
+  productName: "Soloman Studio",
+  // productName ("Soloman Studio") has a space, which Linux binaries and
   // .deb packaging conventions don't want. Pin the on-disk executable name
   // to the sanitized package name, matching Forge's prior config.
-  executableName: "octopus-studio",
+  executableName: "soloman-studio",
   copyright: `Copyright © ${new Date().getFullYear()} ${packageJson.author?.name ?? ""}`,
 
   directories: {
@@ -78,8 +78,8 @@ const config = {
 
   protocols: [
     {
-      name: "Octopus Studio",
-      schemes: ["octopusStudio"],
+      name: "Soloman Studio",
+      schemes: ["solomanStudio", "soloman", "octopusStudio"],
     },
   ],
 

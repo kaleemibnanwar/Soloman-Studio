@@ -199,6 +199,21 @@ export const systemContracts = {
     output: z.string(),
   }),
 
+  speakText: defineContract({
+    channel: "system:speak-text",
+    input: z.object({
+      text: z.string().trim().min(1).max(20_000),
+      language: z.string().trim().min(2).max(35).optional(),
+    }),
+    output: z.void(),
+  }),
+
+  stopSpeaking: defineContract({
+    channel: "system:stop-speaking",
+    input: z.void(),
+    output: z.void(),
+  }),
+
   getInitialLoadTelemetryContext: defineContract({
     channel: "get-initial-load-telemetry-context",
     input: z.void(),

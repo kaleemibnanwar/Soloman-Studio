@@ -85,7 +85,7 @@ export async function getPublishableKey({
   // generated client as `undefined`.
   if (!publishableKey?.api_key) {
     throw new OctopusStudioError(
-      "Octopus Studio couldn't find a publishable key for this Supabase project. It may be paused or connected through the wrong Supabase account. Resume the project in Supabase, or reconnect the correct project in Octopus Studio. See https://octopusStudio.sh/docs/integrations/supabase#no-publishable-keys",
+      "Soloman Studio couldn't find a publishable key for this Supabase project. It may be paused or connected through the wrong Supabase account. Resume the project in Supabase, or reconnect the correct project in Soloman Studio. See https://octopusStudio.sh/docs/integrations/supabase#no-publishable-keys",
       OctopusStudioErrorKind.NotFound,
     );
   }

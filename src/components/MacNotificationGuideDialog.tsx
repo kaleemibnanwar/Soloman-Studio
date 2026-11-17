@@ -21,7 +21,7 @@ export function MacNotificationGuideDialog({ open, onClose }: MacNotificationGui
           <DialogTitle>Allow Notifications on macOS</DialogTitle>
           <DialogDescription>
             If you didn't receive a test notification, you may need to allow notifications for
-            Octopus Studio in macOS. Here are two ways to do it:
+            Soloman Studio in macOS. Here are two ways to do it:
           </DialogDescription>
         </DialogHeader>
 
@@ -41,7 +41,7 @@ export function MacNotificationGuideDialog({ open, onClose }: MacNotificationGui
             <p className="text-sm text-muted-foreground">
               Open{" "}
               <strong>
-                System Settings → Notifications → Application Notifications → Octopus Studio
+                System Settings → Notifications → Application Notifications → Soloman Studio
               </strong>{" "}
               and enable <strong>"Allow Notifications"</strong>.
             </p>

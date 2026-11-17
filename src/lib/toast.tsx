@@ -113,16 +113,10 @@ export const showInputRequest = (message: string, onResponse: (response: "y" | "
   return toastId;
 };
 
-export const showExtraFilesToast = ({
-  files,
-  error,
-}: {
-  files: string[];
-  error?: string;
-}) => {
+export const showExtraFilesToast = ({ files, error }: { files: string[]; error?: string }) => {
   if (error) {
     showError(
-      `Error committing files ${files.join(", ")} changed outside of Octopus Studio: ${error}`,
+      `Error committing files ${files.join(", ")} changed outside of Soloman Studio: ${error}`,
     );
     telemetryClient.capture("extra-files:error", {
       files: files,
@@ -130,7 +124,7 @@ export const showExtraFilesToast = ({
     });
   } else {
     showWarning(
-      `Files changed outside of Octopus Studio have automatically been committed:
+      `Files changed outside of Soloman Studio have automatically been committed:
     \n\n${files.join("\n")}`,
     );
     telemetryClient.capture("extra-files:warning", {

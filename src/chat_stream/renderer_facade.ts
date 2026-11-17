@@ -20,6 +20,7 @@ export interface StreamRequest {
   selectedComponents?: ComponentSelection[];
   requestedChatMode?: Chat["chatMode"] | null;
   planAcceptInNewChat?: boolean;
+  includePlannerTasks?: boolean;
   owner?: UserInputFollowUpQueueOwner;
   onAccepted?: () => void;
   onAcceptanceError?: (error: Error) => void;

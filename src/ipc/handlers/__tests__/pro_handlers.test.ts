@@ -40,23 +40,23 @@ vi.mock("electron-log", () => ({
   default: { scope: () => mocks.logger },
 }));
 
-vi.mock("../../main/settings", () => ({
+vi.mock("../../../main/settings", () => ({
   readSettings: mocks.readSettings,
 }));
 
-vi.mock("../utils/llm_engine_provider", () => ({
+vi.mock("../../utils/llm_engine_provider", () => ({
   transcribeWithOctopusStudioEngine: mocks.transcribeWithOctopusStudioEngine,
 }));
 
-vi.mock("../utils/octopus_studio_engine_url", () => ({
+vi.mock("../../utils/octopus_studio_engine_url", () => ({
   getOctopusStudioEngineBaseUrl: () => "https://engine.example/v1",
 }));
 
-vi.mock("../utils/telemetry", () => ({
+vi.mock("../../utils/telemetry", () => ({
   sendTelemetryException: vi.fn(),
 }));
 
-vi.mock("../utils/test_utils", () => ({
+vi.mock("../../utils/test_utils", () => ({
   IS_TEST_BUILD: true,
 }));
 
@@ -199,7 +199,7 @@ describe("pro audio transcription handler", () => {
       },
     );
 
-    expect(() => unwrapIpcEnvelope(envelope as never)).toThrow("trusted Octopus Studio renderer");
+    expect(() => unwrapIpcEnvelope(envelope as never)).toThrow("trusted Soloman Studio renderer");
     expect(mocks.readSettings).not.toHaveBeenCalled();
     expect(mocks.transcribeWithOctopusStudioEngine).not.toHaveBeenCalled();
   });
@@ -321,7 +321,7 @@ describe("subscription status handlers", () => {
   });
 
   it("accepts and opens an Academy HTTPS billing URL", async () => {
-    const url = "https://academy.octopusStudio.sh/subscription?source=app";
+    const url = "https://academy.octopusstudio.sh/subscription?source=app";
     expect(parseBillingActionUrl(url)).toBe(url);
     await expect(openBillingAction({} as never, url)).resolves.toBeUndefined();
     expect(mocks.openExternal).not.toHaveBeenCalled();

@@ -44,6 +44,10 @@ export default defineConfig({
         /^@office-open\//,
         "fflate",
         /^@noble\//,
+        // OpenCode is an embedded Node runtime with dynamically loaded plugins,
+        // provider adapters, and SQLite state. Ship it intact rather than
+        // flattening those runtime boundaries into the Electron main bundle.
+        /^@opencode\//,
       ],
     },
   },

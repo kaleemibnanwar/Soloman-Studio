@@ -91,7 +91,7 @@ function formatSystemInfoSection(
   userBudget: UserBudgetInfo | undefined,
 ): string {
   return `## System Information
-- Octopus Studio Version: ${debugInfo.octopusStudioVersion}
+- Soloman Studio Version: ${debugInfo.octopusStudioVersion}
 - Platform: ${debugInfo.platform}
 - Architecture: ${debugInfo.architecture}
 - Node Version: ${debugInfo.nodeVersion || "n/a"}
@@ -484,7 +484,7 @@ ${formatLogsSection(debugInfo)}
   const renderMainScreen = () => (
     <AnimatedScreen screenKey="main" direction={direction} skipInitial={!hasNavigated.current}>
       <DialogHeader>
-        <DialogTitle>Need help with Octopus Studio?</DialogTitle>
+        <DialogTitle>Need help with Soloman Studio?</DialogTitle>
       </DialogHeader>
       <DialogDescription>
         If you need help or want to report an issue, here are some options:
@@ -527,7 +527,7 @@ ${formatLogsSection(debugInfo)}
               <span className="text-sm font-semibold">Report a Bug</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Includes error logs and system info to help troubleshoot issues with Octopus Studio
+              Includes error logs and system info to help troubleshoot issues with Soloman Studio
               (UI bugs, crashes, setup problems, etc.).
             </p>
             <Button
@@ -591,7 +591,7 @@ ${formatLogsSection(debugInfo)}
           )}
 
           <ReviewDetailsSection title="System Information" mono={false}>
-            <p>Octopus Studio Version: {debugBundle.system.octopusStudioVersion}</p>
+            <p>Soloman Studio Version: {debugBundle.system.octopusStudioVersion}</p>
             <p>Platform: {debugBundle.system.platform}</p>
             <p>Architecture: {debugBundle.system.architecture}</p>
             <p>Node Version: {debugBundle.system.nodeVersion || "Not available"}</p>

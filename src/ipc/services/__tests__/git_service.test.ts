@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   hasStagedChanges: vi.fn(async () => true),
 }));
 
-vi.mock("../git/git_utils", () => mocks);
+vi.mock("../../git/git_utils", () => mocks);
 
 import { GitService } from "../git_service";
 
@@ -42,7 +42,7 @@ describe("GitService", () => {
     });
     expect(mocks.gitCommit).toHaveBeenCalledWith({
       path: "/repo",
-      message: "Init Octopus Studio app",
+      message: "Init Soloman Studio app",
     });
     expect(hash).toBe("commit-hash");
   });

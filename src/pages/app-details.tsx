@@ -385,19 +385,29 @@ export default function AppDetailsPage() {
   };
 
   return (
-    <div className="relative min-h-screen p-4 w-full" data-testid="app-details-page">
-      <BackButton label="Back" className="absolute top-4 left-4 mb-0" />
+    <div className="relative min-h-screen w-full px-6 py-5" data-testid="app-details-page">
+      <BackButton label="Back" className="absolute top-5 left-6 mb-0" />
 
-      <div className="w-full max-w-2xl mx-auto mt-10 p-4 bg-(--background-lighter) rounded-lg border border-border relative">
-        <div className="flex items-center mb-3">
-          <h2 className="text-2xl font-bold">{selectedApp.name}</h2>
+      <div className="studio-surface relative mx-auto mt-12 w-full max-w-3xl rounded-2xl p-6 md:p-8">
+        <div className="mb-6 flex items-center border-b border-border/80 pb-5 pr-8">
+          <div className="mr-3 flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+            <span className="text-base font-semibold">
+              {selectedApp.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="mb-0.5 text-xs font-medium text-muted-foreground">Project</p>
+            <h1 className="truncate font-display text-2xl font-semibold leading-tight">
+              {selectedApp.name}
+            </h1>
+          </div>
           <Tooltip>
             <TooltipTrigger
               render={
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-1 p-0.5 h-auto"
+                  className="ml-2 size-8 p-0"
                   onClick={() => appId && toggleFavorite(appId)}
                   disabled={isFavoriteLoading}
                   data-testid="favorite-button"
@@ -407,8 +417,8 @@ export default function AppDetailsPage() {
               <Star
                 className={`h-4 w-4 ${
                   selectedApp.isFavorite
-                    ? "fill-[#6c55dc] text-[#6c55dc]"
-                    : "hover:fill-[#6c55dc] hover:text-[#6c55dc]"
+                    ? "fill-primary text-primary"
+                    : "text-muted-foreground hover:fill-primary hover:text-primary"
                 }`}
               />
             </TooltipTrigger>
@@ -419,7 +429,7 @@ export default function AppDetailsPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="ml-1 p-0.5 h-auto"
+            className="size-8 p-0 text-muted-foreground"
             onClick={handleOpenRenameDialog}
             data-testid="app-details-rename-app-button"
           >
@@ -428,10 +438,10 @@ export default function AppDetailsPage() {
         </div>
 
         {/* Overflow Menu in top right */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-7 right-6 md:right-8">
           <Popover>
             <PopoverTrigger
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 w-7 p-0"
+              className="inline-flex size-8 items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50"
               data-testid="app-details-more-options-button"
             >
               <MoreVertical className="h-4 w-4" />
@@ -482,7 +492,7 @@ export default function AppDetailsPage() {
             disabled={chatsLoading || isOpeningChat}
             aria-label={`Open ${selectedApp.name} in Chat`}
             data-testid="app-details-screenshot-open-in-chat"
-            className="group relative mb-4 block aspect-video w-full overflow-hidden rounded-lg border border-border bg-muted cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60"
+            className="group relative mb-6 block aspect-video w-full cursor-pointer overflow-hidden rounded-xl border border-border bg-muted shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-60"
           >
             <img
               src={latestScreenshotUrl}
@@ -499,17 +509,17 @@ export default function AppDetailsPage() {
           </button>
         )}
 
-        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-          <div>
-            <span className="block text-muted-foreground mb-0.5 text-xs">Created</span>
-            <span>{selectedApp.createdAt.toString()}</span>
+        <div className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border text-sm">
+          <div className="bg-card p-4">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Created</span>
+            <span className="text-sm">{selectedApp.createdAt.toString()}</span>
           </div>
-          <div>
-            <span className="block text-muted-foreground mb-0.5 text-xs">Last Updated</span>
-            <span>{selectedApp.updatedAt.toString()}</span>
+          <div className="bg-card p-4">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Updated</span>
+            <span className="text-sm">{selectedApp.updatedAt.toString()}</span>
           </div>
-          <div className="col-span-2">
-            <span className="block text-muted-foreground mb-0.5 text-xs">Path</span>
+          <div className="col-span-2 bg-card p-4">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Location</span>
             <div className="flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger
@@ -528,11 +538,13 @@ export default function AppDetailsPage() {
                 </TooltipTrigger>
                 <TooltipContent>Show in folder</TooltipContent>
               </Tooltip>
-              <span className="text-sm break-all">{currentAppPath}</span>
+              <span className="break-all font-mono text-xs text-foreground/85">
+                {currentAppPath}
+              </span>
             </div>
           </div>
-          <div className="col-span-2">
-            <span className="block text-muted-foreground mb-0.5 text-xs">Collection</span>
+          <div className="col-span-2 bg-card p-4">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">Collection</span>
             <div className="flex items-center gap-1">
               <Folder className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-sm" data-testid="app-details-collection-name">
@@ -577,17 +589,17 @@ export default function AppDetailsPage() {
             </div>
           </div>
         </div>
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-6 flex flex-col gap-3">
           <Button
             onClick={handleOpenInChat}
             disabled={chatsLoading || isOpeningChat}
-            className="cursor-pointer w-full py-5 flex justify-center items-center gap-2"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 py-5"
             size="lg"
           >
             Open in Chat
             <MessageCircle className="h-4 w-4" />
           </Button>
-          <div className="border border-border rounded-md p-4">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-[0_1px_1px_color-mix(in_oklab,var(--foreground)_3%,transparent)]">
             <GitHubConnector appId={appId} folderName={selectedApp.path} />
             {selectedApp.githubOrg && selectedApp.githubRepo && appId && (
               <div className="pt-4 border-t border-border">
@@ -969,7 +981,7 @@ export default function AppDetailsPage() {
               <DialogTitle>Delete "{selectedApp.name}"?</DialogTitle>
               <DialogDescription className="text-xs">
                 {keepProjectFiles
-                  ? "This will remove the app, metadata, and chat history from Octopus Studio. Your project folder and files on disk will be preserved."
+                  ? "This will remove the app, metadata, and chat history from Soloman Studio. Your project folder and files on disk will be preserved."
                   : "This action is irreversible. All app files, directories, and chat history will be permanently deleted from your computer."}
               </DialogDescription>
             </DialogHeader>

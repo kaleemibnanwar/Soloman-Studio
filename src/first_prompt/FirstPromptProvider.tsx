@@ -61,6 +61,7 @@ export interface FirstPromptChatStream {
     appId: number;
     attachments: FirstPromptPayload["attachments"];
     requestedChatMode?: FirstPromptPayload["chatMode"] | null;
+    includePlannerTasks?: boolean;
   }): void;
 }
 
@@ -154,6 +155,7 @@ export function FirstPromptProvider({
         appId,
         attachments: payload.attachments,
         requestedChatMode: getRequestedChatModeForFirstPrompt(payload),
+        includePlannerTasks: payload.includePlannerTasks,
       });
       telemetry.capture("home:chat-submit", {
         existingApp: payload.selectedApp !== undefined,

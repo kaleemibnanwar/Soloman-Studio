@@ -2,6 +2,44 @@ import { z } from "zod";
 import { createClient, defineContract } from "../contracts/core";
 import { ModelSelectionSchema } from "@/lib/schemas";
 
+export const BotTypeSchema = z.enum([
+  "sentinel",
+  "scout",
+  "steward",
+  "operator",
+  "custom",
+  "dot",
+  "muse",
+  "custodian",
+]);
+export type BotType = z.infer<typeof BotTypeSchema>;
+
+export const BotRoleSchema = z.enum([
+  "executor",
+  "tester",
+  "explorer",
+  "debugger",
+  "reviewer",
+  "architect",
+]);
+export type BotRole = z.infer<typeof BotRoleSchema>;
+
+export const BotStatusSchema = z.enum(["idle", "running", "completed", "failed", "needs_approval"]);
+export type BotStatus = z.infer<typeof BotStatusSchema>;
+
+export const TaskReportSchema = z.object({
+  taskId: z.number(),
+  title: z.string(),
+  botType: BotTypeSchema,
+  status: BotStatusSchema,
+  lastRunAt: z.date().nullable(),
+  totalTokens: z.number(),
+  lastChatId: z.number().nullable(),
+  summary: z.string(),
+  outputPreview: z.string(),
+});
+export type TaskReport = z.infer<typeof TaskReportSchema>;
+
 export const TaskSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -11,8 +49,15 @@ export const TaskSchema = z.object({
   projectId: z.number().nullable(),
   mcpServerIds: z.array(z.number()).nullable(),
   modelSelection: ModelSelectionSchema.nullable(),
+  botType: BotTypeSchema.default("custom"),
+  role: BotRoleSchema.default("executor"),
+  lastStatus: BotStatusSchema.default("idle"),
+  lastResultSummary: z.string().nullable(),
   lastRunAt: z.date().nullable(),
   lastChatId: z.number().nullable(),
+  missionSlug: z.string().nullable(),
+  missionMilestoneId: z.string().nullable(),
+  botName: z.string().nullable(),
   // Null in a paginated list response — the token total isn't computed for
   // every row up front; fetch it lazily via getTaskTokenTotal when a row
   // expands. Create/update/run responses always populate the real value.
@@ -30,6 +75,8 @@ export const CreateTaskParamsSchema = z.object({
   projectId: z.number().nullable().optional(),
   mcpServerIds: z.array(z.number()).nullable().optional(),
   modelSelection: ModelSelectionSchema.nullable().optional(),
+  botType: BotTypeSchema.optional(),
+  role: BotRoleSchema.optional(),
 });
 
 export const UpdateTaskParamsSchema = z.object({
@@ -41,6 +88,10 @@ export const UpdateTaskParamsSchema = z.object({
   projectId: z.number().nullable().optional(),
   mcpServerIds: z.array(z.number()).nullable().optional(),
   modelSelection: ModelSelectionSchema.nullable().optional(),
+  botType: BotTypeSchema.optional(),
+  role: BotRoleSchema.optional(),
+  lastStatus: BotStatusSchema.optional(),
+  lastResultSummary: z.string().nullable().optional(),
 });
 
 export const ListTasksParamsSchema = z.object({
@@ -65,6 +116,11 @@ export const taskContracts = {
     channel: "get-task-token-total",
     input: z.number(),
     output: z.number(),
+  }),
+  getTaskReport: defineContract({
+    channel: "get-task-report",
+    input: z.number(),
+    output: TaskReportSchema.nullable(),
   }),
   createTask: defineContract({
     channel: "create-task",

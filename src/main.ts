@@ -7,6 +7,7 @@ import {
   protocol,
   net,
   nativeImage,
+  type NativeImage,
   crashReporter,
   type Event as ElectronEvent,
 } from "electron";
@@ -88,6 +89,8 @@ import { scrubGithubTokenFromRemotes } from "./ipc/git/git_remote_token_scrub";
 import { encryptStoredMcpSecrets } from "./ipc/mcp/mcp_secret_encryption";
 import { syncBrowserLimbBridge } from "./main/browser_limb_manager";
 import { stopOctoLimbBridge } from "./main/octolimb_bridge";
+import { solomanBridge } from "./main/soloman/soloman_bridge";
+import { SolomanBackgroundHost } from "./main/soloman/background_host";
 import fs from "fs";
 import { gitAddSafeDirectory } from "./ipc/git/git_utils";
 import {
@@ -118,6 +121,7 @@ import {
 } from "./ipc/utils/managed_node";
 import { createOctopusStudioMediaProtocolHandler } from "./main/octopus_studio_media_protocol";
 import { createAppFileProtocolHandler } from "./main/app_file_protocol";
+import { closeOpenCodeRuntime } from "./ipc/agent/runtime/opencode_runtime";
 import {
   createPlatformThumbnailFromPath,
   getMediaThumbnailCacheRoot,
@@ -154,6 +158,11 @@ log.errorHandler.startCatching();
 log.eventLogger.startLogging();
 log.scope.labelPadding = false;
 const execFileAsync = promisify(execFile);
+
+app.setName("Soloman Studio");
+if (process.platform === "linux" || process.platform === "win32") {
+  app.setAppUserModelId("soloman-studio");
+}
 
 // Prefer the OctopusStudio-managed pnpm (if installed) for everything spawned from the
 // main process. Runs after all module imports, so it wins over the shell PATH
@@ -256,9 +265,24 @@ function processNativeCrashDumps(): void {
   // Where we keep dumps we've already reported, for later examination. Under
   // userData (not inside crashDumpsDir) so it stays separate from Crashpad's
   // own dump dirs and isn't picked up by the scan above.
-  const retainDir = path.join(app.getPath("userData"), "octopus-studio-crash-reports");
+  const retainDir = path.join(app.getPath("userData"), "crash-reports");
+  const legacyRetainDir = path.join(app.getPath("userData"), "octopus-studio-crash-reports");
   try {
     fs.mkdirSync(retainDir, { recursive: true });
+    if (fs.existsSync(legacyRetainDir)) {
+      try {
+        const legacyFiles = fs.readdirSync(legacyRetainDir);
+        for (const file of legacyFiles) {
+          const src = path.join(legacyRetainDir, file);
+          const dst = path.join(retainDir, file);
+          if (!fs.existsSync(dst)) {
+            fs.renameSync(src, dst);
+          }
+        }
+      } catch {
+        // Non-fatal migration of legacy crash reports
+      }
+    }
   } catch (error) {
     // Without the retain dir, moving a dump would fail and drop it. Leave the
     // dumps in place and try again on the next launch.
@@ -352,14 +376,15 @@ if (fs.existsSync(gitDir)) {
 }
 
 // https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app#main-process-mainjs
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient("octopusStudio", process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
+const PROTOCOL_SCHEMES = ["solomanStudio", "soloman", "octopusStudio"];
+for (const scheme of PROTOCOL_SCHEMES) {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(scheme, process.execPath, [path.resolve(process.argv[1])]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient(scheme);
   }
-} else {
-  app.setAsDefaultProtocolClient("octopusStudio");
 }
 
 export async function onReady() {
@@ -396,7 +421,7 @@ export async function onReady() {
     const message = error instanceof Error ? error.message : String(error);
     dialog.showErrorBox(
       "Database Migration Failed",
-      `Octopus Studio could not initialize its local database. ${message}`,
+      `Soloman Studio could not initialize its local database. ${message}`,
     );
     app.quit();
     return;
@@ -436,9 +461,15 @@ export async function onReady() {
   await encryptStoredMcpSecrets();
 
   const settings = await readEffectiveSettings();
-  await syncBrowserLimbBridge(settings.enableBrowserLimbBridge !== false);
+  await syncBrowserLimbBridge(settings.enableBrowserLimbBridge === true);
 
-  // Add octopus-studio-apps directory to git safe.directory (required for Windows).
+  if (solomanBridge.keyStore.isEnrolled()) {
+    void solomanBridge.connectRelay().catch((err) => {
+      logger.warn("Failed to connect Soloman relay on startup", err);
+    });
+  }
+
+  // Add Soloman Studio apps directory to git safe.directory (required for Windows).
   // The trailing /* allows access to all repositories under the named directory.
   // See: https://git-scm.com/docs/git-config#Documentation/git-config.txt-safedirectory
   // Don't need to await because this only needs to run before
@@ -495,45 +526,43 @@ export async function onReady() {
   // Start performance monitoring
   startPerformanceMonitoring();
 
-  // Handle octopus-studio-media:// requests. Media-library tiles use bounded, cached
+  // Handle soloman-media:// and octopus-studio-media:// requests. Media-library tiles use bounded, cached
   // derivatives while explicit previews continue to receive the source file.
-  protocol.handle(
-    "octopus-studio-media",
-    createOctopusStudioMediaProtocolHandler({
-      cacheRoot: getMediaThumbnailCacheRoot(app.getPath("sessionData")),
-      resolveAppPath: getOctopusStudioAppPath,
-      resolveAppId: async (appId) => {
-        const appRecord = await db.query.apps.findFirst({
-          where: eq(apps.id, appId),
-          columns: { path: true },
-        });
-        return appRecord ? getOctopusStudioAppPath(appRecord.path) : null;
-      },
-      fetchFile: (url) => net.fetch(url),
-      createThumbnailFromPath: (sourcePath, size) =>
-        createPlatformThumbnailFromPath(nativeImage, sourcePath, size),
-    }),
-  );
+  const mediaProtocolHandler = createOctopusStudioMediaProtocolHandler({
+    cacheRoot: getMediaThumbnailCacheRoot(app.getPath("sessionData")),
+    resolveAppPath: getOctopusStudioAppPath,
+    resolveAppId: async (appId) => {
+      const appRecord = await db.query.apps.findFirst({
+        where: eq(apps.id, appId),
+        columns: { path: true },
+      });
+      return appRecord ? getOctopusStudioAppPath(appRecord.path) : null;
+    },
+    fetchFile: (url) => net.fetch(url),
+    createThumbnailFromPath: (sourcePath, size) =>
+      createPlatformThumbnailFromPath(nativeImage, sourcePath, size),
+  });
+  protocol.handle("soloman-media", mediaProtocolHandler);
+  protocol.handle("octopus-studio-media", mediaProtocolHandler);
 
-  // Handle octopus-studio-file:// requests. The right-side file preview streams
+  // Handle soloman-file:// and octopus-studio-file:// requests. The right-side file preview streams
   // image/video/audio/PDF/font/archive payloads from any project file through
   // this protocol, so they render directly instead of being decoded as UTF-8.
-  protocol.handle(
-    "octopus-studio-file",
-    createAppFileProtocolHandler({
-      resolveAppRoot: async (appId) => {
-        const record = await db.query.apps.findFirst({
-          where: eq(apps.id, appId),
-          columns: { id: true, type: true, path: true, directory: true },
-        });
-        if (!record) return null;
-        return record.type === "chat"
-          ? getChatProjectRootPath(record.directory, record.id)
-          : getOctopusStudioAppPath(record.path ?? "");
-      },
-      fetchFile: (url) => net.fetch(url),
-    }),
-  );
+  const fileProtocolHandler = createAppFileProtocolHandler({
+    resolveAppRoot: async (appId) => {
+      const record = await db.query.apps.findFirst({
+        where: eq(apps.id, appId),
+        columns: { id: true, type: true, path: true, directory: true },
+      });
+      if (!record) return null;
+      return record.type === "chat"
+        ? getChatProjectRootPath(record.directory, record.id)
+        : getOctopusStudioAppPath(record.path ?? "");
+    },
+    fetchFile: (url) => net.fetch(url),
+  });
+  protocol.handle("soloman-file", fileProtocolHandler);
+  protocol.handle("octopus-studio-file", fileProtocolHandler);
 
   const shouldUseManagedNode =
     settings.nodeRuntimePreference === "managed" && !settings.customNodePath;
@@ -548,7 +577,12 @@ export async function onReady() {
   }
 
   await onFirstRunMaybe(settings);
-  await createFreshStartupWindow();
+  const launchInBackground =
+    !IS_TEST_BUILD && process.argv.includes("--background") && solomanBridge.keyStore.isEnrolled();
+  if (!launchInBackground) {
+    await createFreshStartupWindow();
+  }
+  initializeSolomanBackgroundHost();
   createApplicationMenu();
 
   sendTelemetryEvent("runtime_source", {
@@ -652,6 +686,7 @@ let pendingForceCloseData: any = null;
 let pendingActiveChatId: number | null = null;
 let pendingCrashDetected = false;
 let isAppQuitting = false;
+let solomanBackgroundHost: SolomanBackgroundHost | null = null;
 let safeStorageKeychainUnlockRetryScheduled = false;
 const lifecycleLogger = log.scope("app_lifecycle");
 const lifecycleStartedAt = Date.now();
@@ -779,6 +814,60 @@ function deliverPendingCrashRecovery(target: BrowserWindow): void {
   pendingCrashDetected = false;
 }
 
+function getAppIcon(): NativeImage | undefined {
+  const candidatePaths = [
+    path.join(app.getAppPath(), "assets/icon/logo.png"),
+    path.resolve(__dirname, "../../assets/icon/logo.png"),
+    "/usr/share/pixmaps/soloman-studio.png",
+    "/usr/share/icons/hicolor/512x512/apps/soloman-studio.png",
+  ];
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      const img = nativeImage.createFromPath(p);
+      if (!img.isEmpty()) {
+        return img;
+      }
+    }
+  }
+  return undefined;
+}
+
+function openStudioWindow(): void {
+  if (isAppQuitting) return;
+  const existingWindow =
+    (mainWindow && !mainWindow.isDestroyed() ? mainWindow : null) ??
+    BrowserWindow.getAllWindows().find((window) => !window.isDestroyed());
+  if (existingWindow) {
+    if (existingWindow.isMinimized()) existingWindow.restore();
+    existingWindow.show();
+    existingWindow.focus();
+    return;
+  }
+
+  const descriptor = lastClosedWindowSession ?? {
+    windowSessionId: PRIMARY_WINDOW_SESSION_ID,
+  };
+  lastClosedWindowSession = undefined;
+  createWindow(descriptor);
+  hasCreatedInitialWindow = true;
+}
+
+function initializeSolomanBackgroundHost(): void {
+  const icon = getAppIcon();
+  if (!icon) {
+    logger.warn("Soloman background host disabled because no tray icon was found");
+    return;
+  }
+  solomanBackgroundHost = new SolomanBackgroundHost({
+    icon,
+    openStudio: openStudioWindow,
+    quitStudio: () => app.quit(),
+  });
+  const sync = () => solomanBackgroundHost?.sync(solomanBridge.getStatus());
+  solomanBridge.on("status-changed", sync);
+  sync();
+}
+
 const createWindow = ({
   windowSessionId = randomUUID() as WindowSessionId,
   visibleEntity,
@@ -789,13 +878,14 @@ const createWindow = ({
 } => {
   if (isAppQuitting) {
     throw new OctopusStudioError(
-      "OctopusStudio is shutting down",
+      "Soloman Studio is shutting down",
       OctopusStudioErrorKind.Precondition,
     );
   }
 
   // Create the browser window.
   const browserWindow = new BrowserWindow({
+    title: "Soloman Studio",
     width: process.env.NODE_ENV === "development" ? 1280 : 960,
     minWidth: 800,
     height: 700,
@@ -812,7 +902,7 @@ const createWindow = ({
       preload: path.join(__dirname, "preload.js"),
       // transparent: true,
     },
-    icon: path.join(app.getAppPath(), "assets/icon/logo.png"),
+    icon: getAppIcon(),
     // backgroundColor: "#00000001",
     // frame: false,
   });
@@ -1125,7 +1215,7 @@ configureWindowProductController({
   openEntityInNewWindow: async (entity) => {
     if (productWindows.size >= MAX_PRODUCT_WINDOWS) {
       throw new OctopusStudioError(
-        `Octopus Studio supports up to ${MAX_PRODUCT_WINDOWS} open windows`,
+        `Soloman Studio supports up to ${MAX_PRODUCT_WINDOWS} open windows`,
         OctopusStudioErrorKind.Precondition,
       );
     }
@@ -1250,6 +1340,24 @@ const createApplicationMenu = () => {
 // Must be called before app.whenReady().
 protocol.registerSchemesAsPrivileged([
   {
+    scheme: "soloman-media",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+  {
+    scheme: "soloman-file",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+  {
     scheme: "octopus-studio-media",
     privileges: {
       standard: true,
@@ -1269,10 +1377,19 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+function findDeepLinkArg(args: string[]): string | undefined {
+  return args.find(
+    (arg) =>
+      arg.startsWith("solomanStudio://") ||
+      arg.startsWith("soloman://") ||
+      arg.startsWith("octopusStudio://"),
+  );
+}
+
 // A cold-start protocol URL arrives in argv before any renderer is ready.
 // Queue it in both production and E2E builds; the latter skips only the
 // singleton lock so parallel test processes can coexist.
-const initialDeepLink = process.argv.find((arg) => arg.startsWith("octopusStudio://"));
+const initialDeepLink = findDeepLinkArg(process.argv);
 if (initialDeepLink) {
   deepLinkQueue.handle(initialDeepLink);
 }
@@ -1289,17 +1406,14 @@ if (IS_TEST_BUILD) {
     app.quit();
   } else {
     app.on("second-instance", (_event, commandLine, _workingDirectory) => {
-      const url = commandLine.find((arg) => arg.startsWith("octopusStudio://"));
+      const url = findDeepLinkArg(commandLine);
       if (isAppQuitting) {
         requestRelaunchAfterQuit(url);
         return;
       }
 
-      // Someone tried to run a second instance, we should focus our window.
-      if (mainWindow) {
-        if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.focus();
-      }
+      // Someone tried to run a second instance, so restore the resident host window.
+      openStudioWindow();
       if (url) {
         deepLinkQueue.handle(url);
       }
@@ -1315,6 +1429,7 @@ app.on("open-url", (event, url) => {
     requestRelaunchAfterQuit(url);
     return;
   }
+  openStudioWindow();
   deepLinkQueue.handle(url);
 });
 
@@ -1332,7 +1447,7 @@ function showDeepLinkSettingsError(action: string, error: unknown): void {
 }
 
 async function handleDeepLinkReturn(url: string) {
-  // example url: "octopusStudio://supabase-oauth-return?token=a&refreshToken=b"
+  // example url: "solomanStudio://supabase-oauth-return?token=a&refreshToken=b" or "soloman://..." or "octopusStudio://..."
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -1343,10 +1458,12 @@ async function handleDeepLinkReturn(url: string) {
 
   // Intentionally do NOT log the full URL which may contain sensitive tokens.
   log.log("Handling deep link: protocol", parsed.protocol, "hostname", parsed.hostname);
-  if (parsed.protocol !== "octopusStudio:") {
+  const normalizedProtocol = parsed.protocol.toLowerCase();
+  const validProtocols = ["solomanstudio:", "soloman:", "octopusstudio:"];
+  if (!validProtocols.includes(normalizedProtocol)) {
     dialog.showErrorBox(
       "Invalid Protocol",
-      `Expected octopusStudio://, got ${parsed.protocol}. Full URL: ${url}`,
+      `Expected solomanStudio:// or soloman:// protocol, got ${parsed.protocol}. Full URL: ${url}`,
     );
     return;
   }
@@ -1403,8 +1520,8 @@ async function handleDeepLinkReturn(url: string) {
     }
     return;
   }
-  // octopusStudio://octopus-studio-pro-return?key=123&budget_reset_at=2025-05-26T16:31:13.492000Z&max_budget=100
-  if (parsed.hostname === "octopus-studio-pro-return") {
+  // solomanStudio://soloman-pro-return?key=123 or octopusStudio://octopus-studio-pro-return?key=123
+  if (parsed.hostname === "octopus-studio-pro-return" || parsed.hostname === "soloman-pro-return") {
     const apiKey = parsed.searchParams.get("key");
     if (!apiKey) {
       dialog.showErrorBox("Invalid URL", "Expected key");
@@ -1415,7 +1532,7 @@ async function handleDeepLinkReturn(url: string) {
         apiKey,
       });
     } catch (error) {
-      showDeepLinkSettingsError("save OctopusStudio Pro settings", error);
+      showDeepLinkSettingsError("save Soloman Pro settings", error);
       return;
     }
     // Send message to renderer to trigger re-render
@@ -1432,6 +1549,40 @@ async function handleDeepLinkReturn(url: string) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
+    return;
+  }
+  // octopusStudio://soloman-auth-return?token=sol_v1_dev_...&deviceId=desk_...&email=...
+  if (parsed.hostname === "soloman-auth-return" || parsed.hostname === "soloman-login") {
+    const token = parsed.searchParams.get("token") || parsed.searchParams.get("deviceAccessToken");
+    const deviceId = parsed.searchParams.get("deviceId");
+    const deviceName = parsed.searchParams.get("deviceName");
+    const email = parsed.searchParams.get("email");
+
+    if (token && deviceId) {
+      void solomanBridge.loginWithDevice(
+        {
+          deviceId,
+          name: deviceName || "Desktop Host",
+          deviceType: "desktop",
+          encryptionPublicKey: "",
+          protocolVersion: 1,
+          revokedAt: null,
+          isOnline: true,
+          lastSeenAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+        token,
+        email ?? undefined,
+      );
+    }
+
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+    mainWindow?.webContents.send("deep-link-received", {
+      type: "soloman-auth-return",
+    });
     return;
   }
   // octopusStudio://add-mcp-server?name=Chrome%20DevTools&config=eyJjb21tYW5kIjpudWxsLCJ0eXBlIjoic3RkaW8ifQ%3D%3D
@@ -1521,11 +1672,14 @@ app.on("child-process-gone", (_event, details) => {
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// Enrolled mobile hosts remain resident after their last window closes.
+// Non-host builds retain the platform's normal lifecycle policy.
 app.on("window-all-closed", () => {
-  const shouldQuit = shouldQuitAfterAllWindowsClosed(process.platform, isAppQuitting);
+  const shouldQuit = shouldQuitAfterAllWindowsClosed(
+    process.platform,
+    isAppQuitting,
+    solomanBackgroundHost?.isActive() === true,
+  );
   logLifecycle("app:window-all-closed", { shouldQuit });
   if (shouldQuit) {
     app.quit();
@@ -1559,6 +1713,7 @@ const handleMcpBeforeQuit = createMcpBeforeQuitHandler({
       observeLifecycleCleanup("connection-flows", () => disposeConnectionFlowsForShutdown()),
       observeLifecycleCleanup("remote-machine-host", () => remoteMachineHost.dispose()),
       observeLifecycleCleanup("octolimb-bridge", () => stopOctoLimbBridge()),
+      observeLifecycleCleanup("opencode-runtime", () => closeOpenCodeRuntime()),
     ]);
   },
 });
@@ -1593,6 +1748,10 @@ app.on("will-quit", () => {
 
   // Stop the chat-search index maintenance timers
   stopChatSearchIndexer();
+
+  // Dispose Soloman Bridge
+  solomanBackgroundHost?.stop();
+  solomanBridge.dispose();
 });
 
 app.on("quit", (_event, exitCode) => {
@@ -1619,11 +1778,7 @@ app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (shouldCreateWindow) {
-    const descriptor = lastClosedWindowSession ?? {
-      windowSessionId: PRIMARY_WINDOW_SESSION_ID,
-    };
-    lastClosedWindowSession = undefined;
-    createWindow(descriptor);
+    openStudioWindow();
   }
 });
 

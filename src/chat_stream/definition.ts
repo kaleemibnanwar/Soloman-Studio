@@ -204,6 +204,7 @@ function createCommandRunner(
               selectedComponents: command.intent.selectedComponents,
               requestedChatMode: command.intent.requestedChatMode,
               planAcceptInNewChat: command.intent.planAcceptInNewChat,
+              includePlannerTasks: command.intent.includePlannerTasks,
               userInputRequestId:
                 command.intent.owner?.kind === "user-input-follow-up"
                   ? command.intent.owner.requestId

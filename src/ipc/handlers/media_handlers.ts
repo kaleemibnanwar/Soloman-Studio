@@ -5,7 +5,11 @@ import { apps } from "../../db/schema";
 import { getOctopusStudioAppPath } from "../../paths/paths";
 import { safeJoin } from "../utils/path_utils";
 import { getMimeType, MIME_TYPE_MAP } from "../utils/mime_utils";
-import { OCTOPUS_STUDIO_MEDIA_DIR_NAME } from "../media/media_path_utils";
+import {
+  getOctopusStudioMediaDir,
+  getOctopusStudioMediaDirs,
+  SOLOMAN_MEDIA_DIR_NAME,
+} from "../media/media_path_utils";
 import { INVALID_FILE_NAME_CHARS } from "../../shared/media_validation";
 import { ensureOctopusStudioGitignored } from "./gitignoreUtils";
 import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
@@ -25,42 +29,56 @@ const logger = log.scope("media_handlers");
 const SUPPORTED_MEDIA_EXTENSIONS = Object.keys(MIME_TYPE_MAP);
 
 async function getMediaFilesForApp(appId: number, appName: string, appPath: string) {
-  const mediaDir = path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
-  try {
-    await fs.promises.access(mediaDir);
-  } catch {
-    return [];
+  const results: Array<{
+    fileName: string;
+    filePath: string;
+    appId: number;
+    appName: string;
+    sizeBytes: number;
+    modifiedAtMs: number;
+    mimeType: string;
+  }> = [];
+  const seenFileNames = new Set<string>();
+
+  for (const mediaDir of getOctopusStudioMediaDirs(appPath)) {
+    try {
+      await fs.promises.access(mediaDir);
+    } catch {
+      continue;
+    }
+
+    const entries = await fs.promises.readdir(mediaDir, { withFileTypes: true });
+    const mediaEntries = entries.filter((entry) => {
+      if (!entry.isFile() || seenFileNames.has(entry.name)) return false;
+      const ext = path.extname(entry.name).toLowerCase();
+      return SUPPORTED_MEDIA_EXTENSIONS.includes(ext);
+    });
+
+    const dirResults = await Promise.all(
+      mediaEntries.map(async (entry) => {
+        const fullPath = path.join(mediaDir, entry.name);
+        try {
+          const stat = await fs.promises.stat(fullPath);
+          seenFileNames.add(entry.name);
+          return {
+            fileName: entry.name,
+            filePath: fullPath,
+            appId,
+            appName,
+            sizeBytes: stat.size,
+            modifiedAtMs: stat.mtimeMs,
+            mimeType: getMimeType(path.extname(entry.name).toLowerCase()),
+          };
+        } catch {
+          // File was deleted between readdir and stat — skip it
+          return null;
+        }
+      }),
+    );
+    results.push(...dirResults.filter((f) => f !== null));
   }
 
-  const entries = await fs.promises.readdir(mediaDir, { withFileTypes: true });
-  const mediaEntries = entries.filter((entry) => {
-    if (!entry.isFile()) return false;
-    const ext = path.extname(entry.name).toLowerCase();
-    return SUPPORTED_MEDIA_EXTENSIONS.includes(ext);
-  });
-
-  const results = await Promise.all(
-    mediaEntries.map(async (entry) => {
-      const fullPath = path.join(mediaDir, entry.name);
-      try {
-        const stat = await fs.promises.stat(fullPath);
-        return {
-          fileName: entry.name,
-          filePath: fullPath,
-          appId,
-          appName,
-          sizeBytes: stat.size,
-          modifiedAtMs: stat.mtimeMs,
-          mimeType: getMimeType(path.extname(entry.name).toLowerCase()),
-        };
-      } catch {
-        // File was deleted between readdir and stat — skip it
-        return null;
-      }
-    }),
-  );
-
-  return results.filter((f) => f !== null);
+  return results;
 }
 
 async function withMediaLock<T>(
@@ -154,11 +172,17 @@ function assertSupportedMediaExtension(fileName: string): string {
 function getMediaFilePath(appPath: string, fileName: string): string {
   assertSafeFileName(fileName);
   assertSupportedMediaExtension(fileName);
-  return safeJoin(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME, fileName);
+  for (const mediaDir of getOctopusStudioMediaDirs(appPath)) {
+    const candidate = path.join(mediaDir, fileName);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return safeJoin(appPath, SOLOMAN_MEDIA_DIR_NAME, fileName);
 }
 
 function getMediaDirectoryPath(appPath: string): string {
-  return path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+  return getOctopusStudioMediaDir(appPath);
 }
 
 async function invalidateThumbnail(filePath: string): Promise<void> {
@@ -227,7 +251,8 @@ export function registerMediaHandlers() {
         );
       }
 
-      const destinationPath = safeJoin(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME, destinationFileName);
+      const destinationPath = safeJoin(appPath, SOLOMAN_MEDIA_DIR_NAME, destinationFileName);
+      await fs.promises.mkdir(path.dirname(destinationPath), { recursive: true });
 
       // Allow case-only renames on case-insensitive file systems (macOS, Windows)
       const isCaseOnlyRename = destinationFileName.toLowerCase() === params.fileName.toLowerCase();
@@ -314,11 +339,7 @@ export function registerMediaHandlers() {
         const targetMediaDirectoryPath = getMediaDirectoryPath(targetAppPath);
         await fs.promises.mkdir(targetMediaDirectoryPath, { recursive: true });
 
-        const destinationPath = safeJoin(
-          targetAppPath,
-          OCTOPUS_STUDIO_MEDIA_DIR_NAME,
-          params.fileName,
-        );
+        const destinationPath = safeJoin(targetAppPath, SOLOMAN_MEDIA_DIR_NAME, params.fileName);
 
         if (fs.existsSync(destinationPath)) {
           throw new Error(`Target app already has a media file named "${params.fileName}"`);

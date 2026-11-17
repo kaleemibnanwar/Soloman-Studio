@@ -43,7 +43,7 @@ export class GitService {
    */
   async initRepoWithInitialCommit({
     path,
-    message = "Init Octopus Studio app",
+    message = "Init Soloman Studio app",
     ref = "main",
   }: {
     path: string;

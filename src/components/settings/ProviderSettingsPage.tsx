@@ -120,9 +120,9 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
   const { hasArmedPayload } = useFirstPromptSaga();
   const resumeFirstPrompt = useFirstPromptProviderResume();
 
-  // Use fetched data (or defaults for OctopusStudio)
+  // Use fetched data (or defaults for Soloman Studio)
   const providerDisplayName = isOctopusStudio
-    ? "OctopusStudio"
+    ? "Soloman Studio"
     : (providerData?.name ?? "Unknown Provider");
   const providerWebsiteUrl = providerData?.websiteUrl;
   const hasFreeTier = isOctopusStudio ? false : providerData?.hasFreeTier;
@@ -198,7 +198,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
           setApiKeyValidationDialog({
             message:
               error?.message ||
-              `Octopus Studio could not verify this ${providerDisplayName} API key.`,
+              `Soloman Studio could not verify this ${providerDisplayName} API key.`,
             apiKey: normalizedValue,
             allowKeepInvalidKey: true,
             errorKind: getErrorKind(error),
@@ -275,7 +275,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
     } catch (error: any) {
       setApiKeyValidationDialog({
         message:
-          error?.message || `Octopus Studio could not verify this ${providerDisplayName} API key.`,
+          error?.message || `Soloman Studio could not verify this ${providerDisplayName} API key.`,
         apiKey: normalizedValue,
         allowKeepInvalidKey: false,
         errorKind: getErrorKind(error),
@@ -464,7 +464,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
                   AI access is ready
                 </h2>
                 <p className="mt-1 text-sm text-green-800/80 dark:text-green-200/80">
-                  You can now start building with Octopus Studio.
+                  You can now start building with Soloman Studio.
                 </p>
               </div>
             </div>
@@ -531,13 +531,13 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
           {isOctopusStudio && !settingsLoading && (
             <div className="mt-6 flex items-center justify-between p-4 bg-(--background-lightest) rounded-lg border">
               <div>
-                <h3 className="font-medium">Enable OctopusStudio Pro</h3>
+                <h3 className="font-medium">Enable Soloman Studio Pro</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Toggle to enable OctopusStudio Pro
+                  Toggle to enable Soloman Studio Pro
                 </p>
               </div>
               <Switch
-                aria-label="Enable OctopusStudio Pro"
+                aria-label="Enable Soloman Studio Pro"
                 checked={settings?.enableOctopusStudioPro}
                 onCheckedChange={handleToggleOctopusStudioPro}
                 disabled={isSaving}

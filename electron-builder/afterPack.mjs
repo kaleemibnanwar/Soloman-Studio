@@ -13,7 +13,8 @@ const isEndToEndTestBuild = process.env.E2E_TEST_BUILD === "true";
 
 function getResourcesDir(context) {
   if (context.electronPlatformName === "darwin" || context.electronPlatformName === "mas") {
-    return path.join(context.appOutDir, "Octopus Studio.app", "Contents", "Resources");
+    const appName = `${context.packager.appInfo.productFilename}.app`;
+    return path.join(context.appOutDir, appName, "Contents", "Resources");
   }
   return path.join(context.appOutDir, "resources");
 }

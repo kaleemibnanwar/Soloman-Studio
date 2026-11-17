@@ -25,7 +25,10 @@ export const OctopusStudioCopy: React.FC<OctopusStudioCopyProps> = ({ children, 
   const toFileName = to ? to.split("/").pop() : "";
   // Hide the "From" line for temp attachment paths (absolute paths) since they
   // show cryptic hash filenames that mean nothing to the user.
-  const isTempAttachment = /^(\/|[A-Za-z]:\\)/.test(from) || from.includes(".octopusStudio/media/");
+  const isTempAttachment =
+    /^(\/|[A-Za-z]:\\)/.test(from) ||
+    from.includes(".octopusStudio/media/") ||
+    from.includes(".soloman/media/");
 
   return (
     <OctopusStudioCard accentColor="teal" state={state}>

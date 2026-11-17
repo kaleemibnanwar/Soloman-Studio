@@ -2,14 +2,14 @@
  * Builds a octopus-studio-media:// protocol URL for serving media files in Electron.
  */
 export function buildOctopusStudioMediaUrl(appPath: string, fileName: string): string {
-  return `octopus-studio-media://media/${encodeURIComponent(appPath)}/.octopusStudio/media/${encodeURIComponent(fileName)}`;
+  return `octopus-studio-media://media/${encodeURIComponent(appPath)}/.soloman/media/${encodeURIComponent(fileName)}`;
 }
 
 /**
  * Builds a renderer-safe media URL whose filesystem path is resolved in main.
  */
 export function buildOctopusStudioMediaUrlForApp(appId: number, fileName: string): string {
-  return `octopus-studio-media://media/app-id/${appId}/.octopusStudio/media/${encodeURIComponent(fileName)}`;
+  return `octopus-studio-media://media/app-id/${appId}/.soloman/media/${encodeURIComponent(fileName)}`;
 }
 
 /**

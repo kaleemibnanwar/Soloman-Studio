@@ -1,6 +1,6 @@
-# Octopus Studio — Architecture & Engineering Notes
+# Soloman Studio — Architecture & Engineering Notes
 
-This document describes how Octopus Studio works under the hood: the agent and
+This document describes how Soloman Studio works under the hood: the agent and
 orchestration engine, how chats / projects / conversations are modeled, the
 deterministic state-machine core, and the specific optimizations and techniques
 in use. It is written for engineers working in this codebase, so every section
@@ -11,9 +11,9 @@ points at the code that implements it.
 
 ---
 
-## 1. What Octopus Studio is
+## 1. What Soloman Studio is
 
-Octopus Studio is a **local, AI-powered app builder**. A user chats with an
+Soloman Studio is a **local, AI-powered app builder**. A user chats with an
 assistant in a desktop (Electron) app; the assistant reads, edits, and runs a
 real web app whose live preview sits in an iframe beside the chat. Under the
 hood it is a **deterministic orchestration engine** that treats the "plan" as a

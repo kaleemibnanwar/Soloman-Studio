@@ -36,6 +36,7 @@ export const MessageSchema = z.object({
   createdAt: z.union([z.date(), z.string()]).optional(),
   requestId: z.string().nullable().optional(),
   totalTokens: z.number().nullable().optional(),
+  inputTokens: z.number().nullable().optional(),
   outputTokens: z.number().nullable().optional(),
   model: z.string().nullable().optional(),
 });
@@ -179,6 +180,8 @@ export const ChatStreamParamsSchema = z
     requestedChatMode: ChatModeSchema.nullable().optional(),
     userInputRequestId: z.string().max(MAX_CHAT_WIRE_ID_CHARS).optional(),
     planAcceptInNewChat: z.boolean().optional(),
+    /** Explicit, per-submission access to the current project's planner cards. */
+    includePlannerTasks: z.boolean().optional(),
   })
   .superRefine((params, context) => {
     const validation = validateSerializedChatAttachments(params.attachments ?? []);

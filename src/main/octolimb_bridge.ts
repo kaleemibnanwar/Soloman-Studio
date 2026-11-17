@@ -1,5 +1,6 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
+import { BrowserWindow } from "electron";
 import { WebSocketServer, WebSocket, type RawData } from "ws";
 import { Server as McpServer } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -17,8 +18,10 @@ import {
   listRecipesForDomain,
   recordRecipeOutcome,
   upsertRecipe,
+  recipeVariables,
   type RecipeStep,
 } from "./octolimb_recipes";
+import { browserEvents } from "../ipc/types/browser";
 
 const logger = log.scope("octolimb-bridge");
 
@@ -82,6 +85,51 @@ function isExtensionConnected(): boolean {
   return !!extensionSocket && extensionSocket.readyState === WebSocket.OPEN;
 }
 
+function emitBrowserAutomation(
+  phase: "started" | "completed" | "failed",
+  tool: string,
+  args: unknown,
+  result?: unknown,
+  message?: string,
+): void {
+  const url =
+    result && typeof result === "object" && typeof (result as { url?: unknown }).url === "string"
+      ? (result as { url: string }).url
+      : undefined;
+  const safeArgs = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+  const elements =
+    tool === "read_page" &&
+    result &&
+    typeof result === "object" &&
+    Array.isArray((result as { elements?: unknown }).elements)
+      ? (result as { elements: unknown[] }).elements
+          .filter(
+            (element): element is Record<string, unknown> =>
+              !!element && typeof element === "object",
+          )
+          .map((element) => ({
+            index: typeof element.index === "number" ? element.index : -1,
+            tag: typeof element.tag === "string" ? element.tag : "element",
+            text: typeof element.text === "string" ? element.text : "",
+          }))
+          .filter((element) => element.index >= 0)
+          .slice(0, 80)
+      : undefined;
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send(browserEvents.automation.channel, {
+        phase,
+        tool,
+        args: safeArgs,
+        url,
+        message,
+        elements,
+        timestamp: Date.now(),
+      });
+    }
+  }
+}
+
 // The extension's own reconnect loop (backoff + chrome.alarms backstop, see
 // octolimb/chrome-extension/background.js) can take a few seconds to
 // re-establish after a Studio restart, a bridge restart, or a transient
@@ -98,8 +146,16 @@ async function waitForExtensionConnection(timeoutMs: number): Promise<boolean> {
   return false;
 }
 
-async function callExtensionTool(tool: string, args: unknown): Promise<unknown> {
+export async function callOctoLimbTool(tool: string, args: unknown): Promise<unknown> {
+  emitBrowserAutomation("started", tool, args);
   if (!(await waitForExtensionConnection(EXTENSION_RECONNECT_GRACE_MS))) {
+    emitBrowserAutomation(
+      "failed",
+      tool,
+      args,
+      undefined,
+      "OctoLimb browser extension is not connected.",
+    );
     throw new Error(
       "The OctoLimb browser extension is not connected. Make sure Chrome is open with the OctoLimb extension loaded and active, then try again — it reconnects automatically within a few seconds once available.",
     );
@@ -109,11 +165,28 @@ async function callExtensionTool(tool: string, args: unknown): Promise<unknown> 
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       pendingCalls.delete(id);
-      reject(new Error("OctoLimb tool call timed out waiting for the browser extension."));
+      const error = "OctoLimb tool call timed out waiting for the browser extension.";
+      emitBrowserAutomation("failed", tool, args, undefined, error);
+      reject(new Error(error));
     }, TOOL_CALL_TIMEOUT_MS);
     pendingCalls.set(id, { resolve, reject, timeout });
     socket.send(JSON.stringify({ type: "tool_call", id, tool, args }));
-  });
+  }).then(
+    (result) => {
+      emitBrowserAutomation("completed", tool, args, result);
+      return result;
+    },
+    (error) => {
+      emitBrowserAutomation(
+        "failed",
+        tool,
+        args,
+        undefined,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    },
+  );
 }
 
 function handleExtensionMessage(data: RawData): void {
@@ -208,7 +281,7 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
   {
     name: "read_page",
     description:
-      "Read the current page in this task's tab: URL, title, and an indexed list of interactive elements. Call this before click_element, input_text, or the dropdown tools to get valid indices. Body text is omitted by default — pass include_text when you actually need to read page content, not just interact with it.",
+      "Read and highlight the current page in this task's tab: URL, title, and an indexed list of interactive elements. The extension draws numbered overlays on clickable/input elements and keeps the live mapping for click_element/input_text. Call this after navigation or any page change before using mapped indices. Body text is omitted by default — pass include_text when you actually need page content.",
     inputSchema: {
       type: "object",
       properties: {
@@ -232,7 +305,8 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: "click_element",
-    description: "Click element by index",
+    description:
+      "Click an element from the latest read_page interactive-element map. Always call read_page immediately before this when the page changed; use the element index in brackets (and xpath only as a stale-index fallback).",
     inputSchema: {
       type: "object",
       properties: {
@@ -248,7 +322,8 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: "input_text",
-    description: "Input text into an interactive input element",
+    description:
+      "Type into an input from the latest read_page interactive-element map. Always call read_page immediately before this when the page changed; use the mapped index in brackets (and xpath only as a stale-index fallback).",
     inputSchema: {
       type: "object",
       properties: {
@@ -441,7 +516,7 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
   {
     name: "find_recipe",
     description:
-      "List every previously saved step-by-step trajectory for this domain, before doing the task manually. Returns each saved recipe's own instruction text plus its fingerprint and success/failure counts — no steps yet. Read the instructions like retrieved documents and judge for yourself whether any of them is the same task you're about to do, even if worded differently ('post a tweet' vs 'tweet something'); ignore recipes that don't actually match. If one fits, pass its fingerprint straight into run_recipe to replay the whole task in one call instead of one tool call per step. Always try this first for any task that sounds like something you (or a prior session) may have already done on this site.",
+      "List saved trajectories for this domain before doing the task manually. Each result includes its fingerprint, reliability counts, and dynamic variable names. If one matches, pass its fingerprint and a variables map to run_recipe to replay it in one call. Always try this first for repeatable tasks on this site.",
     inputSchema: {
       type: "object",
       properties: {
@@ -456,7 +531,7 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
   {
     name: "run_recipe",
     description:
-      "Execute a sequence of OctoLimb tool steps in one call, without round-tripping to you between each one — use this to batch obvious action chains (e.g. go_to_url, then click_element, then input_text) or to replay steps returned by find_recipe. Runs steps exactly as given, in order, via the real browser — nothing is added or skipped, so include every step you'd need if doing this by hand one call at a time (e.g. a read_page before an index-based step on a page you haven't indexed yet in this session). Stops at the first step that errors, returning every result so far plus which step failed — pick up manually from there. Pass `fingerprint` (from find_recipe) to replay and auto-update its success/failure count instead of passing `steps` directly. Pass `save_as` alongside `steps` to save this task once it fully succeeds — this saves every tool call made in the session so far (including ones made outside this run_recipe call, e.g. an earlier read_page), not just the `steps` in this call, so replay later needs nothing extra.",
+      'Execute a sequence of OctoLimb tool steps in one call or replay a saved recipe. Stops at the first error and returns the completed results. For a saved recipe, pass `fingerprint` plus `variables` such as `{"input_1":"new value"}`; recorded input_text and Google search values are reusable slots. Pass `save_as` with ad-hoc steps to persist a new recipe after success.',
     inputSchema: {
       type: "object",
       properties: {
@@ -464,6 +539,12 @@ const OCTOLIMB_TOOL_DEFINITIONS: Tool[] = [
           type: "string",
           description:
             "Replay a saved recipe by the fingerprint returned from find_recipe (mutually exclusive with steps)",
+        },
+        variables: {
+          type: "object",
+          description:
+            "Values for dynamic slots reported by find_recipe, such as input_1 or query.",
+          additionalProperties: { type: "string" },
         },
         steps: {
           type: "array",
@@ -556,7 +637,7 @@ async function runRecipeSteps(
     }
     try {
       const stepArgs = step.args ?? {};
-      const result = await callExtensionTool(step.tool, stepArgs);
+      const result = await callOctoLimbTool(step.tool, stepArgs);
       results.push({ tool: step.tool, args: stepArgs, result });
       onStep?.(step.tool, stepArgs, result);
     } catch (error) {
@@ -588,6 +669,7 @@ async function handleRunRecipe(
     fingerprint?: string;
     steps?: RecipeStep[];
     save_as?: { instruction: string; domain: string };
+    variables?: Record<string, string>;
   },
   onStep?: StepRecorder,
 ): Promise<unknown> {
@@ -599,7 +681,23 @@ async function handleRunRecipe(
     if (!recipe) {
       return { completed: false, error: `No recipe found for fingerprint ${args.fingerprint}` };
     }
-    steps = recipe.steps;
+    const variables = args.variables ?? {};
+    const missing = recipeVariables(recipe.steps).filter(
+      (name) => typeof variables[name] !== "string",
+    );
+    if (missing.length > 0) {
+      return {
+        completed: false,
+        error: `Missing recipe variables: ${missing.join(", ")}`,
+        variables: recipeVariables(recipe.steps),
+      };
+    }
+    steps = JSON.parse(
+      JSON.stringify(recipe.steps).replace(
+        /\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}/g,
+        (_match: string, name: string) => JSON.stringify(variables[name]).slice(1, -1),
+      ),
+    );
     replayFingerprint = args.fingerprint;
   } else if (args.steps && args.steps.length > 0) {
     steps = args.steps;
@@ -693,6 +791,7 @@ function createOctoLimbMcpServer(): McpServer {
     fingerprint?: string;
     steps?: RecipeStep[];
     save_as?: { instruction: string; domain: string };
+    variables?: Record<string, string>;
   }): Promise<unknown> {
     // Every step run_recipe actually executes — ad-hoc `steps` or a
     // fingerprint replay — feeds the same session buffer as a direct
@@ -738,9 +837,10 @@ function createOctoLimbMcpServer(): McpServer {
                   fingerprint?: string;
                   steps?: RecipeStep[];
                   save_as?: { instruction: string; domain: string };
+                  variables?: Record<string, string>;
                 },
               )
-            : await callExtensionTool(name, toolArgs).then((toolResult) => {
+            : await callOctoLimbTool(name, toolArgs).then((toolResult) => {
                 if (name === "done") {
                   finalizeAutoRecording(!!toolArgs.success, toolArgs.text as string | undefined);
                 } else {

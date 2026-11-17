@@ -13,8 +13,7 @@ import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/lib/telemetry";
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
 import { useScrollAndNavigateTo } from "@/hooks/useScrollAndNavigateTo";
-// @ts-ignore
-import logo from "../../assets/logo.png";
+import { solomanLogo } from "@/constants/branding";
 // @ts-ignore
 import googleIcon from "../../assets/ai-logos/google-g-icon.svg";
 // @ts-ignore
@@ -122,7 +121,7 @@ export function SetupBanner({
         >
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <img src={logo} alt="OctopusStudio Logo" className="size-6" />
+              <img src={solomanLogo} alt="Soloman Studio" className="size-6" />
             </div>
             <div className="min-w-0">
               <h3 className="text-lg font-semibold text-primary">

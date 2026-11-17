@@ -3,7 +3,11 @@ import fs from "fs/promises";
 import path from "path";
 import { createLoggedHandler } from "./safe_handle";
 import log from "electron-log";
-import { getOctopusStudioAppPath, isAppLocationAccessible } from "../../paths/paths";
+import {
+  getOctopusStudioAppPath,
+  isAppLocationAccessible,
+  isPathInsideOctopusStudioAppsDirectory,
+} from "../../paths/paths";
 import { apps } from "@/db/schema";
 import { db } from "@/db";
 import { chats, chatSearchDirtyChats } from "@/db/schema";
@@ -91,14 +95,18 @@ export function registerImportHandlers() {
         );
       }
 
-      // Determine the app path based on skipCopy
+      // Determine the app path based on skipCopy. A folder that is already in a
+      // Studio-managed apps root must be registered in place: copying it into a
+      // sibling folder is what previously produced rasd-labs-2, -3, ... copies.
+      const resolvedSourcePath = path.resolve(sourcePath);
+      const importInPlace = skipCopy || isPathInsideOctopusStudioAppsDirectory(resolvedSourcePath);
       let folderName: string | null = null;
-      if (!skipCopy) {
+      if (!importInPlace) {
         folderName = await resolveUniqueFolderName(slugifyAppFolderName(appName));
       }
-      const appPath = skipCopy ? sourcePath : getOctopusStudioAppPath(folderName!);
+      const appPath = importInPlace ? resolvedSourcePath : getOctopusStudioAppPath(folderName!);
 
-      if (!skipCopy) {
+      if (!importInPlace) {
         if (!isAppLocationAccessible(appPath)) {
           throw new Error(
             `The path ${appPath} is inaccessible. Please check your custom apps folder setting.`,
@@ -121,14 +129,14 @@ export function registerImportHandlers() {
       }
 
       // Create a new app
-      // Store the full absolute path when skipCopy is true, otherwise store
-      // the derived folder name.
+      // Store the absolute path so later changes to the default projects root
+      // cannot silently relocate an already-imported project.
       // Imported apps don't need an app blueprint — the schema default (false) is correct.
       const [app] = await db
         .insert(apps)
         .values({
           name: appName,
-          path: skipCopy ? sourcePath : folderName!,
+          path: appPath,
           installCommand: installCommand ?? null,
           startCommand: startCommand ?? null,
           createdAt: new Date(),

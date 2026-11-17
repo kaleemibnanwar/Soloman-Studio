@@ -9,9 +9,10 @@ import { IS_TEST_BUILD } from "../ipc/utils/test_utils";
 const logger = log.scope("linux_protocol");
 const execFileAsync = promisify(execFile);
 
-const SCHEME = "octopusStudio";
-const MIME_TYPE = `x-scheme-handler/${SCHEME}`;
-const DESKTOP_FILENAME = `${SCHEME}-url-handler.desktop`;
+const SCHEMES = ["solomanStudio", "soloman", "octopusStudio"] as const;
+const MIME_TYPES = SCHEMES.map((scheme) => `x-scheme-handler/${scheme}`);
+const DESKTOP_FILENAME = "soloman-studio-url-handler.desktop";
+const LEGACY_DESKTOP_FILENAME = "octopusStudio-url-handler.desktop";
 
 interface ExecInputs {
   // process.defaultApp: true for dev / unpackaged runs.
@@ -120,11 +121,11 @@ export function buildDesktopFile(command: ExecCommand): string {
   return [
     "[Desktop Entry]",
     "Type=Application",
-    "Name=Octopus Studio",
+    "Name=Soloman Studio",
     `Exec=${command.exec}`,
     // TryExec is a bare path; the spec doesn't allow it to be quoted or escaped.
     `TryExec=${command.tryExec}`,
-    `MimeType=${MIME_TYPE};`,
+    `MimeType=${MIME_TYPES.join(";")};`,
     `Icon=${iconPath}`,
     "NoDisplay=true",
     "Terminal=false",
@@ -132,7 +133,7 @@ export function buildDesktopFile(command: ExecCommand): string {
   ].join("\n");
 }
 
-// Register this build as the octopusStudio:// handler. Linux only; best-effort.
+// Register this build as the deep link protocol handler on Linux (best-effort).
 //
 // Electron's setAsDefaultProtocolClient doesn't reliably do this on Linux, so
 // we write the .desktop file ourselves and point the OS at it. We do it on
@@ -167,9 +168,15 @@ export async function registerOctopusStudioProtocolLinux(devUserDataDir?: string
     const dataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
     const appsDir = path.join(dataHome, "applications");
     const desktopPath = path.join(appsDir, DESKTOP_FILENAME);
+    const legacyDesktopPath = path.join(appsDir, LEGACY_DESKTOP_FILENAME);
 
     await fs.promises.mkdir(appsDir, { recursive: true });
     await fs.promises.writeFile(desktopPath, buildDesktopFile(command));
+
+    // Clean up legacy desktop handler file if present
+    if (fs.existsSync(legacyDesktopPath)) {
+      await fs.promises.unlink(legacyDesktopPath).catch(() => undefined);
+    }
 
     // Refresh the desktop database cache. The update-desktop-database command
     // isn't installed on every distro; if it's missing, the xdg-mime call below
@@ -181,21 +188,26 @@ export async function registerOctopusStudioProtocolLinux(devUserDataDir?: string
       logger.warn("update-desktop-database failed:", error);
     });
 
-    // xdg-mime is the step that actually sets the default, so only claim
-    // success when it succeeds.
-    const registered = await execFileAsync("xdg-mime", ["default", DESKTOP_FILENAME, MIME_TYPE], {
-      timeout: 5000,
-    })
-      .then(() => true)
-      .catch((error) => {
-        logger.warn("xdg-mime default failed:", error);
-        return false;
-      });
+    // xdg-mime is the step that actually sets the default, so register all schemes.
+    let registeredCount = 0;
+    for (const mimeType of MIME_TYPES) {
+      const ok = await execFileAsync("xdg-mime", ["default", DESKTOP_FILENAME, mimeType], {
+        timeout: 5000,
+      })
+        .then(() => true)
+        .catch((error) => {
+          logger.warn(`xdg-mime default failed for ${mimeType}:`, error);
+          return false;
+        });
+      if (ok) registeredCount++;
+    }
 
-    if (registered) {
-      logger.info(`Registered ${MIME_TYPE} handler at ${desktopPath}`);
+    if (registeredCount > 0) {
+      logger.info(
+        `Registered Soloman protocol handlers (${registeredCount}/${MIME_TYPES.length}) at ${desktopPath}`,
+      );
     }
   } catch (error) {
-    logger.warn("Failed to register octopusStudio:// protocol handler:", error);
+    logger.warn("Failed to register protocol handler:", error);
   }
 }

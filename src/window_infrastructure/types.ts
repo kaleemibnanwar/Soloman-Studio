@@ -161,6 +161,11 @@ export const QueryInvalidationScopeSchema = z.discriminatedUnion("family", [
   z.object({ family: z.literal("apps") }),
   z.object({ family: z.literal("chats") }),
   z.object({ family: z.literal("tasks") }),
+  z.object({ family: z.literal("planner"), appId: z.number().int().positive().optional() }),
+  z.object({
+    family: z.literal("missions"),
+    projectId: z.number().int().positive().optional().nullable(),
+  }),
   z.object({ family: z.literal("skills") }),
   z.object({ family: z.literal("app-collections") }),
   z.object({ family: z.literal("media") }),
@@ -203,6 +208,7 @@ export const QueryInvalidationScopeSchema = z.discriminatedUnion("family", [
     serverId: z.number().int().positive().optional(),
   }),
   z.object({ family: z.literal("octolimb-bridge") }),
+  z.object({ family: z.literal("soloman-bridge") }),
 ]);
 export type QueryInvalidationScope = z.infer<typeof QueryInvalidationScopeSchema>;
 
@@ -255,6 +261,7 @@ export function queryInvalidationScopeKey(scope: QueryInvalidationScope): string
     case "branches":
     case "problems":
     case "uncommitted-files":
+    case "planner":
       return `${scope.family}:${scope.appId ?? "*"}`;
     case "chat":
       return `${scope.family}:${scope.chatId}`;

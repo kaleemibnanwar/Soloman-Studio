@@ -15,6 +15,7 @@ import { promptsRoute } from "./routes/prompts";
 import { skillsRoute } from "./routes/skills";
 import { mediaRoute } from "./routes/media";
 import { tasksRoute } from "./routes/tasks";
+import { plannerRoute } from "./routes/planner";
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
@@ -28,6 +29,7 @@ const routeTree = rootRoute.addChildren([
   skillsRoute,
   mediaRoute,
   tasksRoute,
+  plannerRoute,
   chatRoute,
   appDetailsRoute,
   settingsRoute.addChildren([providerSettingsRoute]),

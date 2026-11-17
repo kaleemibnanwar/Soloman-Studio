@@ -2,7 +2,7 @@ import { app, shell } from "electron";
 import log from "electron-log";
 import path from "node:path";
 import { createLoggedHandler } from "./safe_handle";
-import { IS_TEST_BUILD } from "../utils/test_utils";
+import { shouldSuppressExternalUrlOpen } from "../utils/external_url_policy";
 import { isFileWithinAnyOctopusStudioMediaDir } from "../media/media_path_utils";
 import { OctopusStudioError, OctopusStudioErrorKind } from "@/errors/octopus_studio_error";
 import { registerOctopusStudioProtocolLinux } from "../../main/linux_protocol_registration";
@@ -23,7 +23,7 @@ function isOctopusStudioOAuthUrl(url: string): boolean {
 
 // Only allow opening files with known safe media extensions via shell.openPath.
 // This prevents execution of arbitrary executables even if they reside under a
-// .octopusStudio/media directory.
+// .soloman/media (or legacy .octopusStudio/media) directory.
 const ALLOWED_MEDIA_EXTENSIONS = new Set([
   ".png",
   ".jpg",
@@ -54,9 +54,10 @@ export function registerShellHandlers() {
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       throw new Error("Attempted to open invalid or non-http URL: " + url);
     }
-    // In E2E test mode, skip actually opening external URLs to avoid browser windows
-    if (IS_TEST_BUILD) {
-      logger.debug("E2E test mode: skipped opening external URL:", url);
+    // Suppress browser windows only for a live Playwright run. E2E-instrumented
+    // packages are also useful for manual testing and must open links normally.
+    if (shouldSuppressExternalUrlOpen()) {
+      logger.debug("Active E2E run: skipped opening external URL:", url);
       return;
     }
     // On Linux, dev and packaged builds share the single octopusStudio:// scheme and it's
@@ -86,14 +87,15 @@ export function registerShellHandlers() {
       throw new OctopusStudioError("No file path provided.", OctopusStudioErrorKind.External);
     }
 
-    // Security: only allow opening files within .octopusStudio/media subdirectories.
-    // The octopus-studio-apps tree contains AI-generated code, so opening arbitrary files
+    // Security: only allow opening files within .soloman/media (or legacy
+    // .octopusStudio/media) subdirectories.
+    // The apps tree contains AI-generated code, so opening arbitrary files
     // there via shell.openPath could execute malicious executables.
-    // App paths may be under the default octopus-studio-apps base directory (normal) or
+    // App paths may be under the default apps base directory (normal) or
     // at an external location (imported with skipCopy).
     if (!isFileWithinAnyOctopusStudioMediaDir(fullPath)) {
       throw new OctopusStudioError(
-        "Can only open files within .octopusStudio/media directories.",
+        "Can only open files within .soloman/media directories.",
         OctopusStudioErrorKind.External,
       );
     }

@@ -69,6 +69,19 @@ export const queryKeys = {
     list: ["tasks"] as const,
   },
 
+  planner: {
+    all: ["planner"] as const,
+    list: ({ appId }: { appId?: number }) => ["planner", "list", appId ?? "all"] as const,
+  },
+
+  missions: {
+    all: ["missions"] as const,
+    list: ({ projectId }: { projectId?: number | null } = {}) =>
+      ["missions", "list", projectId ?? "all"] as const,
+    detail: ({ projectId, slug }: { projectId?: number | null; slug: string }) =>
+      ["missions", "detail", projectId ?? "all", slug] as const,
+  },
+
   skills: {
     list: ["skills"] as const,
   },
@@ -307,6 +320,16 @@ export const queryKeys = {
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Soloman Cloud Host bridge
+  // ─────────────────────────────────────────────────────────────────────────────
+  soloman: {
+    all: ["soloman"] as const,
+    status: ["soloman", "status"] as const,
+    pendingPairings: ["soloman", "pendingPairings"] as const,
+    grants: ["soloman", "grants"] as const,
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Supabase
   // ─────────────────────────────────────────────────────────────────────────────
   supabase: {
@@ -408,6 +431,7 @@ export type AppQueryKey =
   | QueryKeyOf<(typeof queryKeys.appCollections)[keyof typeof queryKeys.appCollections]>
   | QueryKeyOf<(typeof queryKeys.chats)[keyof typeof queryKeys.chats]>
   | QueryKeyOf<(typeof queryKeys.tasks)[keyof typeof queryKeys.tasks]>
+  | QueryKeyOf<(typeof queryKeys.planner)[keyof typeof queryKeys.planner]>
   | QueryKeyOf<(typeof queryKeys.plans)[keyof typeof queryKeys.plans]>
   | QueryKeyOf<(typeof queryKeys.proposals)[keyof typeof queryKeys.proposals]>
   | QueryKeyOf<(typeof queryKeys.versions)[keyof typeof queryKeys.versions]>

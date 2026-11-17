@@ -16,6 +16,7 @@ export function serializeImmutableChatTurnPayload(
     requestedChatMode: intent.requestedChatMode,
     userInputRequestId: intent.userInputRequestId,
     planAcceptInNewChat: intent.planAcceptInNewChat,
+    includePlannerTasks: intent.includePlannerTasks,
     owner: intent.owner,
   });
 }

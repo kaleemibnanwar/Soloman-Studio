@@ -1,4 +1,4 @@
-import { type LucideIcon, Settings, HelpCircle, BookOpen } from "lucide-react";
+import { type LucideIcon, Settings, HelpCircle, BookOpen, ClipboardList, Bot } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -42,23 +42,16 @@ function NavRow({
   onClick?: () => void;
 }) {
   const className = cn(
-    "group/nav-row relative flex h-9 w-full shrink-0 select-none items-center overflow-hidden rounded-lg outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+    "group/nav-row relative flex h-9 w-full shrink-0 select-none items-center overflow-hidden rounded-md outline-none transition-[background-color,color] duration-150 focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
     isActive
-      ? "bg-sidebar-accent text-sidebar-foreground"
+      ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
       : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground active:bg-sidebar-accent",
   );
 
   const content = (
     <>
-      <span
-        aria-hidden
-        className={cn(
-          "absolute top-1/2 left-0 h-4 w-[2px] -translate-y-1/2 rounded-full bg-primary transition-opacity duration-150",
-          isActive ? "opacity-100" : "opacity-0",
-        )}
-      />
       <span className="flex h-9 w-12 shrink-0 items-center justify-center">
-        <Icon className={cn("size-[18px]", isActive && "text-primary")} />
+        <Icon className="size-[16px] text-muted-foreground" />
       </span>
       <span className="min-w-0 flex-1 truncate pr-3 text-left text-[13px] font-medium leading-none whitespace-nowrap">
         {label}
@@ -189,6 +182,18 @@ export function AppSidebar() {
 
       <SidebarFooter className="items-start gap-0 px-1">
         <div className="w-full space-y-0.5 pb-1">
+          <NavRow
+            icon={Bot}
+            label="Coworkers"
+            to="/tasks"
+            isActive={routerState.location.pathname.startsWith("/tasks")}
+          />
+          <NavRow
+            icon={ClipboardList}
+            label="Planner"
+            to="/planner"
+            isActive={routerState.location.pathname.startsWith("/planner")}
+          />
           <NavRow
             icon={Settings}
             label="Settings"

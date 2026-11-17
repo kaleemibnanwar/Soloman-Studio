@@ -53,7 +53,7 @@ export function StdioCatalogConsentDialog({
               program you run.
             </span>
             <span className="block">
-              Octopus Studio curates this catalog, but the package is maintained by a third party
+              Soloman Studio curates this catalog, but the package is maintained by a third party
               and runs without a sandbox.
             </span>
           </AlertDialogDescription>

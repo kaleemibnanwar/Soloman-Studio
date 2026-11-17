@@ -552,8 +552,31 @@ export const tasks = sqliteTable("tasks", {
   modelSelection: text("model_selection", {
     mode: "json",
   }).$type<ModelSelection | null>(),
+  // Coworker bot archetype (Sentinel, Scout, Steward, Operator, or Custom)
+  botType: text("bot_type")
+    .$type<
+      "sentinel" | "scout" | "steward" | "operator" | "custom" | "dot" | "muse" | "custodian"
+    >()
+    .notNull()
+    .default("custom"),
+  // Execution role for OpenCode runtime
+  role: text("role")
+    .$type<"executor" | "tester" | "explorer" | "debugger" | "reviewer" | "architect">()
+    .notNull()
+    .default("executor"),
+  // Execution status
+  lastStatus: text("last_status")
+    .$type<"idle" | "running" | "completed" | "failed" | "needs_approval">()
+    .notNull()
+    .default("idle"),
+  lastResultSummary: text("last_result_summary"),
   lastRunAt: integer("last_run_at", { mode: "timestamp" }),
   lastChatId: integer("last_chat_id"),
+  // Durable mission ownership. Unlike prompt tags, these survive edits and
+  // let the mission runtime resume and reconcile work after an app restart.
+  missionSlug: text("mission_slug"),
+  missionMilestoneId: text("mission_milestone_id"),
+  botName: text("bot_name"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -570,6 +593,45 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   lastChat: one(chats, {
     fields: [tasks.lastChatId],
     references: [chats.id],
+  }),
+}));
+
+// --- Project planner cards ---
+// Kept separate from `tasks`, which represents recurring agent automations.
+export const plannerTasks = sqliteTable(
+  "planner_tasks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    appId: integer("app_id").references(() => apps.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    status: text("status")
+      .$type<"backlog" | "todo" | "in_progress" | "done">()
+      .notNull()
+      .default("todo"),
+    priority: text("priority").$type<"low" | "medium" | "high">().notNull().default("medium"),
+    dueAt: integer("due_at", { mode: "timestamp" }),
+    position: integer("position").notNull().default(0),
+    botName: text("bot_name"),
+    missionSlug: text("mission_slug"),
+    missionMilestoneId: text("mission_milestone_id"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("planner_tasks_app_status_position_idx").on(table.appId, table.status, table.position),
+    index("planner_tasks_due_at_idx").on(table.dueAt),
+  ],
+);
+
+export const plannerTasksRelations = relations(plannerTasks, ({ one }) => ({
+  app: one(apps, {
+    fields: [plannerTasks.appId],
+    references: [apps.id],
   }),
 }));
 

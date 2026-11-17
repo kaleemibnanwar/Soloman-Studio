@@ -68,7 +68,7 @@ describe("registerTrustedIpcHandler", () => {
 
     await expect(
       mocks.handlers.get("untrusted")?.(eventFor("https://attacker.example/")),
-    ).rejects.toThrow("trusted Octopus Studio renderer");
+    ).rejects.toThrow("trusted Soloman Studio renderer");
     expect(implementation).not.toHaveBeenCalled();
   });
 

@@ -413,6 +413,7 @@ export class ChatStreamRemoteManager {
         requestedChatMode: request.requestedChatMode,
         userInputRequestId: request.owner?.requestId,
         planAcceptInNewChat: request.planAcceptInNewChat,
+        includePlannerTasks: request.includePlannerTasks,
         owner: request.owner,
       };
       const intent: SerializableChatTurnIntent = {

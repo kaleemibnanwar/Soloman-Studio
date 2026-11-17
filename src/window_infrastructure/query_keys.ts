@@ -10,6 +10,10 @@ export function queryKeysForInvalidationScope(scope: QueryInvalidationScope): re
       return [queryKeys.chats.all];
     case "tasks":
       return [queryKeys.tasks.list];
+    case "planner":
+      return [queryKeys.planner.list({ appId: scope.appId })];
+    case "missions":
+      return [queryKeys.missions.all];
     case "skills":
       return [queryKeys.skills.list];
     case "app-collections":
@@ -71,5 +75,7 @@ export function queryKeysForInvalidationScope(scope: QueryInvalidationScope): re
       return [queryKeys.mcp.toolsByServer.all];
     case "octolimb-bridge":
       return [queryKeys.octolimb.status];
+    case "soloman-bridge":
+      return [queryKeys.soloman.all];
   }
 }

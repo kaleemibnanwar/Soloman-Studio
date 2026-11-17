@@ -31,9 +31,9 @@ async function ensureGitignored(appPath: string, entries: string[]): Promise<voi
 }
 
 /**
- * Ensures `.octopusStudio/` is listed in the project's `.gitignore`.
+ * Ensures `.soloman/` and `.octopusStudio/` are listed in the project's `.gitignore`.
  * Creates `.gitignore` if it doesn't exist.
  */
 export async function ensureOctopusStudioGitignored(appPath: string): Promise<void> {
-  await ensureGitignored(appPath, [".octopusStudio/"]);
+  await ensureGitignored(appPath, [".soloman/", ".octopusStudio/"]);
 }

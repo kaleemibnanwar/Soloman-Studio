@@ -25,8 +25,8 @@ function getKeyButtonText({
 }) {
   if (isOctopusStudio) {
     return isConfigured
-      ? "Manage OctopusStudio Pro Subscription"
-      : "Setup OctopusStudio Pro Subscription";
+      ? "Manage Soloman Studio Pro Subscription"
+      : "Setup Soloman Studio Pro Subscription";
   }
   return isConfigured ? "Manage API Keys" : "Setup API Key";
 }

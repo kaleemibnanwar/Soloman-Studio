@@ -44,11 +44,11 @@ test("reports unique processes using production data", () => {
   );
 });
 
-test("reports the production OctopusStudio process on Windows", () => {
+test("reports the production SolomanStudio process on Windows", () => {
   assert.deepEqual(
     getProcessesUsingDataDirectories([], {
       platform: "win32",
-      runSync: () => '"octopusStudio.exe","789","Console","1","123,456 K"\r\nINFO: No other tasks',
+      runSync: () => '"soloman-studio.exe","789","Console","1","123,456 K"\r\nINFO: No other tasks',
     }),
     ["789"],
   );

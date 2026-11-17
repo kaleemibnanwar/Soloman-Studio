@@ -51,7 +51,7 @@ describe("octopus-studio-media thumbnail protocol", () => {
   beforeEach(async () => {
     root = await fs.mkdtemp(path.join(os.tmpdir(), "octopus-studio-media-protocol-"));
     appPath = path.join(root, "app");
-    mediaPath = path.join(appPath, ".octopusStudio", "media");
+    mediaPath = path.join(appPath, ".soloman", "media");
     cacheRoot = path.join(root, "cache");
     await fs.mkdir(mediaPath, { recursive: true });
     pngData = await fs.readFile(IMAGE_FIXTURE_PATH);

@@ -54,3 +54,9 @@ export class OctopusStudioError extends Error {
 export function isOctopusStudioError(error: unknown): error is OctopusStudioError {
   return error instanceof OctopusStudioError;
 }
+
+export const SolomanStudioError = OctopusStudioError;
+export type SolomanStudioError = OctopusStudioError;
+export const SolomanStudioErrorKind = OctopusStudioErrorKind;
+export type SolomanStudioErrorKind = OctopusStudioErrorKind;
+export const isSolomanStudioError = isOctopusStudioError;

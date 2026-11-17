@@ -428,6 +428,48 @@
       "when": 1789300000000,
       "tag": "0060_add_skills",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "6",
+      "when": 1792600000000,
+      "tag": "0061_project_planner",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "6",
+      "when": 1792700000000,
+      "tag": "0062_planner_optional_project",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "6",
+      "when": 1792800000000,
+      "tag": "0063_coworker_bots",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "6",
+      "when": 1792900000000,
+      "tag": "0064_planner_bot_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "6",
+      "when": 1793000000000,
+      "tag": "0065_planner_mission_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "6",
+      "when": 1793100000000,
+      "tag": "0066_task_mission_ownership",
+      "breakpoints": true
     }
   ]
 }

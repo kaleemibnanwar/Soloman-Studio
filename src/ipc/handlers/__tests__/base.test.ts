@@ -26,11 +26,11 @@ vi.mock("electron", () => ({
   },
 }));
 
-vi.mock("../utils/telemetry", () => ({
+vi.mock("../../utils/telemetry", () => ({
   sendTelemetryException: mocks.sendTelemetryException,
 }));
 
-vi.mock("../utils/test_utils", () => ({
+vi.mock("../../utils/test_utils", () => ({
   IS_TEST_BUILD: true,
 }));
 
@@ -271,7 +271,7 @@ describe("IPC handler envelopes", () => {
       { sender: { mainFrame }, senderFrame },
     );
 
-    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
     expect(implementation).not.toHaveBeenCalled();
   });
 
@@ -321,7 +321,7 @@ describe("IPC handler envelopes", () => {
           senderFrame: frame,
         },
       );
-      expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+      expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
       expect(mocks.sendTelemetryException).not.toHaveBeenCalled();
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
@@ -361,7 +361,7 @@ describe("IPC handler envelopes", () => {
           {},
           { sender: { mainFrame: frame }, senderFrame: frame },
         );
-        expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+        expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
       }
 
       const mainFrame = { url: "http://localhost:5173/" };
@@ -374,7 +374,7 @@ describe("IPC handler envelopes", () => {
       ];
       for (const event of invalidEvents) {
         const envelope = await getEnvelope("invalid-renderer-channel", {}, event);
-        expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+        expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
       }
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
@@ -420,7 +420,7 @@ describe("IPC handler envelopes", () => {
       { sender: { mainFrame: frame }, senderFrame: frame },
     );
 
-    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
     expect(inputValidation).not.toHaveBeenCalled();
     expect(mocks.sendTelemetryException).not.toHaveBeenCalled();
   });
@@ -482,7 +482,7 @@ describe("IPC handler envelopes", () => {
       sender: { mainFrame: frame },
       senderFrame: frame,
     });
-    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
   });
 
   it("rejects remote origins in logged typed handlers too", async () => {
@@ -507,7 +507,7 @@ describe("IPC handler envelopes", () => {
       { sender: { mainFrame: frame }, senderFrame: frame },
     );
 
-    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Octopus Studio renderer");
+    expect(() => unwrapIpcEnvelope(envelope)).toThrow("trusted Soloman Studio renderer");
     expect(implementation).not.toHaveBeenCalled();
     expect(mocks.sendTelemetryException).not.toHaveBeenCalled();
   });

@@ -13,7 +13,8 @@ export function getRouteSidebarPanel(pathname: string): AppSidebarPanel | null {
     pathname === "/" ||
     pathname.startsWith("/apps") ||
     pathname.startsWith("/app-details") ||
-    pathname.startsWith("/tasks")
+    pathname.startsWith("/tasks") ||
+    pathname.startsWith("/planner")
   ) {
     return "Apps";
   }

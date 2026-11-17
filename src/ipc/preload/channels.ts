@@ -51,6 +51,7 @@ import { appCollectionContracts } from "../types/app_collections";
 import { terminalContracts } from "../types/terminal";
 import { testsContracts, testsEvents } from "../types/tests";
 import { taskContracts } from "../types/task";
+import { plannerContracts } from "../types/planner";
 import { skillContracts } from "../types/skill";
 import { workerContracts } from "../types/worker";
 import { workerProposalContracts } from "../types/worker_proposal";
@@ -72,6 +73,9 @@ import {
   distributedMachineContracts,
   distributedMachineEvents,
 } from "../types/distributed_machines";
+import { solomanContracts, solomanEvents } from "../types/soloman";
+import { browserContracts, browserEvents } from "../types/browser";
+import { missionContracts } from "../types/mission";
 
 // =============================================================================
 // Invoke Channels (derived from all contracts)
@@ -138,6 +142,8 @@ export const VALID_INVOKE_CHANNELS = [
   ...getInvokeChannels(terminalContracts),
   ...getInvokeChannels(testsContracts),
   ...getInvokeChannels(taskContracts),
+  ...getInvokeChannels(plannerContracts),
+  ...getInvokeChannels(missionContracts),
   ...getInvokeChannels(skillContracts),
   ...getInvokeChannels(workerContracts),
   ...getInvokeChannels(workerProposalContracts),
@@ -153,6 +159,8 @@ export const VALID_INVOKE_CHANNELS = [
   ...getInvokeChannels(windowInfrastructureContracts),
   ...getInvokeChannels(distributedMachineContracts),
   ...getInvokeChannels(imageGenerationContracts),
+  ...getInvokeChannels(solomanContracts),
+  ...getInvokeChannels(browserContracts),
 
   // Test-only channels
   ...TEST_INVOKE_CHANNELS,
@@ -195,6 +203,8 @@ export const VALID_RECEIVE_CHANNELS = [
   ...getReceiveChannels(windowInfrastructureEvents),
   ...getReceiveChannels(distributedMachineEvents),
   ...getReceiveChannels(recordingEvents),
+  ...getReceiveChannels(solomanEvents),
+  ...getReceiveChannels(browserEvents),
 ] as const;
 
 // =============================================================================

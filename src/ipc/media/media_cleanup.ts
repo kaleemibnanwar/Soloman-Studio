@@ -5,6 +5,7 @@ import { getOctopusStudioAppPath } from "@/paths/paths";
 import {
   ATTACHMENTS_MANIFEST_FILE,
   OCTOPUS_STUDIO_MEDIA_DIR_NAME,
+  SOLOMAN_MEDIA_DIR_NAME,
   pruneAttachmentManifest,
 } from "@/ipc/media/media_path_utils";
 import { db } from "@/db";
@@ -19,8 +20,10 @@ function isPathWithinDirectory(filePath: string, directoryPath: string) {
   return !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
 }
 
-async function getSafeMediaDirectory(appPath: string): Promise<{ path: string } | null> {
-  const mediaDir = path.join(appPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+async function getSafeMediaDirectory(
+  appPath: string,
+  mediaDir: string,
+): Promise<{ path: string } | null> {
   try {
     const appRealPath = await fs.realpath(appPath);
     const mediaDirStat = await fs.lstat(mediaDir);
@@ -29,7 +32,7 @@ async function getSafeMediaDirectory(appPath: string): Promise<{ path: string } 
     }
 
     const realMediaDir = await fs.realpath(mediaDir);
-    const expectedMediaDir = path.join(appRealPath, OCTOPUS_STUDIO_MEDIA_DIR_NAME);
+    const expectedMediaDir = path.resolve(appRealPath, path.relative(appPath, mediaDir));
     if (realMediaDir !== expectedMediaDir || !isPathWithinDirectory(realMediaDir, appRealPath)) {
       return null;
     }
@@ -52,8 +55,19 @@ async function getSafeMediaDirectory(appPath: string): Promise<{ path: string } 
   }
 }
 
+async function getSafeMediaDirectories(appPath: string): Promise<Array<{ path: string }>> {
+  const candidates = [SOLOMAN_MEDIA_DIR_NAME, OCTOPUS_STUDIO_MEDIA_DIR_NAME].map((dirName) =>
+    path.join(appPath, dirName),
+  );
+  const safeDirectories = await Promise.all(
+    candidates.map((mediaDir) => getSafeMediaDirectory(appPath, mediaDir)),
+  );
+  return safeDirectories.filter((directory): directory is { path: string } => directory !== null);
+}
+
 /**
- * Delete media files older than TTL from all app .octopusStudio/media directories.
+ * Delete media files older than TTL from all app .soloman/media and legacy
+ * .octopusStudio/media directories.
  * Run on app startup to reclaim disk space.
  */
 export async function cleanupOldMediaFiles(): Promise<void> {
@@ -65,48 +79,52 @@ export async function cleanupOldMediaFiles(): Promise<void> {
     const counts = await Promise.all(
       allApps.map(async (app) => {
         const appPath = getOctopusStudioAppPath(app.path);
-        const safeMediaDir = await getSafeMediaDirectory(appPath);
-        if (!safeMediaDir) {
-          return 0;
-        }
-
-        let files: string[];
-        try {
-          files = await fs.readdir(safeMediaDir.path);
-        } catch {
+        const safeMediaDirs = await getSafeMediaDirectories(appPath);
+        if (safeMediaDirs.length === 0) {
           return 0;
         }
 
         const results = await Promise.all(
-          files.map(async (file) => {
-            if (file === ATTACHMENTS_MANIFEST_FILE) {
+          safeMediaDirs.map(async (safeMediaDir) => {
+            let files: string[];
+            try {
+              files = await fs.readdir(safeMediaDir.path);
+            } catch {
               return 0;
             }
-            const filePath = path.join(safeMediaDir.path, file);
-            try {
-              const entryStat = await fs.lstat(filePath);
-              if (entryStat.isSymbolicLink() || !entryStat.isFile()) {
+            const dirResults = await Promise.all(
+              files.map(async (file) => {
+                if (file === ATTACHMENTS_MANIFEST_FILE) {
+                  return 0;
+                }
+                const filePath = path.join(safeMediaDir.path, file);
+                try {
+                  const entryStat = await fs.lstat(filePath);
+                  if (entryStat.isSymbolicLink() || !entryStat.isFile()) {
+                    return 0;
+                  }
+                  const realFilePath = await fs.realpath(filePath);
+                  if (!isPathWithinDirectory(realFilePath, safeMediaDir.path)) {
+                    return 0;
+                  }
+                  const stat = await fs.stat(filePath);
+                  if (stat.mtimeMs < cutoffMs) {
+                    await fs.unlink(filePath);
+                    return 1;
+                  }
+                } catch (err) {
+                  logger.warn(`Failed to process media file ${filePath}:`, err);
+                }
                 return 0;
-              }
-              const realFilePath = await fs.realpath(filePath);
-              if (!isPathWithinDirectory(realFilePath, safeMediaDir.path)) {
-                return 0;
-              }
-              const stat = await fs.stat(filePath);
-              if (stat.mtimeMs < cutoffMs) {
-                await fs.unlink(filePath);
-                return 1;
-              }
-            } catch (err) {
-              logger.warn(`Failed to process media file ${filePath}:`, err);
-            }
-            return 0;
+              }),
+            );
+            return dirResults.reduce<number>((sum, n) => sum + n, 0);
           }),
         );
         try {
           await pruneAttachmentManifest(appPath);
         } catch (err) {
-          logger.warn(`Failed to prune attachment manifest for ${safeMediaDir.path}:`, err);
+          logger.warn(`Failed to prune attachment manifest for ${appPath}:`, err);
         }
         return results.reduce<number>((sum, n) => sum + n, 0);
       }),

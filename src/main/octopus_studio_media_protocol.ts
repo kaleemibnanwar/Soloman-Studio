@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 
 import {
   OCTOPUS_STUDIO_INTERNAL_DIR_NAME,
+  SOLOMAN_INTERNAL_DIR_NAME,
   OCTOPUS_STUDIO_MEDIA_SUBDIR,
   OCTOPUS_STUDIO_SCREENSHOT_SUBDIR,
 } from "../ipc/media/media_path_utils";
@@ -33,43 +34,57 @@ async function resolveContainedMediaPath(
   subdir: string,
   filename: string,
 ): Promise<{ sourcePath: string; cacheKeyPath: string }> {
-  const targetDir = path.resolve(path.join(appPath, OCTOPUS_STUDIO_INTERNAL_DIR_NAME, subdir));
-  const candidatePath = path.resolve(path.join(targetDir, filename));
-  const relativeCandidate = path.relative(targetDir, candidatePath);
-  if (relativeCandidate.startsWith("..") || path.isAbsolute(relativeCandidate)) {
-    throw new MediaThumbnailError("Forbidden", 403);
-  }
+  // Check new .soloman directory first, falling back to legacy .octopusStudio
+  const candidateDirs = [
+    {
+      name: SOLOMAN_INTERNAL_DIR_NAME,
+      dir: path.resolve(path.join(appPath, SOLOMAN_INTERNAL_DIR_NAME, subdir)),
+    },
+    {
+      name: OCTOPUS_STUDIO_INTERNAL_DIR_NAME,
+      dir: path.resolve(path.join(appPath, OCTOPUS_STUDIO_INTERNAL_DIR_NAME, subdir)),
+    },
+  ];
 
-  let realAppPath: string;
-  let realTargetDir: string;
-  let realCandidatePath: string;
-  try {
-    [realAppPath, realTargetDir, realCandidatePath] = await Promise.all([
-      fs.realpath(appPath),
-      fs.realpath(targetDir),
-      fs.realpath(candidatePath),
-    ]);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new MediaThumbnailError("Not Found", 404);
+  for (const { name: internalDirName, dir: targetDir } of candidateDirs) {
+    const candidatePath = path.resolve(path.join(targetDir, filename));
+    const relativeCandidate = path.relative(targetDir, candidatePath);
+    if (relativeCandidate.startsWith("..") || path.isAbsolute(relativeCandidate)) {
+      continue;
     }
-    throw error;
+
+    let realAppPath: string;
+    let realTargetDir: string;
+    let realCandidatePath: string;
+    try {
+      [realAppPath, realTargetDir, realCandidatePath] = await Promise.all([
+        fs.realpath(appPath),
+        fs.realpath(targetDir),
+        fs.realpath(candidatePath),
+      ]);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        continue;
+      }
+      throw error;
+    }
+
+    // Do not let internal dir redirect the protocol to a different directory through a symlink.
+    const expectedTargetDir = path.resolve(realAppPath, internalDirName, subdir);
+    if (path.relative(expectedTargetDir, realTargetDir) !== "") {
+      throw new MediaThumbnailError("Forbidden", 403);
+    }
+
+    // Prevent a symlink inside the media dir from escaping the app directory.
+    const relativeRealPath = path.relative(realTargetDir, realCandidatePath);
+    if (relativeRealPath.startsWith("..") || path.isAbsolute(relativeRealPath)) {
+      throw new MediaThumbnailError("Forbidden", 403);
+    }
+
+    return { sourcePath: realCandidatePath, cacheKeyPath: candidatePath };
   }
 
-  // Do not let .octopusStudio or its media subdirectory redirect the protocol to a
-  // different directory through a symlink.
-  const expectedTargetDir = path.resolve(realAppPath, OCTOPUS_STUDIO_INTERNAL_DIR_NAME, subdir);
-  if (path.relative(expectedTargetDir, realTargetDir) !== "") {
-    throw new MediaThumbnailError("Forbidden", 403);
-  }
-
-  // Prevent a symlink inside .octopusStudio/media from escaping the app directory.
-  const relativeRealPath = path.relative(realTargetDir, realCandidatePath);
-  if (relativeRealPath.startsWith("..") || path.isAbsolute(relativeRealPath)) {
-    throw new MediaThumbnailError("Forbidden", 403);
-  }
-
-  return { sourcePath: realCandidatePath, cacheKeyPath: candidatePath };
+  throw new MediaThumbnailError("Not Found", 404);
 }
 
 export function createOctopusStudioMediaProtocolHandler({
@@ -92,10 +107,12 @@ export function createOctopusStudioMediaProtocolHandler({
       }
 
       // Formats:
-      // octopus-studio-media://media/{app-path}/.octopusStudio/{subdir}/{filename}
-      // octopus-studio-media://media/app-id/{id}/.octopusStudio/{subdir}/{filename}
+      // octopus-studio-media://media/{app-path}/.soloman/{subdir}/{filename}
+      // octopus-studio-media://media/app-id/{id}/.soloman/{subdir}/{filename}
+      // Legacy .octopusStudio URLs remain accepted and resolve in place.
       const pathSegments = url.pathname.slice(1).split("/");
       const allowedSubdirs = [OCTOPUS_STUDIO_MEDIA_SUBDIR, OCTOPUS_STUDIO_SCREENSHOT_SUBDIR];
+      const allowedInternalDirs = [SOLOMAN_INTERNAL_DIR_NAME, OCTOPUS_STUDIO_INTERNAL_DIR_NAME];
       const usesAppId =
         pathSegments.length === 5 &&
         pathSegments[0] === "app-id" &&
@@ -105,7 +122,7 @@ export function createOctopusStudioMediaProtocolHandler({
       const filenameIndex = internalDirIndex + 2;
       if (
         pathSegments.length !== filenameIndex + 1 ||
-        pathSegments[internalDirIndex] !== OCTOPUS_STUDIO_INTERNAL_DIR_NAME ||
+        !allowedInternalDirs.includes(pathSegments[internalDirIndex]) ||
         !allowedSubdirs.includes(pathSegments[subdirIndex])
       ) {
         return response(403, "Forbidden");
@@ -165,7 +182,7 @@ export function createOctopusStudioMediaProtocolHandler({
             requestedVersion === thumbnail.sourceVersion
               ? "private, max-age=31536000, immutable"
               : "no-store",
-          "X-OctopusStudio-Thumbnail-Cache": thumbnail.cacheHit ? "hit" : "miss",
+          "X-Octopus-Studio-Thumbnail-Cache": thumbnail.cacheHit ? "hit" : "miss",
         },
       });
     } catch (error) {
