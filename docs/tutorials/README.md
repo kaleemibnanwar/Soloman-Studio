@@ -1,4 +1,4 @@
-# Octopus Studio tutorials
+# Soloman Studio tutorials
 
 Short, outcome-led guides. UI labels may move slightly between releases, but the workflow should remain recognizable.
 

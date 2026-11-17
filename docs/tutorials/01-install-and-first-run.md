@@ -2,9 +2,9 @@
 
 ## Install
 
-1. Open the [latest release](https://github.com/kaleemibnanwar/OctopusStudio/releases/latest).
+1. Open the [latest release](https://github.com/kaleemibnanwar/Soloman-Studio/releases/latest).
 2. Read the release notes and download the asset for your operating system and architecture.
-3. Install or extract the downloaded package, then launch Octopus Studio.
+3. Install or extract the downloaded package, then launch Soloman Studio.
 
 ## Finish setup
 

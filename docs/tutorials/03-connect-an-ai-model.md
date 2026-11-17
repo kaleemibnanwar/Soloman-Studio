@@ -10,7 +10,7 @@
 
 ## Local provider
 
-1. Install and start Ollama or LM Studio yourself; Octopus Studio does not manage that service.
+1. Install and start Ollama or LM Studio yourself; Soloman Studio does not manage that service.
 2. In **Model Providers**, choose the matching provider and confirm its local endpoint/model configuration.
 3. Select the local model as your default and test it in a new chat.
 

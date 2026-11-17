@@ -1,6 +1,6 @@
 # Use model routing and Economy Mode
 
-Octopus Studio can use explicitly selected models or automatic routing where available.
+Soloman Studio can use explicitly selected models or automatic routing where available.
 
 ## Automatic routing
 

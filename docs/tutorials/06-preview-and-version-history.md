@@ -7,4 +7,4 @@
 5. Use version history to inspect commits or preview an earlier version.
 6. Before reverting, check whether uncommitted or later commits will also be affected; create a branch when preserving an experiment matters.
 
-Octopus Studio uses real Git history. You can continue the same work in another editor or with standard Git commands.
+Soloman Studio uses real Git history. You can continue the same work in another editor or with standard Git commands.

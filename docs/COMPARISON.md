@@ -1,4 +1,4 @@
-# Octopus Studio comparison guide
+# Soloman Studio comparison guide
 
 There is no honest universal “best AI desktop app.” The right choice depends on whether you need a general assistant, a model-specific ecosystem, a code-first environment, a collaborative office suite, or a workspace that connects several kinds of work.
 
@@ -8,7 +8,7 @@ This comparison focuses on product orientation and documented capabilities, not 
 
 Legend: **Core** = central product workflow · **Available** = directly supported but not necessarily the main identity · **Connected** = generally reached through plugins, extensions, or integrations · **Specialized** = stronger fit in a dedicated category tool
 
-| Capability                                              | Octopus Studio                                  | ChatGPT Desktop                              | Claude Desktop                                                   | AI IDE / coding agent                           | Traditional office suite                                |
+| Capability                                              | Soloman Studio                                  | ChatGPT Desktop                              | Claude Desktop                                                   | AI IDE / coding agent                           | Traditional office suite                                |
 | ------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------- |
 | Persistent research/knowledge projects                  | **Core** — Chat Projects                        | **Core** — projects and long-running chats   | **Core** — Projects with chats and knowledge                     | Limited / code-centered                         | Specialized in documents, not agent projects            |
 | DOCX/XLSX/Markdown workspace                            | **Core** — in-app editing and preview           | **Available** through file workflows/plugins | **Available/Connected** through files and extensions             | Limited                                         | **Specialized**                                         |
@@ -23,7 +23,7 @@ Legend: **Core** = central product workflow · **Available** = directly supporte
 | Visual computer/browser operation                       | Not the main differentiator                     | **Core/Available** on supported setups       | Extensions/connectors rather than the same product emphasis      | Varies                                          | Native manual UI                                        |
 | Best fit                                                | Cross-format local-first work with model choice | Broad OpenAI assistant and agent ecosystem   | Anthropic-centered projects and connected tools                  | Deep repository work                            | Collaborative authoring and enterprise office workflows |
 
-## Where Octopus Studio is meaningfully different
+## Where Soloman Studio is meaningfully different
 
 ### 1. The project can be codeless or code-backed
 
@@ -35,7 +35,7 @@ DOCX, XLSX, Markdown, presentations, HTML, SVG, images, audio, and video can par
 
 ### 3. Model choice is a product principle
 
-Octopus Studio supports configured cloud providers and local Ollama/LM Studio runtimes, plus automatic routing and Economy Mode where available. This reduces dependence on one model vendor and lets users choose privacy, capability, latency, and cost tradeoffs.
+Soloman Studio supports configured cloud providers and local Ollama/LM Studio runtimes, plus automatic routing and Economy Mode where available. This reduces dependence on one model vendor and lets users choose privacy, capability, latency, and cost tradeoffs.
 
 ### 4. Automation returns to the same workspace
 
@@ -51,11 +51,11 @@ Software workflows are substantial—planning, agents, repositories, tests, live
 - Choose **Claude Desktop** when you primarily want Anthropic models, Claude Projects, and its desktop-extension/web-connector ecosystem.
 - Choose a dedicated **AI IDE or coding agent** when editor integration, code navigation, and repository throughput outweigh every non-code workflow.
 - Choose a traditional **office suite** when real-time human collaboration, enterprise document governance, or maximum format fidelity is the overriding requirement.
-- Choose **Octopus Studio** when your work crosses research, rich files, media, schedules, connected tools, model providers, and software projects—and you want those workflows in one local-first desktop environment.
+- Choose **Soloman Studio** when your work crosses research, rich files, media, schedules, connected tools, model providers, and software projects—and you want those workflows in one local-first desktop environment.
 
 ## Sources for competitor capabilities
 
 - OpenAI: [ChatGPT feature overview](https://learn.chatgpt.com/docs/features), [ChatGPT Desktop for Windows](https://learn.chatgpt.com/docs/windows/windows-app), [scheduled tasks](https://learn.chatgpt.com/docs/automations), and [plugins](https://learn.chatgpt.com/docs/plugins).
 - Anthropic: [Claude Projects](https://support.anthropic.com/en/articles/9517075-what-are-projects), [Claude Desktop installation and extensions](https://support.anthropic.com/en/articles/10065433-installing-claude-for-desktop), and [desktop versus web connectors](https://support.anthropic.com/en/articles/11725091-when-to-use-desktop-and-web-connectors).
 
-Octopus Studio capabilities are summarized in [Features and use cases](FEATURES_AND_USE_CASES.md). Availability can vary by release, platform, plan, provider, and workspace configuration.
+Soloman Studio capabilities are summarized in [Features and use cases](FEATURES_AND_USE_CASES.md). Availability can vary by release, platform, plan, provider, and workspace configuration.

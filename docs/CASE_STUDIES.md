@@ -1,6 +1,6 @@
-# Octopus Studio workflow case studies
+# Soloman Studio workflow case studies
 
-These examples show how multiple Octopus Studio capabilities can be combined. They are workflow patterns, not promises that every external data source or publishing destination is available without configuring the appropriate model, account, or MCP plugin.
+These examples show how multiple Soloman Studio capabilities can be combined. They are workflow patterns, not promises that every external data source or publishing destination is available without configuring the appropriate model, account, or MCP plugin.
 
 ## 1. Research management
 
@@ -41,7 +41,7 @@ These examples show how multiple Octopus Studio capabilities can be combined. Th
 
 **Result:** The repeatable data-cleaning process and its narrative outputs remain auditable and easier to rerun.
 
-> Octopus Studio assists with analysis; it does not replace qualified financial, accounting, or compliance review.
+> Soloman Studio assists with analysis; it does not replace qualified financial, accounting, or compliance review.
 
 ## 4. Content creator automation
 

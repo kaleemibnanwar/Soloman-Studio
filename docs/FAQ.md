@@ -1,20 +1,20 @@
 # Frequently asked questions
 
-## What is Octopus Studio?
+## What is Soloman Studio?
 
-Octopus Studio is a local-first AI desktop workspace for research, documents, data, media, scheduled automation, connected tools, and software development. It organizes work into persistent codeless Chat Projects or code-backed projects.
+Soloman Studio is a local-first AI desktop workspace for research, documents, data, media, scheduled automation, connected tools, and software development. It organizes work into persistent codeless Chat Projects or code-backed projects.
 
 ## Is it an app builder?
 
-Application development is one supported workflow, not the whole product. Octopus Studio also supports research management, document and spreadsheet work, media workflows, recurring tasks, reusable skills, model routing, and MCP-connected tools.
+Application development is one supported workflow, not the whole product. Soloman Studio also supports research management, document and spreadsheet work, media workflows, recurring tasks, reusable skills, model routing, and MCP-connected tools.
 
 ## Does it build operating systems?
 
-No. “Local-first AI workspace” describes a desktop application that runs on your computer. Octopus Studio is not an operating-system generator.
+No. “Local-first AI workspace” describes a desktop application that runs on your computer. Soloman Studio is not an operating-system generator.
 
 ## Is the source code public?
 
-Not currently. This public repository contains releases, documentation, and documentation assets only. If Octopus Studio receives 100 genuine source-code requests at [kaleemibanwar@gmail.com](mailto:kaleemibanwar@gmail.com?subject=Octopus%20Studio%20source%20request), the source will be made public.
+Yes. Soloman Studio is open source under the Apache License 2.0, and this repository contains the full application source alongside releases and documentation. See [CONTRIBUTING.md](../CONTRIBUTING.md) to get set up.
 
 ## Where does my work live?
 
@@ -46,7 +46,7 @@ Yes. Tasks can run manually or on hourly, daily, weekly, and custom intervals ag
 
 ## Does it support MCP?
 
-Yes. Octopus Studio includes Model Context Protocol support for catalog and custom tool connections. Only connect servers you trust, review requested permissions, and inspect consequential tool calls.
+Yes. Soloman Studio includes Model Context Protocol support for catalog and custom tool connections. Only connect servers you trust, review requested permissions, and inspect consequential tool calls.
 
 ## Can it work on an existing software project?
 

@@ -1,4 +1,4 @@
-# Octopus Studio documentation
+# Soloman Studio documentation
 
 Choose the shortest path to what you need.
 
@@ -6,7 +6,7 @@ Choose the shortest path to what you need.
 
 - [Features and use cases](FEATURES_AND_USE_CASES.md) — the complete capability map
 - [Workflow case studies](CASE_STUDIES.md) — research, marketing, data, content, client, and software examples
-- [Product comparison](COMPARISON.md) — where Octopus Studio differs and where another tool may fit better
+- [Product comparison](COMPARISON.md) — where Soloman Studio differs and where another tool may fit better
 - [Frequently asked questions](FAQ.md) — scope, privacy, files, models, automation, MCP, and source availability
 
 ## Start doing something
@@ -25,4 +25,4 @@ Browse the [complete tutorial index](tutorials/README.md) for every setup guide.
 
 ## Product boundaries
 
-The public repository contains release information, documentation, and documentation assets only. It does not currently contain application source code. Features may vary by platform, release, account, subscription, model provider, and connected service.
+Soloman Studio is open source under the Apache License 2.0; this repository contains the full application source alongside releases and documentation. Features may vary by platform, release, account, subscription, model provider, and connected service.

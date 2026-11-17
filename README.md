@@ -1,112 +1,197 @@
 <div align="center">
 
-<img src="assets/icon/logo.png" alt="Soloman Studio" width="120" />
+<img src="assets/icon/logo.png" alt="Soloman Studio" width="144" />
 
 # Soloman Studio
 
-**A local, open-source AI agentic workspace and app builder. Describe what you want, watch it build, and ship it yourself.**
+### One local-first AI workspace for the work that refuses to fit in one app.
 
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#download)
-[![Built with Electron](https://img.shields.io/badge/built%20with-Electron-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+Research · Documents · Data · Media · Automation · MCP · Development
 
-[Download](#download) · [Features](#features) · [Getting Started](#getting-started) · [Contributing](#contributing)
+[![Latest release](https://img.shields.io/github/v/release/kaleemibnanwar/Soloman-Studio?label=latest&style=for-the-badge)](https://github.com/kaleemibnanwar/Soloman-Studio/releases/latest)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-14b8a6?style=for-the-badge)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/kaleemibnanwar/Soloman-Studio/total?style=for-the-badge&label=downloads)](https://github.com/kaleemibnanwar/Soloman-Studio/releases)
+[![Stars](https://img.shields.io/github/stars/kaleemibnanwar/Soloman-Studio?style=for-the-badge)](https://github.com/kaleemibnanwar/Soloman-Studio/stargazers)
+[![Platforms](https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-available-14b8a6?style=for-the-badge)](#download)
+
+[Download](#download) · [See what it does](#eight-arms-one-workspace) · [Build from source](#build-from-source) · [Case studies](docs/CASE_STUDIES.md) · [Compare](docs/COMPARISON.md) · [Tutorials](docs/tutorials/README.md) · [FAQ](docs/FAQ.md)
 
 </div>
 
 ---
 
-Soloman Studio empowers you with full-stack agentic capabilities: scaffolding apps, wiring plugins, managing scheduled tasks, and coordinating squads of agents. You describe what you want built, it delivers a real, running codebase — not a mockup — entirely on your machine. Your code, your API keys, your data, never someone else's server.
+Most AI tools give you a chat box. Soloman Studio gives the work somewhere to live.
+
+Create a codeless research project. Edit the report and spreadsheet beside it. Review images, audio, video, HTML, and presentations. Schedule the next update. Connect real tools through MCP. Route each task to a suitable cloud or local model. And when the work is software, plan it, build it, preview it, version it, and ship it from the same workspace.
+
+**Software development is one arm—not the whole workspace.**
+
+## The 30-second tour
+
+```mermaid
+flowchart LR
+    A[Think<br/>Chat Projects] --> B[Create<br/>Docs · Data · Media]
+    B --> C[Connect<br/>MCP · Services]
+    C --> D[Automate<br/>Scheduled Tasks]
+    D --> E[Review<br/>Previews · Changes]
+    E --> A
+    B --> F[Develop<br/>Code · Git · Deploy]
+    F --> E
+```
+
+Your files remain useful outside Soloman Studio. Cloud models and connected services receive only the context used for their requests; local models are available through Ollama and LM Studio when configured.
+
+## Eight arms, one workspace
+
+| Arm                | What it unlocks                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| 🔎 **Research**    | Codeless Chat Projects for investigations, planning, notes, and long-running knowledge work.                     |
+| 📄 **Documents**   | In-app DOCX and Markdown editing, PPTX preview, and connected report workflows.                                  |
+| 📊 **Data**        | XLSX editing and preview for sheets, values, formulas, analysis, and recurring reporting.                        |
+| 🎬 **Media**       | Preview images, SVG, audio, and video; search image providers and generate media with configured models.         |
+| ⏱️ **Automation**  | Run saved prompts manually or hourly, daily, weekly, or on a custom interval.                                    |
+| 🔌 **Connections** | Add MCP tools and connect services such as Google Workspace, GitHub, Vercel, Supabase, and Neon.                 |
+| 🧠 **Models**      | Bring supported providers or local models, use automatic routing, and turn on Economy Mode for routine work.     |
+| 🛠️ **Development** | Create or import software projects, plan changes, edit files, run tests, preview HTML/apps, use Git, and deploy. |
+
+No single workflow has to use every arm. The point is that your next step is already nearby.
+
+## See it in action
+
+### One workspace for projects, chats, tasks, and agents
+
+Start research, document, automation, data, media, or development work from the same project surface.
 
 <p align="center">
-  <img src="assets/screenshots/home.png" alt="Soloman Studio home screen" width="820" />
+  <img src="docs/assets/screenshots/workspace.png" alt="Soloman Studio project and automation workspace" width="900" />
 </p>
 
-## Features
+### MCP tools with visible controls
 
-Eight arms, eight jobs. Here's what each one is doing.
-
-### Build apps by describing them
-
-The first arm sketches the plan and lays the scaffold. Type what you want, pick a template (React, Next.js, or a full-stack starter), and Soloman Studio scaffolds a real project, opens a live preview, and iterates with you turn by turn — every AI edit is committed to a real git history you can branch from or roll back.
-
-### Chat Projects
-
-Not every conversation is about code. Chat Projects are a codeless workspace variant for notes, plans, and research docs, using the same agent and the same chat UI as your coding projects.
-
-### Tasks — scheduled prompts
+Browse the catalog, connect trusted services, and give the agent only the tools the workflow needs.
 
 <p align="center">
-  <img src="assets/screenshots/tasks.png" alt="Tasks page" width="820" />
+  <img src="docs/assets/screenshots/plugins.png" alt="Soloman Studio MCP plugin catalog" width="900" />
 </p>
 
-An arm that works the night shift. Save a prompt once, run it on demand or on a schedule (hourly, daily, weekly, or a custom interval), against any project. Each run dispatches through the exact same chat agent as a manual message — nothing simulated.
+### Reusable skills instead of repeated instructions
 
-### Skills — knowledge it loads only when it needs it
-
-An arm that remembers how you like things done. Save a skill — a name, a short description of when to use it, and the full instructions — and the agent keeps just the name and description in view, loading the full instructions only once a task actually calls for it. Reference one directly with `/skill-name` in any prompt (chain as many as you need in one message), or ask the agent to save a new skill itself once you've worked out a process worth reusing. Manage them from **Library → Skills**.
-
-### Workers — multi-persona agent squads
+Save focused operating instructions for document design, spreadsheets, presentations, and repeatable workflows.
 
 <p align="center">
-  <img src="assets/screenshots/workers.png" alt="Workers panel" width="820" />
-  <img src="assets/screenshots/workers-personas.png" alt="Worker personas" width="820" />
+  <img src="docs/assets/screenshots/skills.png" alt="Soloman Studio reusable agent skills library" width="900" />
 </p>
 
-Sometimes one arm isn't enough, so it deputizes. Assemble a squad of personas — a PM, a Solutions Architect, a Tester, a Security Engineer, a Designer, a Marketer — and dispatch a goal. The lead persona plans it, the rest do real turns in a shared chat (real edits, real commits), and the last persona writes the standup report. Cancel a run mid-flight, or open the chat and watch it work.
+### Built-in media and asset workspace
 
-### Plugins — connect real tools over MCP
+Search, generate, organize, and preview project media without bouncing between disconnected tools.
 
 <p align="center">
-  <img src="assets/screenshots/plugins.png" alt="Plugins catalog" width="820" />
+  <img src="docs/assets/screenshots/media.png" alt="Soloman Studio in-app media library" width="900" />
 </p>
 
-More arms, on demand. Connect real tools through the Model Context Protocol from a bundled catalog of verified, genuinely operating servers — Gmail, Slack, Canva, Notion, Linear, Figma, GitHub, Stripe, Cloudflare, Supabase, and more — with OAuth or a single API key, no hand-written config.
+## What people can do with it
 
-### Bring your own model
+| Workflow                  | Start with                        | Add                                     | Produce                                   |
+| ------------------------- | --------------------------------- | --------------------------------------- | ----------------------------------------- |
+| **Research management**   | A Chat Project and research skill | MCP sources + scheduled updates         | Evidence log, XLSX data, DOCX report      |
+| **Marketing operations**  | Campaign brief                    | Image search/generation + media preview | Calendar, assets, copy, launch deck       |
+| **Financial/data review** | An XLSX workbook                  | Controlled analysis + Economy Mode      | Cleaned data, findings, management report |
+| **Creator automation**    | Research and editorial skill      | Media + recurring review tasks          | Article, deck, newsletter, video briefs   |
+| **Client operations**     | One project per engagement        | Skills + schedules + connected tools    | Repeatable reports and status updates     |
+| **Software delivery**     | Existing repo or template         | Plan + agent + tests + preview          | Versioned, deployable project             |
 
-It's your ocean; pick the current. Connect OpenAI, Anthropic, Google, or a local model via Ollama/LM Studio. Economy Mode trims context and output for cheaper, faster turns when you don't need the full context window.
+Read the detailed [workflow case studies](docs/CASE_STUDIES.md).
 
-### Everything else you'd expect
+## Why not just use a chat app?
 
-Visual editing with live preview, local sandboxed execution, one-click GitHub/Vercel/Supabase/Neon integration, a Settings page with real control over the default model, context limits, and agent permissions, and a sidebar that remembers which sections you've collapsed between launches.
+ChatGPT Desktop and Claude Desktop are powerful general assistants. Coding agents are excellent at repositories. Office suites are excellent at individual file formats. Automation platforms connect triggers and actions.
 
-<p align="center">
-  <img src="assets/screenshots/settings.png" alt="Settings page" width="820" />
-</p>
+Soloman Studio's bet is different: **the project, its files, its reusable process, its scheduled work, its connected tools, and its model choices should live together.**
+
+| When you care most about…                                                                                     | Consider                        |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| A broad assistant ecosystem, browser/computer use, and OpenAI models                                          | ChatGPT Desktop                 |
+| Anthropic models, Projects, and mature desktop/web connectors                                                 | Claude Desktop                  |
+| Deep code-editor ergonomics above everything else                                                             | A dedicated AI IDE/coding agent |
+| Specialized office collaboration and enterprise document controls                                             | A traditional office suite      |
+| A local-first, model-flexible workspace spanning research, rich files, media, schedules, MCP, and development | **Soloman Studio**              |
+
+See the sourced, capability-by-capability [comparison](docs/COMPARISON.md). No fake “we win every row” table.
 
 ## Download
 
-Grab the latest build for your platform from the [Releases](../../releases) page (macOS, Windows, and Linux).
+1. Open the [latest release](https://github.com/kaleemibnanwar/Soloman-Studio/releases/latest).
+2. Read the release notes and choose the asset for your operating system and architecture.
+3. Install or extract it, then launch Soloman Studio.
+4. Connect a supported cloud provider or local Ollama/LM Studio runtime.
+5. Create a Chat Project, open a file, schedule a task, connect an MCP tool, or add a software project.
 
-## Getting Started
+Availability can vary by platform, release, account, provider, subscription, and connected service.
+
+## Pick a starting point
+
+- **I need recurring research:** [Create a research Chat Project](docs/tutorials/13-chat-projects-for-research.md) → [schedule updates](docs/tutorials/11-scheduled-tasks.md)
+- **I work with reports and data:** [Open documents, spreadsheets, and media](docs/tutorials/15-documents-data-and-media.md)
+- **I want lower-cost model usage:** [Configure routing and Economy Mode](docs/tutorials/14-model-routing-and-economy.md)
+- **I need external tools:** [Connect an MCP plugin](docs/tutorials/09-plugins.md)
+- **I have an existing codebase:** [Import it](docs/tutorials/05-import-an-existing-project.md) → [choose a chat mode](docs/tutorials/04-chat-modes-and-permissions.md)
+- **I want the full map:** [Features and use cases](docs/FEATURES_AND_USE_CASES.md)
+
+## Privacy, control, and honest boundaries
+
+- Project files and local workspace data are stored on your machine.
+- A cloud model receives the prompt and context sent to that provider.
+- Local inference can use Ollama or LM Studio, but connected services can still make network requests.
+- MCP servers are third-party tools; review permissions, credentials, and consequential actions.
+- Keep approval gates on for sensitive commands, external actions, database changes, and unattended tasks.
+- Soloman Studio can assist with research, financial/data work, and other professional tasks; qualified human review remains essential.
+
+Read the [FAQ](docs/FAQ.md) for product scope, data flow, formats, and limitations.
+
+## Open source
+
+Soloman Studio is fully open source under the [Apache License 2.0](LICENSE). This repository contains the complete application source — Electron main process, React renderer, local database, agents, workers, and the MCP layer — alongside the releases and documentation.
+
+## Build from source
+
+Requires **Node.js 24** and npm.
 
 ```bash
-git clone https://github.com/kaleemibnanwar/OctopusStudio.git
-cd OctopusStudio
+git clone https://github.com/kaleemibnanwar/Soloman-Studio.git
+cd Soloman-Studio
 npm install
-npm start
+npm start               # launch the desktop app in development
 ```
 
-Soloman Studio opens as a desktop app on first launch. Add a model provider API key (or point it at a local Ollama/LM Studio instance) from **Manage AI setup**, and you're building.
-
-### Building a distributable
+Add a model provider API key (or point it at a local Ollama / LM Studio instance) from **Manage AI setup**, and you're building.
 
 ```bash
 npm run make            # build an installer for your current platform
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow, and [AGENTS.md](AGENTS.md) for the architecture notes AI coding agents (and humans) working in this repo should read first.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow, [SECURITY.md](SECURITY.md) to report a vulnerability privately, and [AGENTS.md](AGENTS.md) for architecture notes.
 
-## Tech stack
+## The Soloman ecosystem
 
-Electron · React · TypeScript · TanStack Router · Drizzle ORM (SQLite) · Vite · Tailwind CSS
+| Project | What it is |
+| --- | --- |
+| 🧠 **Soloman Studio** | This repo — the local-first AI workspace |
+| ✂️ [**Soloman Editor**](https://github.com/kaleemibnanwar/SolomanEditor) | The video editor that drives itself — AI-powered editing with MCP control |
+| 🐙 [**Soloman Manager**](https://github.com/kaleemibnanwar/Soloman-Manager) | Control center & package manager for MCP servers |
+| 🌐 [**Soloman Limb**](https://github.com/kaleemibnanwar/solomanlimb) | MCP for any browser — let any agent drive your real Chrome |
 
-## Contributing
+## Help this project travel
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) to get set up, and [SECURITY.md](SECURITY.md) to report a vulnerability privately.
+If Soloman Studio matches how you want AI workspaces to evolve:
+
+1. ⭐ Star the repository so others can find it.
+2. Download a release and try one complete workflow.
+3. Share the [case study](docs/CASE_STUDIES.md) that fits your work.
+4. Open an issue with the workflow that would make Soloman Studio indispensable to you.
+
+> **Shareable one-liner:** Soloman Studio is a local-first, open-source AI workspace where research, documents, data, media, scheduled tasks, MCP tools, model routing, and software projects live together.
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+[Apache License 2.0](LICENSE) — free to use, modify, and distribute.
