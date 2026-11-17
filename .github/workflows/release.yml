@@ -31,7 +31,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install -g npm@11
+          npm install -g npm@11 || sudo npm install -g npm@11
           npm ci
           node scripts/patch-node-gyp.js
         shell: bash
@@ -68,6 +68,10 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          if [ -z "$APPLE_CERTIFICATE_BASE64" ]; then
+            echo "No Apple signing certificate configured — building unsigned."
+            exit 0
+          fi
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
@@ -85,6 +89,10 @@ jobs:
         env:
           APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
         run: |
+          if [ -z "$APPLE_API_KEY_BASE64" ]; then
+            echo "No Apple notarization API key configured — skipping notarization."
+            exit 0
+          fi
           echo -n "$APPLE_API_KEY_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
           echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
         shell: bash
@@ -125,16 +133,9 @@ jobs:
       - name: Upload Binaries to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
           if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v$(node -p 'require(\"./package.json\").version')"; fi
           gh release view "$TAG" || gh release create "$TAG" --title "Soloman Studio $TAG" --notes "Release $TAG"
           gh release upload "$TAG" dist-release/* --clobber
-          if [ -z "$PUBLIC_REPO_TOKEN" ]; then
-            echo "PUBLIC_REPO_TOKEN is required to publish updater assets to kaleemibnanwar/Soloman-Studio" >&2
-            exit 1
-          fi
-          GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release view "$TAG" --repo kaleemibnanwar/Soloman-Studio || GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release create "$TAG" --repo kaleemibnanwar/Soloman-Studio --title "Soloman Studio $TAG" --notes "Release $TAG"
-          GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release upload "$TAG" dist-release/* --repo kaleemibnanwar/Soloman-Studio --clobber
         shell: bash
