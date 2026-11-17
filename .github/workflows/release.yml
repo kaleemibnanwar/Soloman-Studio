@@ -1,0 +1,140 @@
+name: Build & Publish Multi-Platform Release Installers
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=8192"
+
+jobs:
+  build-release:
+    name: Build on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Source Code
+        run: |
+          git config --global core.autocrlf false
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git .
+          git checkout ${{ github.ref_name }} || true
+        shell: bash
+
+      - name: Install Dependencies
+        run: |
+          npm install -g npm@11
+          npm ci
+          node scripts/patch-node-gyp.js
+        shell: bash
+
+      # --- Windows Build (Setup .exe & Portable .zip) ---
+      - name: Build Windows Installer (.exe Setup)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:SpectreMitigation = "false"
+          $env:VCPKG_DISABLE_SPECTRE_MITIGATION = "1"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (Test-Path $vswhere) {
+            $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+            if ($vsPath -and (Test-Path "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll")) {
+              Write-Host "Activating Visual Studio environment from $vsPath"
+              Import-Module "$vsPath\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+              Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments "-arch=x64"
+            }
+          }
+          npx electron-forge make --platform=win32 --arch=x64
+          if (!(Test-Path dist-release)) { New-Item -ItemType Directory -Path dist-release }
+          $version = node -p "require('./package.json').version"
+          Copy-Item out/make/squirrel.windows/x64/*.exe "dist-release/Soloman-Studio-Setup-$version.exe" -ErrorAction Stop
+          Copy-Item out/make/squirrel.windows/x64/*.nupkg dist-release/ -ErrorAction SilentlyContinue
+          Copy-Item out/make/squirrel.windows/x64/RELEASES dist-release/RELEASES -ErrorAction Stop
+          Copy-Item out/make/zip/win32/x64/*.zip dist-release/Soloman-Studio-Windows-Portable.zip -ErrorAction SilentlyContinue
+
+      # --- Install Apple signing certificate (macOS only) ---
+      - name: Install Apple signing certificate
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+        shell: bash
+
+      # --- Install Apple notarization API key (macOS only) ---
+      - name: Install Apple notarization API key
+        if: runner.os == 'macOS'
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+        run: |
+          echo -n "$APPLE_API_KEY_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+        shell: bash
+
+      # --- macOS Build (Apple Silicon arm64 & Intel x64) ---
+      - name: Build macOS Binaries (Apple Silicon arm64 & Intel x64)
+        if: runner.os == 'macOS'
+        env:
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          npx electron-forge make --platform=darwin --arch=arm64
+          npx electron-forge make --platform=darwin --arch=x64
+          mkdir -p dist-release
+          cp out/make/zip/darwin/arm64/*.zip dist-release/Soloman-Studio-macOS-AppleSilicon.zip 2>/dev/null || true
+          cp out/make/zip/darwin/x64/*.zip dist-release/Soloman-Studio-macOS-Intel.zip 2>/dev/null || true
+          cp out/make/zip/darwin/*/*.zip dist-release/ 2>/dev/null || true
+        shell: bash
+
+      # --- Linux Build (.deb, .rpm & AppImage) ---
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot rpm
+        shell: bash
+
+      - name: Build Linux Installers (.deb, .rpm & AppImage)
+        if: runner.os == 'Linux'
+        run: |
+          npx electron-forge make --platform=linux --arch=x64
+          mkdir -p dist-release
+          cp out/make/deb/x64/*.deb dist-release/
+          cp out/make/rpm/x64/*.rpm dist-release/ 2>/dev/null || true
+          cp out/make/AppImage/* dist-release/ 2>/dev/null || true
+        shell: bash
+
+      # --- Upload Binaries to GitHub Releases ---
+      - name: Upload Binaries to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v$(node -p 'require(\"./package.json\").version')"; fi
+          gh release view "$TAG" || gh release create "$TAG" --title "Soloman Studio $TAG" --notes "Release $TAG"
+          gh release upload "$TAG" dist-release/* --clobber
+          if [ -z "$PUBLIC_REPO_TOKEN" ]; then
+            echo "PUBLIC_REPO_TOKEN is required to publish updater assets to kaleemibnanwar/Soloman-Studio" >&2
+            exit 1
+          fi
+          GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release view "$TAG" --repo kaleemibnanwar/Soloman-Studio || GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release create "$TAG" --repo kaleemibnanwar/Soloman-Studio --title "Soloman Studio $TAG" --notes "Release $TAG"
+          GH_TOKEN="$PUBLIC_REPO_TOKEN" gh release upload "$TAG" dist-release/* --repo kaleemibnanwar/Soloman-Studio --clobber
+        shell: bash

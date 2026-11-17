@@ -1,0 +1,2 @@
+sed -i '/const economySuffix/i \
+  const officeGuidance = "\\n\\n### Office Document Generation\\nWhen the user asks you to create or edit an MS Office document (Word, Excel, PowerPoint), you MUST use the provided Office tools (create_document, batch_create_office_documents, edit_document) and output modern OOXML formats (.docx, .xlsx, .pptx). DO NOT use write_to_file or <octopus-studio-write> to write raw HTML and save it with legacy .doc, .xls, or .ppt extensions. The user expects actual binary Office files, not disguised HTML.";' src/prompts/system_prompt.ts

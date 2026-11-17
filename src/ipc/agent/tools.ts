@@ -1,0 +1,3925 @@
+import fs from "node:fs";
+import path from "node:path";
+import { jsonSchema, type Tool, type ToolSet } from "ai";
+import type { IpcMainInvokeEvent } from "electron";
+import { BrowserWindow } from "electron";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { mcpManager } from "../mcp/mcp_manager";
+import { getEmbeddedBrowserUrl, runEmbeddedBrowserTool } from "../handlers/browser_handlers";
+import {
+  getRecipeByFingerprint,
+  listRecipesForDomain,
+  recordRecipeOutcome,
+  upsertRecipe,
+  type RecipeStep,
+} from "../../main/octolimb_recipes";
+
+import { db } from "../../db";
+import { chats, messages, tasks, mcpServers, plannerTasks } from "../../db/schema";
+import { getUserDataPath } from "../../paths/paths";
+import { AGENT_TOOL_REGISTRY } from "./tool_registry";
+import { ROLE_BUDGETS, type AgentRole } from "./task_types";
+import { getMissionHitlPolicy, requestHitlApproval, shouldInterceptTool } from "./hitl_interceptor";
+import { readTextFileLines, AGENT_READ_FILE_TRUNCATION_NOTICE } from "../utils/bounded_text_file";
+import { searchAppFilesWithRipgrep } from "../handlers/app_handlers";
+import { runCodeExplorer } from "../processors/code_explorer";
+import { applySearchReplace } from "../processors/response_processor";
+import { installPackages } from "../processors/executeAddDependency";
+import { runTypeScriptCheck } from "../processors/tsc";
+import { restartApp } from "../services/restart_app";
+import { runSandboxScript } from "../utils/sandbox/runner";
+import { runBufferedProcess } from "../process/buffered_process";
+import { buildWindowsCommandInvocation } from "../utils/windows_command";
+import { appOperationCoordinator, readAppResource } from "../services/app_operation_coordinator";
+import { executeCopyFile } from "../utils/copy_file_utils";
+import { safeJoin, assertMutationPathAllowed, prepareDeletePath } from "../utils/path_utils";
+import {
+  getAgentGitStatus,
+  getAgentGitDiff,
+  getAgentGitLog,
+  getAgentGitCommit,
+  getAgentGitFile,
+  restoreAgentGitFile,
+} from "../git/git_utils";
+import {
+  openCodeIndexDb,
+  buildOrUpdateProjectIndex,
+  buildOrUpdateFileChunks,
+  removeFileChunks,
+  searchChunks,
+} from "../utils/code_index";
+import { agentEvents } from "../types/agent";
+import { publishQueryInvalidations } from "../utils/query_invalidation_delivery";
+import { readSettings } from "../../main/settings";
+import { callOctoLimbTool } from "../../main/octolimb_bridge";
+import { generateImageWithFallback } from "../utils/get_image_model_client";
+import { generateVideo } from "../utils/get_video_model_client";
+import { getOctopusStudioMediaDir, SOLOMAN_MEDIA_DIR_NAME } from "../media/media_path_utils";
+import { createSkill, deleteSkill, findSkill, listSkills, updateSkill } from "../utils/skill_store";
+import {
+  generateDocx,
+  generatePptx,
+  generateXlsx,
+  parseDocx,
+  parsePptx,
+  parseXlsx,
+} from "../office/office_open";
+import {
+  compileDocxDocument,
+  compilePptxPresentation,
+  compileXlsxWorkbook,
+} from "../office/office_compiler";
+import { DOC_TEMPLATES } from "../office/office_templates";
+import { DOC_TEMPLATES_EXTRA } from "../office/office_docx_templates_extra";
+import { DOC_TEMPLATES_MORE } from "../office/office_docx_templates_more";
+import { PPT_TEMPLATES } from "../office/office_pptx_templates";
+import { PPT_TEMPLATES_EXTRA } from "../office/office_pptx_templates_extra";
+import { PPT_TEMPLATES_MORE } from "../office/office_pptx_templates_more";
+import { XLSX_TEMPLATES } from "../office/office_xlsx_templates";
+import { XLSX_TEMPLATES_MORE } from "../office/office_xlsx_templates_more";
+import {
+  resolveColorScheme,
+  recolor,
+  listColorSchemeNames,
+  type ColorRole,
+} from "../office/office_theme";
+import {
+  DOC_TEMPLATE_ROLES,
+  PPT_TEMPLATE_ROLES,
+  XLSX_TEMPLATE_ROLES,
+} from "../office/office_template_roles";
+
+interface TemplateMeta {
+  title: string;
+  description?: string;
+  category?: string;
+}
+
+const ALL_DOC_TEMPLATES: Record<string, TemplateMeta & { sections: unknown }> = {
+  ...DOC_TEMPLATES,
+  ...DOC_TEMPLATES_EXTRA,
+  ...DOC_TEMPLATES_MORE,
+};
+const ALL_PPT_TEMPLATES: Record<
+  string,
+  TemplateMeta & { size: unknown; masters: unknown; slides: unknown[] }
+> = {
+  ...PPT_TEMPLATES,
+  ...PPT_TEMPLATES_EXTRA,
+  ...PPT_TEMPLATES_MORE,
+};
+const ALL_XLSX_TEMPLATES: Record<string, TemplateMeta & { worksheets: unknown[] }> = {
+  ...XLSX_TEMPLATES,
+  ...XLSX_TEMPLATES_MORE,
+};
+
+/**
+ * The real, callable built-in tools for `ask`/`plan`/`local-agent` chat modes.
+ *
+ * These are what the model was *supposed* to have (the prompt in
+ * `local_agent_prompt.ts` describes ~32 of them) but `chat_stream_handlers.ts`
+ * only ever attached MCP tools — which is why the model kept reaching for
+ * OctoLimb's browser-automation tools even for non-browser tasks.
+ *
+ * Every tool reuses an existing, tested utility; none introduce new
+ * file-editing/git/build primitives. Tools without a real local backing return
+ * an honest error instead of silently no-op'ing.
+ */
+
+const STUB_MESSAGE = "not available in this build";
+
+// Registry lookups for consent defaults (default approval lives in the same
+// table that powers the Settings tool-visibility UI).
+const registryByName = new Map(AGENT_TOOL_REGISTRY.map((t) => [t.name, t]));
+const browserRecipeStepsByWindow = new Map<number, RecipeStep[]>();
+
+function domainFromUrl(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).hostname || "embedded";
+  } catch {
+    return "embedded";
+  }
+}
+
+type JsonSchemaProperties = Record<
+  string,
+  { type: string; description?: string; items?: Record<string, unknown>; default?: unknown }
+>;
+
+function schema(properties: JsonSchemaProperties, required: string[] = []) {
+  return jsonSchema({ type: "object", properties, required } as never);
+}
+
+function stub(description: string): Tool {
+  return {
+    description,
+    inputSchema: schema({}),
+    execute: async () => STUB_MESSAGE,
+  };
+}
+
+function stringify(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value === undefined || value === null) return "";
+  return JSON.stringify(value, null, 2);
+}
+
+/** Escape a value for safe embedding inside a custom-tag XML attribute. */
+function escapeXmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Map a generated video's IANA media type to a file extension. */
+function mediaTypeToExtension(mediaType: string): string {
+  const normalized = mediaType.toLowerCase();
+  if (normalized.includes("webm")) return "webm";
+  if (normalized.includes("quicktime") || normalized.includes("mov")) return "mov";
+  return "mp4";
+}
+
+/** Recursively collect readable text from parsed office-open options. */
+function collectOfficeText(value: unknown, out: string[] = []): string[] {
+  if (value == null) return out;
+  if (typeof value === "string") {
+    out.push(value);
+    return out;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) collectOfficeText(v, out);
+    return out;
+  }
+  if (typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    if (typeof o.text === "string") out.push(o.text);
+    if (typeof o.value === "string") out.push(o.value);
+    for (const key of [
+      "children",
+      "paragraph",
+      "heading",
+      "textBox",
+      "rows",
+      "cells",
+      "sections",
+      "slides",
+      "worksheets",
+    ]) {
+      if (key in o) collectOfficeText(o[key], out);
+    }
+  }
+  return out;
+}
+
+/** Whether parsed office-open options contain any non-whitespace text. */
+function hasOfficeContent(value: unknown): boolean {
+  return collectOfficeText(value).some((t) => t.trim().length > 0);
+}
+
+/** Collect the unique `[...]` placeholder tokens found anywhere in a template. */
+function collectPlaceholders(value: unknown, out: string[] = []): string[] {
+  if (value == null) return out;
+  if (typeof value === "string") {
+    const matches = value.match(/\[[^\]]+\]/g);
+    if (matches) {
+      for (const m of matches) if (!out.includes(m)) out.push(m);
+    }
+    return out;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) collectPlaceholders(v, out);
+    return out;
+  }
+  if (typeof value === "object") {
+    for (const v of Object.values(value as Record<string, unknown>)) {
+      collectPlaceholders(v, out);
+    }
+  }
+  return out;
+}
+
+/**
+ * Deep-clone `value` and replace every occurrence of each placeholder key
+ * (e.g. `"[Client / Company Name]"`) with its mapped text. Keys are the literal
+ * placeholder strings returned by `collectPlaceholders`.
+ */
+function applyPlaceholders(value: unknown, values: Record<string, string>): unknown {
+  if (value == null) return value;
+  if (typeof value === "string") {
+    let s = value;
+    for (const [k, v] of Object.entries(values)) {
+      if (k) s = s.split(k).join(v);
+    }
+    return s;
+  }
+  if (Array.isArray(value)) return value.map((v) => applyPlaceholders(v, values));
+  if (typeof value === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      result[k] = applyPlaceholders(v, values);
+    }
+    return result;
+  }
+  return value;
+}
+
+/** Format a template's name/title and placeholder list for the model. */
+function formatTemplateInfo(name: string, meta: TemplateMeta, placeholders: string[]): string {
+  const lines = [
+    `Template: ${name} (${meta.title})`,
+    meta.category ? `Category: ${meta.category}` : "",
+    meta.description ? `Description: ${meta.description}` : "",
+    "",
+  ];
+  if (placeholders.length === 0) {
+    lines.push("No placeholders.");
+  } else {
+    lines.push("Placeholders (fill via the `values` map when creating):");
+    for (const p of placeholders) lines.push(`- ${p}`);
+  }
+  lines.push("", `Color schemes (pass as "colorScheme"): ${listColorSchemeNames().join(", ")}.`);
+  return lines.join("\n");
+}
+
+/** A single row of batch data: what to fill in, and optionally its own output filename. */
+interface BatchRecord {
+  filename?: string;
+  values: Record<string, string>;
+}
+
+/** Minimal RFC4180 CSV parser: quoted fields, embedded commas/newlines, "" escaping. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  const pushField = () => {
+    row.push(field);
+    field = "";
+  };
+  const pushRow = () => {
+    pushField();
+    rows.push(row);
+    row = [];
+  };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+      continue;
+    }
+    if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      pushField();
+    } else if (c === "\r") {
+      // skip, \n (or end) terminates the row
+    } else if (c === "\n") {
+      pushRow();
+    } else {
+      field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) pushRow();
+  return rows.filter((r) => !(r.length === 1 && r[0] === ""));
+}
+
+/** Build [key] and bracketed-[key] entries so CSV/JSON headers work with or without brackets. */
+function toPlaceholderValues(fields: Record<string, string>): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const [k, v] of Object.entries(fields)) {
+    values[k] = v;
+    const bracketed = k.startsWith("[") && k.endsWith("]") ? k : `[${k}]`;
+    values[bracketed] = v;
+  }
+  return values;
+}
+
+function parseJsonRecords(text: string, filenameField?: string): BatchRecord[] | string {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    return `Invalid JSON: ${e instanceof Error ? e.message : String(e)}`;
+  }
+  if (!Array.isArray(data)) return "Data file must be a JSON array of records.";
+  return data.map((entry) => {
+    if (entry && typeof entry === "object") {
+      const o = entry as Record<string, unknown>;
+      const rawValues =
+        o.values && typeof o.values === "object"
+          ? (o.values as Record<string, unknown>)
+          : Object.fromEntries(Object.entries(o).filter(([k]) => k !== "filename"));
+      const stringValues: Record<string, string> = {};
+      for (const [k, v] of Object.entries(rawValues)) stringValues[k] = String(v);
+      let filename: string | undefined;
+      if (typeof o.filename === "string") {
+        filename = o.filename;
+      } else if (filenameField) {
+        const fieldValue = rawValues[filenameField];
+        if (typeof fieldValue === "string" || typeof fieldValue === "number") {
+          filename = String(fieldValue);
+        }
+      }
+      return { filename, values: toPlaceholderValues(stringValues) };
+    }
+    return { values: {} };
+  });
+}
+
+function parseCsvRecords(text: string, filenameField?: string): BatchRecord[] | string {
+  const rows = parseCsv(text);
+  if (rows.length < 1) return "CSV data file is empty.";
+  const [header, ...dataRows] = rows;
+  return dataRows.map((row) => {
+    const fields: Record<string, string> = {};
+    header.forEach((h, i) => {
+      fields[h] = row[i] ?? "";
+    });
+    const filename = filenameField ? fields[filenameField] : undefined;
+    return { filename, values: toPlaceholderValues(fields) };
+  });
+}
+
+// Illegal filename characters, listed via char codes rather than a regex
+// character class (some codes here are adjacent to control-char ranges and
+// a couple of editing tools in this environment have mis-rewritten that
+// class into a literal null-byte range in the past).
+const ILLEGAL_FILENAME_CHARS = [60, 62, 58, 34, 124, 63, 42].map((c) => String.fromCharCode(c));
+
+/** Strip path separators/traversal and illegal filename characters; force the correct extension. */
+function sanitizeBatchFilename(name: string | undefined, fallback: string, ext: string): string {
+  const base = (name && name.trim()) || fallback;
+  let cleaned = base.replace(/[\\/]/g, "-").replace(/^\.+/, "");
+  for (const ch of ILLEGAL_FILENAME_CHARS) cleaned = cleaned.split(ch).join("");
+  cleaned = cleaned.replace(/\s+/g, " ").trim() || fallback;
+  return cleaned.toLowerCase().endsWith(`.${ext}`) ? cleaned : `${cleaned}.${ext}`;
+}
+
+const MAX_BATCH_RECORDS = 20000;
+/** Yield to the event loop every this many documents so a large batch doesn't freeze the app. */
+const BATCH_YIELD_EVERY = 200;
+
+/** A structured question asked via `planning_questionnaire` (doc §8/§22). */
+export interface QuestionnaireQuestion {
+  id: string;
+  type: "text" | "radio" | "checkbox";
+  question: string;
+  options?: string[];
+  required?: boolean;
+  placeholder?: string;
+}
+
+/** A bounded, isolated subtask delegated to a sub-agent (doc §22 task.create). */
+export interface SubAgentSpec {
+  role?: "explorer" | "executor" | "tester" | "debugger" | "reviewer" | "architect" | "verifier";
+  description: string;
+  allowedFiles?: string[] | null;
+  context?: string;
+  /** Restrict the sub-agent to these built-in tools (by name). */
+  toolAllowlist?: string[] | null;
+  /** Optional list of MCP servers to give the sub-agent access to. */
+  mcpServers?: string[] | null;
+  /** Max reasoning steps for the sub-agent's streamText loop. */
+  maxSteps?: number;
+  /** Resume from a prior sub-task's id — injects its action history as context. */
+  resumeFromTaskId?: string;
+  /** Mission ledger used for sensitive-action approval and attribution. */
+  missionSlug?: string;
+  botName?: string;
+}
+
+export interface BuiltinToolsParams {
+  appPath: string;
+  appId: number;
+  chatId: number;
+  chatMode: string;
+  agentToolConsents: Record<string, string> | undefined;
+  event: IpcMainInvokeEvent;
+  /**
+   * Per-agent permission boundary (§9). Undefined = unrestricted, which is the
+   * current single-agent path. The orchestrator supplies this so a worker's tool
+   * calls are checked against its allowed_files/allowed_symbols.
+   */
+  agentTaskContext?: {
+    taskId: string;
+    allowedFiles?: string[] | null;
+    allowedSymbols?: string[] | null;
+    agentRole?: string;
+    toolAllowlist?: string[] | null;
+    isSubAgent?: boolean;
+    missionSlug?: string;
+    botName?: string;
+  };
+  /** Ask the user a set of structured questions and await their answers. */
+  requestQuestionnaire?: (
+    questions: QuestionnaireQuestion[],
+    abortSignal?: AbortSignal,
+  ) => Promise<Record<string, string> | null>;
+  /** Request approval immediately before a sensitive built-in tool executes. */
+  requestToolConsent?: (request: {
+    toolName: string;
+    toolDescription: string;
+    inputPreview: string;
+    abortSignal?: AbortSignal;
+  }) => Promise<boolean>;
+  /** Run a bounded sub-agent and return its result text. */
+  spawnSubAgent?: (spec: SubAgentSpec) => Promise<string>;
+  planTaskGraph?: (spec: any) => Promise<string>;
+  onSubAgentStream?: (stream: any, abortController: AbortController) => Promise<void>;
+  /** Track todo updates in the active turn so incomplete todos can be continued. */
+  onTodosUpdate?: (todos: Array<{ id: string; content: string; status: string }>) => void;
+  /** Session budget for this tool set (tool-call cap, enforced in blockReason). */
+  budget?: {
+    maxToolCalls?: number;
+    toolCalls: number;
+    callHistory?: { name: string; args: string }[];
+  };
+  /** The user's request text, used for on-demand tool disclosure. */
+  prompt?: string;
+}
+
+function blockReason(name: string, params: BuiltinToolsParams): string | null {
+  const registry = registryByName.get(name);
+  if (params.chatMode === "ask" && !(registry?.isAllowedByDefault ?? true)) {
+    return `${name} is not available in read-only Ask mode.`;
+  }
+  if (params.agentToolConsents?.[name] === "never") {
+    return `${name} is disabled by the user's consent settings.`;
+  }
+  // Session budget: when a tool-call cap is configured, each tool invocation
+  // counts against it; once exhausted, further tools are refused with a signal
+  // to stop instead of silently burning calls.
+  if (params.budget?.maxToolCalls != null) {
+    params.budget.toolCalls += 1;
+    if (params.budget.toolCalls > params.budget.maxToolCalls) {
+      return `Tool-call budget exceeded (${params.budget.maxToolCalls} calls). Stop calling tools and report what you have so far.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns a block message when `relPath` falls outside the task's allowed_files
+ * (§9). Semantics: no task context, or an explicit `null`/`undefined`
+ * allowedFiles, means unrestricted (the current single-agent path). A non-null
+ * array is enforced — including the empty array, which denies all access
+ * (fail-closed). `allowedFiles` entries may be exact paths or directory prefixes.
+ */
+function fileAccessBlock(params: BuiltinToolsParams, relPath: string): string | null {
+  const ctx = params.agentTaskContext;
+  if (!ctx) return null;
+  const allowedFiles = ctx.allowedFiles;
+  if (allowedFiles == null) return null;
+  const normalized = relPath.replaceAll("\\", "/");
+  const allowed = allowedFiles.some((entry) => {
+    const prefix = entry.replaceAll("\\", "/").replace(/\/+$/, "");
+    return normalized === prefix || normalized.startsWith(`${prefix}/`);
+  });
+  if (allowed) return null;
+  return `Task ${ctx.taskId} is not permitted to access ${relPath} (outside its allowed_files).`;
+}
+
+function ensureIndexed(appPath: string): void {
+  const indexDb = openCodeIndexDb(appPath);
+  const row = indexDb.prepare(`SELECT COUNT(*) AS n FROM chunks`).get() as { n: number };
+  if (row.n === 0) {
+    buildOrUpdateProjectIndex(indexDb, appPath);
+  }
+}
+
+/**
+ * Best-effort code-index helpers. A SQLite index error (e.g. native binary
+ * mismatch in tests or locked index DB) must NEVER cause a completed file
+ * write/edit/delete/rename to report an error to the model or skip UI query
+ * invalidation.
+ */
+function tryUpdateCodeIndex(appPath: string, relPath: string): void {
+  try {
+    buildOrUpdateFileChunks(openCodeIndexDb(appPath), appPath, relPath);
+  } catch {
+    // Non-fatal: file mutation on disk already succeeded.
+  }
+}
+
+function tryRemoveCodeIndex(appPath: string, relPath: string): void {
+  try {
+    removeFileChunks(openCodeIndexDb(appPath), relPath);
+  } catch {
+    // Non-fatal: file deletion on disk already succeeded.
+  }
+}
+
+function tryRenameCodeIndex(appPath: string, fromRel: string, toRel: string): void {
+  try {
+    const indexDb = openCodeIndexDb(appPath);
+    removeFileChunks(indexDb, fromRel);
+    buildOrUpdateFileChunks(indexDb, appPath, toRel);
+  } catch {
+    // Non-fatal: file rename on disk already succeeded.
+  }
+}
+
+// A single tool result may consume at most this fraction of the role's context
+// budget, so one oversized page dump can't crowd out the rest of the loop.
+const TOOL_RESULT_BUDGET_FRACTION = 0.25;
+
+/** Chars available for one tool result given a role's context budget (tokens). */
+export function toolResultCharBudget(contextBudgetTokens: number): number {
+  return Math.max(800, Math.floor(contextBudgetTokens * 4 * TOOL_RESULT_BUDGET_FRACTION));
+}
+
+/**
+ * Truncate an oversized tool result before it re-enters the model's context.
+ * Keeps the head AND the tail (indexed elements / first hits at the top, final
+ * form state / last elements at the bottom) and drops the middle, which is the
+ * least informative for page dumps and broad greps. The cap is proportional to
+ * the role's `contextBudget`, not a global constant.
+ */
+export function truncateToolResult(result: unknown, maxChars: number, keepTail = true): unknown {
+  if (typeof result === "string") {
+    if (result.length <= maxChars) return result;
+    if (!keepTail) {
+      // Head-only: the actionable content (indexed elements / first hits) is at
+      // the top; the verbose tail (page body text) is dropped entirely.
+      return `${result.slice(0, maxChars)}\n\n[… ${result.length - maxChars} chars omitted …]`;
+    }
+    const headChars = Math.floor(maxChars * 0.7);
+    const tailChars = maxChars - headChars;
+    const head = result.slice(0, headChars);
+    const tail = result.slice(result.length - tailChars);
+    return `${head}\n\n[… ${result.length - maxChars} chars omitted …]\n\n${tail}`;
+  }
+
+  // Handle MCP tool results (e.g. { content: [{ type: "text", text: "..." }] })
+  if (
+    result &&
+    typeof result === "object" &&
+    "content" in result &&
+    Array.isArray((result as any).content)
+  ) {
+    const newContent = (result as { content: any[] }).content.map((item) => {
+      if (item && item.type === "text" && typeof item.text === "string") {
+        return { ...item, text: truncateToolResult(item.text, maxChars, keepTail) };
+      }
+      return item;
+    });
+    return { ...result, content: newContent };
+  }
+
+  return result;
+}
+
+export function buildBuiltinTools(params: BuiltinToolsParams): ToolSet {
+  const tools: Record<string, Tool> = {};
+
+  // --- Embedded browser ----------------------------------------------------
+  // Keep browser automation behind one small, discovery-first tool. Exposing
+  // every browser operation as a separate schema on every request adds a lot
+  // of prompt/tool overhead and makes the model reach for browser controls on
+  // unrelated tasks. The model can discover the operations once, then invoke
+  // them through this dispatcher. This is the same mapped-element workflow as
+  // OctoLimb, but runs directly against Studio's embedded browser (no MCP or
+  // external bridge is required).
+  const runEmbedded = async (tool: string, args: Record<string, unknown>) => {
+    const settings = readSettings();
+    const external =
+      settings.enableBrowserLimbBridge === true &&
+      settings.webAutomationSessionSource === "external";
+    const externalNames: Record<string, string> = {
+      browser_go_to_url: "go_to_url",
+      browser_search: "search_google",
+      browser_read_page: "read_page",
+      browser_click: "click_element",
+      browser_input: "input_text",
+      browser_back: "go_back",
+      browser_wait: "wait",
+      browser_scroll_to_percent: "scroll_to_percent",
+      browser_scroll_to_top: "scroll_to_top",
+      browser_scroll_to_bottom: "scroll_to_bottom",
+      browser_previous_page: "previous_page",
+      browser_next_page: "next_page",
+      browser_scroll_to_text: "scroll_to_text",
+      browser_send_keys: "send_keys",
+      browser_get_dropdown_options: "get_dropdown_options",
+      browser_select_dropdown_option: "select_dropdown_option",
+      browser_execute_js: "execute_js",
+      browser_cache_content: "cache_content",
+      browser_open_tab: "open_tab",
+      browser_switch_tab: "switch_tab",
+      browser_close_tab: "close_tab",
+      browser_done: "done",
+    };
+    if (external && externalNames[tool]) {
+      return stringify(await callOctoLimbTool(externalNames[tool], args));
+    }
+    const owner = BrowserWindow.fromWebContents(params.event.sender);
+    if (!owner) return "Embedded browser is unavailable for this window.";
+    return stringify(await runEmbeddedBrowserTool(owner, tool, args));
+  };
+  tools.browser_automation = {
+    description:
+      "Embedded browser automation. First call action=discover when a task needs a website. It returns the available operations and the mapped-element workflow. Then call action=run with one operation at a time. After navigation or a page change, run read_page before click/input. This is direct Studio browser control; OctoLimb's optional external bridge is not needed.",
+    inputSchema: jsonSchema({
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["discover", "run"],
+          description: "Use discover first, then run for browser operations.",
+        },
+        tool: {
+          type: "string",
+          description:
+            "Operation for run: go_to_url, search_google, read_page, click_element, input_text, go_back, wait, tab controls, scrolling, keys, dropdowns, execute_js, cache_content, find_recipe, run_recipe, or done.",
+        },
+        args: {
+          type: "object",
+          description:
+            "Operation arguments: go_to_url {url}; search {query}; click {index}; input {index,text}; others {}.",
+          additionalProperties: true,
+        },
+      },
+      required: ["action"],
+      additionalProperties: false,
+    } as never),
+    execute: async (raw: { action?: string; tool?: string; args?: Record<string, unknown> }) => {
+      if (raw.action === "discover") {
+        return JSON.stringify({
+          browser: "Studio embedded browser",
+          externalOctoLimbBridge: "optional and disabled by default",
+          operations: [
+            { tool: "go_to_url", args: "{url}" },
+            { tool: "search_google", args: "{query}" },
+            {
+              tool: "read_page",
+              args: "{}",
+              note: "labels visible interactive elements with indexes",
+            },
+            { tool: "click_element", args: "{index}" },
+            { tool: "input_text", args: "{index,text}" },
+            { tool: "go_back", args: "{}" },
+            { tool: "forward", args: "{}" },
+            { tool: "reload", args: "{}" },
+            { tool: "wait", args: "{seconds}", note: "only when explicitly requested" },
+            { tool: "scroll_to_percent", args: "{percent,index?}" },
+            { tool: "scroll_to_top", args: "{index?}" },
+            { tool: "scroll_to_bottom", args: "{index?}" },
+            { tool: "previous_page", args: "{index?}" },
+            { tool: "next_page", args: "{index?}" },
+            { tool: "scroll_to_text", args: "{text}" },
+            { tool: "send_keys", args: "{keys}" },
+            { tool: "get_dropdown_options", args: "{index}" },
+            { tool: "select_dropdown_option", args: "{index,option}" },
+            { tool: "execute_js", args: "{code}" },
+            { tool: "cache_content", args: "{}" },
+            { tool: "open_tab", args: "{url}" },
+            { tool: "switch_tab", args: "{tabId}" },
+            { tool: "close_tab", args: "{tabId}" },
+            { tool: "find_recipe", args: "{domain?}" },
+            { tool: "run_recipe", args: "{fingerprint,variables?}" },
+            {
+              tool: "done",
+              args: "{text,success}",
+              note: "always call this to finish; success saves the recipe",
+            },
+          ],
+          workflow: [
+            "find_recipe first for a repeatable domain task",
+            "go_to_url or search_google",
+            "read_page",
+            "click_element or input_text using the latest mapped index",
+            "read_page again after navigation",
+            "done when the task is complete",
+          ],
+        });
+      }
+      if (raw.action !== "run") {
+        return "Use action=discover to load browser capabilities, or action=run with tool and args.";
+      }
+      const operationMap: Record<string, string> = {
+        go_to_url: "browser_go_to_url",
+        search_google: "browser_search",
+        search: "browser_search",
+        read_page: "browser_read_page",
+        click: "browser_click",
+        click_element: "browser_click",
+        input: "browser_input",
+        input_text: "browser_input",
+        go_back: "browser_back",
+        back: "browser_back",
+        forward: "browser_forward",
+        reload: "browser_reload",
+        wait: "browser_wait",
+        scroll_to_percent: "browser_scroll_to_percent",
+        scroll_to_top: "browser_scroll_to_top",
+        scroll_to_bottom: "browser_scroll_to_bottom",
+        previous_page: "browser_previous_page",
+        next_page: "browser_next_page",
+        scroll_to_text: "browser_scroll_to_text",
+        send_keys: "browser_send_keys",
+        get_dropdown_options: "browser_get_dropdown_options",
+        select_dropdown_option: "browser_select_dropdown_option",
+        execute_js: "browser_execute_js",
+        cache_content: "browser_cache_content",
+        open_tab: "browser_open_tab",
+        switch_tab: "browser_switch_tab",
+        close_tab: "browser_close_tab",
+        done: "browser_done",
+      };
+      if (raw.tool === "find_recipe") {
+        const owner = BrowserWindow.fromWebContents(params.event.sender);
+        if (!owner) return "Embedded browser is unavailable for this window.";
+        const currentUrl = getEmbeddedBrowserUrl(owner);
+        const domain = String(raw.args?.domain ?? domainFromUrl(currentUrl));
+        return stringify(listRecipesForDomain(domain));
+      }
+      if (raw.tool === "run_recipe") {
+        const fingerprint = String(raw.args?.fingerprint ?? "");
+        const recipe = getRecipeByFingerprint(fingerprint);
+        if (!recipe) return `No saved browser recipe was found for fingerprint ${fingerprint}.`;
+        const variables = (raw.args?.variables ?? {}) as Record<string, unknown>;
+        const owner = BrowserWindow.fromWebContents(params.event.sender);
+        if (!owner) return "Embedded browser is unavailable for this window.";
+        const interpolate = (value: unknown): unknown => {
+          if (typeof value === "string")
+            return value.replace(/\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}/g, (_, key) =>
+              String(variables[key] ?? ""),
+            );
+          if (Array.isArray(value)) return value.map(interpolate);
+          if (value && typeof value === "object")
+            return Object.fromEntries(
+              Object.entries(value).map(([key, child]) => [key, interpolate(child)]),
+            );
+          return value;
+        };
+        const outputs: unknown[] = [];
+        try {
+          for (const step of recipe.steps) {
+            const mapped = operationMap[step.tool] ?? step.tool;
+            if (!mapped) throw new Error(`Unknown recipe operation ${step.tool}`);
+            outputs.push(
+              await runEmbedded(mapped, interpolate(step.args) as Record<string, unknown>),
+            );
+          }
+          recordRecipeOutcome(fingerprint, true);
+          return stringify({ fingerprint, completed: true, outputs });
+        } catch (error) {
+          recordRecipeOutcome(fingerprint, false);
+          return stringify({ fingerprint, completed: false, outputs, error: String(error) });
+        }
+      }
+      const embeddedTool = raw.tool ? operationMap[raw.tool] : undefined;
+      if (!embeddedTool) {
+        return `Unknown browser operation ${String(raw.tool)}. Call action=discover for the supported operations.`;
+      }
+      const owner = BrowserWindow.fromWebContents(params.event.sender);
+      const stepArgs = raw.args ?? {};
+      if (owner && raw.tool !== "done") {
+        const steps = browserRecipeStepsByWindow.get(owner.id) ?? [];
+        const recipeTool =
+          (
+            {
+              search: "search_google",
+              click: "click_element",
+              input: "input_text",
+              back: "go_back",
+            } as Record<string, string>
+          )[raw.tool!] ?? raw.tool!;
+        steps.push({ tool: recipeTool, args: stepArgs });
+        browserRecipeStepsByWindow.set(owner.id, steps);
+      }
+      const output = await runEmbedded(embeddedTool, stepArgs);
+      if (owner && raw.tool === "done") {
+        const doneText = String(stepArgs.text ?? "").trim();
+        const success =
+          stepArgs.success !== false && !output.startsWith("Browser automation failed:");
+        const steps = browserRecipeStepsByWindow.get(owner.id) ?? [];
+        if (success && doneText && steps.length > 0) {
+          const domain = String(stepArgs.domain ?? domainFromUrl(getEmbeddedBrowserUrl(owner)));
+          upsertRecipe({ instruction: doneText, domain, steps });
+        }
+        browserRecipeStepsByWindow.delete(owner.id);
+      }
+      return output;
+    },
+  };
+
+  // --- MCP Servers ---------------------------------------------------------
+  tools.list_mcp_servers = {
+    description:
+      "List available 3rd-party MCP servers for sub-agents. Check this before spawning if a task is outside built-in capabilities.",
+    inputSchema: schema({}),
+    execute: async () => {
+      try {
+        const servers = await db.select().from(mcpServers).where(eq(mcpServers.enabled, true));
+        if (servers.length === 0) return "No MCP servers are currently enabled.";
+
+        const lines: string[] = ["Available MCP Servers:"];
+        for (const s of servers) {
+          let toolDesc = "Status: Unknown / No tools";
+          try {
+            const client = await mcpManager.getClient(s.id);
+            const tools = await client.tools();
+            if (tools) {
+              const toolNames = Object.keys(tools);
+              toolDesc = toolNames.length > 0 ? `Tools: ${toolNames.join(", ")}` : "No tools";
+            }
+          } catch (e) {
+            toolDesc = `Status: Offline (${e instanceof Error ? e.message : String(e)})`;
+          }
+          lines.push(`- "${s.name}": ${toolDesc}`);
+        }
+        return lines.join("\n");
+      } catch (e) {
+        return `Error listing MCP servers: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Reading -------------------------------------------------------------
+
+  tools.list_files = {
+    description: "List files/dirs in project. Excludes node_modules/build.",
+    inputSchema: schema({
+      path: {
+        type: "string",
+      },
+    }),
+    execute: async ({ path: rel = "" }: { path?: string }) => {
+      const blocked = blockReason("list_files", params);
+      if (blocked) return blocked;
+      try {
+        const base = rel ? safeJoin(params.appPath, rel) : params.appPath;
+        if (!fs.existsSync(base)) return `No such directory: ${rel || "."}`;
+        return listTree(params.appPath, base, rel || ".");
+      } catch (e) {
+        return `Error listing files: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_file = {
+    description: "Read file contents (optional start/end lines). Large files truncated.",
+    inputSchema: schema({
+      file_path: { type: "string", description: "File path relative to the project root." },
+      start_line_one_indexed: { type: "number", description: "First line to read (1-indexed)." },
+      end_line_one_indexed_inclusive: {
+        type: "number",
+      },
+    }),
+    execute: async ({
+      file_path,
+      start_line_one_indexed,
+      end_line_one_indexed_inclusive,
+    }: {
+      file_path: string;
+      start_line_one_indexed?: number;
+      end_line_one_indexed_inclusive?: number;
+    }) => {
+      const blocked = blockReason("read_file", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, file_path);
+      if (fileBlocked) return fileBlocked;
+      try {
+        const result = await readTextFileLines({
+          rootPath: params.appPath,
+          filePath: path.join(params.appPath, file_path),
+          displayPath: file_path,
+          startLine: start_line_one_indexed ?? 1,
+          endLineInclusive: end_line_one_indexed_inclusive,
+        });
+        return result.truncated
+          ? result.content + AGENT_READ_FILE_TRUNCATION_NOTICE
+          : result.content;
+      } catch (e) {
+        return `Error reading ${file_path}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.grep = {
+    description:
+      "Search project files for exact text pattern (case-insensitive). Returns paths and snippets.",
+    inputSchema: schema({
+      query: { type: "string", description: "The exact text to search for." },
+    }),
+    execute: async ({ query }: { query: string }) => {
+      const blocked = blockReason("grep", params);
+      if (blocked) return blocked;
+      try {
+        const results = await searchAppFilesWithRipgrep({ appPath: params.appPath, query });
+        if (results.length === 0) return `No matches for "${query}".`;
+        return stringify(results);
+      } catch (e) {
+        return `Error searching: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.code_search = {
+    description:
+      "Search code index by symbol/function/concept name. Returns file, line range, signature.",
+    inputSchema: schema({
+      query: { type: "string", description: "Symbol or concept name to search for." },
+    }),
+    execute: async ({ query }: { query: string }) => {
+      const blocked = blockReason("code_search", params);
+      if (blocked) return blocked;
+      try {
+        ensureIndexed(params.appPath);
+        const rows = searchChunks(openCodeIndexDb(params.appPath), query);
+        if (rows.length === 0) return `No symbols matched "${query}".`;
+        return stringify(
+          rows.map((r) => ({
+            file: r.file_path,
+            symbol: r.symbol_name,
+            kind: r.kind,
+            lines: `${r.start_line}-${r.end_line}`,
+            signature: r.signature,
+            dependencies: r.dependencies ? JSON.parse(r.dependencies) : [],
+          })),
+        );
+      } catch {
+        // Fallback to ripgrep search if the SQLite code index is unavailable
+        try {
+          const results = await searchAppFilesWithRipgrep({ appPath: params.appPath, query });
+          if (results.length === 0) return `No symbols matched "${query}".`;
+          return stringify(results);
+        } catch (fallbackErr) {
+          return `Error searching code index: ${fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)}`;
+        }
+      }
+    },
+  };
+
+  tools.explore_code = {
+    description:
+      "Investigate codebase for intent (explain, locate, edit, debug) to find relevant files.",
+    inputSchema: schema({
+      intent: { type: "string", description: "One of: explain, locate, edit, debug." },
+    }),
+    execute: async ({ intent }: { intent: string }) => {
+      const blocked = blockReason("explore_code", params);
+      if (blocked) return blocked;
+      try {
+        const result = await runCodeExplorer({ appPath: params.appPath, query: intent });
+        return stringify(result);
+      } catch (e) {
+        return `Error exploring code: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Editing -------------------------------------------------------------
+
+  tools.write_file = {
+    description: "Overwrite or create file. Prefer search_replace for targeted edits.",
+    inputSchema: schema(
+      {
+        file_path: { type: "string", description: "File path relative to the project root." },
+        content: { type: "string", description: "The full new contents of the file." },
+      },
+      ["file_path", "content"],
+    ),
+    execute: async ({ file_path, content }: { file_path: string; content: string }) => {
+      const blocked = blockReason("write_file", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, file_path);
+      if (fileBlocked) return fileBlocked;
+      try {
+        const rel = await assertMutationPathAllowed({
+          appPath: params.appPath,
+          relativePath: file_path,
+        });
+        const full = safeJoin(params.appPath, rel);
+        fs.mkdirSync(path.dirname(full), { recursive: true });
+        fs.writeFileSync(full, content, "utf8");
+        tryUpdateCodeIndex(params.appPath, rel);
+        publishQueryInvalidations(
+          [
+            { family: "app", appId: params.appId },
+            { family: "uncommitted-files", appId: params.appId },
+          ],
+          params.event.sender,
+        );
+        return `Wrote ${rel} (${Buffer.byteLength(content, "utf8")} bytes).`;
+      } catch (e) {
+        return `Error writing ${file_path}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.search_replace = {
+    description:
+      "Replace exact text in a file (line-based). Requires 100% exact match of original text.",
+    inputSchema: schema(
+      {
+        file_path: { type: "string", description: "File path relative to the project root." },
+        search: {
+          type: "string",
+        },
+        replace: { type: "string", description: "The replacement text." },
+      },
+      ["file_path", "search", "replace"],
+    ),
+    execute: async ({
+      file_path,
+      search,
+      replace,
+    }: {
+      file_path: string;
+      search: string;
+      replace: string;
+    }) => {
+      const blocked = blockReason("search_replace", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, file_path);
+      if (fileBlocked) return fileBlocked;
+      try {
+        const rel = await assertMutationPathAllowed({
+          appPath: params.appPath,
+          relativePath: file_path,
+        });
+        const full = safeJoin(params.appPath, rel);
+        const original = fs.readFileSync(full, "utf8");
+        const diff = `<<<<<<< SEARCH\n${search}\n=======\n${replace}\n>>>>>>> REPLACE`;
+        const result = applySearchReplace(original, diff);
+        if (!result.success) return `search_replace failed: ${result.error}`;
+        fs.writeFileSync(full, result.content, "utf8");
+        tryUpdateCodeIndex(params.appPath, rel);
+        publishQueryInvalidations(
+          [
+            { family: "app", appId: params.appId },
+            { family: "uncommitted-files", appId: params.appId },
+          ],
+          params.event.sender,
+        );
+        return `Applied edit to ${rel}.`;
+      } catch (e) {
+        return `Error editing ${file_path}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.delete_file = {
+    description: "Delete a file or directory from the project.",
+    inputSchema: schema(
+      { file_path: { type: "string", description: "Path relative to the project root." } },
+      ["file_path"],
+    ),
+    execute: async ({ file_path }: { file_path: string }) => {
+      const blocked = blockReason("delete_file", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, file_path);
+      if (fileBlocked) return fileBlocked;
+      try {
+        const { relativePath, fullPath } = await prepareDeletePath(params.appPath, file_path);
+        fs.rmSync(fullPath, { recursive: true, force: true });
+        tryRemoveCodeIndex(params.appPath, relativePath);
+        publishQueryInvalidations(
+          [
+            { family: "app", appId: params.appId },
+            { family: "uncommitted-files", appId: params.appId },
+          ],
+          params.event.sender,
+        );
+        return `Deleted ${relativePath}.`;
+      } catch (e) {
+        return `Error deleting ${file_path}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.rename_file = {
+    description: "Rename or move a file within the project.",
+    inputSchema: schema(
+      {
+        from: { type: "string", description: "Current path relative to the project root." },
+        to: { type: "string", description: "New path relative to the project root." },
+      },
+      ["from", "to"],
+    ),
+    execute: async ({ from, to }: { from: string; to: string }) => {
+      const blocked = blockReason("rename_file", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, from) ?? fileAccessBlock(params, to);
+      if (fileBlocked) return fileBlocked;
+      try {
+        const fromRel = await assertMutationPathAllowed({
+          appPath: params.appPath,
+          relativePath: from,
+        });
+        const toRel = await assertMutationPathAllowed({
+          appPath: params.appPath,
+          relativePath: to,
+        });
+        const fromFull = safeJoin(params.appPath, fromRel);
+        const toFull = safeJoin(params.appPath, toRel);
+        fs.mkdirSync(path.dirname(toFull), { recursive: true });
+        fs.renameSync(fromFull, toFull);
+        tryRenameCodeIndex(params.appPath, fromRel, toRel);
+        return `Renamed ${fromRel} to ${toRel}.`;
+      } catch (e) {
+        return `Error renaming ${from}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.copy_file = {
+    description: "Copy a file to a new path within the project.",
+    inputSchema: schema(
+      {
+        from: { type: "string", description: "Source path relative to the project root." },
+        to: { type: "string", description: "Destination path relative to the project root." },
+      },
+      ["from", "to"],
+    ),
+    execute: async ({ from, to }: { from: string; to: string }) => {
+      const blocked = blockReason("copy_file", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, from) ?? fileAccessBlock(params, to);
+      if (fileBlocked) return fileBlocked;
+      try {
+        await executeCopyFile({ from, to, appId: params.appId });
+        const toRel = await assertMutationPathAllowed({
+          appPath: params.appPath,
+          relativePath: to,
+        });
+        tryUpdateCodeIndex(params.appPath, toRel);
+        return `Copied ${from} to ${to}.`;
+      } catch (e) {
+        return `Error copying ${from}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.add_dependency = {
+    description: "Add one or more npm packages to the project's dependencies.",
+    inputSchema: schema(
+      {
+        packages: {
+          type: "array",
+          items: { type: "string" },
+        },
+        dev: { type: "boolean", description: "Install as devDependencies." },
+      },
+      ["packages"],
+    ),
+    execute: async ({ packages, dev }: { packages: string[]; dev?: boolean }) => {
+      const blocked = blockReason("add_dependency", params);
+      if (blocked) return blocked;
+      try {
+        const result = await installPackages({ packages, appPath: params.appPath, dev });
+        return [result.installResults, ...result.warningMessages].filter(Boolean).join("\n");
+      } catch (e) {
+        return `Error adding dependency: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Build / run ---------------------------------------------------------
+
+  tools.run_type_checks = {
+    description: "Run TypeScript type checking on the project and report errors.",
+    inputSchema: schema({}),
+    execute: async () => {
+      const blocked = blockReason("run_type_checks", params);
+      if (blocked) return blocked;
+      try {
+        return stringify(await runTypeScriptCheck({ appPath: params.appPath }));
+      } catch (e) {
+        return `Error running type checks: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.restart_app = {
+    description:
+      "Restart the running app preview. Only use when a restart is actually required (server config, env vars, or logs say so).",
+    inputSchema: schema({}),
+    execute: async () => {
+      const blocked = blockReason("restart_app", params);
+      if (blocked) return blocked;
+      try {
+        await restartApp(params.event, { appId: params.appId });
+        return "Restarted the app.";
+      } catch (e) {
+        return `Error restarting: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.rebuild_app = {
+    description:
+      "Rebuild the app from a clean install (removes node_modules and recreates the sandbox). Only use for genuinely broken dependency state.",
+    inputSchema: schema({}),
+    execute: async () => {
+      const blocked = blockReason("rebuild_app", params);
+      if (blocked) return blocked;
+      try {
+        await restartApp(params.event, {
+          appId: params.appId,
+          removeNodeModules: true,
+          recreateSandbox: true,
+        });
+        return "Rebuilding the app from a clean install.";
+      } catch (e) {
+        return `Error rebuilding: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.execute_sandbox_script = {
+    description: "Run JS snippet in isolated sandbox. No shell/filesystem access.",
+    inputSchema: schema({ script: { type: "string", description: "The script source to run." } }, [
+      "script",
+    ]),
+    execute: async ({ script }: { script: string }) => {
+      const blocked = blockReason("execute_sandbox_script", params);
+      if (blocked) return blocked;
+      try {
+        const result = await runSandboxScript({ appPath: params.appPath, script });
+        return result.truncated ? result.value : result.value;
+      } catch (e) {
+        return `Error running sandbox script: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.execute_command = {
+    description:
+      "Run a local executable in the project after user approval. Use this for shell scripts, SSH, SCP, deployment commands, and other terminal work instead of asking the user to run it. Arguments are passed exactly as an array without a local shell; when shell syntax is required, invoke the shell explicitly (for example, bash with -lc).",
+    inputSchema: schema(
+      {
+        command: { type: "string", description: "Executable name or absolute path." },
+        args: {
+          type: "array",
+          description: "Arguments passed exactly to the executable.",
+          items: { type: "string" },
+        },
+        timeout_seconds: {
+          type: "number",
+          description: "Timeout in seconds (default 300, maximum 1800).",
+        },
+      },
+      ["command"],
+    ),
+    execute: async (
+      {
+        command,
+        args = [],
+        timeout_seconds = 300,
+      }: { command: string; args?: string[]; timeout_seconds?: number },
+      options?: { abortSignal?: AbortSignal },
+    ) => {
+      const blocked = blockReason("execute_command", params);
+      if (blocked) return blocked;
+
+      const executable = command.trim();
+      if (!executable) return "Error running command: command must not be empty.";
+      if (!Array.isArray(args) || args.some((arg) => typeof arg !== "string")) {
+        return "Error running command: args must be an array of strings.";
+      }
+
+      const configuredConsent = params.agentToolConsents?.execute_command ?? "ask";
+      if (configuredConsent !== "always") {
+        if (!params.requestToolConsent) {
+          return "Command was not run because user approval is unavailable.";
+        }
+        const approved = await params.requestToolConsent({
+          toolName: "execute_command",
+          toolDescription:
+            "Run a command on this computer. SSH and deployment commands may change remote systems.",
+          inputPreview: JSON.stringify(
+            {
+              command: executable,
+              args,
+              workingDirectory: params.appPath,
+              timeoutSeconds: Math.min(Math.max(1, timeout_seconds), 1800),
+            },
+            null,
+            2,
+          ),
+          abortSignal: options?.abortSignal,
+        });
+        if (!approved) return "Command was declined and was not run.";
+      }
+
+      try {
+        const invocation = buildWindowsCommandInvocation(executable, args);
+        // An approved command is intentionally opaque: it can edit files, run
+        // Git, change provider configuration, or start/stop app processes. Own
+        // every potentially affected app domain until the child has exited so
+        // deletion, recording, and other main-process operations cannot race it.
+        const result = await appOperationCoordinator.run(
+          {
+            appId: params.appId,
+            operation: "run-agent-command",
+            resources: [
+              readAppResource("app-path"),
+              "repository",
+              "provider",
+              "runtime",
+              "runtime-config",
+              "test-files",
+            ],
+            refuseWhenRecording: "run a command",
+          },
+          () =>
+            runBufferedProcess({
+              command: invocation.command,
+              args: invocation.args,
+              cwd: params.appPath,
+              signal: options?.abortSignal,
+              timeoutMs: Math.min(Math.max(1, timeout_seconds), 1800) * 1000,
+              shell: false,
+              captureOutputOnSuccess: true,
+            }),
+        );
+        const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join("\n");
+        if (result.aborted) return `Command was cancelled.${output ? `\n${output}` : ""}`;
+        if (result.timedOut) return `Command timed out.${output ? `\n${output}` : ""}`;
+        return `Command exited with code ${result.code ?? "unknown"}.${output ? `\n${output}` : ""}`;
+      } catch (e) {
+        return `Error running command: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Git -----------------------------------------------------------------
+
+  tools.git_status = {
+    description: "Show the git working tree status (changed/added/deleted files).",
+    inputSchema: schema({}),
+    execute: async () => {
+      const blocked = blockReason("git_status", params);
+      if (blocked) return blocked;
+      try {
+        return stringify(await getAgentGitStatus({ path: params.appPath }));
+      } catch (e) {
+        return `Error reading git status: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.git_diff = {
+    description: "Show the git diff of uncommitted changes (optionally for one file).",
+    inputSchema: schema({
+      file_path: { type: "string", description: "Restrict the diff to a single file." },
+      context_lines: { type: "number", description: "Context lines around changes." },
+    }),
+    execute: async ({
+      file_path,
+      context_lines,
+    }: {
+      file_path?: string;
+      context_lines?: number;
+    }) => {
+      const blocked = blockReason("git_diff", params);
+      if (blocked) return blocked;
+      try {
+        return stringify(
+          await getAgentGitDiff({
+            path: params.appPath,
+            filePath: file_path,
+            contextLines: context_lines,
+          }),
+        );
+      } catch (e) {
+        return `Error reading git diff: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.git_log = {
+    description: "Show recent git commit history.",
+    inputSchema: schema({
+      revision: { type: "string", description: "Optional revision to start from." },
+      max_count: { type: "number", description: "Maximum number of commits." },
+      file_path: { type: "string", description: "Restrict to commits touching this file." },
+    }),
+    execute: async ({
+      revision,
+      max_count,
+      file_path,
+    }: {
+      revision?: string;
+      max_count?: number;
+      file_path?: string;
+    }) => {
+      const blocked = blockReason("git_log", params);
+      if (blocked) return blocked;
+      try {
+        return stringify(
+          await getAgentGitLog({
+            path: params.appPath,
+            revision,
+            maxCount: max_count,
+            filePath: file_path,
+          }),
+        );
+      } catch (e) {
+        return `Error reading git log: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.git_show_commit = {
+    description: "Show the details and file changes of a specific git commit.",
+    inputSchema: schema({ revision: { type: "string", description: "The commit hash to show." } }, [
+      "revision",
+    ]),
+    execute: async ({ revision }: { revision: string }) => {
+      const blocked = blockReason("git_show_commit", params);
+      if (blocked) return blocked;
+      try {
+        return stringify(await getAgentGitCommit({ path: params.appPath, revision }));
+      } catch (e) {
+        return `Error showing commit: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.git_show_file = {
+    description: "Show a file's contents as of a specific git revision.",
+    inputSchema: schema(
+      {
+        revision: { type: "string", description: "The commit hash." },
+        file_path: { type: "string", description: "The file path." },
+        start_line_one_indexed: { type: "number" },
+        end_line_one_indexed_inclusive: { type: "number" },
+      },
+      ["revision", "file_path"],
+    ),
+    execute: async ({
+      revision,
+      file_path,
+      start_line_one_indexed,
+      end_line_one_indexed_inclusive,
+    }: {
+      revision: string;
+      file_path: string;
+      start_line_one_indexed?: number;
+      end_line_one_indexed_inclusive?: number;
+    }) => {
+      const blocked = blockReason("git_show_file", params);
+      if (blocked) return blocked;
+      try {
+        return stringify(
+          await getAgentGitFile({
+            path: params.appPath,
+            revision,
+            filePath: file_path,
+            startLine: start_line_one_indexed ?? 1,
+            endLineInclusive: end_line_one_indexed_inclusive,
+          }),
+        );
+      } catch (e) {
+        return `Error showing file: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.git_restore_file = {
+    description: "Restore a file to its contents at a specific git revision.",
+    inputSchema: schema(
+      {
+        revision: { type: "string", description: "The commit hash to restore from." },
+        file_path: { type: "string", description: "The file path to restore." },
+      },
+      ["revision", "file_path"],
+    ),
+    execute: async ({ revision, file_path }: { revision: string; file_path: string }) => {
+      const blocked = blockReason("git_restore_file", params);
+      if (blocked) return blocked;
+      try {
+        const result = await restoreAgentGitFile({
+          path: params.appPath,
+          revision,
+          filePath: file_path,
+        });
+        const rel = result.path;
+        tryUpdateCodeIndex(params.appPath, rel);
+        return `Restored ${rel} to ${revision}.`;
+      } catch (e) {
+        return `Error restoring file: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Chat / planning -----------------------------------------------------
+
+  tools.set_chat_summary = {
+    description: "Set this chat's title/summary. Call once, early in the turn.",
+    inputSchema: schema(
+      { summary: { type: "string", description: "A short title for the chat." } },
+      ["summary"],
+    ),
+    execute: async ({ summary }: { summary: string }) => {
+      const blocked = blockReason("set_chat_summary", params);
+      if (blocked) return blocked;
+      try {
+        await db.update(chats).set({ title: summary }).where(eq(chats.id, params.chatId));
+        return "Set chat summary.";
+      } catch (e) {
+        return `Error setting chat summary: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.update_todos = {
+    description:
+      "Update the agent's task checklist for this chat. Each todo item must have id (string), content (string), and status ('pending' | 'in_progress' | 'completed').",
+    inputSchema: schema(
+      {
+        todos: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              content: { type: "string" },
+              status: {
+                type: "string",
+                description: "'pending' | 'in_progress' | 'completed'",
+              },
+            },
+            required: ["id", "content", "status"],
+          },
+        },
+      },
+      ["todos"],
+    ),
+    execute: async ({
+      todos,
+    }: {
+      todos: Array<{ id: string; content: string; status: string }>;
+    }) => {
+      const blocked = blockReason("update_todos", params);
+      if (blocked) return blocked;
+      try {
+        params.onTodosUpdate?.(todos);
+        params.event.sender.send(agentEvents.todosUpdate.channel, { chatId: params.chatId, todos });
+        const pendingCount = todos.filter(
+          (t) => t.status === "pending" || t.status === "in_progress",
+        ).length;
+        const completedCount = todos.filter((t) => t.status === "completed").length;
+        return `Updated todos (${completedCount}/${todos.length} completed, ${pendingCount} remaining).`;
+      } catch (e) {
+        return `Error updating todos: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_scheduled_task = {
+    description:
+      "Create a recurring (scheduled) task that will run the agent against a prompt on an interval, or as a one-off manual task. Provide a short title, the prompt/instructions the agent should carry out, and an optional repeat interval in minutes (60 = hourly, 1440 = daily, 10080 = weekly, 43200 = monthly). Omit scheduleMinutes to create a manual/on-demand task.",
+    inputSchema: schema(
+      {
+        title: { type: "string", description: "A short, descriptive task title." },
+        prompt: {
+          type: "string",
+        },
+        scheduleMinutes: {
+          type: "number",
+        },
+      },
+      ["title", "prompt"],
+    ),
+    execute: async ({
+      title,
+      prompt,
+      scheduleMinutes,
+    }: {
+      title: string;
+      prompt: string;
+      scheduleMinutes?: number;
+    }) => {
+      const blocked = blockReason("create_scheduled_task", params);
+      if (blocked) return blocked;
+      try {
+        const [created] = await db
+          .insert(tasks)
+          .values({
+            title,
+            prompt,
+            scheduleMinutes: scheduleMinutes ?? null,
+            // Run in the project this chat belongs to (null = default project).
+            projectId: params.appId,
+          })
+          .returning();
+        // This tool bypasses the task IPC contracts, so publish the same
+        // invalidation the contracts would, to refresh sidebar task lists.
+        publishQueryInvalidations([{ family: "tasks" }], params.event.sender);
+        return `Created task #${created.id} "${created.title}"${
+          created.scheduleMinutes != null
+            ? ` (repeats every ${created.scheduleMinutes} minutes)`
+            : " (manual/on-demand)"
+        }.`;
+      } catch (e) {
+        return `Error creating task: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.list_coworker_bots = {
+    description:
+      "List deployed autonomous coworker bots, their archetypes (Sentinel/Scout/Steward/Operator), schedule, assigned project/scope, and latest run status.",
+    inputSchema: schema({
+      scope: {
+        type: "string",
+        description:
+          "Filter by scope: 'current_project', 'default_workspace', or 'all' (default: all).",
+      },
+    }),
+    execute: async ({ scope }: { scope?: string }) => {
+      const blocked = blockReason("list_coworker_bots", params);
+      if (blocked) return blocked;
+      try {
+        const rows = await db.query.tasks.findMany({
+          orderBy: [desc(tasks.createdAt)],
+          limit: 100,
+        });
+        const filtered = rows.filter((r) => {
+          if (scope === "current_project") return r.projectId === params.appId;
+          if (scope === "default_workspace") return r.projectId == null;
+          return true;
+        });
+        if (filtered.length === 0) return "No coworker bots found for this scope.";
+        return filtered
+          .map((b) => {
+            const scopeLabel = b.projectId ? `Project #${b.projectId}` : "Default Workspace";
+            const sched = b.scheduleMinutes ? `every ${b.scheduleMinutes}m` : "manual";
+            return `Bot #${b.id} "${b.title}" [type=${b.botType}, role=${b.role}, status=${b.lastStatus}] | scope=${scopeLabel} | sched=${sched} | lastRun=${b.lastRunAt?.toISOString() ?? "never"}`;
+          })
+          .join("\n");
+      } catch (e) {
+        return `Error listing coworker bots: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_coworker_bot = {
+    description:
+      "Deploy an autonomous coworker bot with an archetype (Sentinel=QA/testing guardian, Scout=web & API documentation intelligence, Steward=code health & refactoring, Operator=daily workflows, Custom=custom mission). Can be assigned to the current project (isolated work) or the default workspace.",
+    inputSchema: schema(
+      {
+        title: { type: "string", description: "Descriptive name for the coworker bot." },
+        prompt: {
+          type: "string",
+          description: "Autonomous instructions and mission prompt for the bot.",
+        },
+        bot_type: {
+          type: "string",
+          description: "sentinel | scout | steward | operator | custom (default: custom)",
+        },
+        role: {
+          type: "string",
+          description:
+            "OpenCode role: tester | explorer | executor | debugger | reviewer | architect (default: executor)",
+        },
+        schedule_minutes: {
+          type: "number",
+          description:
+            "Schedule interval in minutes (60=hourly, 1440=daily, null/undefined=manual on-demand)",
+        },
+        isolate_to_current_project: {
+          type: "boolean",
+          description:
+            "True to isolate this bot to the current project codebase, false/omitted to assign to default general workspace.",
+        },
+      },
+      ["title", "prompt"],
+    ),
+    execute: async ({
+      title,
+      prompt,
+      bot_type,
+      role,
+      schedule_minutes,
+      isolate_to_current_project,
+    }: {
+      title: string;
+      prompt: string;
+      bot_type?: string;
+      role?: string;
+      schedule_minutes?: number;
+      isolate_to_current_project?: boolean;
+    }) => {
+      const blocked = blockReason("create_coworker_bot", params);
+      if (blocked) return blocked;
+      try {
+        const validTypes = ["sentinel", "scout", "steward", "operator", "custom"] as const;
+        const validRoles = [
+          "executor",
+          "tester",
+          "explorer",
+          "debugger",
+          "reviewer",
+          "architect",
+        ] as const;
+        const resolvedType = (validTypes as readonly string[]).includes(bot_type ?? "")
+          ? (bot_type as (typeof validTypes)[number])
+          : "custom";
+        const resolvedRole = (validRoles as readonly string[]).includes(role ?? "")
+          ? (role as (typeof validRoles)[number])
+          : "executor";
+        const targetProjectId = isolate_to_current_project ? params.appId : null;
+
+        const [created] = await db
+          .insert(tasks)
+          .values({
+            title,
+            prompt,
+            botType: resolvedType,
+            role: resolvedRole,
+            scheduleMinutes: schedule_minutes ?? null,
+            projectId: targetProjectId,
+            lastStatus: "idle",
+          })
+          .returning();
+        publishQueryInvalidations([{ family: "tasks" }], params.event.sender);
+        return `Successfully deployed coworker bot #${created.id} "${created.title}" [${created.botType}, role=${created.role}] assigned to ${
+          targetProjectId ? `project #${targetProjectId}` : "default general workspace"
+        }. Schedule: ${created.scheduleMinutes ? `every ${created.scheduleMinutes} minutes` : "manual on-demand"}.`;
+      } catch (e) {
+        return `Error creating coworker bot: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.run_coworker_bot = {
+    description: "Immediately trigger an autonomous mission run for a coworker bot by its id.",
+    inputSchema: schema(
+      {
+        bot_id: { type: "number", description: "The numeric id of the coworker bot to run." },
+      },
+      ["bot_id"],
+    ),
+    execute: async ({ bot_id }: { bot_id: number }) => {
+      const blocked = blockReason("run_coworker_bot", params);
+      if (blocked) return blocked;
+      try {
+        const { runTask } = await import("../services/task_scheduler");
+        const outcome = await runTask(bot_id);
+        publishQueryInvalidations([{ family: "tasks" }], params.event.sender);
+        return `Coworker bot #${bot_id} mission triggered successfully! Running in chat session #${outcome.chatId} on OpenCode runtime.`;
+      } catch (e) {
+        return `Error running coworker bot: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.get_coworker_report = {
+    description: "Get the latest execution report, status, and findings from a coworker bot.",
+    inputSchema: schema(
+      {
+        bot_id: { type: "number", description: "The numeric id of the coworker bot." },
+      },
+      ["bot_id"],
+    ),
+    execute: async ({ bot_id }: { bot_id: number }) => {
+      const blocked = blockReason("get_coworker_report", params);
+      if (blocked) return blocked;
+      try {
+        const bot = await db.query.tasks.findFirst({ where: eq(tasks.id, bot_id) });
+        if (!bot) return `Coworker bot #${bot_id} not found.`;
+        let latestOutput = "No output available yet.";
+        if (bot.lastChatId != null) {
+          const recent = await db.query.messages.findMany({
+            where: eq(messages.chatId, bot.lastChatId),
+            orderBy: [desc(messages.id)],
+            limit: 3,
+          });
+          const assistantMsg = recent.find((m) => m.role === "assistant" && m.content?.trim());
+          if (assistantMsg?.content) latestOutput = assistantMsg.content.slice(0, 1500);
+        }
+        return `=== Report for Coworker Bot #${bot.id}: ${bot.title} ===\nStatus: ${bot.lastStatus}\nLast Run: ${bot.lastRunAt?.toISOString() ?? "Never"}\nSummary: ${bot.lastResultSummary ?? "None"}\nLatest Output Snippet:\n${latestOutput}`;
+      } catch (e) {
+        return `Error getting coworker report: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Planner --------------------------------------------------------------
+
+  const PLANNER_STATUSES = ["backlog", "todo", "in_progress", "done"] as const;
+  const PLANNER_PRIORITIES = ["low", "medium", "high"] as const;
+
+  tools.list_planner_tasks = {
+    description:
+      "List the current project's Planner cards (kanban tasks) with their id, status, priority, due date, and description. Call this to see what's already on the board before creating or updating cards.",
+    inputSchema: schema({
+      status: {
+        type: "string",
+        description: "Optional filter: backlog, todo, in_progress, or done.",
+      },
+    }),
+    execute: async ({ status }: { status?: string }) => {
+      const blocked = blockReason("list_planner_tasks", params);
+      if (blocked) return blocked;
+      try {
+        const statusFilter =
+          status && (PLANNER_STATUSES as readonly string[]).includes(status)
+            ? eq(plannerTasks.status, status as (typeof PLANNER_STATUSES)[number])
+            : undefined;
+        const rows = await db.query.plannerTasks.findMany({
+          where: statusFilter
+            ? and(eq(plannerTasks.appId, params.appId), statusFilter)
+            : eq(plannerTasks.appId, params.appId),
+          orderBy: [asc(plannerTasks.status), asc(plannerTasks.position)],
+          limit: 200,
+        });
+        if (rows.length === 0) return "No planner cards exist for this project yet.";
+        return rows
+          .map(
+            (t) =>
+              `#${t.id} [${t.status}] ${t.title} | priority=${t.priority} | due=${t.dueAt?.toISOString() ?? "none"}${t.description ? ` | ${t.description}` : ""}`,
+          )
+          .join("\n");
+      } catch (e) {
+        return `Error listing planner tasks: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_planner_task = {
+    description:
+      "Create a new card on the current project's Planner (kanban board). Provide a title and optionally a description, status (backlog/todo/in_progress/done), priority (low/medium/high), and a due date (ISO 8601 string).",
+    inputSchema: schema(
+      {
+        title: { type: "string", description: "Short card title (1–180 characters)." },
+        description: { type: "string", description: "Optional longer details for the card." },
+        status: {
+          type: "string",
+          description: "backlog | todo | in_progress | done (default: todo).",
+        },
+        priority: { type: "string", description: "low | medium | high (default: medium)." },
+        dueAt: {
+          type: "string",
+          description: "Optional due date as an ISO 8601 string, e.g. 2026-10-28T09:00:00Z.",
+        },
+      },
+      ["title"],
+    ),
+    execute: async ({
+      title,
+      description,
+      status,
+      priority,
+      dueAt,
+    }: {
+      title: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      dueAt?: string;
+    }) => {
+      const blocked = blockReason("create_planner_task", params);
+      if (blocked) return blocked;
+      try {
+        const cleanTitle = (title ?? "").trim();
+        if (!cleanTitle || cleanTitle.length > 180) {
+          return "Planner card title must be 1–180 characters.";
+        }
+        const statusVal = (
+          (PLANNER_STATUSES as readonly string[]).includes(status ?? "") ? status : "todo"
+        ) as (typeof PLANNER_STATUSES)[number];
+        const priorityVal = (
+          (PLANNER_PRIORITIES as readonly string[]).includes(priority ?? "") ? priority : "medium"
+        ) as (typeof PLANNER_PRIORITIES)[number];
+        let due: Date | null = null;
+        if (dueAt) {
+          const parsed = new Date(dueAt);
+          if (Number.isNaN(parsed.getTime())) return `Invalid dueAt date: ${dueAt}`;
+          due = parsed;
+        }
+        const [{ nextPosition }] = await db
+          .select({ nextPosition: sql<number>`coalesce(max(${plannerTasks.position}), -1) + 1` })
+          .from(plannerTasks)
+          .where(and(eq(plannerTasks.appId, params.appId), eq(plannerTasks.status, statusVal)));
+        const [created] = await db
+          .insert(plannerTasks)
+          .values({
+            appId: params.appId,
+            title: cleanTitle,
+            description: (description ?? "").trim(),
+            status: statusVal,
+            priority: priorityVal,
+            dueAt: due,
+            position: Number(nextPosition),
+          })
+          .returning();
+        publishQueryInvalidations(
+          [{ family: "planner", appId: params.appId }],
+          params.event.sender,
+        );
+        return `Created planner card #${created.id} "${created.title}" [${created.status}]${created.dueAt ? ` due ${created.dueAt.toISOString()}` : ""}.`;
+      } catch (e) {
+        return `Error creating planner task: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.update_planner_task = {
+    description:
+      "Update an existing Planner card by its id (from list_planner_tasks): change its status, priority, title, description, or due date.",
+    inputSchema: schema(
+      {
+        taskId: { type: "number", description: "The planner card id to update." },
+        status: { type: "string", description: "backlog | todo | in_progress | done." },
+        priority: { type: "string", description: "low | medium | high." },
+        title: { type: "string", description: "New title (1–180 characters)." },
+        description: { type: "string", description: "New description." },
+        dueAt: {
+          type: "string",
+          description: "New due date as ISO 8601, or an empty string to clear it.",
+        },
+      },
+      ["taskId"],
+    ),
+    execute: async ({
+      taskId,
+      status,
+      priority,
+      title,
+      description,
+      dueAt,
+    }: {
+      taskId: number;
+      status?: string;
+      priority?: string;
+      title?: string;
+      description?: string;
+      dueAt?: string;
+    }) => {
+      const blocked = blockReason("update_planner_task", params);
+      if (blocked) return blocked;
+      try {
+        const existing = await db.query.plannerTasks.findFirst({
+          where: eq(plannerTasks.id, taskId),
+        });
+        if (!existing) return `Planner card #${taskId} not found.`;
+
+        const statusVal =
+          status !== undefined && (PLANNER_STATUSES as readonly string[]).includes(status)
+            ? (status as (typeof PLANNER_STATUSES)[number])
+            : existing.status;
+        const priorityVal =
+          priority !== undefined && (PLANNER_PRIORITIES as readonly string[]).includes(priority)
+            ? (priority as (typeof PLANNER_PRIORITIES)[number])
+            : existing.priority;
+
+        let due: Date | null;
+        if (dueAt === "") {
+          due = null;
+        } else if (dueAt !== undefined) {
+          const parsed = new Date(dueAt);
+          if (Number.isNaN(parsed.getTime())) return `Invalid dueAt date: ${dueAt}`;
+          due = parsed;
+        } else {
+          due = existing.dueAt;
+        }
+
+        let position = existing.position;
+        if (statusVal !== existing.status) {
+          const [{ nextPosition }] = await db
+            .select({ nextPosition: sql<number>`coalesce(max(${plannerTasks.position}), -1) + 1` })
+            .from(plannerTasks)
+            .where(and(eq(plannerTasks.appId, params.appId), eq(plannerTasks.status, statusVal)));
+          position = Number(nextPosition);
+        }
+
+        const [updated] = await db
+          .update(plannerTasks)
+          .set({
+            status: statusVal,
+            priority: priorityVal,
+            title: title !== undefined ? title.trim() || existing.title : existing.title,
+            description: description !== undefined ? description.trim() : existing.description,
+            dueAt: due,
+            position,
+            updatedAt: new Date(),
+          })
+          .where(eq(plannerTasks.id, taskId))
+          .returning();
+        publishQueryInvalidations(
+          [{ family: "planner", appId: params.appId }],
+          params.event.sender,
+        );
+        return `Updated planner card #${updated.id} "${updated.title}" [${updated.status}]${updated.dueAt ? ` due ${updated.dueAt.toISOString()}` : ""}.`;
+      } catch (e) {
+        return `Error updating planner task: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Skills ----------------------------------------------------------------
+
+  tools.list_skills = {
+    description:
+      "List every saved skill by name with its short description of when to use it. Call this to check whether a saved skill matches the current task before starting from scratch.",
+    inputSchema: schema({}, []),
+    execute: async () => {
+      const blocked = blockReason("list_skills", params);
+      if (blocked) return blocked;
+      try {
+        const all = listSkills();
+        if (all.length === 0) {
+          return "No skills saved yet. Use create_skill to save a reusable workflow.";
+        }
+        return all.map((s) => `- ${s.name}: ${s.description}`).join("\n");
+      } catch (e) {
+        return `Error listing skills: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_skill = {
+    description:
+      "Load one saved skill's full instructions by name. Call this right before you need to follow it — only load a skill for the step that actually needs it, not preemptively for the whole conversation.",
+    inputSchema: schema({ name: { type: "string", description: "The skill's name." } }, ["name"]),
+    execute: async ({ name }: { name: string }) => {
+      const blocked = blockReason("read_skill", params);
+      if (blocked) return blocked;
+      try {
+        const skill = findSkill(name);
+        if (!skill) {
+          return `No skill named "${name}" — call list_skills to see what's available.`;
+        }
+        return skill.instructions;
+      } catch (e) {
+        return `Error reading skill: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_skill = {
+    description:
+      "Save a new reusable skill (a name, a short description of when to use it, and the full instructions) so future tasks can reuse it. Use this when the user asks you to remember a workflow as a skill, or after working out a non-obvious multi-step approach worth reusing.",
+    inputSchema: schema(
+      {
+        name: { type: "string", description: "A short, kebab-case skill name." },
+        description: {
+          type: "string",
+        },
+        instructions: {
+          type: "string",
+        },
+      },
+      ["name", "description", "instructions"],
+    ),
+    execute: async ({
+      name,
+      description,
+      instructions,
+    }: {
+      name: string;
+      description: string;
+      instructions: string;
+    }) => {
+      const blocked = blockReason("create_skill", params);
+      if (blocked) return blocked;
+      try {
+        if (findSkill(name)) {
+          return `A skill named "${name}" already exists — use update_skill instead.`;
+        }
+        const created = createSkill({ name, description, instructions });
+        publishQueryInvalidations([{ family: "skills" }], params.event.sender);
+        return `Created skill "${created.name}".`;
+      } catch (e) {
+        return `Error creating skill: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.update_skill = {
+    description: "Update an existing saved skill's name, description, or instructions.",
+    inputSchema: schema(
+      {
+        name: { type: "string", description: "The current name of the skill to update." },
+        newName: { type: "string", description: "A new name for the skill, if renaming." },
+        description: { type: "string", description: "A new description, if changing." },
+        instructions: { type: "string", description: "New instructions, if changing." },
+      },
+      ["name"],
+    ),
+    execute: async ({
+      name,
+      newName,
+      description,
+      instructions,
+    }: {
+      name: string;
+      newName?: string;
+      description?: string;
+      instructions?: string;
+    }) => {
+      const blocked = blockReason("update_skill", params);
+      if (blocked) return blocked;
+      try {
+        const existing = findSkill(name);
+        if (!existing) {
+          return `No skill named "${name}" — call list_skills to see what's available.`;
+        }
+        const updated = updateSkill(name, {
+          ...(newName !== undefined ? { name: newName } : {}),
+          ...(description !== undefined ? { description } : {}),
+          ...(instructions !== undefined ? { instructions } : {}),
+        });
+        publishQueryInvalidations([{ family: "skills" }], params.event.sender);
+        return `Updated skill "${updated.name}".`;
+      } catch (e) {
+        return `Error updating skill: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.delete_skill = {
+    description: "Permanently delete a saved skill.",
+    inputSchema: schema(
+      { name: { type: "string", description: "The name of the skill to delete." } },
+      ["name"],
+    ),
+    execute: async ({ name }: { name: string }) => {
+      const blocked = blockReason("delete_skill", params);
+      if (blocked) return blocked;
+      try {
+        const existing = findSkill(name);
+        if (!existing) {
+          return `No skill named "${name}" — call list_skills to see what's available.`;
+        }
+        deleteSkill(name);
+        publishQueryInvalidations([{ family: "skills" }], params.event.sender);
+        return `Deleted skill "${existing.name}".`;
+      } catch (e) {
+        return `Error deleting skill: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Web -----------------------------------------------------------------
+
+  tools.web_search = {
+    description: "Search the web for documentation, API references, or current information.",
+    inputSchema: schema(
+      {
+        query: { type: "string", description: "Search query." },
+      },
+      ["query"],
+    ),
+    execute: async ({ query }: { query: string }) => {
+      const blocked = blockReason("web_search", params);
+      if (blocked) return blocked;
+      try {
+        const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+        const res = await fetch(searchUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; OctopusStudio/1.0)" },
+        });
+        const html = await res.text();
+        const matches: string[] = [];
+        const linkRegex =
+          /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+        let match: RegExpExecArray | null;
+        while ((match = linkRegex.exec(html)) !== null && matches.length < 8) {
+          const href = match[1].replace(/&amp;/g, "&");
+          const title = match[2].replace(/<[^>]+>/g, "").trim();
+          if (title && href) {
+            matches.push(`- ${title}: ${href}`);
+          }
+        }
+        if (matches.length === 0) {
+          return `No search results found for "${query}".`;
+        }
+        return matches.join("\n");
+      } catch (e) {
+        return `Error searching the web for "${query}": ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.web_fetch = {
+    description: "Fetch the contents of a URL and return its text.",
+    inputSchema: schema({ url: { type: "string", description: "The URL to fetch." } }, ["url"]),
+    execute: async ({ url }: { url: string }) => {
+      const blocked = blockReason("web_fetch", params);
+      if (blocked) return blocked;
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const bounded = text.slice(0, 64 * 1024);
+        return bounded.length < text.length ? `${bounded}\n[truncated]` : bounded;
+      } catch (e) {
+        return `Error fetching ${url}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.web_crawl = {
+    description:
+      "Crawl a URL and extract its readable text content (stripping scripts, styles, and HTML tags).",
+    inputSchema: schema({ url: { type: "string", description: "The URL to crawl." } }, ["url"]),
+    execute: async ({ url }: { url: string }) => {
+      const blocked = blockReason("web_crawl", params);
+      if (blocked) return blocked;
+      try {
+        const res = await fetch(url);
+        const html = await res.text();
+        const cleaned = html
+          .replace(/<script[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        const bounded = cleaned.slice(0, 32 * 1024);
+        return bounded.length < cleaned.length ? `${bounded}\n[truncated]` : bounded;
+      } catch (e) {
+        return `Error crawling ${url}: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // --- Office documents (docx / pptx / xlsx) ------------------------------
+
+  const writeOfficeArtifact = async (
+    filename: string,
+    buffer: Uint8Array,
+    expectedExt: ".docx" | ".xlsx" | ".pptx",
+  ): Promise<string> => {
+    // The model sometimes names the file after its content (e.g. a "budget.csv")
+    // rather than the binary format this tool actually produces. Writing that
+    // format under a mismatched extension leaves an unreadable file behind, so
+    // the extension is normalized to match what was actually generated.
+    const normalizedFilename = filename.toLowerCase().endsWith(expectedExt)
+      ? filename
+      : `${filename.replace(/\.[^./\\]+$/, "")}${expectedExt}`;
+    const rel = await assertMutationPathAllowed({
+      appPath: params.appPath,
+      relativePath: normalizedFilename,
+    });
+    const full = safeJoin(params.appPath, rel);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, buffer);
+    return rel;
+  };
+
+  const COLOR_SCHEME_NAMES = listColorSchemeNames();
+
+  /** Shared "colorScheme" / "colors" input-schema fields for the office tools. */
+  function officeColorSchemaFields(): JsonSchemaProperties {
+    return {
+      colorScheme: {
+        type: "string",
+        description: `Named color scheme to recolor the template's brand colors (${COLOR_SCHEME_NAMES.join(", ")}). Defaults to slate.`,
+      },
+      colors: {
+        type: "object",
+        description:
+          'Optional hex overrides per role, layered on top of colorScheme, e.g. { "primary": "2F5233" }. Roles: primary, primaryText, secondary, surface, muted, border.',
+      },
+    };
+  }
+
+  const resolveScheme = (colorScheme?: string, colors?: Record<string, string>) =>
+    resolveColorScheme(colorScheme, colors as Partial<Record<ColorRole, string>>);
+
+  tools.create_document = {
+    description:
+      'Create a Word document (.docx). You can use a template (pass "template" and "values") OR create custom-designed documents (pass "markdown", "content", "blocks", or "sections"). Set "colorScheme" to recolor.',
+    inputSchema: schema(
+      {
+        filename: { type: "string", description: "Output filename ending in .docx" },
+        template: {
+          type: "string",
+          description:
+            "Template name (optional). If omitted, generates custom-designed document from markdown/blocks.",
+        },
+        values: {
+          type: "object",
+          description:
+            'Map of placeholder -> replacement text, e.g. { "[Client / Company Name]": "Acme Corp", "[$ amount]": "$5,000" }.',
+        },
+        ...officeColorSchemaFields(),
+        title: { type: "string", description: "Document title." },
+        subtitle: { type: "string", description: "Document subtitle." },
+        author: { type: "string", description: "Document author or metadata." },
+        date: { type: "string", description: "Document date metadata." },
+        markdown: {
+          type: "string",
+          description:
+            "Full document content formatted in Markdown (headings, lists, tables, callouts, bold/italic).",
+        },
+        content: { type: "string", description: "Markdown string or array of document blocks." },
+        blocks: {
+          type: "array",
+          items: { type: "object" },
+          description:
+            "Structured blocks: heading, paragraph, bullet_list, table, callout, divider, spacer.",
+        },
+        sections: {
+          type: "array",
+          items: { type: "object" },
+        },
+      },
+      ["filename"],
+    ),
+    execute: async ({
+      filename,
+      title,
+      subtitle,
+      author,
+      date,
+      template,
+      values,
+      colorScheme,
+      colors,
+      markdown,
+      content,
+      blocks,
+      sections,
+    }: {
+      filename: string;
+      title?: string;
+      subtitle?: string;
+      author?: string;
+      date?: string;
+      template?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+      markdown?: string;
+      content?: string | unknown[];
+      blocks?: unknown[];
+      sections?: unknown[];
+    }) => {
+      const blocked = blockReason("create_document", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, filename);
+      if (fileBlocked) return fileBlocked;
+      try {
+        let buffer: Uint8Array;
+        const hasCustomContent =
+          (typeof markdown === "string" && markdown.trim().length > 0) ||
+          (typeof content === "string" && content.trim().length > 0) ||
+          (Array.isArray(blocks) && blocks.length > 0) ||
+          (Array.isArray(content) && content.length > 0) ||
+          (Array.isArray(sections) && sections.length > 0 && hasOfficeContent(sections));
+
+        if (template || (!hasCustomContent && !title)) {
+          const key = template ?? "professional_report_template";
+          const tmpl = ALL_DOC_TEMPLATES[key] ?? ALL_DOC_TEMPLATES["professional_report_template"];
+          const scheme = resolveScheme(colorScheme, colors);
+          const recolored = recolor(tmpl?.sections ?? [], DOC_TEMPLATE_ROLES[key] ?? {}, scheme);
+          const finalSections = applyPlaceholders(recolored, values ?? {}) as unknown[];
+          buffer = await generateDocx({
+            title: title ?? tmpl?.title,
+            sections: finalSections,
+          });
+        } else {
+          const compiled = compileDocxDocument({
+            title,
+            subtitle,
+            author,
+            date,
+            markdown,
+            content: content as never,
+            blocks: blocks as never,
+            sections,
+            colorScheme,
+            colors: colors as never,
+          });
+          buffer = await generateDocx(compiled);
+        }
+        const rel = await writeOfficeArtifact(filename, buffer, ".docx");
+        return `Created ${rel}\n<octopus-studio-office-file path="${rel}" />`;
+      } catch (e) {
+        return `Error creating document: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_spreadsheet = {
+    description:
+      'Create an Excel spreadsheet (.xlsx). You can use a template (pass "template" and "values") OR create custom sheets from table data (pass "sheets", "csv", "data", or "records"). Automatically formats numbers, currencies, percentages, and totals.',
+    inputSchema: schema(
+      {
+        filename: { type: "string", description: "Output filename ending in .xlsx" },
+        template: {
+          type: "string",
+          description:
+            "Template name (optional). If omitted, generates custom-designed workbook from sheets/csv/data.",
+        },
+        values: {
+          type: "object",
+          description: "Map of placeholder -> replacement text when using a template.",
+        },
+        ...officeColorSchemaFields(),
+        title: { type: "string", description: "Workbook / sheet title." },
+        csv: {
+          type: "string",
+          description: "Raw CSV string data to convert into a formatted spreadsheet.",
+        },
+        sheets: {
+          type: "array",
+          items: { type: "object" },
+          description:
+            'Array of sheet objects: [{ name: "Sales", headers: [...], rows: [...], totals: true }].',
+        },
+        worksheets: {
+          type: "array",
+          items: { type: "object" },
+        },
+        data: {
+          type: "array",
+          items: { type: "array" },
+          description: "2D array of rows/cells (first row as headers).",
+        },
+        records: {
+          type: "array",
+          items: { type: "object" },
+          description: "Array of JSON row objects.",
+        },
+      },
+      ["filename"],
+    ),
+    execute: async ({
+      filename,
+      template,
+      values,
+      colorScheme,
+      colors,
+      title,
+      csv,
+      sheets,
+      worksheets,
+      data,
+      records,
+    }: {
+      filename: string;
+      template?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+      title?: string;
+      csv?: string;
+      sheets?: unknown[];
+      worksheets?: unknown[];
+      data?: unknown[][];
+      records?: Record<string, unknown>[];
+    }) => {
+      const blocked = blockReason("create_spreadsheet", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, filename);
+      if (fileBlocked) return fileBlocked;
+      try {
+        let buffer: Uint8Array;
+        const customSheets = sheets ?? worksheets;
+        if (template && !csv && !data && !records && (!customSheets || customSheets.length === 0)) {
+          const key = template ?? "budget_tracker";
+          const tmpl = ALL_XLSX_TEMPLATES[key] ?? ALL_XLSX_TEMPLATES["budget_tracker"];
+          const scheme = resolveScheme(colorScheme, colors);
+          const recolored = recolor(tmpl?.worksheets ?? [], XLSX_TEMPLATE_ROLES[key] ?? {}, scheme);
+          const finalWorksheets = applyPlaceholders(recolored, values ?? {}) as unknown[];
+          buffer = await generateXlsx({ worksheets: finalWorksheets });
+        } else {
+          const compiled = compileXlsxWorkbook({
+            title,
+            sheets: customSheets as never,
+            csv,
+            data: data as never,
+            records,
+            colorScheme,
+            colors: colors as never,
+          });
+          buffer = await generateXlsx(compiled);
+        }
+        const rel = await writeOfficeArtifact(filename, buffer, ".xlsx");
+        return `Created ${rel}\n<octopus-studio-office-file path="${rel}" />`;
+      } catch (e) {
+        return `Error creating spreadsheet: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_presentation = {
+    description:
+      'Create a PowerPoint presentation (.pptx). You can use a template (pass "template" and "values") OR create custom slides (pass "slides" array with layouts: title, bullets, stats, table, split, quote, section, closing).',
+    inputSchema: schema(
+      {
+        filename: { type: "string", description: "Output filename ending in .pptx" },
+        template: {
+          type: "string",
+          description: "Template name (optional). If omitted, generates custom deck from slides.",
+        },
+        values: {
+          type: "object",
+          description: "Map of placeholder -> replacement text when using a template.",
+        },
+        ...officeColorSchemaFields(),
+        title: { type: "string", description: "Presentation title." },
+        slides: {
+          type: "array",
+          items: { type: "object" },
+          description:
+            'Array of slide layout objects: { layout: "title"|"bullets"|"stats"|"table"|"split"|"quote"|"section"|"closing", title: "...", items: [...], stats: [...], headers: [...], rows: [...] }',
+        },
+      },
+      ["filename"],
+    ),
+    execute: async ({
+      filename,
+      template,
+      values,
+      colorScheme,
+      colors,
+      title,
+      slides,
+    }: {
+      filename: string;
+      template?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+      title?: string;
+      slides?: unknown[];
+    }) => {
+      const blocked = blockReason("create_presentation", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, filename);
+      if (fileBlocked) return fileBlocked;
+      try {
+        let buffer: Uint8Array;
+        if (template && (!slides || slides.length === 0)) {
+          const key = template ?? "presentation_idea";
+          const tmpl = ALL_PPT_TEMPLATES[key] ?? ALL_PPT_TEMPLATES["presentation_idea"];
+          const options = {
+            title: title ?? tmpl?.title,
+            size: tmpl?.size,
+            masters: tmpl?.masters,
+            slides: applyPlaceholders(
+              recolor(
+                tmpl?.slides ?? [],
+                PPT_TEMPLATE_ROLES[key] ?? {},
+                resolveScheme(colorScheme, colors),
+              ),
+              values ?? {},
+            ),
+          };
+          buffer = await generatePptx(options);
+        } else {
+          const compiled = compilePptxPresentation({
+            title,
+            slides: slides as never,
+            colorScheme,
+            colors: colors as never,
+          });
+          buffer = await generatePptx(compiled);
+        }
+        const rel = await writeOfficeArtifact(filename, buffer, ".pptx");
+        return `Created ${rel}\n<octopus-studio-office-file path="${rel}" />`;
+      } catch (e) {
+        return `Error creating presentation: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.create_office_documents_batch = {
+    description:
+      'Batch generate office files (mail-merge) from one template. Use inline "records" or point "dataFile" to .json/.csv for thousands of rows.',
+    inputSchema: schema(
+      {
+        kind: { type: "string", description: 'Document kind: "docx", "pptx", or "xlsx".' },
+        template: {
+          type: "string",
+        },
+        outputDir: {
+          type: "string",
+        },
+        records: {
+          type: "array",
+          items: { type: "object" },
+          description:
+            'Inline records for small batches: [{ "filename": "jordan.docx", "values": { "[Name]": "Jordan" } }, ...]. "filename" is optional (auto-numbered if omitted).',
+        },
+        dataFile: {
+          type: "string",
+          description:
+            'Project-relative path to a .json (array of record objects) or .csv (header row + data rows) file to use instead of "records" — the right choice for hundreds to thousands of records.',
+        },
+        filenameField: {
+          type: "string",
+          description:
+            'Column/key in each CSV or JSON record to use as that file\'s name (extension is added automatically). Ignored for inline "records" that already set "filename".',
+        },
+        filenamePrefix: {
+          type: "string",
+          description:
+            'Prefix for auto-numbered filenames when no filename is available. Defaults to "document".',
+        },
+        values: {
+          type: "object",
+        },
+        ...officeColorSchemaFields(),
+      },
+      ["kind", "outputDir"],
+    ),
+    execute: async ({
+      kind,
+      template,
+      outputDir,
+      records,
+      dataFile,
+      filenameField,
+      filenamePrefix,
+      values,
+      colorScheme,
+      colors,
+    }: {
+      kind: string;
+      template?: string;
+      outputDir: string;
+      records?: { filename?: string; values?: Record<string, string> }[];
+      dataFile?: string;
+      filenameField?: string;
+      filenamePrefix?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+    }) => {
+      const blocked = blockReason("create_office_documents_batch", params);
+      if (blocked) return blocked;
+
+      if (kind !== "docx" && kind !== "pptx" && kind !== "xlsx") {
+        return 'Invalid "kind": must be "docx", "pptx", or "xlsx".';
+      }
+
+      let batchRecords: BatchRecord[];
+      if (dataFile) {
+        const dataFileBlocked = fileAccessBlock(params, dataFile);
+        if (dataFileBlocked) return dataFileBlocked;
+        try {
+          const rel = await assertMutationPathAllowed({
+            appPath: params.appPath,
+            relativePath: dataFile,
+          });
+          const full = safeJoin(params.appPath, rel);
+          if (!fs.existsSync(full)) return `Data file not found: ${dataFile}`;
+          const text = fs.readFileSync(full, "utf8");
+          const ext = path.extname(dataFile).toLowerCase();
+          const parsed =
+            ext === ".json"
+              ? parseJsonRecords(text, filenameField)
+              : ext === ".csv"
+                ? parseCsvRecords(text, filenameField)
+                : `Unsupported data file type: ${dataFile} (use .json or .csv).`;
+          if (typeof parsed === "string") return parsed;
+          batchRecords = parsed;
+        } catch (e) {
+          return `Error reading data file: ${e instanceof Error ? e.message : String(e)}`;
+        }
+      } else if (records && records.length > 0) {
+        batchRecords = records.map((r) => ({
+          filename: r.filename,
+          values: toPlaceholderValues(r.values ?? {}),
+        }));
+      } else {
+        return 'Provide either "records" (inline) or "dataFile" (a .json/.csv path in the project).';
+      }
+
+      if (batchRecords.length === 0) return "No records to generate.";
+      if (batchRecords.length > MAX_BATCH_RECORDS) {
+        return `Too many records: ${batchRecords.length} (max ${MAX_BATCH_RECORDS} per call). Split into multiple calls.`;
+      }
+
+      const fileBlocked = fileAccessBlock(params, outputDir);
+      if (fileBlocked) return fileBlocked;
+
+      const sharedValues = toPlaceholderValues(values ?? {});
+      const scheme = resolveScheme(colorScheme, colors);
+      const prefix = (filenamePrefix && filenamePrefix.trim()) || "document";
+      const pad = Math.max(3, String(batchRecords.length).length);
+
+      let recoloredBody: unknown;
+      let title: string | undefined;
+      let pptSize: unknown;
+      let pptMasters: unknown;
+      if (kind === "docx") {
+        const key = template ?? "professional_report_template";
+        const tmpl = ALL_DOC_TEMPLATES[key] ?? ALL_DOC_TEMPLATES["professional_report_template"];
+        title = tmpl?.title;
+        recoloredBody = recolor(tmpl?.sections ?? [], DOC_TEMPLATE_ROLES[key] ?? {}, scheme);
+      } else if (kind === "pptx") {
+        const key = template ?? "presentation_idea";
+        const tmpl = ALL_PPT_TEMPLATES[key] ?? ALL_PPT_TEMPLATES["presentation_idea"];
+        title = tmpl?.title;
+        pptSize = tmpl?.size;
+        pptMasters = tmpl?.masters;
+        recoloredBody = recolor(tmpl?.slides ?? [], PPT_TEMPLATE_ROLES[key] ?? {}, scheme);
+      } else {
+        const key = template ?? "budget_tracker";
+        const tmpl = ALL_XLSX_TEMPLATES[key] ?? ALL_XLSX_TEMPLATES["budget_tracker"];
+        title = tmpl?.title;
+        recoloredBody = recolor(tmpl?.worksheets ?? [], XLSX_TEMPLATE_ROLES[key] ?? {}, scheme);
+      }
+
+      const startedAt = Date.now();
+      const usedNames = new Set<string>();
+      const examples: string[] = [];
+      const failures: string[] = [];
+      let succeeded = 0;
+
+      for (let i = 0; i < batchRecords.length; i++) {
+        const record = batchRecords[i];
+        try {
+          const recordValues = { ...sharedValues, ...record.values };
+          const content = applyPlaceholders(recoloredBody, recordValues);
+
+          let baseName = sanitizeBatchFilename(
+            record.filename,
+            `${prefix}-${String(i + 1).padStart(pad, "0")}`,
+            kind,
+          );
+          if (usedNames.has(baseName)) {
+            const dot = baseName.lastIndexOf(".");
+            let n = 2;
+            let candidate = `${baseName.slice(0, dot)}-${n}${baseName.slice(dot)}`;
+            while (usedNames.has(candidate)) {
+              n++;
+              candidate = `${baseName.slice(0, dot)}-${n}${baseName.slice(dot)}`;
+            }
+            baseName = candidate;
+          }
+          usedNames.add(baseName);
+
+          const buffer =
+            kind === "docx"
+              ? await generateDocx({ title, sections: content })
+              : kind === "pptx"
+                ? await generatePptx({ title, size: pptSize, masters: pptMasters, slides: content })
+                : await generateXlsx({ worksheets: content });
+
+          const rel = await writeOfficeArtifact(
+            `${outputDir}/${baseName}`,
+            buffer,
+            kind === "docx" ? ".docx" : kind === "pptx" ? ".pptx" : ".xlsx",
+          );
+          succeeded++;
+          if (examples.length < 3) examples.push(rel);
+        } catch (e) {
+          if (failures.length < 10) {
+            failures.push(`#${i + 1}: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        }
+        if (i % BATCH_YIELD_EVERY === BATCH_YIELD_EVERY - 1) {
+          await new Promise((resolve) => setImmediate(resolve));
+        }
+      }
+
+      const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1);
+      const lines = [
+        `Generated ${succeeded}/${batchRecords.length} ${kind} files in ${outputDir}/ (${elapsedSec}s).`,
+      ];
+      if (failures.length > 0) {
+        lines.push(`${batchRecords.length - succeeded} failed:`);
+        for (const f of failures) lines.push(`- ${f}`);
+        if (batchRecords.length - succeeded > failures.length) lines.push("- ...");
+      }
+      for (const rel of examples) {
+        lines.push(`<octopus-studio-office-file path="${rel}" />`);
+      }
+      if (succeeded > examples.length) {
+        lines.push(`...and ${succeeded - examples.length} more in ${outputDir}/.`);
+      }
+      return lines.join("\n");
+    },
+  };
+
+  const readOfficeText = async (filename: string): Promise<string> => {
+    const rel = await assertMutationPathAllowed({
+      appPath: params.appPath,
+      relativePath: filename,
+    });
+    const full = safeJoin(params.appPath, rel);
+    if (!fs.existsSync(full)) return `File not found: ${filename}`;
+    const ext = path.extname(filename).toLowerCase();
+    const buffer = fs.readFileSync(full);
+    let parsed: unknown;
+    if (ext === ".docx") parsed = await parseDocx(buffer);
+    else if (ext === ".pptx") parsed = await parsePptx(buffer);
+    else if (ext === ".xlsx") parsed = await parseXlsx(buffer);
+    else return `Unsupported file type: ${filename}`;
+    return collectOfficeText(parsed).filter(Boolean).join("\n");
+  };
+
+  tools.read_office_file = {
+    description:
+      "Read and parse an existing office file (.docx/.pptx/.xlsx) and return its text content, so you can review it before editing.",
+    inputSchema: schema({ filename: { type: "string" } }, ["filename"]),
+    execute: async ({ filename }: { filename: string }) => {
+      const blocked = blockReason("read_office_file", params);
+      if (blocked) return blocked;
+      try {
+        return await readOfficeText(filename);
+      } catch (e) {
+        return `Error reading office file: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_office_template = {
+    description:
+      "List the available document/spreadsheet/presentation templates, their [placeholders], color schemes, and custom design layouts. Pass a template name to see its placeholders; omit to list all templates.",
+    inputSchema: schema(
+      {
+        template: {
+          type: "string",
+        },
+      },
+      [],
+    ),
+    execute: async ({ template }: { template?: string }) => {
+      const blocked = blockReason("read_office_template", params);
+      if (blocked) return blocked;
+      try {
+        if (template) {
+          const doc = ALL_DOC_TEMPLATES[template];
+          if (doc) {
+            return formatTemplateInfo(template, doc, collectPlaceholders(doc.sections));
+          }
+          const xlsx = ALL_XLSX_TEMPLATES[template];
+          if (xlsx) {
+            return formatTemplateInfo(template, xlsx, collectPlaceholders(xlsx.worksheets));
+          }
+          const ppt = ALL_PPT_TEMPLATES[template];
+          if (ppt) {
+            return formatTemplateInfo(template, ppt, collectPlaceholders(ppt.slides));
+          }
+          return `Unknown template: ${template}`;
+        }
+        const lines = ["Available templates (grouped by category):", ""];
+        const groups = new Map<string, string[]>();
+        const push = (category: string, name: string, kind: string, t: TemplateMeta) => {
+          const list = groups.get(category) ?? [];
+          list.push(`- ${name} (${kind}): ${t.title}${t.description ? ` — ${t.description}` : ""}`);
+          groups.set(category, list);
+        };
+        for (const [name, t] of Object.entries(ALL_DOC_TEMPLATES)) {
+          push(t.category ?? "General", name, "docx", t);
+        }
+        for (const [name, t] of Object.entries(ALL_XLSX_TEMPLATES)) {
+          push(t.category ?? "General", name, "xlsx", t);
+        }
+        for (const [name, t] of Object.entries(ALL_PPT_TEMPLATES)) {
+          push(t.category ?? "General", name, "pptx", t);
+        }
+        for (const [category, entries] of [...groups.entries()].sort((a, b) =>
+          a[0].localeCompare(b[0]),
+        )) {
+          lines.push(`## ${category}`);
+          lines.push(...entries);
+          lines.push("");
+        }
+        lines.push(
+          `Color schemes (pass as "colorScheme" to create_document/create_spreadsheet/create_presentation): ${COLOR_SCHEME_NAMES.join(", ")}.`,
+          'You can also override individual roles with "colors", e.g. { "primary": "2F5233" }. Roles: primary, primaryText, secondary, surface, muted, border.',
+          "",
+          "Custom Design Generation (without templates):",
+          '- DOCX: pass "markdown" (full markdown text with headers, tables, lists, callouts) or "blocks" array.',
+          '- PPTX: pass "slides" array with layouts: "title", "bullets", "stats", "table", "split", "quote", "section", "closing".',
+          '- XLSX: pass "csv" string or "sheets" array with { headers, rows, totals: true }.',
+          "",
+          "Call read_office_template with a specific template name to see its placeholders.",
+        );
+        return lines.join("\n");
+      } catch (e) {
+        return `Error reading template: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.edit_document = {
+    description:
+      "Edit an existing Word document (.docx): regenerate it from a template with corrected values/colors, or overwrite with custom markdown/blocks/sections.",
+    inputSchema: schema(
+      {
+        filename: { type: "string", description: "Existing .docx file to edit" },
+        template: { type: "string", description: "Base template name (optional)." },
+        values: {
+          type: "object",
+        },
+        ...officeColorSchemaFields(),
+        title: { type: "string", description: "Document title" },
+        subtitle: { type: "string", description: "Document subtitle" },
+        author: { type: "string" },
+        date: { type: "string" },
+        markdown: { type: "string", description: "Markdown text content" },
+        content: { type: "string", description: "Markdown string or array of blocks" },
+        blocks: { type: "array", items: { type: "object" } },
+        sections: {
+          type: "array",
+          items: { type: "object" },
+        },
+      },
+      ["filename"],
+    ),
+    execute: async ({
+      filename,
+      template,
+      values,
+      colorScheme,
+      colors,
+      title,
+      subtitle,
+      author,
+      date,
+      markdown,
+      content,
+      blocks,
+      sections,
+    }: {
+      filename: string;
+      template?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+      title?: string;
+      subtitle?: string;
+      author?: string;
+      date?: string;
+      markdown?: string;
+      content?: string | unknown[];
+      blocks?: unknown[];
+      sections?: unknown[];
+    }) => {
+      const blocked = blockReason("edit_document", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, filename);
+      if (fileBlocked) return fileBlocked;
+      try {
+        await readOfficeText(filename); // confirm it exists / is parseable
+        let buffer: Uint8Array;
+        if (template && !markdown && !content && !blocks && (!sections || sections.length === 0)) {
+          const tmpl = ALL_DOC_TEMPLATES[template];
+          const finalSections = applyPlaceholders(
+            recolor(
+              tmpl?.sections ?? [],
+              DOC_TEMPLATE_ROLES[template] ?? {},
+              resolveScheme(colorScheme, colors),
+            ),
+            values ?? {},
+          ) as unknown[];
+          buffer = await generateDocx({
+            title: title ?? tmpl?.title,
+            sections: finalSections,
+          });
+        } else {
+          const compiled = compileDocxDocument({
+            title,
+            subtitle,
+            author,
+            date,
+            markdown,
+            content: content as never,
+            blocks: blocks as never,
+            sections,
+            colorScheme,
+            colors: colors as never,
+          });
+          buffer = await generateDocx(compiled);
+        }
+        const rel = await writeOfficeArtifact(filename, buffer, ".docx");
+        return `Edited ${rel}\n<octopus-studio-office-file path="${rel}" />`;
+      } catch (e) {
+        return `Error editing document: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.edit_spreadsheet = {
+    description:
+      "Edit an existing Excel spreadsheet (.xlsx): regenerate it from a template with corrected values/colors, or overwrite with custom sheets/csv/data.",
+    inputSchema: schema(
+      {
+        filename: { type: "string", description: "Existing .xlsx file to edit" },
+        template: { type: "string", description: "Base template name (optional)." },
+        values: {
+          type: "object",
+        },
+        ...officeColorSchemaFields(),
+        title: { type: "string" },
+        csv: { type: "string" },
+        sheets: { type: "array", items: { type: "object" } },
+        worksheets: {
+          type: "array",
+          items: { type: "object" },
+        },
+        data: { type: "array", items: { type: "array" } },
+        records: { type: "array", items: { type: "object" } },
+      },
+      ["filename"],
+    ),
+    execute: async ({
+      filename,
+      template,
+      values,
+      colorScheme,
+      colors,
+      title,
+      csv,
+      sheets,
+      worksheets,
+      data,
+      records,
+    }: {
+      filename: string;
+      template?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+      title?: string;
+      csv?: string;
+      sheets?: unknown[];
+      worksheets?: unknown[];
+      data?: unknown[][];
+      records?: Record<string, unknown>[];
+    }) => {
+      const blocked = blockReason("edit_spreadsheet", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, filename);
+      if (fileBlocked) return fileBlocked;
+      try {
+        await readOfficeText(filename);
+        let buffer: Uint8Array;
+        const customSheets = sheets ?? worksheets;
+        if (template && !csv && !data && !records && (!customSheets || customSheets.length === 0)) {
+          const tmpl = ALL_XLSX_TEMPLATES[template];
+          const finalWorksheets = applyPlaceholders(
+            recolor(
+              tmpl?.worksheets ?? [],
+              XLSX_TEMPLATE_ROLES[template] ?? {},
+              resolveScheme(colorScheme, colors),
+            ),
+            values ?? {},
+          ) as unknown[];
+          buffer = await generateXlsx({ worksheets: finalWorksheets });
+        } else {
+          const compiled = compileXlsxWorkbook({
+            title,
+            sheets: customSheets as never,
+            csv,
+            data: data as never,
+            records,
+            colorScheme,
+            colors: colors as never,
+          });
+          buffer = await generateXlsx(compiled);
+        }
+        const rel = await writeOfficeArtifact(filename, buffer, ".xlsx");
+        return `Edited ${rel}\n<octopus-studio-office-file path="${rel}" />`;
+      } catch (e) {
+        return `Error editing spreadsheet: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.edit_presentation = {
+    description:
+      "Edit an existing PowerPoint presentation (.pptx): regenerate it from a template with corrected values/colors, or overwrite with custom slides.",
+    inputSchema: schema(
+      {
+        filename: { type: "string", description: "Existing .pptx file to edit" },
+        template: { type: "string", description: "Base template name (optional)." },
+        values: {
+          type: "object",
+        },
+        ...officeColorSchemaFields(),
+        title: { type: "string" },
+        slides: {
+          type: "array",
+          items: { type: "object" },
+        },
+      },
+      ["filename"],
+    ),
+    execute: async ({
+      filename,
+      template,
+      values,
+      colorScheme,
+      colors,
+      title,
+      slides,
+    }: {
+      filename: string;
+      template?: string;
+      values?: Record<string, string>;
+      colorScheme?: string;
+      colors?: Record<string, string>;
+      title?: string;
+      slides?: unknown[];
+    }) => {
+      const blocked = blockReason("edit_presentation", params);
+      if (blocked) return blocked;
+      const fileBlocked = fileAccessBlock(params, filename);
+      if (fileBlocked) return fileBlocked;
+      try {
+        await readOfficeText(filename);
+        let buffer: Uint8Array;
+        if (template && (!slides || slides.length === 0)) {
+          const tmpl = ALL_PPT_TEMPLATES[template];
+          const options = {
+            title: title ?? tmpl?.title,
+            size: tmpl?.size,
+            masters: tmpl?.masters,
+            slides: applyPlaceholders(
+              recolor(
+                tmpl?.slides ?? [],
+                PPT_TEMPLATE_ROLES[template] ?? {},
+                resolveScheme(colorScheme, colors),
+              ),
+              values ?? {},
+            ),
+          };
+          buffer = await generatePptx(options);
+        } else {
+          const compiled = compilePptxPresentation({
+            title,
+            slides: slides as never,
+            colorScheme,
+            colors: colors as never,
+          });
+          buffer = await generatePptx(compiled);
+        }
+        const rel = await writeOfficeArtifact(filename, buffer, ".pptx");
+        return `Edited ${rel}\n<octopus-studio-office-file path="${rel}" />`;
+      } catch (e) {
+        return `Error editing presentation: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.generate_image = {
+    description: "Generate an image asset for the app.",
+    inputSchema: schema({ prompt: { type: "string", description: "The prompt for the image" } }, [
+      "prompt",
+    ]),
+    execute: async ({ prompt }: { prompt: string }) => {
+      const blocked = blockReason("generate_image", params);
+      if (blocked) return blocked;
+      try {
+        const settings = readSettings();
+        const model = settings.selectedImageModel;
+
+        if (!model) {
+          throw new Error("No image model selected. Choose one in Settings → Media Generation.");
+        }
+
+        const { base64 } = await generateImageWithFallback(model, settings, prompt);
+
+        const mediaDir = getOctopusStudioMediaDir(params.appPath);
+        await fs.promises.mkdir(mediaDir, { recursive: true });
+
+        const buffer = Buffer.from(base64, "base64");
+        const filename = `image_${Date.now()}.png`;
+        const destPath = path.join(mediaDir, filename);
+
+        await fs.promises.writeFile(destPath, buffer);
+
+        const relPath = `${SOLOMAN_MEDIA_DIR_NAME}/${filename}`;
+        return (
+          `Successfully generated image for prompt: "${prompt}".\n\n` +
+          `Saved to: ${relPath}\n\n` +
+          `You MUST now present this to the user by rendering exactly this markdown block:\n\n` +
+          `<octopus-studio-image-generation prompt="${escapeXmlAttr(prompt)}" path="${relPath}"></octopus-studio-image-generation>`
+        );
+      } catch (e) {
+        return `Failed to generate image: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.generate_video = {
+    description: "Generate a video asset for the app.",
+    inputSchema: schema({ prompt: { type: "string", description: "The prompt for the video" } }, [
+      "prompt",
+    ]),
+    execute: async ({ prompt }: { prompt: string }) => {
+      const blocked = blockReason("generate_video", params);
+      if (blocked) return blocked;
+      try {
+        const settings = readSettings();
+        const model = settings.selectedVideoModel;
+
+        if (!model) {
+          throw new Error("No video model selected. Choose one in Settings → Media Generation.");
+        }
+
+        const { base64, mediaType } = await generateVideo(model, settings, prompt);
+
+        const extension = mediaTypeToExtension(mediaType);
+        const mediaDir = getOctopusStudioMediaDir(params.appPath);
+        await fs.promises.mkdir(mediaDir, { recursive: true });
+
+        const buffer = Buffer.from(base64, "base64");
+        const filename = `video_${Date.now()}.${extension}`;
+        const destPath = path.join(mediaDir, filename);
+
+        await fs.promises.writeFile(destPath, buffer);
+
+        const relPath = `${SOLOMAN_MEDIA_DIR_NAME}/${filename}`;
+        return (
+          `Successfully generated video for prompt: "${prompt}".\n\n` +
+          `Saved to: ${relPath}\n\n` +
+          `You MUST now present this to the user by rendering exactly this markdown block:\n\n` +
+          `<octopus-studio-video-generation prompt="${escapeXmlAttr(prompt)}" path="${relPath}"></octopus-studio-video-generation>`
+        );
+      } catch (e) {
+        return `Failed to generate video: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.add_integration = stub(
+    "Add a third-party integration (e.g. Supabase, GitHub) to the project.",
+  );
+  tools.enable_nitro = stub("Enable the Nitro build/performance optimization for the project.");
+  tools.planning_questionnaire = {
+    description:
+      "Ask the user 1-3 focused structured questions while planning (design preferences, target audience, etc.). Each question is text, radio, or checkbox. Waits for the user's answers and returns them.",
+    inputSchema: schema(
+      {
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              type: { type: "string", description: "'text' | 'radio' | 'checkbox'" },
+              question: { type: "string" },
+              options: { type: "array", items: { type: "string" } },
+              required: { type: "boolean" },
+              placeholder: { type: "string" },
+            },
+            required: ["id", "type", "question"],
+          },
+        },
+      },
+      ["questions"],
+    ),
+    execute: async (
+      args: { questions: QuestionnaireQuestion[] },
+      options?: { abortSignal?: AbortSignal },
+    ) => {
+      const blocked = blockReason("planning_questionnaire", params);
+      if (blocked) return blocked;
+      if (!params.requestQuestionnaire) return `${STUB_MESSAGE}`;
+      try {
+        const answers = await params.requestQuestionnaire(args.questions, options?.abortSignal);
+        if (!answers || Object.keys(answers).length === 0) {
+          return "No response received from the user.";
+        }
+        return stringify(answers);
+      } catch (e) {
+        return `Error asking questionnaire: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.plan_task_graph = {
+    description:
+      "Submit a Directed Acyclic Graph (DAG) of subtasks to be executed by the orchestration engine. This replaces sequential step-by-step delegation. The deterministic scheduler will spawn the sub-agents in parallel where possible, resolve dependencies, and return the aggregated results. Use this for all complex workflows.",
+    inputSchema: schema({
+      goal: { type: "string" },
+      subtasks: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "Unique ID for this subtask" },
+            goal: { type: "string", description: "What the sub-agent should do." },
+            role: {
+              type: "string",
+              description: "explorer, executor, tester, debugger, reviewer, architect, or verifier",
+            },
+            depends_on: {
+              type: "array",
+              items: { type: "string" },
+              description: "IDs of subtasks that must complete before this one starts",
+            },
+            allowed_files: { type: "array", items: { type: "string" } },
+            context: { type: "string", description: "Relevant initial context." },
+          },
+        },
+      },
+    }),
+    execute: async (args) => {
+      const blocked = blockReason("plan_task_graph", params);
+      if (blocked) return blocked;
+      if (params.planTaskGraph) {
+        return await params.planTaskGraph(args);
+      }
+      return "Orchestrator not attached.";
+    },
+  };
+
+  tools.spawn_subagent = {
+    description:
+      "Delegate an isolated subtask to a sub-agent worker. Returns a JSON envelope: { status: 'complete|partial|blocked', outputs: { result }, notes }. Use the status to conditionally handle retries or escalations. Assign a role (explorer=read-only, executor=read/write, tester=tests/sandbox) to scope its tools. Sub-agents have exclusive access to heavy execution tools and MCP servers — pass `mcp_servers` to load a specific server's tools (see list_mcp_servers).",
+    inputSchema: schema(
+      {
+        description: { type: "string", description: "What the sub-agent should do." },
+        role: {
+          type: "string",
+          description: "explorer, executor, tester, debugger, reviewer, architect, or verifier.",
+        },
+        allowed_files: {
+          type: "array",
+          items: { type: "string" },
+          description: "Files/directories this sub-agent may access; null means unrestricted.",
+        },
+        context: { type: "string", description: "Relevant context for the sub-agent." },
+        tool_allowlist: {
+          type: "array",
+          items: { type: "string" },
+          description: "Built-in tool names to restrict this sub-agent to.",
+        },
+        mcp_servers: {
+          type: "array",
+          items: { type: "string" },
+          description: "MCP server names to load for this sub-agent (see list_mcp_servers).",
+        },
+        max_steps: {
+          type: "number",
+          description: "Max reasoning steps (1-30).",
+        },
+        resume_from: {
+          type: "string",
+          description:
+            "A prior sub-task id to resume from. Injects that sub-task's action history so this run continues instead of restarting (do not repeat those actions).",
+        },
+        mission_slug: {
+          type: "string",
+          description: "Mission slug whose consensus ledger owns this worker action.",
+        },
+        bot_name: {
+          type: "string",
+          description: "Worker persona name shown in approval requests and the ledger.",
+        },
+      },
+      ["description"],
+    ),
+    execute: async (args: {
+      description: string;
+      role?: string;
+      allowed_files?: string[];
+      context?: string;
+      tool_allowlist?: string[];
+      mcp_servers?: string[];
+      max_steps?: number;
+      resume_from?: string;
+      mission_slug?: string;
+      bot_name?: string;
+    }) => {
+      const blocked = blockReason("spawn_subagent", params);
+      if (blocked) return blocked;
+      if (!params.spawnSubAgent) return `${STUB_MESSAGE}`;
+      const validRoles: SubAgentSpec["role"][] = [
+        "explorer",
+        "executor",
+        "tester",
+        "debugger",
+        "reviewer",
+        "architect",
+        "verifier",
+      ];
+      try {
+        return await params.spawnSubAgent({
+          description: args.description,
+          role: validRoles.includes(args.role as SubAgentSpec["role"])
+            ? (args.role as SubAgentSpec["role"])
+            : "executor",
+          allowedFiles: args.allowed_files ?? null,
+          context: args.context,
+          toolAllowlist: args.tool_allowlist ?? null,
+          mcpServers: args.mcp_servers ?? null,
+          maxSteps:
+            args.max_steps !== undefined ? Math.min(Math.max(1, args.max_steps), 30) : undefined,
+          resumeFromTaskId: args.resume_from,
+          missionSlug: args.mission_slug,
+          botName: args.bot_name,
+        });
+      } catch (e) {
+        return `Error running sub-agent: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_chat = {
+    description:
+      "Read messages from a past chat in this project (by chat_id, or the most recent chat if omitted).",
+    inputSchema: schema({
+      chat_id: { type: "number", description: "Chat ID to read (optional)." },
+      limit: { type: "number", description: "Maximum number of messages to return (default 20)." },
+    }),
+    execute: async ({ chat_id, limit = 20 }: { chat_id?: number; limit?: number }) => {
+      const blocked = blockReason("read_chat", params);
+      if (blocked) return blocked;
+      try {
+        const targetChatId = chat_id ?? params.chatId;
+        const chatRow = await db.query.chats.findFirst({
+          where: and(eq(chats.id, targetChatId), eq(chats.appId, params.appId)),
+        });
+        if (!chatRow) {
+          return `No chat #${targetChatId} found in this project.`;
+        }
+        const rows = await db
+          .select()
+          .from(messages)
+          .where(eq(messages.chatId, targetChatId))
+          .orderBy(asc(messages.id))
+          .limit(Math.min(Math.max(1, limit), 50));
+        if (rows.length === 0) {
+          return `Chat #${targetChatId} ("${chatRow.title ?? "Untitled"}") has no messages.`;
+        }
+        return [
+          `Chat #${targetChatId}: ${chatRow.title ?? "Untitled"}`,
+          ...rows.map((m) => `[${m.role}] ${m.content.slice(0, 600)}`),
+        ].join("\n\n");
+      } catch (e) {
+        return `Error reading chat: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.search_chats = {
+    description: "Search this project's chat history by keyword.",
+    inputSchema: schema(
+      {
+        query: { type: "string", description: "Keyword or phrase to search for." },
+      },
+      ["query"],
+    ),
+    execute: async ({ query }: { query: string }) => {
+      const blocked = blockReason("search_chats", params);
+      if (blocked) return blocked;
+      try {
+        const appChats = await db
+          .select()
+          .from(chats)
+          .where(eq(chats.appId, params.appId))
+          .orderBy(desc(chats.createdAt))
+          .limit(30);
+        if (appChats.length === 0) return "No chats found for this project.";
+        const needle = query.toLowerCase();
+        const hits: string[] = [];
+        for (const c of appChats) {
+          const chatMessages = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.chatId, c.id))
+            .orderBy(asc(messages.id));
+          for (const m of chatMessages) {
+            if (m.content.toLowerCase().includes(needle)) {
+              const idx = m.content.toLowerCase().indexOf(needle);
+              const start = Math.max(0, idx - 80);
+              const snippet = m.content.slice(start, idx + 160).replace(/\s+/g, " ");
+              hits.push(
+                `- Chat #${c.id} ("${c.title ?? "Untitled"}") [${m.role}]: ...${snippet}...`,
+              );
+              if (hits.length >= 15) break;
+            }
+          }
+          if (hits.length >= 15) break;
+        }
+        return hits.length > 0 ? hits.join("\n") : `No chat messages matched "${query}".`;
+      } catch (e) {
+        return `Error searching chats: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.explore_chat_history = {
+    description: "List recent chats in this project and their summaries/recent messages.",
+    inputSchema: schema({
+      limit: { type: "number", description: "Number of recent chats to inspect (default 10)." },
+    }),
+    execute: async ({ limit = 10 }: { limit?: number }) => {
+      const blocked = blockReason("explore_chat_history", params);
+      if (blocked) return blocked;
+      try {
+        const appChats = await db
+          .select()
+          .from(chats)
+          .where(eq(chats.appId, params.appId))
+          .orderBy(desc(chats.createdAt))
+          .limit(Math.min(Math.max(1, limit), 25));
+        if (appChats.length === 0) return "No prior chats found for this project.";
+        const lines: string[] = [];
+        for (const c of appChats) {
+          const recentMsgs = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.chatId, c.id))
+            .orderBy(desc(messages.id))
+            .limit(2);
+          const preview = recentMsgs
+            .reverse()
+            .map((m) => `${m.role}: ${m.content.slice(0, 200).replace(/\s+/g, " ")}`)
+            .join(" | ");
+          lines.push(`- Chat #${c.id} "${c.title ?? "Untitled"}": ${preview || "(empty)"}`);
+        }
+        return lines.join("\n");
+      } catch (e) {
+        return `Error exploring chat history: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_guide = {
+    description:
+      "Read a project guide or documentation file (e.g. AI_RULES.md, AGENTS.md, README.md). Omit path to auto-discover project guides.",
+    inputSchema: schema({
+      path: {
+        type: "string",
+        description: "Optional relative path to a guide/documentation file.",
+      },
+    }),
+    execute: async ({ path: guidePath }: { path?: string }) => {
+      const blocked = blockReason("read_guide", params);
+      if (blocked) return blocked;
+      try {
+        const candidates = guidePath
+          ? [guidePath]
+          : ["AI_RULES.md", "AGENTS.md", "CLAUDE.md", "README.md", "CONTRIBUTING.md"];
+        const found: string[] = [];
+        for (const rel of candidates) {
+          const accessBlocked = fileAccessBlock(params, rel);
+          if (accessBlocked) continue;
+          const full = safeJoin(params.appPath, rel);
+          if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+            const content = fs.readFileSync(full, "utf8").slice(0, 16 * 1024);
+            found.push(`# ${rel}\n${content}`);
+          }
+        }
+        if (found.length === 0) {
+          return guidePath
+            ? `Guide file "${guidePath}" not found.`
+            : "No project guide files (AI_RULES.md, AGENTS.md, README.md) found in the project root.";
+        }
+        return found.join("\n\n---\n\n");
+      } catch (e) {
+        return `Error reading guide: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  tools.read_logs = {
+    description: "Read the application's recent runtime logs.",
+    inputSchema: schema({
+      lines: { type: "number", description: "Number of recent log lines to return (default 100)." },
+    }),
+    execute: async ({ lines = 100 }: { lines?: number }) => {
+      const blocked = blockReason("read_logs", params);
+      if (blocked) return blocked;
+      try {
+        const cap = Math.min(Math.max(10, lines), 500);
+        const candidates = [
+          path.join(params.appPath, ".octopusStudio", "logs", "app.log"),
+          path.join(params.appPath, "logs", "main.log"),
+          path.join(getUserDataPath(), "logs", "main.log"),
+        ];
+        for (const logPath of candidates) {
+          if (fs.existsSync(logPath) && fs.statSync(logPath).isFile()) {
+            const text = fs.readFileSync(logPath, "utf8");
+            const tail = text.split(/\r?\n/).slice(-cap).join("\n");
+            return tail || "(log file is empty)";
+          }
+        }
+        return "No recent runtime logs found.";
+      } catch (e) {
+        return `Error reading logs: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    },
+  };
+
+  // Read-only Ask mode blocks every write/mutating tool at execution time, so
+  // their schemas are pure token waste. Attach only the tools the model can
+  // actually use, cutting ~half the tool-schema tokens per Ask turn.
+  if (params.chatMode === "ask") {
+    const readOnlyTools: ToolSet = {};
+    for (const [name, tool] of Object.entries(tools)) {
+      if (registryByName.get(name)?.isAllowedByDefault) {
+        readOnlyTools[name] = tool;
+      }
+    }
+    return readOnlyTools;
+  }
+
+  // The main agent keeps a minimal tool schema and delegates heavy/specialized
+  // capabilities (office documents, media generation, web) to sub-agents via
+  // `spawn_subagent` — the largest token-cost lever. Sub-agents are instead
+  // bounded by their per-role allowlist below.
+  if (!params.agentTaskContext) {
+    const delegatedTools = [
+      "create_document",
+      "create_spreadsheet",
+      "create_presentation",
+      "create_office_documents_batch",
+      "edit_document",
+      "edit_spreadsheet",
+      "edit_presentation",
+      "read_office_file",
+      "read_office_template",
+      "web_fetch",
+      "web_crawl",
+      "generate_image",
+      "generate_video",
+    ];
+    for (const tool of delegatedTools) {
+      delete tools[tool];
+    }
+  }
+
+  const agentRole = params.agentTaskContext?.agentRole as AgentRole | undefined;
+  const contextBudget = agentRole ? (ROLE_BUDGETS[agentRole]?.contextBudget ?? 8000) : 8000;
+  const toolResultMaxChars = toolResultCharBudget(contextBudget);
+
+  // Tools that mutate filesystem or git state. When one of these succeeds,
+  // re-running read/verification tools (e.g. `run_type_checks`, `read_file`,
+  // `git_diff`, `grep`) with the same arguments is legitimate verification,
+  // NOT an infinite loop.
+  const STATE_MUTATING_TOOLS = new Set([
+    "write_file",
+    "search_replace",
+    "delete_file",
+    "rename_file",
+    "copy_file",
+    "add_dependency",
+    "execute_sandbox_script",
+    "execute_command",
+    "git_commit",
+    "git_checkout",
+    "git_merge",
+    "git_rebase",
+    "git_cherry_pick",
+    "git_restore_file",
+    "spawn_subagent",
+    "plan_task_graph",
+  ]);
+
+  for (const [name, tool] of Object.entries(tools)) {
+    const originalExecute = tool.execute;
+    if (!originalExecute) continue;
+    tool.execute = async (args: any, options?: any) => {
+      const argsStr = JSON.stringify(args);
+      params.budget = params.budget || { toolCalls: 0 };
+      params.budget.callHistory = params.budget.callHistory || [];
+
+      const recent = params.budget.callHistory.slice(-10);
+      const repeats = recent.filter((c) => c.name === name && c.args === argsStr).length;
+
+      if (repeats >= 3) {
+        return `ERROR: You have repeatedly called ${name} with the exact same arguments and it is failing or not progressing. The system has blocked this call to prevent an infinite loop. You MUST stop repeating this action and try a completely different approach.`;
+      }
+
+      params.budget.callHistory.push({ name, args: argsStr });
+      const missionContext = params.agentTaskContext;
+      const interception = shouldInterceptTool(
+        name,
+        args as Record<string, unknown>,
+        missionContext?.missionSlug
+          ? getMissionHitlPolicy(params.appPath, missionContext.missionSlug)
+          : undefined,
+      );
+      if (interception.shouldBlock && missionContext?.missionSlug) {
+        const approval = await requestHitlApproval({
+          projectPath: params.appPath,
+          missionSlug: missionContext.missionSlug,
+          requestingBot: missionContext.botName ?? missionContext.agentRole ?? "Mission worker",
+          toolName: name,
+          args: args as Record<string, unknown>,
+          summary: `${missionContext.botName ?? "Mission worker"} requested ${interception.category}.`,
+        });
+        if (!approval.approved) {
+          return `BLOCKED: ${approval.reason ?? "The user rejected this action."}`;
+        }
+      }
+      const rawResult = await originalExecute(args, options);
+      if (STATE_MUTATING_TOOLS.has(name)) {
+        // Clear prior read/check tool call entries so verifying after an edit
+        // never triggers the repeat blocker.
+        params.budget.callHistory = params.budget.callHistory.filter((c) =>
+          STATE_MUTATING_TOOLS.has(c.name),
+        );
+      }
+      return truncateToolResult(rawResult, toolResultMaxChars);
+    };
+  }
+
+  // Filter based on explicit toolAllowlist or agent role profiles. Each role
+  // gets a minimal tool allowlist — smaller schema (fewer tokens) and
+  // structural scope containment (an explorer literally cannot call write_file).
+  const explicitAllowlist = params.agentTaskContext?.toolAllowlist;
+  if (explicitAllowlist && explicitAllowlist.length > 0) {
+    const allowedSet = new Set(explicitAllowlist);
+    for (const key of Object.keys(tools)) {
+      if (!allowedSet.has(key)) {
+        delete tools[key];
+      }
+    }
+    return tools;
+  }
+
+  const role = params.agentTaskContext?.agentRole;
+  if (role) {
+    const readOnlyTools = new Set([
+      "list_files",
+      "read_file",
+      "grep",
+      "code_search",
+      "explore_code",
+      "read_logs",
+      "read_guide",
+      "git_status",
+      "git_diff",
+      "git_log",
+      "git_show_revision",
+      "git_branch_list",
+      "read_chat",
+      "search_chats",
+      "explore_chat_history",
+      "list_skills",
+      "read_skill",
+    ]);
+    const verifyTools = new Set([
+      "list_files",
+      "read_file",
+      "grep",
+      "code_search",
+      "run_type_checks",
+      "execute_sandbox_script",
+      "read_logs",
+      "git_status",
+      "git_diff",
+    ]);
+
+    let allowedTools: Set<string> | null = null;
+
+    if (role === "explorer" || role === "reviewer" || role === "architect") {
+      allowedTools = readOnlyTools;
+    } else if (role === "tester" || role === "verifier") {
+      allowedTools = verifyTools;
+    } else if (params.agentTaskContext?.isSubAgent) {
+      // Sub-agents in executor / debugger roles should not recursively spawn
+      // sub-agents, ask user questionnaires, or carry heavy Office/Media schemas
+      // unless the task description actually mentions those domains.
+      const subAgentExcluded = [
+        "spawn_subagent",
+        "plan_task_graph",
+        "planning_questionnaire",
+        "set_chat_summary",
+        "update_todos",
+        "create_scheduled_task",
+        "list_coworker_bots",
+        "create_coworker_bot",
+        "run_coworker_bot",
+        "get_coworker_report",
+        "list_planner_tasks",
+        "create_planner_task",
+        "update_planner_task",
+        "add_integration",
+        "enable_nitro",
+      ];
+      for (const excluded of subAgentExcluded) {
+        delete tools[excluded];
+      }
+      const promptLower = (params.prompt ?? "").toLowerCase();
+      const mentionsOffice =
+        /\b(docx|xlsx|pptx|word|excel|spreadsheet|powerpoint|presentation|slide|document|office|template|csv)\b/.test(
+          promptLower,
+        );
+      if (!mentionsOffice) {
+        for (const officeTool of [
+          "create_document",
+          "create_spreadsheet",
+          "create_presentation",
+          "create_office_documents_batch",
+          "edit_document",
+          "edit_spreadsheet",
+          "edit_presentation",
+          "read_office_file",
+          "read_office_template",
+        ]) {
+          delete tools[officeTool];
+        }
+      }
+      const mentionsMedia = /\b(image|video|picture|photo|illustration|icon|banner|clip)\b/.test(
+        promptLower,
+      );
+      if (!mentionsMedia) {
+        delete tools.generate_image;
+        delete tools.generate_video;
+      }
+    }
+
+    if (allowedTools) {
+      for (const key of Object.keys(tools)) {
+        if (!allowedTools.has(key)) {
+          delete tools[key];
+        }
+      }
+    }
+  }
+
+  return tools;
+}
+
+function listTree(appPath: string, base: string, relPrefix: string): string {
+  const EXCLUDED = new Set([
+    "node_modules",
+    ".git",
+    ".next",
+    "dist",
+    "build",
+    "coverage",
+    ".octopusStudio",
+  ]);
+  const lines: string[] = [];
+  const walk = (dir: string, rel: string, depth: number): void => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    const sorted = entries.sort((a, b) => {
+      if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const entry of sorted) {
+      if (entry.name.startsWith(".")) continue;
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        if (EXCLUDED.has(entry.name)) continue;
+        lines.push(`${"  ".repeat(depth)}${entry.name}/`);
+        if (depth < 3) walk(path.join(dir, entry.name), childRel, depth + 1);
+      } else {
+        lines.push(`${"  ".repeat(depth)}${entry.name}`);
+      }
+    }
+  };
+  walk(base, relPrefix === "." ? "" : relPrefix, 0);
+  return lines.join("\n") || "(empty directory)";
+}

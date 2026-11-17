@@ -1,0 +1,340 @@
+import { useState, useRef, useEffect } from "react";
+import {
+  PanelGroup,
+  Panel,
+  PanelResizeHandle,
+  type ImperativePanelHandle,
+} from "react-resizable-panels";
+import { ChatPanel } from "../components/ChatPanel";
+import { PreviewPanel } from "../components/preview_panel/PreviewPanel";
+import { ChatProjectPreview } from "../components/chat_project/ChatProjectPreview";
+import { BrowserAutomationPanel } from "../components/browser/BrowserAutomationPanel";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { isPreviewOpenAtom, isChatPanelHiddenAtom } from "@/atoms/viewAtoms";
+import { useChats } from "@/hooks/useChats";
+import { useLoadApps } from "@/hooks/useLoadApps";
+import { useSelectChat } from "@/hooks/useSelectChat";
+import { selectedAppIdAtom } from "@/atoms/appAtoms";
+import { selectedChatIdAtom } from "@/atoms/chatAtoms";
+import { ipc } from "@/ipc/types";
+import { useChatMessages } from "@/hooks/useChatMessages";
+import type { BrowserAutomationPayload } from "@/ipc/types/browser";
+
+const DEFAULT_CHAT_PANEL_SIZE = 50;
+type RightTab = "chats" | "browser";
+
+export default function ChatPage() {
+  const { id: chatId, appId: routeAppId } = useSearch({ from: "/chat" });
+  const navigate = useNavigate();
+  const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
+  const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(isChatPanelHiddenAtom);
+  const [isChatProject, setIsChatProject] = useState<boolean | undefined>(undefined);
+  const [isBrowserAutomationOpen, setIsBrowserAutomationOpen] = useState(false);
+  const [rightTab, setRightTab] = useState<RightTab>("chats");
+  const setSelectedChatId = useSetAtom(selectedChatIdAtom);
+  const [isResizing, setIsResizing] = useState(false);
+  const selectedAppId = useAtomValue(selectedAppIdAtom);
+  const setSelectedAppId = useSetAtom(selectedAppIdAtom);
+  const { chats, loading } = useChats(selectedAppId);
+  const messages = useChatMessages(chatId);
+  const { apps } = useLoadApps();
+  const selectedApp = apps.find((app) => app.id === selectedAppId);
+  const chatProjectName = selectedApp?.name ?? undefined;
+  // The default (projectless) chat bucket is stored as type "app" but has no
+  // codebase behind it, same as a real chat project — it must never show the
+  // app preview/build panel.
+  const selectedAppIsChatProject =
+    selectedApp?.type === "chat" || !!selectedApp?.isDefaultChatProject;
+
+  // Browser tool calls arrive as streamed assistant markup. Keep the browser
+  // surface open for the whole task so the user can watch it and take over.
+  useEffect(() => {
+    const hasBrowserTool = messages.some((message) =>
+      /OctoLimb|search_google|go_to_url|read_page|click_element|input_text|run_recipe/.test(
+        message.content,
+      ),
+    );
+    if (hasBrowserTool) {
+      setIsBrowserAutomationOpen(true);
+      setRightTab("browser");
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const unsubscribe = ipc.events.browser.onAutomation((event: BrowserAutomationPayload) => {
+      if (event.phase === "started") {
+        setIsBrowserAutomationOpen(true);
+        setRightTab("browser");
+      }
+    });
+    return unsubscribe;
+  }, []);
+  const previousSizeRef = useRef<number>(DEFAULT_CHAT_PANEL_SIZE);
+  const isInitialMountRef = useRef(true);
+  const selectedAppIdRef = useRef(selectedAppId);
+
+  useEffect(() => {
+    selectedAppIdRef.current = selectedAppId;
+  }, [selectedAppId]);
+
+  // Sync selectedChatIdAtom with the chatId from the URL
+  useEffect(() => {
+    setSelectedChatId(chatId ?? null);
+  }, [chatId, setSelectedChatId]);
+
+  const { selectChat } = useSelectChat();
+
+  useEffect(() => {
+    if (chatId || loading) {
+      return;
+    }
+
+    if (!selectedAppId) {
+      navigate({ to: "/", replace: true });
+      return;
+    }
+
+    // Chat projects never auto-jump into a specific chat: whichever chat was
+    // open (in this project or a completely different app/project) before
+    // switching races against this redirect, so just show the project's
+    // chat list (sidebar) and an empty conversation panel — the user picks
+    // an existing chat or starts a new one themselves. This also covers a
+    // freshly created chat project with no chats yet.
+    if (selectedAppIsChatProject) {
+      return;
+    }
+
+    if (chats.length) {
+      // Not a real navigation, just a redirect, when the user navigates to /chat
+      // without a chatId, we redirect to the first chat
+      selectChat({
+        chatId: chats[0].id,
+        appId: chats[0].appId,
+        preserveTabOrder: true,
+      });
+      return;
+    }
+
+    navigate({
+      to: "/app-details",
+      search: { appId: selectedAppId },
+      replace: true,
+    });
+  }, [chatId, chats, loading, navigate, selectChat, selectedAppId, selectedAppIsChatProject]);
+
+  useEffect(() => {
+    if (!chatId) {
+      return;
+    }
+
+    if (routeAppId) {
+      if (routeAppId !== selectedAppIdRef.current) {
+        selectedAppIdRef.current = routeAppId;
+        setSelectedAppId(routeAppId);
+      }
+      return;
+    }
+
+    // If chatId is already in our loaded chats list, selectedAppId is correct
+    // for this chat (useChats filters by selectedAppId), so skip the IPC fetch.
+    if (chats.some((c) => c.id === chatId)) {
+      return;
+    }
+
+    let isCancelled = false;
+    ipc.chat
+      .getChat(chatId)
+      .then((chat) => {
+        if (!isCancelled && chat.appId !== selectedAppIdRef.current) {
+          selectedAppIdRef.current = chat.appId;
+          setSelectedAppId(chat.appId);
+        }
+      })
+      .catch(() => {
+        // Let the chat panel surface any load error for the selected chat.
+      });
+    return () => {
+      isCancelled = true;
+    };
+  }, [chatId, routeAppId, chats, setSelectedAppId]);
+
+  // Chat projects have no codebase, so hide the app preview for them.
+  useEffect(() => {
+    if (!chatId) {
+      // No chat selected yet (e.g. a freshly created chat project with no
+      // chats). Fall back to the selected app's own type instead of
+      // defaulting to false, so the docs/file preview pane still shows.
+      setIsChatProject(selectedAppIsChatProject);
+      return;
+    }
+    let cancelled = false;
+    ipc.chat
+      .getChat(chatId)
+      .then((chat) => {
+        if (cancelled) return;
+        const chatApp = apps.find((app) => app.id === chat.appId);
+        setIsChatProject(chat.appType === "chat" || !!chatApp?.isDefaultChatProject);
+      })
+      .catch(() => {
+        if (!cancelled) setIsChatProject(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [chatId, selectedAppIsChatProject, apps]);
+
+  useEffect(() => {
+    if (isPreviewOpen) {
+      ref.current?.expand();
+    } else {
+      ref.current?.collapse();
+    }
+  }, [isPreviewOpen]);
+
+  // Default preview open for chat projects on initial load
+  const hasInitializedChatProjectPreviewRef = useRef(false);
+  useEffect(() => {
+    if (isChatProject && !hasInitializedChatProjectPreviewRef.current) {
+      hasInitializedChatProjectPreviewRef.current = true;
+      setIsPreviewOpen(true);
+    }
+  }, [isChatProject, setIsPreviewOpen]);
+  const ref = useRef<ImperativePanelHandle>(null);
+  const chatPanelRef = useRef<ImperativePanelHandle>(null);
+
+  // Keep chat panel size in sync with hidden state (from toolbar button / other views)
+  useEffect(() => {
+    if (!chatPanelRef.current) return;
+    // Skip the initial mount to preserve persisted panel size from autoSaveId
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    if (isChatPanelHidden) {
+      // Save current size before collapsing
+      const currentSize = chatPanelRef.current.getSize();
+      if (currentSize > 5) {
+        previousSizeRef.current = currentSize;
+      }
+      // Visually collapsed but keep a sliver so the handle is usable
+      chatPanelRef.current.resize(1);
+    } else {
+      // Restore to previous size when re-opened via button
+      chatPanelRef.current.resize(previousSizeRef.current);
+    }
+  }, [isChatPanelHidden]);
+
+  return (
+    <PanelGroup autoSaveId="persistence" direction="horizontal">
+      <Panel
+        id="chat-panel"
+        ref={chatPanelRef}
+        collapsible
+        minSize={1}
+        className={cn(!isResizing && "transition-all duration-100 ease-in-out")}
+      >
+        <div className="h-full w-full">
+          {!isChatPanelHidden && (
+            <ChatPanel
+              chatId={chatId}
+              isPreviewOpen={isPreviewOpen}
+              onTogglePreview={() => {
+                setIsPreviewOpen(!isPreviewOpen);
+                if (isPreviewOpen) {
+                  ref.current?.collapse();
+                } else {
+                  ref.current?.expand();
+                }
+              }}
+            />
+          )}
+        </div>
+      </Panel>
+      <PanelResizeHandle
+        onDragging={(isDragging) => {
+          setIsResizing(isDragging);
+          // When dragging ends, sync the hidden state based on final width
+          if (!isDragging) {
+            // Small delay to let the panel settle
+            requestAnimationFrame(() => {
+              const panel = document.getElementById("chat-panel");
+              if (panel) {
+                const panelWidth = panel.getBoundingClientRect().width;
+                const containerWidth = panel.parentElement?.getBoundingClientRect().width || 1;
+                const percentage = (panelWidth / containerWidth) * 100;
+                // Consider hidden if panel is less than 5% width
+                setIsChatPanelHidden(percentage < 5);
+              }
+            });
+          }
+        }}
+        className={cn(
+          "relative bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors cursor-col-resize",
+          isChatPanelHidden ? "w-2" : "w-1",
+        )}
+      />
+
+      <Panel
+        collapsible
+        ref={ref}
+        id="preview-panel"
+        minSize={20}
+        className={cn(!isResizing && "transition-all duration-100 ease-in-out")}
+      >
+        <div className="flex h-full min-h-0 flex-col bg-background">
+          <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border bg-background px-2">
+            <button
+              type="button"
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs transition-colors",
+                rightTab === "chats"
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+              onClick={() => setRightTab("chats")}
+            >
+              Chats
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition-colors",
+                rightTab === "browser"
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+              onClick={() => {
+                setIsBrowserAutomationOpen(true);
+                setRightTab("browser");
+              }}
+            >
+              Browser
+              {isBrowserAutomationOpen && (
+                <span className="size-1.5 rounded-full bg-blue-500" aria-label="Browser active" />
+              )}
+            </button>
+            <span className="ml-auto pr-2 text-[10px] text-muted-foreground">
+              {rightTab === "browser" ? "Interactive session" : "Workspace files"}
+            </span>
+          </div>
+          <div className="min-h-0 flex-1">
+            {rightTab === "browser" && isBrowserAutomationOpen ? (
+              <BrowserAutomationPanel
+                onClose={() => {
+                  setIsBrowserAutomationOpen(false);
+                  setRightTab("chats");
+                }}
+              />
+            ) : isChatProject ? (
+              <ChatProjectPreview projectId={selectedAppId} projectName={chatProjectName} />
+            ) : (
+              <PreviewPanel />
+            )}
+          </div>
+        </div>
+      </Panel>
+    </PanelGroup>
+  );
+}
