@@ -116,16 +116,15 @@ jobs:
       # --- Linux Build (.deb, .rpm & AppImage) ---
       - name: Install Linux packaging tools
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y fakeroot rpm
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
         shell: bash
 
-      - name: Build Linux Installers (.deb, .rpm & AppImage)
+      - name: Build Linux Installers (.deb & AppImage)
         if: runner.os == 'Linux'
         run: |
           npx electron-forge make --platform=linux --arch=x64
           mkdir -p dist-release
           cp out/make/deb/x64/*.deb dist-release/
-          cp out/make/rpm/x64/*.rpm dist-release/ 2>/dev/null || true
           cp out/make/AppImage/* dist-release/ 2>/dev/null || true
         shell: bash
 
@@ -135,7 +134,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v$(node -p 'require(\"./package.json\").version')"; fi
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then TAG="v$(node -p "require('./package.json').version")"; fi
           gh release view "$TAG" || gh release create "$TAG" --title "Soloman Studio $TAG" --notes "Release $TAG"
           gh release upload "$TAG" dist-release/* --clobber
         shell: bash

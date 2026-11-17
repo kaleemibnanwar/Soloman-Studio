@@ -8,7 +8,7 @@ import type { ForgeConfig } from "@electron-forge/shared-types";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
 import { MakerDeb } from "@electron-forge/maker-deb";
-import { MakerRpm } from "@electron-forge/maker-rpm";
+
 import { MakerAppImage } from "./makers/MakerAppImage";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
@@ -356,16 +356,6 @@ const config: ForgeConfig = {
                 },
           ),
           new MakerZIP({}, ["darwin", "win32"]),
-          new MakerRpm({
-            options: {
-              mimeType: [
-                "x-scheme-handler/solomanStudio",
-                "x-scheme-handler/soloman",
-                "x-scheme-handler/octopusStudio",
-              ],
-              icon: debIconConfig,
-            },
-          }),
           new MakerDeb({
             options: {
               name: "soloman-studio",
